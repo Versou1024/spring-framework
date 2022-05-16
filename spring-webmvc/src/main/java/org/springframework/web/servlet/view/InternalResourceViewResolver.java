@@ -47,6 +47,9 @@ import org.springframework.util.ClassUtils;
  * @see JstlView
  */
 public class InternalResourceViewResolver extends UrlBasedViewResolver {
+	/**
+	 * UrlBasedViewResolver的实现子类，支持InternalResourceView（即servlet和JSP）
+	 */
 
 	private static final boolean jstlPresent = ClassUtils.isPresent(
 			"javax.servlet.jsp.jstl.core.Config", InternalResourceViewResolver.class.getClassLoader());

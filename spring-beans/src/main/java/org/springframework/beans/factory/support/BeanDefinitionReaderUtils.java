@@ -36,12 +36,16 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.beans.factory.xml.DefaultBeanDefinitionDocumentReader
  */
 public abstract class BeanDefinitionReaderUtils {
+	/*
+	 * 显然我们现在几乎不会再使用XmlBeanDefinitionReader，所以粗暴的可以理解为：此名称生成器已经废弃~
+	 */
 
 	/**
 	 * Separator for generated bean names. If a class name or parent name is not
 	 * unique, "#1", "#2" etc will be appended, until the name becomes unique.
 	 */
 	public static final String GENERATED_BEAN_NAME_SEPARATOR = BeanFactoryUtils.GENERATED_BEAN_NAME_SEPARATOR;
+	// unique, "#1", "#2" etc will be appended, until the name becomes
 
 
 	/**
@@ -100,30 +104,36 @@ public abstract class BeanDefinitionReaderUtils {
 	 * @throws BeanDefinitionStoreException if no unique name can be generated
 	 * for the given bean definition
 	 */
-	public static String generateBeanName(
-			BeanDefinition definition, BeanDefinitionRegistry registry, boolean isInnerBean)
-			throws BeanDefinitionStoreException {
+	public static String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry, boolean isInnerBean) throws BeanDefinitionStoreException {
+		// isInnerBean：是为了区分内部bean(innerBean）和顶级bean（top-level bean).
 
+		// 拿到Bean定义信息里面的BeanClassName全类名
+		// 注意这个不是必须的，因为如果是继承关系，配上父类的依旧行了
 		String generatedBeanName = definition.getBeanClassName();
 		if (generatedBeanName == null) {
+			// 若没有配置本类全类名，去拿到父类的全类名+$child"俩表示自己
 			if (definition.getParentName() != null) {
 				generatedBeanName = definition.getParentName() + "$child";
 			}
+			// 工厂Bean的  就用方法的名字+"$created"
 			else if (definition.getFactoryBeanName() != null) {
 				generatedBeanName = definition.getFactoryBeanName() + "$created";
 			}
 		}
+		// 若一个都没找到，抛错~
 		if (!StringUtils.hasText(generatedBeanName)) {
 			throw new BeanDefinitionStoreException("Unnamed bean definition specifies neither " +
 					"'class' nor 'parent' nor 'factory-bean' - can't generate bean name");
 		}
 
+		//isInnerBean=true表示你是内部类的话，名字又增加了如下变化
 		if (isInnerBean) {
 			// Inner bean: generate identity hashcode suffix.
 			return generatedBeanName + GENERATED_BEAN_NAME_SEPARATOR + ObjectUtils.getIdentityHexString(definition);
 		}
 
 		// Top-level bean: use plain class name with unique suffix if necessary.
+		// Top-level表示最外层的Bean，也就是说非内部类  这里生成绝对唯一的BeanName~~~~
 		return uniqueBeanName(generatedBeanName, registry);
 	}
 
@@ -155,17 +165,18 @@ public abstract class BeanDefinitionReaderUtils {
 	 * @param registry the bean factory to register with
 	 * @throws BeanDefinitionStoreException if registration failed
 	 */
-	public static void registerBeanDefinition(
-			BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)
-			throws BeanDefinitionStoreException {
+	public static void registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry) throws BeanDefinitionStoreException {
 
 		// Register bean definition under primary name.
+		// 向registry中注册 beanName->BeanDefinition
 		String beanName = definitionHolder.getBeanName();
 		registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
 
 		// Register aliases for bean name, if any.
+		// 获取其中的beanName别名
 		String[] aliases = definitionHolder.getAliases();
 		if (aliases != null) {
+			// 遍历别名并进行注册 --
 			for (String alias : aliases) {
 				registry.registerAlias(beanName, alias);
 			}

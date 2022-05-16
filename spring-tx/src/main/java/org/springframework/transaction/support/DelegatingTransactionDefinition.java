@@ -33,6 +33,8 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public abstract class DelegatingTransactionDefinition implements TransactionDefinition, Serializable {
+	// DelegatingTransactionDefinition 一样的也就是个代理抽象类，啥都木有做。
+	// 内部持有一个TransactionDefinition targetDefinition的引用而已，所有方法都是委托给targetDefinition去做的
 
 	private final TransactionDefinition targetDefinition;
 

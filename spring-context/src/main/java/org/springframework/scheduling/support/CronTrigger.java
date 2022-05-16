@@ -32,6 +32,7 @@ import org.springframework.scheduling.TriggerContext;
  * @see CronSequenceGenerator
  */
 public class CronTrigger implements Trigger {
+	// 支持Cron表达式
 
 	private final CronSequenceGenerator sequenceGenerator;
 
@@ -73,15 +74,19 @@ public class CronTrigger implements Trigger {
 	@Override
 	public Date nextExecutionTime(TriggerContext triggerContext) {
 		Date date = triggerContext.lastCompletionTime();
+		// 这里面有个处理：如果data为null，相当于任务还没有开始执行过
 		if (date != null) {
 			Date scheduled = triggerContext.lastScheduledExecutionTime();
+			// 实际执行时间在预定执行时间之前，
 			if (scheduled != null && date.before(scheduled)) {
 				// Previous task apparently executed too early...
 				// Let's simply use the last calculated execution time then,
 				// in order to prevent accidental re-fires in the same second.
+				// 纠正为预定执行时间之前，即允许实际执行之前在预定执行时间之前，但不允许之后
 				date = scheduled;
 			}
 		}
+		// 如果任务还没有开始，那就以当前时间去计算下一个时间
 		else {
 			date = new Date();
 		}

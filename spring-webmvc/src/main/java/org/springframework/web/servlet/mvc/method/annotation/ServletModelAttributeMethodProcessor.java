@@ -50,6 +50,9 @@ import org.springframework.web.servlet.HandlerMapping;
  * @since 3.1
  */
 public class ServletModelAttributeMethodProcessor extends ModelAttributeMethodProcessor {
+	/*
+	 * ServletModelAttributeMethodProcessor处理无注解对象
+	 */
 
 	/**
 	 * Class constructor.

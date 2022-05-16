@@ -57,6 +57,13 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * @since 3.1
  */
 public final class ModelFactory {
+	/*
+	 * 在Controller方法调用之前协助初始化模型，并在调用之后进行更新。 -- 关键[初始化Model的数据，以及更新Model的数据]
+	 * 初始化时，调用通过调用@ModelAttribute方法[即成员变量modelMethods]，使用临时存储在session中的属性填充model。
+	 * 更新时model attribute 与 session 同步，如果缺少BindingResult属性，也会添加这些属性。
+	 *
+	 * 聚合：@ModeAttribute方法聚合、数据绑定工厂dataBinderFactory、会话属性处理器sessionAttributesHandler
+	 */
 
 	private final List<ModelMethod> modelMethods = new ArrayList<>();
 
@@ -76,7 +83,7 @@ public final class ModelFactory {
 
 		if (handlerMethods != null) {
 			for (InvocableHandlerMethod handlerMethod : handlerMethods) {
-				this.modelMethods.add(new ModelMethod(handlerMethod));
+				this.modelMethods.add(new ModelMethod(handlerMethod)); // InvocableHandlerMethod -> ModelMethod
 			}
 		}
 		this.dataBinderFactory = binderFactory;
@@ -100,18 +107,24 @@ public final class ModelFactory {
 	 */
 	public void initModel(NativeWebRequest request, ModelAndViewContainer container, HandlerMethod handlerMethod)
 			throws Exception {
+		// 不做深入了解  -- 如果有需要后续可以深入了解
 
+		// 利用sessionAttributesHandler从request检索属于当前request的会话属性
 		Map<String, ?> sessionAttributes = this.sessionAttributesHandler.retrieveAttributes(request);
+		// 将从request检索出来的session属性，注入到mavContainer中 -- 完成session属性到model，在执行完后，sessionname不变，但属性值可能改变，因此需要又更新会model总共
 		container.mergeAttributes(sessionAttributes);
+		// 执行ModelAttributeMethod -- 向 mavContainer 中注入ModelAttributeMethod的属性
 		invokeModelAttributeMethods(request, container);
 
+		// 遍历HandlerMethod即Controller要执行的请求方法的请求参数中，是否携带@ModelAttribute或@SessionAttribute注解的形参名列表
 		for (String name : findSessionAttributeArguments(handlerMethod)) {
+			// 因为形参上的这种是需要注入的，因此必须检查mavContainer中是否存在指定name的属性
 			if (!container.containsAttribute(name)) {
 				Object value = this.sessionAttributesHandler.retrieveAttribute(request, name);
 				if (value == null) {
 					throw new HttpSessionRequiredException("Expected session attribute '" + name + "'", name);
 				}
-				container.addAttribute(name, value);
+				container.addAttribute(name, value); // 注入到model中
 			}
 		}
 	}
@@ -163,11 +176,15 @@ public final class ModelFactory {
 	 * Find {@code @ModelAttribute} arguments also listed as {@code @SessionAttributes}.
 	 */
 	private List<String> findSessionAttributeArguments(HandlerMethod handlerMethod) {
+		// 查找方法上关于  @ModelAttribute 和 @SessionAttributes 的形参
 		List<String> result = new ArrayList<>();
+		// 遍历形参列表
 		for (MethodParameter parameter : handlerMethod.getMethodParameters()) {
+			// 是否存在指定注解
 			if (parameter.hasParameterAnnotation(ModelAttribute.class)) {
 				String name = getNameForParameter(parameter);
 				Class<?> paramType = parameter.getParameterType();
+				// 向结果中添加属性名
 				if (this.sessionAttributesHandler.isHandlerSessionAttribute(name, paramType)) {
 					result.add(name);
 				}

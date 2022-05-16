@@ -45,7 +45,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	private final ConfigurableListableBeanFactory beanFactory;
 
 	@Nullable
-	private volatile String[] cachedAdvisorBeanNames;
+	private volatile String[] cachedAdvisorBeanNames; // 本地会做一个简单的字段缓存
 
 
 	/**
@@ -70,22 +70,28 @@ public class BeanFactoryAdvisorRetrievalHelper {
 		if (advisorNames == null) {
 			// Do not initialize FactoryBeans here: We need to leave all regular beans
 			// uninitialized to let the auto-proxy creator apply to them!
-			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
-					this.beanFactory, Advisor.class, true, false);
+			// cachedAdvisorBeanNames 为null，表示还没有经过初始化，需要保留所有常规bean未初始化以允许自动代理创建者应用于它们
+			// 注意此处：连祖先容器里面的属于advisor的Bean都会拿出来  (这个方法平时我们也可以使用)
+			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(this.beanFactory, Advisor.class, true, false);
 			this.cachedAdvisorBeanNames = advisorNames;
 		}
+		// 如果容器里面没有注册过任何的advisor，那就拉倒吧
 		if (advisorNames.length == 0) {
 			return new ArrayList<>();
 		}
 
 		List<Advisor> advisors = new ArrayList<>();
 		for (String name : advisorNames) {
+			// isEligibleBean：表示这个bean是否是合格的，默认是true
+			// 但上面书说了InfrastructureAdvisorAutoProxyCreator和DefaultAdvisorAutoProxyCreator都做了对应的复写
 			if (isEligibleBean(name)) {
+				// 如果当前Bean正在创建中  那好  就啥也不做吧
 				if (this.beanFactory.isCurrentlyInCreation(name)) {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Skipping currently created advisor '" + name + "'");
 					}
 				}
+				// 否则就把这个Advisor加入到List里面，是个合法的
 				else {
 					try {
 						advisors.add(this.beanFactory.getBean(name, Advisor.class));

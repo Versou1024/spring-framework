@@ -74,10 +74,12 @@ public class SimpleMetadataReaderFactory implements MetadataReaderFactory {
 
 	@Override
 	public MetadataReader getMetadataReader(String className) throws IOException {
+		// 工厂方法 获取MetadataReader
 		try {
-			String resourcePath = ResourceLoader.CLASSPATH_URL_PREFIX +
-					ClassUtils.convertClassNameToResourcePath(className) + ClassUtils.CLASS_FILE_SUFFIX;
+			// 转为：classpath: + com/xylink/web/XxxController + .class
+			String resourcePath = ResourceLoader.CLASSPATH_URL_PREFIX + ClassUtils.convertClassNameToResourcePath(className) + ClassUtils.CLASS_FILE_SUFFIX;
 			Resource resource = this.resourceLoader.getResource(resourcePath);
+			// 获取到class对应的resource
 			return getMetadataReader(resource);
 		}
 		catch (FileNotFoundException ex) {
@@ -100,6 +102,7 @@ public class SimpleMetadataReaderFactory implements MetadataReaderFactory {
 
 	@Override
 	public MetadataReader getMetadataReader(Resource resource) throws IOException {
+		// 可见：SimpleMetadataReaderFactory 最终返回的 MetadataReader 就是 SimpleMetadataReader
 		return new SimpleMetadataReader(resource, this.resourceLoader.getClassLoader());
 	}
 

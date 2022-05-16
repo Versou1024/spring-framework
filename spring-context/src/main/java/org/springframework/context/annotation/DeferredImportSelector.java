@@ -59,6 +59,7 @@ public interface DeferredImportSelector extends ImportSelector {
 		 * Process the {@link AnnotationMetadata} of the importing @{@link Configuration}
 		 * class using the specified {@link DeferredImportSelector}.
 		 */
+		// AnnotationMetadata：配置类的注解元信息；DeferredImportSelector：属于当前分组的selector
 		void process(AnnotationMetadata metadata, DeferredImportSelector selector);
 
 		/**

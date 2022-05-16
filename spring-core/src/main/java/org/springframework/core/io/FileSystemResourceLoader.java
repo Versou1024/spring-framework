@@ -48,6 +48,7 @@ public class FileSystemResourceLoader extends DefaultResourceLoader {
 	 */
 	@Override
 	protected Resource getResourceByPath(String path) {
+		// 如果以斜杠开头，那就去掉斜杠。并且使用FileSystemResource去装载
 		if (path.startsWith("/")) {
 			path = path.substring(1);
 		}

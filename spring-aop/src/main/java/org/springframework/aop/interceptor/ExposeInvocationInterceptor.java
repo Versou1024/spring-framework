@@ -43,8 +43,11 @@ import org.springframework.core.PriorityOrdered;
 @SuppressWarnings("serial")
 public final class ExposeInvocationInterceptor implements MethodInterceptor, PriorityOrdered, Serializable {
 
+	// 暴露当前MethodInvocation作为一个ThreadLocal的值
+	// 通常只有在一些特殊情况下，例如对于@Before、@After这种AspectJ的调用链，就需要直到全局的invocation context
+
 	/** Singleton instance of this class. */
-	public static final ExposeInvocationInterceptor INSTANCE = new ExposeInvocationInterceptor();
+	public static final ExposeInvocationInterceptor INSTANCE = new ExposeInvocationInterceptor(); // 单例模式
 
 	/**
 	 * Singleton advisor for this class. Use in preference to INSTANCE when using
@@ -55,10 +58,9 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 		public String toString() {
 			return ExposeInvocationInterceptor.class.getName() +".ADVISOR";
 		}
-	};
+	}; // DefaultPointcutAdvisor 任何class、method都会被拦截通知
 
-	private static final ThreadLocal<MethodInvocation> invocation =
-			new NamedThreadLocal<>("Current AOP method invocation");
+	private static final ThreadLocal<MethodInvocation> invocation = new NamedThreadLocal<>("Current AOP method invocation");
 
 
 	/**
@@ -89,6 +91,7 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 由于这个 ExposeInvocationInterceptor 通常是放在通知chain的第一个位置，因此他就会将methodInvocation提前保存起来
 		MethodInvocation oldInvocation = invocation.get();
 		invocation.set(mi);
 		try {

@@ -61,6 +61,7 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedenceInformation, Serializable {
+	// Aop联盟下的 AbstractAspectJAdvice 配合AspectJ做增强处理
 
 	/**
 	 * Key used in ReflectiveMethodInvocation userAttributes map for the current joinpoint.
@@ -82,8 +83,10 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 			throw new IllegalStateException("MethodInvocation is not a Spring ProxyMethodInvocation: " + mi);
 		}
 		ProxyMethodInvocation pmi = (ProxyMethodInvocation) mi;
+		// 从用户属性中根据"JOIN_POINT_KEY",获取连接点
 		JoinPoint jp = (JoinPoint) pmi.getUserAttribute(JOIN_POINT_KEY);
 		if (jp == null) {
+			// jp为null，表名之前没有jp，因此设置到属性中
 			jp = new MethodInvocationProceedingJoinPoint(pmi);
 			pmi.setUserAttribute(JOIN_POINT_KEY, jp);
 		}
@@ -91,17 +94,17 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	}
 
 
-	private final Class<?> declaringClass;
+	private final Class<?> declaringClass; // 通知方法所在Class
 
-	private final String methodName;
+	private final String methodName; // 通知方法名
 
-	private final Class<?>[] parameterTypes;
+	private final Class<?>[] parameterTypes; // 通知方法形参类型
 
 	protected transient Method aspectJAdviceMethod;
 
-	private final AspectJExpressionPointcut pointcut;
+	private final AspectJExpressionPointcut pointcut; // 通知方法的表达式接入点 -- AbstractAspectJAdvice 就是用于解析AspectJ表达式的接入点
 
-	private final AspectInstanceFactory aspectInstanceFactory;
+	private final AspectInstanceFactory aspectInstanceFactory; // Aspect类的实例工厂
 
 	/**
 	 * The name of the aspect (ref bean) in which this advice was defined
@@ -120,15 +123,15 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	 * and sets them explicitly.
 	 */
 	@Nullable
-	private String[] argumentNames;
+	private String[] argumentNames; // 通知方法的参数名字
 
 	/** Non-null if after throwing advice binds the thrown value. */
 	@Nullable
-	private String throwingName;
+	private String throwingName; // 通知方法的异常class的名字【
 
 	/** Non-null if after returning advice binds the return value. */
 	@Nullable
-	private String returningName;
+	private String returningName; // 通知方法的返回值class的名字
 
 	private Class<?> discoveredReturningType = Object.class;
 
@@ -163,16 +166,15 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	 * @param pointcut the AspectJ expression pointcut
 	 * @param aspectInstanceFactory the factory for aspect instances
 	 */
-	public AbstractAspectJAdvice(
-			Method aspectJAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aspectInstanceFactory) {
+	public AbstractAspectJAdvice(Method aspectJAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aspectInstanceFactory) {
 
 		Assert.notNull(aspectJAdviceMethod, "Advice method must not be null");
 		this.declaringClass = aspectJAdviceMethod.getDeclaringClass();
 		this.methodName = aspectJAdviceMethod.getName();
 		this.parameterTypes = aspectJAdviceMethod.getParameterTypes();
 		this.aspectJAdviceMethod = aspectJAdviceMethod;
-		this.pointcut = pointcut;
-		this.aspectInstanceFactory = aspectInstanceFactory;
+		this.pointcut = pointcut; // AspectJ表达式切入点
+		this.aspectInstanceFactory = aspectInstanceFactory; // AspectJ实例工厂
 	}
 
 
@@ -560,6 +562,8 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	 */
 	protected Object[] argBinding(JoinPoint jp, @Nullable JoinPointMatch jpMatch,
 			@Nullable Object returnValue, @Nullable Throwable ex) {
+		// 参数绑定
+		// 在方法执行连接点获取参数，并向advice方法输出一组参数。
 
 		calculateArgumentBindings();
 
@@ -577,7 +581,7 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 		}
 
 		if (!CollectionUtils.isEmpty(this.argumentBindings)) {
-			// binding from pointcut match
+			// binding from pointcut match 绑定PointCut
 			if (jpMatch != null) {
 				PointcutParameter[] parameterBindings = jpMatch.getParameterBindings();
 				for (PointcutParameter parameter : parameterBindings) {
@@ -587,13 +591,13 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 					numBound++;
 				}
 			}
-			// binding from returning clause
+			// binding from returning clause 绑定返回值
 			if (this.returningName != null) {
 				Integer index = this.argumentBindings.get(this.returningName);
 				adviceInvocationArgs[index] = returnValue;
 				numBound++;
 			}
-			// binding from thrown exception
+			// binding from thrown exception 绑定抛出的异常
 			if (this.throwingName != null) {
 				Integer index = this.argumentBindings.get(this.throwingName);
 				adviceInvocationArgs[index] = ex;
@@ -619,10 +623,8 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	 * @return the invocation result
 	 * @throws Throwable in case of invocation failure
 	 */
-	protected Object invokeAdviceMethod(
-			@Nullable JoinPointMatch jpMatch, @Nullable Object returnValue, @Nullable Throwable ex)
-			throws Throwable {
-
+	protected Object invokeAdviceMethod(@Nullable JoinPointMatch jpMatch, @Nullable Object returnValue, @Nullable Throwable ex) throws Throwable {
+		// getJoinPoint() 获取 切入点AspectJ表达式
 		return invokeAdviceMethodWithGivenArgs(argBinding(getJoinPoint(), jpMatch, returnValue, ex));
 	}
 
@@ -641,6 +643,7 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 		try {
 			ReflectionUtils.makeAccessible(this.aspectJAdviceMethod);
 			// TODO AopUtils.invokeJoinpointUsingReflection
+			// 调用增强通知方法 -- AspectJAdviceMethod
 			return this.aspectJAdviceMethod.invoke(this.aspectInstanceFactory.getAspectInstance(), actualArgs);
 		}
 		catch (IllegalArgumentException ex) {
@@ -680,7 +683,9 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	// are guaranteed to bind in exactly the same way.
 	@Nullable
 	protected JoinPointMatch getJoinPointMatch(ProxyMethodInvocation pmi) {
+		// 获取AspectJ表达式
 		String expression = this.pointcut.getExpression();
+		// 然后从用户属性中根据expression获取出JoinPointMach
 		return (expression != null ? (JoinPointMatch) pmi.getUserAttribute(expression) : null);
 	}
 

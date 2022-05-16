@@ -60,12 +60,16 @@ public abstract class TaskUtils {
 	 * propagated by default since those errors may be expected through the
 	 * returned {@link Future}. In both cases, the errors will be logged.
 	 */
-	public static DelegatingErrorHandlingRunnable decorateTaskWithErrorHandler(
-			Runnable task, @Nullable ErrorHandler errorHandler, boolean isRepeatingTask) {
+	public static DelegatingErrorHandlingRunnable decorateTaskWithErrorHandler(Runnable task, @Nullable ErrorHandler errorHandler, boolean isRepeatingTask) {
+		// 最终被执行的Task -- DelegatingErrorHandlingRunnable
 
+
+		// task 已经被ErrorHandler给处理，直接返回
 		if (task instanceof DelegatingErrorHandlingRunnable) {
 			return (DelegatingErrorHandlingRunnable) task;
 		}
+
+		// 如果没有指定获取默认的ErrorHandler，常见的情况
 		ErrorHandler eh = (errorHandler != null ? errorHandler : getDefaultErrorHandler(isRepeatingTask));
 		return new DelegatingErrorHandlingRunnable(task, eh);
 	}
@@ -87,7 +91,7 @@ public abstract class TaskUtils {
  	 * useful when suppression of errors is the intended behavior.
 	 */
 	private static class LoggingErrorHandler implements ErrorHandler {
-
+		// 仅仅做一个Error日志打印
 		private final Log logger = LogFactory.getLog(LoggingErrorHandler.class);
 
 		@Override
@@ -102,7 +106,7 @@ public abstract class TaskUtils {
 	 * level and then propagates it.
 	 */
 	private static class PropagatingErrorHandler extends LoggingErrorHandler {
-
+		// 在LoggingErrorHandler的基础上，扩展继续传播抛出异常的能力
 		@Override
 		public void handleError(Throwable t) {
 			super.handleError(t);

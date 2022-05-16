@@ -115,6 +115,35 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.support.RootBeanDefinition#getDestroyMethodName
  */
 public interface BeanFactory {
+	/*
+	 * SpringIoC容器顶级接口,定义了对单个bean的获取,对bean的作用域判断,获取bean类型,获取bean别名的功能
+	 *
+	 * 在Spring中，所有的Bean都是由BeanFactory(也就是IOC容器)来进行管理的。
+	 * Bean工厂实现应该尽可能支持标准Bean生命周期接口。整套初始化方法及其标准顺序如下：
+	 * 		根据策略实例化，可选JDK或者Cglib进行实例化
+	 * 		处理循环依赖，将实例化后的Bean对象提前放入缓存中暴露出来
+	 * 		实例化后判断是否需要继续属性填充
+	 * 		在设置 Bean 属性之前，允许 BeanPostProcessor 修改属性值
+	 * 		Bean 填充属性：其中会处理BeanReference情况
+	 * 		BeanNameAware的名字
+	 * 		BeanClassLoaderAware的setBeanClassLoader
+	 * 		BeanFactoryAware的setBeanFactory
+	 * 		EnvironmentAware的setEnvironment
+	 * 		EmbeddedValueResolverAware的setEmbeddedValueResolver
+	 * 		ResourceLoaderWare的setResourceLoader（仅在应用程序上下文中运行时适用）
+	 * 		ApplicationEventPublisherAware的setApplicationEventPublisher（仅在应用程序上下文中运行时适用）
+	 * 		MessageSourceAware的setMessageSource（仅在应用程序上下文中运行时适用）
+	 * 		ApplicationContextAware的setApplicationContext（仅在应用程序上下文中运行时适用）
+	 * 		ServletContextAware的setServletContext（仅在web应用程序上下文中运行时适用）
+	 * 		BeanPostProcessor的初始化前置方法postProcessBeforeInitialization
+	 * 		InitializingBean#AfterPropertieSet 或者 自定义的init方法
+	 * 		BeanPostProcessor的初始化后置方法postProcessAfterInitialization
+	 * 		单例对象注入到单例Bean容器中
+	 * 关闭BeanFactory时，以下生命周期方法适用：
+	 * 		销毁的前置处理：DestructionAwareBeanPostProcessors#postProcessBeforeDestruction
+	 * 		DisposableBean的destroy方法
+	 * 		自定义的销毁方法
+	 */
 
 	/**
 	 * Used to dereference a {@link FactoryBean} instance and distinguish it from
@@ -319,6 +348,10 @@ public interface BeanFactory {
 	 * @see #getType
 	 */
 	boolean isTypeMatch(String name, Class<?> typeToMatch) throws NoSuchBeanDefinitionException;
+	// 检查具有给定名称的bean是否与指定类型匹配。
+	// 更具体地说，检查给定名称的getBean调用是否会返回可分配给指定目标类型的对象。
+	// 将别名转换回相应的规范bean名称。
+	// 将询问父工厂是否在此工厂实例中找不到该bean。
 
 	/**
 	 * Determine the type of the bean with the given name. More specifically,

@@ -45,6 +45,8 @@ import org.springframework.util.CollectionUtils;
  * @see org.springframework.web.servlet.mvc.Controller#handleRequest
  */
 public class ModelAndView {
+	// 顾名思义，ModelAndView指模型和视图的集合，既包含模型又包含视图；ModelAndView一般可以作为Controller的返回值，所以它的实例是开发者自己手动创建的，这也是它和上面的主要区别（上面都是容器创建，然后注入给我们使用的~）。
+	// 持有 view\model\httpStatus\cleared
 
 	/** View instance or view name String. */
 	@Nullable

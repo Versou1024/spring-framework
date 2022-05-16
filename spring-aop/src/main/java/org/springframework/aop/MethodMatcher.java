@@ -51,6 +51,9 @@ import java.lang.reflect.Method;
  * @see ClassFilter
  */
 public interface MethodMatcher {
+	/*
+	 * 高层匹配器：用于检查被代理的类，哪些方法应该被代理执行呢？
+	 */
 
 	/**
 	 * Perform static checking whether the given method matches.
@@ -62,7 +65,7 @@ public interface MethodMatcher {
 	 * @param targetClass the target class
 	 * @return whether or not this method matches statically
 	 */
-	boolean matches(Method method, Class<?> targetClass);
+	boolean matches(Method method, Class<?> targetClass); // 这个称为静态匹配：在匹配条件不是太严格时使用，可以满足大部分场景的使用
 
 	/**
 	 * Is this MethodMatcher dynamic, that is, must a final call be made on the
@@ -75,6 +78,12 @@ public interface MethodMatcher {
 	 * is required if static matching passed
 	 */
 	boolean isRuntime();
+	//两个方法的分界线就是boolean isRuntime()方法，步骤如下
+	// 1、先调用静态匹配，若返回true。此时就会继续去检查isRuntime()的返回值
+	// 2、若isRuntime()还返回true，那就继续调用动态匹配
+	// (若静态匹配都匹配上，动态匹配那铁定更匹配不上得~~~~)
+
+	// 是否需要执行动态匹配
 
 	/**
 	 * Check whether there a runtime (dynamic) match for this method,
@@ -90,7 +99,7 @@ public interface MethodMatcher {
 	 * @return whether there's a runtime match
 	 * @see MethodMatcher#matches(Method, Class)
 	 */
-	boolean matches(Method method, Class<?> targetClass, Object... args);
+	boolean matches(Method method, Class<?> targetClass, Object... args); // 这个称为动态匹配（运行时匹配）: 它是严格的匹配。在运行时动态的对参数的类型进行匹配
 
 
 	/**

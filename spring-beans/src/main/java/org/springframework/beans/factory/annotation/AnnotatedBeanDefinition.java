@@ -32,6 +32,9 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.core.type.AnnotationMetadata
  */
 public interface AnnotatedBeanDefinition extends BeanDefinition {
+	/*
+	 * 扩展BeanDefinition，暴露出注解信息 AnnotationMetadata、方法信息 MethodMetadata
+	 */
 
 	/**
 	 * Obtain the annotation metadata (as well as basic class metadata)

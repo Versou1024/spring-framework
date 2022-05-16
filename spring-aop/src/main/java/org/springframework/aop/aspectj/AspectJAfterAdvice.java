@@ -31,22 +31,25 @@ import org.springframework.aop.AfterAdvice;
  * @since 2.0
  */
 @SuppressWarnings("serial")
-public class AspectJAfterAdvice extends AbstractAspectJAdvice
-		implements MethodInterceptor, AfterAdvice, Serializable {
+public class AspectJAfterAdvice extends AbstractAspectJAdvice implements MethodInterceptor, AfterAdvice, Serializable {
+	// 将 aspectJ after 转为为 advice 方法
 
-	public AspectJAfterAdvice(
-			Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
-
+	public AspectJAfterAdvice(Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
 		super(aspectJBeforeAdviceMethod, pointcut, aif);
 	}
 
 
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 见 advice 转为 MethodInterceptor
+		// MethodInterceptor#invoke()
 		try {
+			// 直接引用原方法
 			return mi.proceed();
 		}
 		finally {
+			// 引用通知方法AdviceMethod
+			// 不会有result和Exception
 			invokeAdviceMethod(getJoinPointMatch(), null, null);
 		}
 	}

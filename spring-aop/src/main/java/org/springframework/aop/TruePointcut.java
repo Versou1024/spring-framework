@@ -25,6 +25,7 @@ import java.io.Serializable;
  */
 @SuppressWarnings("serial")
 final class TruePointcut implements Pointcut, Serializable {
+	// 任何class、任何method都会被通知增强
 
 	public static final TruePointcut INSTANCE = new TruePointcut();
 

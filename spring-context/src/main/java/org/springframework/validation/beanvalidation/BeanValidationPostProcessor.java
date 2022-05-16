@@ -42,6 +42,8 @@ import org.springframework.util.Assert;
  */
 public class BeanValidationPostProcessor implements BeanPostProcessor, InitializingBean {
 
+	//BeanValidationPostProcessor：对bean进行数据校验
+
 	@Nullable
 	private Validator validator;
 

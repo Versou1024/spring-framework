@@ -37,6 +37,8 @@ import org.springframework.util.Assert;
  * @see AnnotationMethodMatcher
  */
 public class AnnotationMatchingPointcut implements Pointcut {
+	// 注解切点：
+	// AnnotationMatchingPointcut实现类表示注解切点。使用AnnotationMatchingPointcut支持在Bean中直接通过JDK 5.0注解标签定义切点
 
 	private final ClassFilter classFilter;
 
@@ -59,6 +61,7 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	 * @see AnnotationClassFilter#AnnotationClassFilter(Class, boolean)
 	 */
 	public AnnotationMatchingPointcut(Class<? extends Annotation> classAnnotationType, boolean checkInherited) {
+		// checkInherited 表示是否会检查类上继承的注解哦
 		this.classFilter = new AnnotationClassFilter(classAnnotationType, checkInherited);
 		this.methodMatcher = MethodMatcher.TRUE;
 	}
@@ -90,7 +93,9 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	 */
 	public AnnotationMatchingPointcut(@Nullable Class<? extends Annotation> classAnnotationType,
 			@Nullable Class<? extends Annotation> methodAnnotationType, boolean checkInherited) {
-
+		// classFilter 类过滤器，
+		// 目标类必须有注解 classAnnotationType 类上直接注解
+		// 目标类中的方法必须有 methodAnnotationType 方法上的直接注解
 		Assert.isTrue((classAnnotationType != null || methodAnnotationType != null),
 				"Either Class annotation type or Method annotation type needs to be specified (or both)");
 

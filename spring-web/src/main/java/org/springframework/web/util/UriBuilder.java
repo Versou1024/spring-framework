@@ -46,7 +46,7 @@ public interface UriBuilder {
 	 * and may also be {@code null} to clear the scheme of this builder.
 	 * @param scheme the URI scheme
 	 */
-	UriBuilder scheme(@Nullable String scheme);
+	UriBuilder scheme(@Nullable String scheme); // 协议
 
 	/**
 	 * Set the URI user info which may contain URI template variables, and
@@ -60,13 +60,13 @@ public interface UriBuilder {
 	 * be {@code null} to clear the host of this builder.
 	 * @param host the URI host
 	 */
-	UriBuilder host(@Nullable String host);
+	UriBuilder host(@Nullable String host); // 主机
 
 	/**
 	 * Set the URI port. Passing {@code -1} will clear the port of this builder.
 	 * @param port the URI port
 	 */
-	UriBuilder port(int port);
+	UriBuilder port(int port); // int 端口号
 
 	/**
 	 * Set the URI port . Use this method only when the port needs to be
@@ -74,7 +74,7 @@ public interface UriBuilder {
 	 * Passing {@code null} will clear the port of this builder.
 	 * @param port the URI port
 	 */
-	UriBuilder port(@Nullable String port);
+	UriBuilder port(@Nullable String port); // string 端口号
 
 	/**
 	 * Append to the path of this builder.
@@ -107,13 +107,13 @@ public interface UriBuilder {
 	 * URI Encoding</a> section of the reference docs.
 	 * @param path the URI path
 	 */
-	UriBuilder path(String path);
+	UriBuilder path(String path); // 资源路径
 
 	/**
 	 * Override the existing path.
 	 * @param path the URI path, or {@code null} for an empty path
 	 */
-	UriBuilder replacePath(@Nullable String path);
+	UriBuilder replacePath(@Nullable String path); // 替换资源路径
 
 	/**
 	 * Append to the path using path segments. For example:
@@ -142,7 +142,7 @@ public interface UriBuilder {
 	 * </pre>
 	 * @param pathSegments the URI path segments
 	 */
-	UriBuilder pathSegment(String... pathSegments) throws IllegalArgumentException;
+	UriBuilder pathSegment(String... pathSegments) throws IllegalArgumentException; // 路径数组
 
 	/**
 	 * Parse the given query string into query parameters where parameters are
@@ -153,7 +153,7 @@ public interface UriBuilder {
 	 * and encoding of individual query parameters.
 	 * @param query the query string
 	 */
-	UriBuilder query(String query);
+	UriBuilder query(String query); // 查询字符串
 
 	/**
 	 * Clear existing query parameters and then delegate to {@link #query(String)}.
@@ -162,7 +162,7 @@ public interface UriBuilder {
 	 * and encoding of individual query parameters.
 	 * @param query the query string; a {@code null} value removes all query parameters.
 	 */
-	UriBuilder replaceQuery(@Nullable String query);
+	UriBuilder replaceQuery(@Nullable String query); // 替换
 
 	/**
 	 * Append the given query parameter. Both the parameter name and values may
@@ -183,7 +183,7 @@ public interface UriBuilder {
 	 * @param values the query parameter values
 	 * @see #queryParam(String, Collection)
 	 */
-	UriBuilder queryParam(String name, Object... values);
+	UriBuilder queryParam(String name, Object... values); // 查询参数 name 与 values
 
 	/**
 	 * Variant of {@link #queryParam(String, Object...)} with a Collection.
@@ -204,7 +204,7 @@ public interface UriBuilder {
 	 * and encoding of individual query parameters.
 	 * @param params the params
 	 */
-	UriBuilder queryParams(MultiValueMap<String, String> params);
+	UriBuilder queryParams(MultiValueMap<String, String> params); // 通过集合直接设置多个
 
 	/**
 	 * Set the query parameter values replacing existing values, or if no
@@ -252,7 +252,7 @@ public interface UriBuilder {
 	 * @param uriVariables the map of URI variables
 	 * @return the URI
 	 */
-	URI build(Object... uriVariables);
+	URI build(Object... uriVariables); // 替换URI的模板变量，通过给定的URIVariables -- 按照顺序设置
 
 	/**
 	 * Build a {@link URI} instance and replaces URI template variables
@@ -260,6 +260,6 @@ public interface UriBuilder {
 	 * @param uriVariables the map of URI variables
 	 * @return the URI
 	 */
-	URI build(Map<String, ?> uriVariables);
+	URI build(Map<String, ?> uriVariables); // 替换URI的模板变量，通过给定的URIVariables -- 按照名字设置
 
 }

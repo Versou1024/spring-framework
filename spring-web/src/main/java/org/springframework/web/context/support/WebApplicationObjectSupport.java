@@ -42,6 +42,15 @@ import org.springframework.web.util.WebUtils;
  * @see SpringBeanAutowiringSupport
  */
 public abstract class WebApplicationObjectSupport extends ApplicationObjectSupport implements ServletContextAware {
+	/*
+	 * 需要认识到:
+	 * 		ApplicationObjectSupport		提供了访问Spring应用上下文的能力
+	 * 		WebApplicationObjectSupport		提供了访问ServletContext的能力
+	 * 看他两的声明，他俩更像是ApplicationContextAware和ServletContextAware的适配器
+	 *
+	 *  public abstract class ApplicationObjectSupport implements ApplicationContextAware { ... }
+	 *  public abstract class WebApplicationObjectSupport extends ApplicationObjectSupport implements ServletContextAware { ... }
+	 */
 
 	@Nullable
 	private ServletContext servletContext;
@@ -51,7 +60,7 @@ public abstract class WebApplicationObjectSupport extends ApplicationObjectSuppo
 	public final void setServletContext(ServletContext servletContext) {
 		if (servletContext != this.servletContext) {
 			this.servletContext = servletContext;
-			initServletContext(servletContext);
+			initServletContext(servletContext); // 模板方法 - 允许子类复写初始化的操作
 		}
 	}
 

@@ -37,6 +37,9 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class DefaultPointcutAdvisor extends AbstractGenericPointcutAdvisor implements Serializable {
+	/**
+	 * 从方法名看出来，DefaultPointcutAdvisor 主要是实现 PointcutAdvisor#getPonitcut()
+	 */
 
 	private Pointcut pointcut = Pointcut.TRUE;
 
@@ -55,6 +58,7 @@ public class DefaultPointcutAdvisor extends AbstractGenericPointcutAdvisor imple
 	 * @param advice the Advice to use
 	 */
 	public DefaultPointcutAdvisor(Advice advice) {
+		// 这种直接添加的PointCut是PointCut.TRUE，表名这个通知advice是针对所有类的、所有方法的
 		this(Pointcut.TRUE, advice);
 	}
 

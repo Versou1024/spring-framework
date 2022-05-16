@@ -34,20 +34,20 @@ public interface TriggerContext {
 	 * or {@code null} if not scheduled before.
 	 */
 	@Nullable
-	Date lastScheduledExecutionTime();
+	Date lastScheduledExecutionTime(); // 上次预定执行时间
 
 	/**
 	 * Return the last <i>actual</i> execution time of the task,
 	 * or {@code null} if not scheduled before.
 	 */
 	@Nullable
-	Date lastActualExecutionTime();
+	Date lastActualExecutionTime(); // 上次实际执行时间
 
 	/**
 	 * Return the last completion time of the task,
 	 * or {@code null} if not scheduled before.
 	 */
 	@Nullable
-	Date lastCompletionTime();
+	Date lastCompletionTime(); // 上次执行结束时间
 
 }

@@ -41,28 +41,38 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 
 	@Bean(name = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-	public BeanFactoryTransactionAttributeSourceAdvisor transactionAdvisor(
-			TransactionAttributeSource transactionAttributeSource, TransactionInterceptor transactionInterceptor) {
+	public BeanFactoryTransactionAttributeSourceAdvisor transactionAdvisor(TransactionAttributeSource transactionAttributeSource, TransactionInterceptor transactionInterceptor) {
+		// 切面通知对象 BeanFactoryTransactionAttributeSourceAdvisor
 
 		BeanFactoryTransactionAttributeSourceAdvisor advisor = new BeanFactoryTransactionAttributeSourceAdvisor();
 		advisor.setTransactionAttributeSource(transactionAttributeSource);
-		advisor.setAdvice(transactionInterceptor);
+		advisor.setAdvice(transactionInterceptor); // 设置 通知方法/拦截器/回调方法
 		if (this.enableTx != null) {
 			advisor.setOrder(this.enableTx.<Integer>getNumber("order"));
 		}
 		return advisor;
 	}
 
+
+	// TransactionAttributeSource 这种类特别像 `TargetSource`这种类的设计模式
+	// 这里直接使用的是AnnotationTransactionAttributeSource  基于注解的事务属性源~~~
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public TransactionAttributeSource transactionAttributeSource() {
+		// 事务属性源
 		return new AnnotationTransactionAttributeSource();
 	}
 
+	// 事务拦截器，它是个`MethodInterceptor`，它也是Spring处理事务最为核心的部分
+	// 请注意：你可以自己定义一个TransactionInterceptor（同名的），来覆盖此Bean（注意是覆盖）
+	// 另外请注意：你自定义的BeanName必须同名，也就是必须名为：transactionInterceptor  否则两个都会注册进容器里面去~~~~~~
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public TransactionInterceptor transactionInterceptor(TransactionAttributeSource transactionAttributeSource) {
+		// 获取事务拦截器，设置事务管理器、事务属性源 -- 核心拦截器
+
 		TransactionInterceptor interceptor = new TransactionInterceptor();
+		// 注意这里传入了事务属性源：用来从属性源中获取真实的事务属性
 		interceptor.setTransactionAttributeSource(transactionAttributeSource);
 		if (this.txManager != null) {
 			interceptor.setTransactionManager(this.txManager);

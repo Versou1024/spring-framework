@@ -31,6 +31,8 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class PayloadApplicationEvent<T> extends ApplicationEvent implements ResolvableTypeProvider {
+	// 一种特殊的ApplicationEvent，会携带一个payload
+	// Listener不是对PayloadApplicationEvent进行处理，而是对PayloadApplicationEvent#getResolvableType判断是否可以处理支持
 
 	private final T payload;
 
@@ -49,6 +51,7 @@ public class PayloadApplicationEvent<T> extends ApplicationEvent implements Reso
 
 	@Override
 	public ResolvableType getResolvableType() {
+		//
 		return ResolvableType.forClassWithGenerics(getClass(), ResolvableType.forInstance(getPayload()));
 	}
 

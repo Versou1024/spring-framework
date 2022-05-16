@@ -42,6 +42,10 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcutAdvisor implements BeanFactoryAware {
+	// 在 AbstractPointcutAdvisor 基础上提供扩展感知 BeanFactory 的能力
+	// 因此命名为 AbstractBeanFactoryPointcutAdvisor
+
+	// 因此可以将提供gdviceName，从BeanFactory中获取
 
 	@Nullable
 	private String adviceBeanName;
@@ -103,6 +107,7 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 
 	@Override
 	public Advice getAdvice() {
+		// 有 advice 就直接返回 advice
 		Advice advice = this.advice;
 		if (advice != null) {
 			return advice;
@@ -111,6 +116,7 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 		Assert.state(this.adviceBeanName != null, "'adviceBeanName' must be specified");
 		Assert.state(this.beanFactory != null, "BeanFactory must be set to resolve 'adviceBeanName'");
 
+		// 没有 advice 就根据 adviceBeanName 从 BeanFactory 中查找并返回
 		if (this.beanFactory.isSingleton(this.adviceBeanName)) {
 			// Rely on singleton semantics provided by the factory.
 			advice = this.beanFactory.getBean(this.adviceBeanName, Advice.class);
@@ -121,9 +127,11 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 			// No singleton guarantees from the factory -> let's lock locally but
 			// reuse the factory's singleton lock, just in case a lazy dependency
 			// of our advice bean happens to trigger the singleton lock implicitly...
+			// 工厂没有单例保证 -> 让我们在本地锁定，但重用工厂的单例锁，以防万一我们的建议 bean 的惰性依赖碰巧隐式触发单例锁....
 			synchronized (this.adviceMonitor) {
 				advice = this.advice;
 				if (advice == null) {
+					// 双重检查
 					advice = this.beanFactory.getBean(this.adviceBeanName, Advice.class);
 					this.advice = advice;
 				}

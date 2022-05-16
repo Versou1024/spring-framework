@@ -178,7 +178,7 @@ public @interface PropertySource {
 	 * @see org.springframework.core.env.PropertySource#getName()
 	 * @see org.springframework.core.io.Resource#getDescription()
 	 */
-	String name() default "";
+	String name() default ""; // 指明此property source的名称
 
 	/**
 	 * Indicate the resource location(s) of the properties file to be loaded.
@@ -194,6 +194,12 @@ public @interface PropertySource {
 	 * property source, and in the order declared.
 	 */
 	String[] value();
+	//	指示要加载的 properties file的资源位置。
+	//	支持传统和基于XML的属性文件格式，例如，“classpath:/com/myco/app.properties”或“file:/path/to/file.XML”。
+	//	不允许使用资源位置通配符（例如.*/*.属性）；
+	//	每个位置必须精确计算为一个 .properties resource
+	//	${...} 占位符将针对已在环境中注册的任何/所有属性源进行解析。参见上面的例子。
+	//	每个位置都将被添加到封闭Environment中，作为其自己的属性源，并按声明的顺序添加。
 
 	/**
 	 * Indicate if failure to find the a {@link #value() property resource} should be
@@ -203,12 +209,14 @@ public @interface PropertySource {
 	 * @since 4.0
 	 */
 	boolean ignoreResourceNotFound() default false;
+	// 是否忽略资源文件没有找到的错误
 
 	/**
 	 * A specific character encoding for the given resources, e.g. "UTF-8".
 	 * @since 4.3
 	 */
 	String encoding() default "";
+	// 文件的解析格式
 
 	/**
 	 * Specify a custom {@link PropertySourceFactory}, if any.
@@ -218,5 +226,5 @@ public @interface PropertySource {
 	 * @see org.springframework.core.io.support.ResourcePropertySource
 	 */
 	Class<? extends PropertySourceFactory> factory() default PropertySourceFactory.class;
-
+	//属性加载的配置
 }

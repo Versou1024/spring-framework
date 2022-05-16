@@ -33,6 +33,15 @@ import org.springframework.lang.Nullable;
  * @see PropertyAccessorFactory#forDirectFieldAccess
  */
 public interface PropertyAccessor {
+	/*
+	 * 属性访问器接口：
+	 * 可以被访问的命名属性（例如对象的属性或对象中的字段）的类的公共接口用作BeanWrapper的基本接口。
+	 *
+	 * API:
+	 * 1、通过ProPertyValue、或ProPertvValues、或Mao<String,Object>、String+Object设置target的属性值
+	 * 2、属性是否可写、是否可读
+	 * 3、获取指定的name的属性类型、属性值、属性描述
+	 */
 
 	/**
 	 * Path separator for nested properties.
@@ -44,7 +53,7 @@ public interface PropertyAccessor {
 	 * Path separator for nested properties.
 	 * Follows normal Java conventions: getFoo().getBar() would be "foo.bar".
 	 */
-	char NESTED_PROPERTY_SEPARATOR_CHAR = '.';
+	char NESTED_PROPERTY_SEPARATOR_CHAR = '.'; // 嵌套属性的分割符号
 
 	/**
 	 * Marker that indicates the start of a property key for an
@@ -78,7 +87,7 @@ public interface PropertyAccessor {
 	 * (may be a nested path and/or an indexed/mapped property)
 	 * @return whether the property is readable
 	 */
-	boolean isReadableProperty(String propertyName);
+	boolean isReadableProperty(String propertyName); //确定指定的属性是否可读。
 
 	/**
 	 * Determine whether the specified property is writable.
@@ -87,7 +96,7 @@ public interface PropertyAccessor {
 	 * (may be a nested path and/or an indexed/mapped property)
 	 * @return whether the property is writable
 	 */
-	boolean isWritableProperty(String propertyName);
+	boolean isWritableProperty(String propertyName); //确定指定的属性是否可写。
 
 	/**
 	 * Determine the property type for the specified property,
@@ -186,7 +195,7 @@ public interface PropertyAccessor {
 	 * successfully updated.
 	 * @see #setPropertyValues(PropertyValues, boolean, boolean)
 	 */
-	void setPropertyValues(PropertyValues pvs) throws BeansException;
+	void setPropertyValues(PropertyValues pvs) throws BeansException; //执行批处理更新，以更好地控制行为。
 
 	/**
 	 * Perform a batch update with more control over behavior.

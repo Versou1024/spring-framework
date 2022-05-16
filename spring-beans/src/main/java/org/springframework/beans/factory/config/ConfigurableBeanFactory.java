@@ -49,6 +49,11 @@ import org.springframework.util.StringValueResolver;
  * @see ConfigurableListableBeanFactory
  */
 public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, SingletonBeanRegistry {
+	/*
+	ConfigurableBeanFactory
+	1、扩展了HierarchicalBeanFactory,并提供了对容器的配置能力
+	2、实现SingletonBeanRegistry接口，完成对单例Bean的控制
+	 */
 
 	/**
 	 * Scope identifier for the standard singleton scope: {@value}.

@@ -57,6 +57,7 @@ import org.springframework.util.CollectionUtils;
  * @see BeanNameUrlHandlerMapping
  */
 public class SimpleUrlHandlerMapping extends AbstractUrlHandlerMapping {
+	// AbstractUrlHandlerMapping 的直接实现类,urlMap是需要用户进行注册的
 
 	private final Map<String, Object> urlMap = new LinkedHashMap<>();
 

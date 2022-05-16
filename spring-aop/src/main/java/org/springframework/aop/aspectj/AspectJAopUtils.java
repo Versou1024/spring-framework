@@ -31,11 +31,13 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public abstract class AspectJAopUtils {
+	// 相比于AopUtils，AspectJAopUtils是专门针对于AspectJ advisors的工具类。（当然AspectJ也是当下的主流方式）
 
 	/**
 	 * Return {@code true} if the advisor is a form of before advice.
 	 */
 	public static boolean isBeforeAdvice(Advisor anAdvisor) {
+		// Advisor 是否是前置通知类型~~~~(Advisor都持有一个advice嘛)
 		AspectJPrecedenceInformation precedenceInfo = getAspectJPrecedenceInformationFor(anAdvisor);
 		if (precedenceInfo != null) {
 			return precedenceInfo.isBeforeAdvice();
@@ -47,6 +49,7 @@ public abstract class AspectJAopUtils {
 	 * Return {@code true} if the advisor is a form of after advice.
 	 */
 	public static boolean isAfterAdvice(Advisor anAdvisor) {
+		// Advisor 是否是后置通知类型~~~~(Advisor都持有一个advice嘛)
 		AspectJPrecedenceInformation precedenceInfo = getAspectJPrecedenceInformationFor(anAdvisor);
 		if (precedenceInfo != null) {
 			return precedenceInfo.isAfterAdvice();
@@ -61,6 +64,7 @@ public abstract class AspectJAopUtils {
 	 */
 	@Nullable
 	public static AspectJPrecedenceInformation getAspectJPrecedenceInformationFor(Advisor anAdvisor) {
+		// 拿到AspectJ的优先信息：AspectJPrecedenceInformation 这个就接口保存着
 		if (anAdvisor instanceof AspectJPrecedenceInformation) {
 			return (AspectJPrecedenceInformation) anAdvisor;
 		}

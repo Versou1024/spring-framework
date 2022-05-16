@@ -34,6 +34,9 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * @since 4.0.1
  */
 public class HttpHeadersReturnValueHandler implements HandlerMethodReturnValueHandler {
+	// 处理返回值是HttpHeaders类型的
+	// 固定用途,在DispatcherServlet#getDefaultReturnValueHandlers()优先级比较高
+	// 可以帮助我们在需要对请求头进行特殊处理的时候，进行一定程度的加工。它Spring4.0后才有
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
@@ -45,11 +48,13 @@ public class HttpHeadersReturnValueHandler implements HandlerMethodReturnValueHa
 	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
 
+		// 请注意这里：已经标记该请求已经被处理过了~~~~~
 		mavContainer.setRequestHandled(true);
 
 		Assert.state(returnValue instanceof HttpHeaders, "HttpHeaders expected");
 		HttpHeaders headers = (HttpHeaders) returnValue;
 
+		// 返回值里自定义返回的响应头。这里会帮你设置到HttpServletResponse 里面去的~~~~
 		if (!headers.isEmpty()) {
 			HttpServletResponse servletResponse = webRequest.getNativeResponse(HttpServletResponse.class);
 			Assert.state(servletResponse != null, "No HttpServletResponse");

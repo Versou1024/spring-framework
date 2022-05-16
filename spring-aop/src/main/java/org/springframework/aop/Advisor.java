@@ -34,6 +34,12 @@ import org.aopalliance.aop.Advice;
  * @author Juergen Hoeller
  */
 public interface Advisor {
+	/*
+	 * Advisor：代表一般切面，它仅包含一个Advice。这个切面太宽泛，一般不会直接使用。
+	 * 还有两个实现类：
+	 * 		PointcutAdvisor：代表具有切点的切面，它包含Advice和Pointcut两个类。 -- 最常用的
+	 * 		IntroductionAdvisor：代表引介切面。引介切面是对应引介增强的特殊的切面，它应用于类层面上。
+	 */
 
 	/**
 	 * Common placeholder for an empty {@code Advice} to be returned from
@@ -64,6 +70,6 @@ public interface Advisor {
 	 * proxy creation to ensure that Advisors have the correct lifecycle model.
 	 * @return whether this advice is associated with a particular target instance
 	 */
-	boolean isPerInstance();
+	boolean isPerInstance(); // 当前方法目前未被Spring框架使用，一般的Advisor都是直接返回true
 
 }

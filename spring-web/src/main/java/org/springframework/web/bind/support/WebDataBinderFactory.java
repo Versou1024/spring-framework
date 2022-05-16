@@ -27,6 +27,15 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @since 3.1
  */
 public interface WebDataBinderFactory {
+	/*
+	 * 专门提供给web环境的数据绑定工厂
+	 *
+	 * 方法：
+	 * 1、createBinder
+	 *
+	 * 一般 WebDataBinderFactory + WebBindingInitializer 一起继承或者继承组合使用
+	 * 原因：WebDataBinderFactory 用于定义创建的WebDataBinder的方法，但具体的初始化操作需要交给WebBindingInitializer
+	 */
 
 	/**
 	 * Create a {@link WebDataBinder} for the given object.

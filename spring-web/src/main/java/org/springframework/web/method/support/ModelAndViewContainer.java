@@ -48,28 +48,60 @@ import org.springframework.web.bind.support.SimpleSessionStatus;
  * @since 3.1
  */
 public class ModelAndViewContainer {
+	/*
+	 * ModelAndView的容器 -- 解耦
+	 * 持有 view + defaultMap + HttpStatus
+	 * 并不直接持有ModelAndView,需要通过上述三个值组装出来,间接作为ModelAndView的容器
+	 *
+	 * 直观的阅读过源码后，至少我能够得到如下结论，分享给大家：
+	 * 		它维护了模型model：包括defaultModle和redirectModel
+	 * 		defaultModel是默认使用的Model，redirectModel是用于传递redirect时的Model
+	 * 		在Controller处理器入参写了Model或ModelMap类型时候，实际传入的是defaultModel。
+	 * 			- defaultModel它实际是BindingAwareModel，是个Map。而且继承了ModelMap又实现了Model接口，所以在处理器中使用Model或ModelMap时，其实都是使用同一个对象~~~
+	 * 			- 可参考MapMethodProcessor，它最终调用的都是mavContainer.getModel()方法
+	 * 		若处理器入参类型是RedirectAttributes类型，最终传入的是redirectModel。
+	 * 			- 至于为何实际传入的是defaultModel？？参考：RedirectAttributesMethodArgumentResolver，使用的是new RedirectAttributesModelMap(dataBinder)。
+	 * 		维护视图view（兼容支持逻辑视图名称）
+	 * 		维护是否redirect信息,及根据这个判断HandlerAdapter使用的是defaultModel或redirectModel
+	 * 		维护@SessionAttributes注解信息状态
+	 * 		维护handler是否处理标记（重要）
+	 */
 
+	// redirect时,是否忽略defaultModel 默认值是false：不忽略
 	private boolean ignoreDefaultModelOnRedirect = false;
 
+	// 此视图可能是个View，也可能只是个逻辑视图String
 	@Nullable
 	private Object view;
 
+	// defaultModel默认的Model
+	// 注意：ModelMap 只是个Map而已，但是实现类BindingAwareModelMap它却实现了org.springframework.ui.Model接口
 	private final ModelMap defaultModel = new BindingAwareModelMap();
 
+	// 重定向时使用的模型（提供set方法设置进来）
 	@Nullable
 	private ModelMap redirectModel;
 
+	// 控制器是否返回重定向指令
+	// 如：使用了前缀"redirect:xxx.jsp"这种，这个值就是true。然后最终是个RedirectView
 	private boolean redirectModelScenario = false;
 
+	// Http状态码
 	@Nullable
 	private HttpStatus status;
 
+	// 注册不应该发生的DataBinding
 	private final Set<String> noBinding = new HashSet<>(4);
 
+	// 不应该绑定到model上的属性 -- 注意即使@ModelAttribute要求绑定，也会失效的
 	private final Set<String> bindingDisabled = new HashSet<>(4);
 
+	// 会话状态 -- 是否已经结束
+	// 很容易想到，它和@SessionAttributes标记的元素有关
 	private final SessionStatus sessionStatus = new SimpleSessionStatus();
 
+	// 这个属性老重要了：标记handler是否**已经完成**请求处理
+	// 在链式操作中，这个标记很重要
 	private boolean requestHandled = false;
 
 
@@ -128,6 +160,7 @@ public class ModelAndViewContainer {
 	 * resolved by the DispatcherServlet via a ViewResolver.
 	 */
 	public boolean isViewReference() {
+		// 是否是视图的引用
 		return (this.view instanceof String);
 	}
 
@@ -138,10 +171,11 @@ public class ModelAndViewContainer {
 	 * a method argument) and {@code ignoreDefaultModelOnRedirect=false}.
 	 */
 	public ModelMap getModel() {
+		// 1. 检查是否使用默认的DefaulModel
 		if (useDefaultModel()) {
 			return this.defaultModel;
-		}
-		else {
+		} else {
+			// 2.否则使用重定向Model
 			if (this.redirectModel == null) {
 				this.redirectModel = new ModelMap();
 			}
@@ -153,6 +187,10 @@ public class ModelAndViewContainer {
 	 * Whether to use the default model or the redirect model.
 	 */
 	private boolean useDefaultModel() {
+		// 是否使用默认的Model
+
+		// 不是重定向场景,返回true
+		// 是重定向场景,但重定向model为null,且允许在重定向场景下使用DefaultModel就返回true
 		return (!this.redirectModelScenario || (this.redirectModel == null && !this.ignoreDefaultModelOnRedirect));
 	}
 
@@ -213,6 +251,7 @@ public class ModelAndViewContainer {
 	 * @since 4.3
 	 */
 	public void setBindingDisabled(String attributeName) {
+		// 以编程方式注册不应发生数据绑定的属性，即使是随后的@ModelAttribute声明也不应发生
 		this.bindingDisabled.add(attributeName);
 	}
 
@@ -221,6 +260,7 @@ public class ModelAndViewContainer {
 	 * @since 4.3
 	 */
 	public boolean isBindingDisabled(String name) {
+		// 是否为给定的model属性禁用绑定。
 		return (this.bindingDisabled.contains(name) || this.noBinding.contains(name));
 	}
 
@@ -233,6 +273,7 @@ public class ModelAndViewContainer {
 	 * @since 4.3.13
 	 */
 	public void setBinding(String attributeName, boolean enabled) {
+		// 注册是否应该为相应的模型属性发生数据绑定，对应于@ModelAttribute(binding=true/false)声明
 		if (!enabled) {
 			this.noBinding.add(attributeName);
 		}
@@ -264,6 +305,10 @@ public class ModelAndViewContainer {
 	 * Whether the request has been handled fully within the handler.
 	 */
 	public boolean isRequestHandled() {
+		// 首先看看isRequestHandled()方法的使用：
+		// RequestMappingHandlerAdapter对mavContainer.isRequestHandled()方法的使用，或许你就能悟出点啥了：
+		//
+		// 这个方法的执行实际是：HandlerMethod完全调用执行完成后，就执行这个方法去拿ModelAndView了（传入了request和ModelAndViewContainer）
 		return this.requestHandled;
 	}
 
@@ -290,6 +335,7 @@ public class ModelAndViewContainer {
 	 * A shortcut for {@code getModel().addAllAttributes(Map)}.
 	 */
 	public ModelAndViewContainer addAllAttributes(@Nullable Map<String, ?> attributes) {
+		// 向modelMap中添加属性attributes
 		getModel().addAllAttributes(attributes);
 		return this;
 	}

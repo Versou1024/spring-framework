@@ -99,6 +99,8 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	 */
 	@Override
 	public void start() {
+		// false，表示所有实现LifeCycle的Bean都会调用其start
+		// 这个一般是主动调用 context.start() 触发的哦
 		startBeans(false);
 		this.running = true;
 	}
@@ -119,12 +121,15 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 
 	@Override
 	public void onRefresh() {
+		// getLifecycleProcessor().onRefresh(); 这个方法才是容器启动时候自动会调用的，其余都不是
+		// 显然它默认只会执行实现了SmartLifecycle接口并且isAutoStartup = true的Bean的start方法
 		startBeans(true);
 		this.running = true;
 	}
 
 	@Override
 	public void onClose() {
+		// 容器关闭的时候自动会调的
 		stopBeans();
 		this.running = false;
 	}
@@ -137,24 +142,43 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 
 	// Internal helpers
 
+	// 核心方法1
+	// autoStartupOnly:是否仅支持自动启动
+	// true：只支持伴随容器启动 （bean必须实现了`SmartLifecycle`接口且isAutoStartup为true才行）
+	// false：表示无所谓。都会执行bean的start方法=======
 	private void startBeans(boolean autoStartupOnly) {
+		// 获取所有实现了LifeCycle接口的Bean，因此Bean的生命周期除了以下三种方式
+		// 初始化：@PostConstruct、实现InitializingBean接口、指定init-method方法名
+		// 销毁：@PreDestroy、实现DisposableBean接口、指定destroy-method方法名
+		// 还额外扩展了：LifeCycle的start、stop
 		Map<String, Lifecycle> lifecycleBeans = getLifecycleBeans();
+		// phases 这个Map，表示按照phase 值，吧这个Bean进行分组，最后分组执行
 		Map<Integer, LifecycleGroup> phases = new HashMap<>();
 		lifecycleBeans.forEach((beanName, bean) -> {
+			// autoStartupOnly 为false，通常是在AbstractApplicationContext中完成refresh后，即finishRefresh方法中，获取DefaultLifecycleProcessor
+			// autoStartupOnly 为true，通常是用户主动调用 AbstractApplicationContext#start，才可保证所有的实现LifeCycle的Bean被调用
+			// 因此如果想要，启动时自动完成生命周期的接口，就必须实现SmartLifeCycle接口，并设置为autoStartup为true才可以
 			if (!autoStartupOnly || (bean instanceof SmartLifecycle && ((SmartLifecycle) bean).isAutoStartup())) {
+
+				// 获取阶段数
 				int phase = getPhase(bean);
+				// 获取对应阶段数的LifeCycleGroup
 				LifecycleGroup group = phases.get(phase);
 				if (group == null) {
 					group = new LifecycleGroup(phase, this.timeoutPerShutdownPhase, lifecycleBeans, autoStartupOnly);
 					phases.put(phase, group);
 				}
+				// 添加到phase 值相同的组  分组嘛
 				group.add(beanName, bean);
 			}
 		});
 		if (!phases.isEmpty()) {
 			List<Integer> keys = new ArrayList<>(phases.keySet());
+			// 此处有个根据key从小到大的排序，然后一个个的调用他们的start方法
 			Collections.sort(keys);
 			for (Integer key : keys) {
+				// 接下来调用每个LifeCycle实现类的start()方法
+				// 执行顺序：很明显就是phase阶段数越低的越会靠前执行start()
 				phases.get(key).start();
 			}
 		}
@@ -191,6 +215,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 		}
 	}
 
+	// 核心方法2
 	private void stopBeans() {
 		Map<String, Lifecycle> lifecycleBeans = getLifecycleBeans();
 		Map<Integer, LifecycleGroup> phases = new HashMap<>();
@@ -207,6 +232,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 			List<Integer> keys = new ArrayList<>(phases.keySet());
 			keys.sort(Collections.reverseOrder());
 			for (Integer key : keys) {
+				// 按照阶段数phase从小到大的顺序，依次调用 LifeCycle#stop 方法
 				phases.get(key).stop();
 			}
 		}
@@ -279,6 +305,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
 		Map<String, Lifecycle> beans = new LinkedHashMap<>();
 		String[] beanNames = beanFactory.getBeanNamesForType(Lifecycle.class, false, false);
+		// 从BeanFactory中获取所有的Lifecycle的子类
 		for (String beanName : beanNames) {
 			String beanNameToRegister = BeanFactoryUtils.transformedBeanName(beanName);
 			boolean isFactoryBean = beanFactory.isFactoryBean(beanNameToRegister);
@@ -292,6 +319,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 				}
 			}
 		}
+		// 返回一个Map结构，key为标准BeanName，value为LifeCycle接口实现类
 		return beans;
 	}
 
@@ -319,6 +347,8 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	 * and stopped together based on their 'phase' value (or the default value of 0).
 	 */
 	private class LifecycleGroup {
+		// 用于维护一组lifecycle生命周期bean的Helper类
+		// 这些bean应根据其“phase”值（或默认值0）一起启动和停止。
 
 		private final int phase;
 
@@ -326,7 +356,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 
 		private final Map<String, ? extends Lifecycle> lifecycleBeans;
 
-		private final boolean autoStartupOnly;
+		private final boolean autoStartupOnly; // 只能自动启动
 
 		private final List<LifecycleGroupMember> members = new ArrayList<>();
 
@@ -355,8 +385,10 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 			if (logger.isDebugEnabled()) {
 				logger.debug("Starting beans in phase " + this.phase);
 			}
+			// 按照权重值进行排序  若没有实现Smart接口的权重值都为0
 			Collections.sort(this.members);
 			for (LifecycleGroupMember member : this.members) {
+				// 一次执行这些Bean的start方法（这里面逻辑就没啥好看的，只有一个考虑到getBeanFactory().dependenciesForBean控制Bean的依赖关系的）
 				doStart(this.lifecycleBeans, member.name, this.autoStartupOnly);
 			}
 		}
@@ -400,6 +432,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	 * Adapts the Comparable interface onto the lifecycle phase model.
 	 */
 	private class LifecycleGroupMember implements Comparable<LifecycleGroupMember> {
+		// 封装 - name + bean
 
 		private final String name;
 
@@ -412,6 +445,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 
 		@Override
 		public int compareTo(LifecycleGroupMember other) {
+			// 根据阶段比较
 			int thisPhase = getPhase(this.bean);
 			int otherPhase = getPhase(other.bean);
 			return Integer.compare(thisPhase, otherPhase);

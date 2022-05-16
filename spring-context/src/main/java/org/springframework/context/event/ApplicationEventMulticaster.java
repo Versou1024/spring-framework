@@ -35,6 +35,9 @@ import org.springframework.lang.Nullable;
  * @see ApplicationListener
  */
 public interface ApplicationEventMulticaster {
+	/*
+	 * ApplicationListener实现了JDK的EventListener，但它抽象出一个onApplicationEvent方法，使用更方便。ApplicationEvent继承自EventObject。 Spring这么做我觉得完全是为了兼容Java规范~
+	 */
 
 	/**
 	 * Add a listener to be notified of all events.

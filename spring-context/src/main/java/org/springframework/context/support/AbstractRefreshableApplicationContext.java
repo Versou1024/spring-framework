@@ -63,6 +63,10 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
 public abstract class AbstractRefreshableApplicationContext extends AbstractApplicationContext {
+	/*
+	 * AbstractRefreshableApplicationContext是AbstractApplicationContext直接子类
+	 * 显而易见，重点在于 Refreshable
+	 */
 
 	@Nullable
 	private Boolean allowBeanDefinitionOverriding;
@@ -119,15 +123,34 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
+		// 实现了父类的方法refreshBeanFactory()，执行BeanFactory的“刷新”。
+		//1、如果当前上下文持有一个已经刷新过的bean工厂，需要先销毁此上下文所管理的所有的bean,再关闭bean工厂
+		//2、创建一个bean工厂：org.springframework.beans.factory.support.DefaultListableBeanFactory,并且把旧工厂的属性赋值给新的（若有的话）
+		//3、加载xml配置文件中的bean(或者是@Configuration的定义信息)  总之就是loadBeanDefinitions(beanFactory);
+
+
+
+		// 判断是否已经存在BeanFactory，存在则销毁所有Beans，并且关闭BeanFactory
+		// 避免重复加载BeanFactory
 		if (hasBeanFactory()) {
 			destroyBeans();
 			closeBeanFactory();
 		}
 		try {
+			// 创建具体的beanFactory，这里创建的是DefaultListableBeanFactory，最重要的beanFactory spring注册及加载bean就靠它
+			// createBeanFactory()这个方法，看下面，还有得说的
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
 			beanFactory.setSerializationId(getId());
+			// 这句比较简单，就是把当前旧容器的一些配置值复制给新容器
+			// allowBeanDefinitionOverriding属性是指是否允对一个名字相同但definition不同进行重新注册，默认是true。 -- false，表示有BeanDefinition覆盖就会抛出异常
+			// allowCircularReferences属性是指是否允许Bean之间循环引用，默认是true. -- false，表示有循环依赖就报错
+			// 这两个属性值初始值为空：复写此方法即可customizeBeanFactory
 			customizeBeanFactory(beanFactory);
-			loadBeanDefinitions(beanFactory);
+
+			// 这个就是最重要的了，加载所有的Bean配置信息，具体如下详细解释，它属于模版方法，由子类去实现加载的方式
+			// 此处需要注意的是：loadBeanDefinitions()是个抽象方法，因为当前的并不知道去哪加载（可能是xml，可能是Config类，可能是注解解析。因此交给子类共同去完成这个解析即可）
+			// 所以看下面的实现~~~~AbstractRefreshableConfigApplicationContext
+			loadBeanDefinitions(beanFactory); // 具体的加载方式，例如xml、注解、编码等，都是看子类的具体实现啦
 			this.beanFactory = beanFactory;
 		}
 		catch (IOException ex) {
@@ -194,6 +217,9 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * @see org.springframework.beans.factory.support.DefaultListableBeanFactory#setAllowRawInjectionDespiteWrapping
 	 */
 	protected DefaultListableBeanFactory createBeanFactory() {
+		// 创建的时候就是new了一个工厂：DefaultListableBeanFactory   这个时候工厂里面所有东西都是默认值，很多还没有完成初始化属性的设置呢
+		// 注意new出来的DefaultListableBeanFactory，实际上是调用了ignoreDependencyInterface进行忽略依赖接口
+		// getInternalParentBeanFactory() 就是作为ParentBeanFactory使用的
 		return new DefaultListableBeanFactory(getInternalParentBeanFactory());
 	}
 

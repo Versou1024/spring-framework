@@ -30,12 +30,19 @@ import org.springframework.util.MultiValueMap;
  * @since 4.0
  */
 class ProfileCondition implements Condition {
+	/**
+	 * 不难看出，@Profile实际上就是@Condition注解的应用
+	 * 因为@Profile的元注解上就是@Conditional(ProfileCondition.class)
+	 */
 
 	@Override
 	public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+		// 直接 AnnotatedTypeMetadata 获取
 		MultiValueMap<String, Object> attrs = metadata.getAllAnnotationAttributes(Profile.class.getName());
 		if (attrs != null) {
+			// 获取value属性
 			for (Object value : attrs.get("value")) {
+				// 然后和环境给profile做判断即可
 				if (context.getEnvironment().acceptsProfiles(Profiles.of((String[]) value))) {
 					return true;
 				}

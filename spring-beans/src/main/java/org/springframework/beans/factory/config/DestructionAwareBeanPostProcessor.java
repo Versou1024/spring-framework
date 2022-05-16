@@ -28,6 +28,9 @@ import org.springframework.beans.BeansException;
  * @since 1.0.1
  */
 public interface DestructionAwareBeanPostProcessor extends BeanPostProcessor {
+	/*
+	 * 在销毁前进行增强、
+	 */
 
 	/**
 	 * Apply this BeanPostProcessor to the given bean instance before its

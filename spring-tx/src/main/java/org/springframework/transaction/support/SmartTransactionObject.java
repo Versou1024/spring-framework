@@ -32,6 +32,8 @@ import java.io.Flushable;
  * @see DefaultTransactionStatus#isRollbackOnly
  */
 public interface SmartTransactionObject extends Flushable {
+	// 由能够返回内部仅回滚标记的事务对象实现的接口，通常来自另一个已参与并将其标记为仅回滚的事务。
+	// 由 DefaultTransactionStatus 自动检测，即使不是由当前 TransactionStatus 产生的，也始终返回当前的 rollbackOnly 标志。
 
 	/**
 	 * Return whether the transaction is internally marked as rollback-only.

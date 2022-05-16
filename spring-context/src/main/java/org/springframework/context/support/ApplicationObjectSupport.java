@@ -47,6 +47,9 @@ import org.springframework.util.Assert;
  * @see org.springframework.web.context.support.WebApplicationObjectSupport
  */
 public abstract class ApplicationObjectSupport implements ApplicationContextAware {
+	/*
+	 * ApplicationObjectSupport 给Web环境支持提供获取ApplicationContext的能力
+	 */
 
 	/** Logger that is available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -62,11 +65,15 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 
 	@Override
 	public final void setApplicationContext(@Nullable ApplicationContext context) throws BeansException {
+		// 1. 传参context为null,且isContextRequired()返回false,表明不需要在应用上下文中运行
+		// 因此将applicationContext\messageSourceAccessor为null
 		if (context == null && !isContextRequired()) {
 			// Reset internal context state.
 			this.applicationContext = null;
 			this.messageSourceAccessor = null;
 		}
+		// 2. context不为空,注入 applicationContext 和 messageSourceAccessor
+		// 同时调用钩子方法 initApplicationContext
 		else if (this.applicationContext == null) {
 			// Initialize with passed-in context.
 			if (!requiredContextClass().isInstance(context)) {
@@ -77,6 +84,7 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 			this.messageSourceAccessor = new MessageSourceAccessor(context);
 			initApplicationContext(context);
 		}
+		// 3. 重复了Context注入,不等就抛出异常
 		else {
 			// Ignore reinitialization if same context passed in.
 			if (this.applicationContext != context) {
@@ -95,7 +103,7 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 	 * @see #getMessageSourceAccessor
 	 */
 	protected boolean isContextRequired() {
-		return false;
+		return false; // 是否必须运行在servlet这个上下问中
 	}
 
 	/**
@@ -121,6 +129,8 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 	 * @see #setApplicationContext
 	 */
 	protected void initApplicationContext(ApplicationContext context) throws BeansException {
+		// initApplicationContext 委托给无参的重载方法
+		// 作用：用户可以选择实现其中一个方法， 类似 - 策略
 		initApplicationContext();
 	}
 
@@ -133,6 +143,8 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 	 * @see #setApplicationContext
 	 */
 	protected void initApplicationContext() throws BeansException {
+		// 核心
+		// 子类实现后，可以做一些定制化初始话
 	}
 
 
@@ -142,9 +154,9 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 	 */
 	@Nullable
 	public final ApplicationContext getApplicationContext() throws IllegalStateException {
+		// 对于必须存在的值，就行get操作前允许进行检查，抛出非法参数的错误
 		if (this.applicationContext == null && isContextRequired()) {
-			throw new IllegalStateException(
-					"ApplicationObjectSupport instance [" + this + "] does not run in an ApplicationContext");
+			throw new IllegalStateException("ApplicationObjectSupport instance [" + this + "] does not run in an ApplicationContext");
 		}
 		return this.applicationContext;
 	}
@@ -169,8 +181,7 @@ public abstract class ApplicationObjectSupport implements ApplicationContextAwar
 	@Nullable
 	protected final MessageSourceAccessor getMessageSourceAccessor() throws IllegalStateException {
 		if (this.messageSourceAccessor == null && isContextRequired()) {
-			throw new IllegalStateException(
-					"ApplicationObjectSupport instance [" + this + "] does not run in an ApplicationContext");
+			throw new IllegalStateException("ApplicationObjectSupport instance [" + this + "] does not run in an ApplicationContext");
 		}
 		return this.messageSourceAccessor;
 	}

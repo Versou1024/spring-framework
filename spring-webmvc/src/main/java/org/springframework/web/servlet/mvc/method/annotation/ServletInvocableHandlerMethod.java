@@ -61,6 +61,11 @@ import org.springframework.web.util.NestedServletException;
  * @since 3.1
  */
 public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
+	/**
+	 * 继承 InvocableHandlerMethod
+	 * 作用：
+	 * 1、聚合 HandlerMethodReturnValueHandlerComposite，完成对方法返回值的解析
+	 */
 
 	private static final Method CALLABLE_METHOD = ClassUtils.getMethod(Callable.class, "call");
 
@@ -101,18 +106,21 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 	 */
 	public void invokeAndHandle(ServletWebRequest webRequest, ModelAndViewContainer mavContainer,
 			Object... providedArgs) throws Exception {
-
+		// ❗️request的方法已经准备完毕，即将开始执行
+		// invokeForRequest 执行请求，并返回结果
 		Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
+		// 设置响应状态码
 		setResponseStatus(webRequest);
 
+		// 返回值为null
 		if (returnValue == null) {
 			if (isRequestNotModified(webRequest) || getResponseStatus() != null || mavContainer.isRequestHandled()) {
 				disableContentCachingIfNecessary(webRequest);
 				mavContainer.setRequestHandled(true);
 				return;
 			}
-		}
-		else if (StringUtils.hasText(getResponseStatusReason())) {
+		} else if (StringUtils.hasText(getResponseStatusReason())) {
+			// what
 			mavContainer.setRequestHandled(true);
 			return;
 		}
@@ -120,8 +128,8 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 		mavContainer.setRequestHandled(false);
 		Assert.state(this.returnValueHandlers != null, "No return value handlers");
 		try {
-			this.returnValueHandlers.handleReturnValue(
-					returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
+			// 返回值处理器
+			this.returnValueHandlers.handleReturnValue(returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
 		}
 		catch (Exception ex) {
 			if (logger.isTraceEnabled()) {
@@ -137,9 +145,12 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 	private void setResponseStatus(ServletWebRequest webRequest) throws IOException {
 		HttpStatus status = getResponseStatus();
 		if (status == null) {
+			// 没有@ResponseStatus的注解，直接返回
 			return;
 		}
 
+		// 当前HandlerMethod上有@ResponseStatus注解，那么就对response设置状态和错误原因
+		// 即 setStatus、setError
 		HttpServletResponse response = webRequest.getResponse();
 		if (response != null) {
 			String reason = getResponseStatusReason();
@@ -151,7 +162,7 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 			}
 		}
 
-		// To be picked up by RedirectView
+		// 设置请求属性 key = View.class.getName() + ".responseStatus" ， value = status
 		webRequest.getRequest().setAttribute(View.RESPONSE_STATUS_ATTRIBUTE, status);
 	}
 

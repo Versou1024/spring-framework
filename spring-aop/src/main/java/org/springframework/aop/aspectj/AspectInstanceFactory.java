@@ -32,6 +32,7 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.BeanFactory#getBean
  */
 public interface AspectInstanceFactory extends Ordered {
+	// Aspec实例工厂，继承Ordered，允许指定排序
 
 	/**
 	 * Create an instance of this factory's aspect.

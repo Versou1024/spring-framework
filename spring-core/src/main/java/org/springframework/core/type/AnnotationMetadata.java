@@ -39,6 +39,25 @@ import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
  * @see AnnotatedTypeMetadata
  */
 public interface AnnotationMetadata extends ClassMetadata, AnnotatedTypeMetadata {
+	/*
+	 * 这是理解Spring注解编程的必备知识，它是ClassMetadata和AnnotatedTypeMetadata的子接口，具有两者共同能力，并且新增了访问注解的相关方法。可以简单理解为它是对注解的抽象。
+	 * 经常这么使用得到注解里面所有的属性值：
+	 * 		AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(annoMetadata, annType);
+	 *
+	 * API:
+	 * // 返回目标所有 直接注解 全限定名的集合
+	 * Set<String> getAnnotationTypes();
+	 * // 返回目标指定注解上 元注解 的全限定名集合
+	 * Set<String> getMetaAnnotationTypes(String annotationName);
+	 * // 是否被指定 直接注解 标注
+	 * boolean hasAnnotation(String annotationName);
+	 * // 是否被 指定元注解 标注
+	 * boolean hasMetaAnnotation(String metaAnnotationName);
+	 * // 是否存在被指定 直接注解或元注解 标注的方法
+	 * boolean hasAnnotatedMethods(String annotationName);
+	 * // 返回指定方法的 MethodMetadata 集合
+	 * Set<MethodMetadata> getAnnotatedMethods(String annotationName);
+	 */
 
 	/**
 	 * Get the fully qualified class names of all annotation types that
@@ -60,6 +79,7 @@ public interface AnnotationMetadata extends ClassMetadata, AnnotatedTypeMetadata
 	 * @return the meta-annotation type names, or an empty set if none found
 	 */
 	default Set<String> getMetaAnnotationTypes(String annotationName) {
+		// 先获取直接的注解
 		MergedAnnotation<?> annotation = getAnnotations().get(annotationName, MergedAnnotation::isDirectlyPresent);
 		if (!annotation.isPresent()) {
 			return Collections.emptySet();

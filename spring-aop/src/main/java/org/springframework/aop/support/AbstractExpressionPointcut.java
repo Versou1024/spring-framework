@@ -32,6 +32,9 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractExpressionPointcut implements ExpressionPointcut, Serializable {
+	/**
+	 * ExpressionPointcut 的抽象实现，提供了 location 和 expression
+	 */
 
 	@Nullable
 	private String location;
@@ -59,6 +62,7 @@ public abstract class AbstractExpressionPointcut implements ExpressionPointcut, 
 	}
 
 	public void setExpression(@Nullable String expression) {
+		// 设置表达式
 		this.expression = expression;
 		try {
 			onSetExpression(expression);

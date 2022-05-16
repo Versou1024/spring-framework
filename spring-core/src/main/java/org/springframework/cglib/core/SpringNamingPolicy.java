@@ -28,6 +28,9 @@ package org.springframework.cglib.core;
  * @since 3.2.8
  */
 public class SpringNamingPolicy extends DefaultNamingPolicy {
+	/**
+	 * Cglib的Tag替换，将"ByCGLIB" to "BySpringCGLIB"，标注这个Cglib对象是Spring借助生成的
+	 */
 
 	public static final SpringNamingPolicy INSTANCE = new SpringNamingPolicy();
 

@@ -29,6 +29,9 @@ import java.lang.reflect.Method;
  * @see MethodInterceptor
  */
 public interface MethodInvocation extends Invocation {
+	/**
+	 * aop联盟的MethodInvocation继承Invocation，扩展getMethod
+	 */
 
 	/**
 	 * Get the method being called.

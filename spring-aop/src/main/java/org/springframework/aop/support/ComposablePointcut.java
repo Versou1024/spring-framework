@@ -42,6 +42,8 @@ import org.springframework.util.Assert;
  * @see Pointcuts
  */
 public class ComposablePointcut implements Pointcut, Serializable {
+	// 复合切点：ComposablePointcut 实现类是为创建多个切点而提供的方便操作类。
+	// 它所有的方法都返回ComposablePointcut类。
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = -2743223737633663832L;
@@ -111,6 +113,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 	 * @return this composable pointcut (for call chaining)
 	 */
 	public ComposablePointcut union(ClassFilter other) {
+		// PointCut 联合
 		this.classFilter = ClassFilters.union(this.classFilter, other);
 		return this;
 	}
@@ -121,6 +124,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 	 * @return this composable pointcut (for call chaining)
 	 */
 	public ComposablePointcut intersection(ClassFilter other) {
+		// PointCut 交叉
 		this.classFilter = ClassFilters.intersection(this.classFilter, other);
 		return this;
 	}

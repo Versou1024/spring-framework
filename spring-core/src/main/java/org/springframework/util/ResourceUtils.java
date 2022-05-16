@@ -46,6 +46,11 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.core.io.ResourceLoader
  */
 public abstract class ResourceUtils {
+	/*
+	 支持“classpath:”和“file:”的地址前缀，它能够从指定的地址加载文件资源。（其实还支持“jar:和war:前缀”）
+	 API：
+	 	getFile
+	 */
 
 	/** Pseudo URL prefix for loading from the class path: "classpath:". */
 	public static final String CLASSPATH_URL_PREFIX = "classpath:";

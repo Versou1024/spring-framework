@@ -128,13 +128,29 @@ abstract class AutowireUtils {
 	 * @return the resolved value
 	 */
 	public static Object resolveAutowiringValue(Object autowiringValue, Class<?> requiredType) {
+		// 这里分析目标是：
+		// 现状：我看到很多同事，还有小伙伴们在Controller层想要使用Servlet源生API比如HttpServletRequest的时候，会将其作为方法入参，当你的Controller方法多了后（这是必然的），会让代码看起来十分的不优雅（重复工作太多）。
+		// 原因：把request放在方法入参里也不无道理。因为我们常识性的认为：由于Controller是单例的，所以直接放在全局属性上，理论上肯定是有线程安全问题的。
+		// 实际上：可以直接通过@Autowrite将HttpServletRequest注入进来，是没有线程安全问题的，原因就是从这里开始分析
+
+
+		// 如果注入到的值为ObjectFactory类型（并且不是requiredType实例），就猪呢比下面的代理吧~~~
+		// 并且 对象autowiringValue是注入的接口requiredType的实现类
+		// 即
+		//  @Autowired
+		//  private HttpServletResponse response;
+		//  那么 requiredType 就是这个 HttpServletResponse 接口， autowiringValue 就是需要装配且实现HttpServletResponse的ObjectFactory
+		// 如果符合情况下面，就会用JDK代理类去代理目标类autowiringValue
 		if (autowiringValue instanceof ObjectFactory && !requiredType.isInstance(autowiringValue)) {
 			ObjectFactory<?> factory = (ObjectFactory<?>) autowiringValue;
+			// 所以被注入@Autowrite必须是接口才ok
 			if (autowiringValue instanceof Serializable && requiredType.isInterface()) {
-				autowiringValue = Proxy.newProxyInstance(requiredType.getClassLoader(),
-						new Class<?>[] {requiredType}, new ObjectFactoryDelegatingInvocationHandler(factory));
+				// 创建出来的代理对象，才是最终要被注入进去的值====
+				// 这是JDK动态代理哦，需要classLoader、转换的接口[]、invokeHandler
+				autowiringValue = Proxy.newProxyInstance(requiredType.getClassLoader(), new Class<?>[] {requiredType}, new ObjectFactoryDelegatingInvocationHandler(factory));
 			}
 			else {
+				// 否则：从ObjectFactory中直接返回@Autowrite实现类
 				return factory.getObject();
 			}
 		}
@@ -269,6 +285,7 @@ abstract class AutowireUtils {
 	 */
 	@SuppressWarnings("serial")
 	private static class ObjectFactoryDelegatingInvocationHandler implements InvocationHandler, Serializable {
+		//
 
 		private final ObjectFactory<?> objectFactory;
 
@@ -278,7 +295,9 @@ abstract class AutowireUtils {
 
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+			// 最终：如果被JDK动态代理了，所有方法的执行，都会进去这里
 			String methodName = method.getName();
+			// 对于Object的方法进行过滤
 			if (methodName.equals("equals")) {
 				// Only consider equal when proxies are identical.
 				return (proxy == args[0]);
@@ -291,6 +310,12 @@ abstract class AutowireUtils {
 				return this.objectFactory.toString();
 			}
 			try {
+				// 核心在这里，每次调用的方法，实际上调用的是objectFactory.getObject()这个对象的对应方法，那么这个对象源码呢？
+				//      以 ApplicationContext#Reresh为例：
+				//		beanFactory.registerResolvableDependency(ServletRequest.class, new RequestObjectFactory());
+				// 可以看出他是一个RequestObjectFactory类型，所以看下面getObject方法
+				// 接口中的方法，会从objectFactory.getObject()获取目标类来执行
+				// 以RequestObjectFactory为例，查看RequestObjectFactory#getObject方法
 				return method.invoke(this.objectFactory.getObject(), args);
 			}
 			catch (InvocationTargetException ex) {

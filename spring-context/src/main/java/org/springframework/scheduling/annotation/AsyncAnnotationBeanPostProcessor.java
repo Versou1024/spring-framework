@@ -78,17 +78,20 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	@Nullable
-	private Supplier<Executor> executor;
+	private Supplier<Executor> executor; // 异步的执行器
 
 	@Nullable
-	private Supplier<AsyncUncaughtExceptionHandler> exceptionHandler;
+	private Supplier<AsyncUncaughtExceptionHandler> exceptionHandler; // 异步异常处理器
 
 	@Nullable
-	private Class<? extends Annotation> asyncAnnotationType;
+	private Class<? extends Annotation> asyncAnnotationType; // 注解类型
 
 
 
+	// 此处特别注意：这里设置为true，也就是说@Async的Advisor会放在首位
 	public AsyncAnnotationBeanPostProcessor() {
+		// 重写父类的方法 -- 将advisor放在第一个位置
+		// 扩展原因 -- @Async是用来启动异步操作的，因此@Async的Advisor需要放在第一个位置，以便启动异步操作
 		setBeforeExistingAdvisors(true);
 	}
 
@@ -98,9 +101,8 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 	 * applying the corresponding default if a supplier is not resolvable.
 	 * @since 5.1
 	 */
-	public void configure(
-			@Nullable Supplier<Executor> executor, @Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
-
+	public void configure(@Nullable Supplier<Executor> executor, @Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
+		// 配置 执行器、异常处理器
 		this.executor = executor;
 		this.exceptionHandler = exceptionHandler;
 	}
@@ -146,10 +148,15 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 	public void setBeanFactory(BeanFactory beanFactory) {
 		super.setBeanFactory(beanFactory);
 
+		// 核心：在setBeanFactory的同时，完成对advisor的设置
+
+		// 传入executor、exceptionHandler的advisor
 		AsyncAnnotationAdvisor advisor = new AsyncAnnotationAdvisor(this.executor, this.exceptionHandler);
 		if (this.asyncAnnotationType != null) {
+			// 传入异步情况处理器
 			advisor.setAsyncAnnotationType(this.asyncAnnotationType);
 		}
+		// 传入BeanFactory
 		advisor.setBeanFactory(beanFactory);
 		this.advisor = advisor;
 	}

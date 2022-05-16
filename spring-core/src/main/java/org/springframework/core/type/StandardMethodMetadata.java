@@ -39,12 +39,13 @@ import org.springframework.util.MultiValueMap;
  * @since 3.0
  */
 public class StandardMethodMetadata implements MethodMetadata {
+	// 基于JDK实现的MethodMetadata接口实现类
 
-	private final Method introspectedMethod;
+	private final Method introspectedMethod; // 内省方法
 
 	private final boolean nestedAnnotationsAsMap;
 
-	private final MergedAnnotations mergedAnnotations;
+	private final MergedAnnotations mergedAnnotations; // 合并注解
 
 
 	/**
@@ -74,8 +75,8 @@ public class StandardMethodMetadata implements MethodMetadata {
 		Assert.notNull(introspectedMethod, "Method must not be null");
 		this.introspectedMethod = introspectedMethod;
 		this.nestedAnnotationsAsMap = nestedAnnotationsAsMap;
-		this.mergedAnnotations = MergedAnnotations.from(
-				introspectedMethod, SearchStrategy.DIRECT, RepeatableContainers.none());
+		// 调用MergedAnnotations.from搜索对应的注解
+		this.mergedAnnotations = MergedAnnotations.from(introspectedMethod, SearchStrategy.DIRECT, RepeatableContainers.none());
 	}
 
 

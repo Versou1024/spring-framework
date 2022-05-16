@@ -39,15 +39,16 @@ import org.springframework.util.Assert;
  * @see AnnotationAwareAspectJAutoProxyCreator
  */
 public class BeanFactoryAspectJAdvisorsBuilder {
+	// 基于BeanFactory完成AspectJ表达式切面类的构建器
 
-	private final ListableBeanFactory beanFactory;
+	private final ListableBeanFactory beanFactory; // bean工厂
 
-	private final AspectJAdvisorFactory advisorFactory;
+	private final AspectJAdvisorFactory advisorFactory; // 切面类Advisor工厂
 
 	@Nullable
-	private volatile List<String> aspectBeanNames;
+	private volatile List<String> aspectBeanNames; // 切面的Beanname
 
-	private final Map<String, List<Advisor>> advisorsCache = new ConcurrentHashMap<>();
+	private final Map<String, List<Advisor>> advisorsCache = new ConcurrentHashMap<>(); // 切面BeanName为key，切面为cache
 
 	private final Map<String, MetadataAwareAspectInstanceFactory> aspectFactoryCache = new ConcurrentHashMap<>();
 
@@ -85,45 +86,55 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 
 		if (aspectNames == null) {
 			synchronized (this) {
+				// 懒加载，尝试初始话
 				aspectNames = this.aspectBeanNames;
 				if (aspectNames == null) {
 					List<Advisor> advisors = new ArrayList<>();
 					aspectNames = new ArrayList<>();
 					String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 							this.beanFactory, Object.class, true, false);
+					// 遍历BeanFactory中所有的bean
 					for (String beanName : beanNames) {
 						if (!isEligibleBean(beanName)) {
+							// 非合格bean直接跳过
 							continue;
 						}
 						// We must be careful not to instantiate beans eagerly as in this case they
 						// would be cached by the Spring container but would not have been weaved.
+						// 我们必须小心，不要急于实例化bean，因为在当前情况中，它们会被Spring容器缓存，但不会被编织。
 						Class<?> beanType = this.beanFactory.getType(beanName, false);
 						if (beanType == null) {
 							continue;
 						}
+						// 是否有@Aspect注解
 						if (this.advisorFactory.isAspect(beanType)) {
 							aspectNames.add(beanName);
+							// 转换为AspectMetadata -> 这个不必多说，you know的
 							AspectMetadata amd = new AspectMetadata(beanType, beanName);
+							// 只有AspectJ为单例模式，
 							if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
-								MetadataAwareAspectInstanceFactory factory =
-										new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
+								MetadataAwareAspectInstanceFactory factory = new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
+								// 获取所有的增强方法
 								List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
 								if (this.beanFactory.isSingleton(beanName)) {
+									// 如果是单例，就存储beanName以及对应的advisor
 									this.advisorsCache.put(beanName, classAdvisors);
 								}
 								else {
+									// 如果是原型，就存储AspectFactory，下次从factory重新获取原型对象
 									this.aspectFactoryCache.put(beanName, factory);
 								}
 								advisors.addAll(classAdvisors);
 							}
 							else {
 								// Per target or per this.
+								// PerTarget 或 Perthis 不支持danlibean，报错
 								if (this.beanFactory.isSingleton(beanName)) {
 									throw new IllegalArgumentException("Bean with name '" + beanName +
 											"' is a singleton, but aspect instantiation model is not singleton");
 								}
-								MetadataAwareAspectInstanceFactory factory =
-										new PrototypeAspectInstanceFactory(this.beanFactory, beanName);
+								MetadataAwareAspectInstanceFactory factory = new PrototypeAspectInstanceFactory(this.beanFactory, beanName);
+								// 缓存，key->beanName，value->factory
 								this.aspectFactoryCache.put(beanName, factory);
 								advisors.addAll(this.advisorFactory.getAdvisors(factory));
 							}

@@ -55,6 +55,15 @@ import org.springframework.util.StringUtils;
  * @since 3.0
  */
 public class ServletServerHttpRequest implements ServerHttpRequest {
+	/**
+	 * 注意区分：ServerHttpRequest 与 HttpServletRequest
+	 * HttpServletRequest 是 实际的请求，即http协议的servletRequest
+	 * ServerHttpRequest 是关于HttpRequest中特有的参数获取，例如body的输入流、headers、method、URI、RemoteAddress、Principal等
+	 *
+	 * ServletServerHttpRequest 继承 ServerHttpRequest 扩展了Servlet的特性
+	 * 1、聚合一个HttpServletRequest对象
+	 * 2、实现接口中的方法，因此聚合Uri、HttpHeaders等
+	 */
 
 	protected static final String FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
 

@@ -34,6 +34,8 @@ import java.util.Map;
  * @see AntPathMatcher
  */
 public interface PathMatcher {
+	// 基于String的路径匹配的策略接口
+	// 默认实现是AntPathMatcher，支持Ant样式的模式语法
 
 	/**
 	 * Does the given {@code path} represent a pattern that can be matched
@@ -44,7 +46,7 @@ public interface PathMatcher {
 	 * @param path the path to check
 	 * @return {@code true} if the given {@code path} represents a pattern
 	 */
-	boolean isPattern(String path);
+	boolean isPattern(String path); // PathMatcher是否支持解析该Path
 
 	/**
 	 * Match the given {@code path} against the given {@code pattern},
@@ -54,7 +56,7 @@ public interface PathMatcher {
 	 * @return {@code true} if the supplied {@code path} matched,
 	 * {@code false} if it didn't
 	 */
-	boolean match(String pattern, String path);
+	boolean match(String pattern, String path); // 给定路径path是否匹配路径模式ipattern
 
 	/**
 	 * Match the given {@code path} against the corresponding part of the given
@@ -89,6 +91,11 @@ public interface PathMatcher {
 	 * (never {@code null})
 	 */
 	String extractPathWithinPattern(String pattern, String path);
+	// 给定一个模式pattern和一个完整路径path，确定模式映射部分。
+	// 这个方法应该通过实际的模式pattern找出路径path的哪一部分是动态匹配的，
+	// 也就是说，它从给定的完整路径中去除静态定义的前导路径，只返回路径中实际模式匹配的部分。 -- 静态路径 + 动态路径
+	// 例如：对于“myroot/*.html”作为模式和“myroot/myfile.html”作为完整路径，此方法应返回“myfile.html”。
+	// 该 PathMatcher 的匹配策略指定了详细的判断规则。
 
 	/**
 	 * Given a pattern and a full path, extract the URI template variables. URI template
@@ -100,6 +107,8 @@ public interface PathMatcher {
 	 * @return a map, containing variable names as keys; variables values as values
 	 */
 	Map<String, String> extractUriTemplateVariables(String pattern, String path);
+	// 给定一个模式和一个完整路径，提取 URI 模板变量。 URI 模板变量通过大括号（'{' 和 '}'）表示。
+	// 例如：对于模式“/hotels/{hotel}”和路径“/hotels/1”，此方法将返回包含“hotel”->“1”的地图。
 
 	/**
 	 * Given a full path, returns a {@link Comparator} suitable for sorting patterns
@@ -122,5 +131,7 @@ public interface PathMatcher {
 	 * @throws IllegalArgumentException when the two patterns cannot be combined
 	 */
 	String combine(String pattern1, String pattern2);
+	// 将两个模式组合成一个返回的新模式。
+	// 用于组合这两种模式的完整算法取决于底层实现。
 
 }

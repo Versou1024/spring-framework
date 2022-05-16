@@ -35,6 +35,11 @@ import org.springframework.lang.Nullable;
  * @see MethodOverride
  */
 public class MethodOverrides {
+	/**
+	 * 一组方法重写，确定Spring IoC容器将在运行时重写托管对象上的哪些方法（如果有的话）。
+	 *
+	 * 有一个MethodOverride容器
+	 */
 
 	private final Set<MethodOverride> overrides = new CopyOnWriteArraySet<>();
 

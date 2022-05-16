@@ -43,6 +43,7 @@ public class AnnotationClassFilter implements ClassFilter {
 	 * @param annotationType the annotation type to look for
 	 */
 	public AnnotationClassFilter(Class<? extends Annotation> annotationType) {
+		// 默认情况下checkInherited给的false：不去看它继承过来的注解
 		this(annotationType, false);
 	}
 
@@ -55,6 +56,7 @@ public class AnnotationClassFilter implements ClassFilter {
 	 * semantics instead of standard Java {@link Class#isAnnotationPresent})
 	 */
 	public AnnotationClassFilter(Class<? extends Annotation> annotationType, boolean checkInherited) {
+		// checkInherited true：表示继承过来得注解也算
 		Assert.notNull(annotationType, "Annotation type must not be null");
 		this.annotationType = annotationType;
 		this.checkInherited = checkInherited;
@@ -63,7 +65,10 @@ public class AnnotationClassFilter implements ClassFilter {
 
 	@Override
 	public boolean matches(Class<?> clazz) {
-		return (this.checkInherited ? AnnotatedElementUtils.hasAnnotation(clazz, this.annotationType) :
+		return (this.checkInherited ?
+				// 继承的注解也会找出来
+				AnnotatedElementUtils.hasAnnotation(clazz, this.annotationType) :
+				// 只会看自己本类的注解
 				clazz.isAnnotationPresent(this.annotationType));
 	}
 

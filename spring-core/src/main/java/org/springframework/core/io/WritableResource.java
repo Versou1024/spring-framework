@@ -30,6 +30,12 @@ import java.nio.channels.WritableByteChannel;
  * @see java.io.OutputStream
  */
 public interface WritableResource extends Resource {
+	/*
+	 * WritableResource接口增加了2个方法：
+	 *  boolean isWritable();  //  是否可写
+	 *  OutputStream getOutputStream() throws IOException; //返回资源的写入流
+	 * 这个方法使得它的实现类拥有了写资源的能力。
+	 */
 
 	/**
 	 * Indicate whether the contents of this resource can be written

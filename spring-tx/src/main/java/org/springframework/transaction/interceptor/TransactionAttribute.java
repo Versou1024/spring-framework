@@ -31,6 +31,10 @@ import org.springframework.transaction.TransactionDefinition;
  * @see RuleBasedTransactionAttribute
  */
 public interface TransactionAttribute extends TransactionDefinition {
+	/*
+	 * 该接口向TransactionDefinition添加了一个rollbackOn规范方法。
+	 * 由于自定义rollbackOn仅适用于 AOP，因此它驻留在与 AOP 相关的事务子包中。
+	 */
 
 	/**
 	 * Return a qualifier value associated with this transaction attribute.
@@ -39,13 +43,13 @@ public interface TransactionAttribute extends TransactionDefinition {
 	 * @since 3.0
 	 */
 	@Nullable
-	String getQualifier();
+	String getQualifier(); // 返回此事务属性关联的限定符值
 
 	/**
 	 * Should we roll back on the given exception?
 	 * @param ex the exception to evaluate
 	 * @return whether to perform a rollback or not
 	 */
-	boolean rollbackOn(Throwable ex);
+	boolean rollbackOn(Throwable ex); // 是否对这个异常进行回滚
 
 }

@@ -46,6 +46,12 @@ import org.springframework.util.MultiValueMap;
  */
 @SuppressWarnings("serial")
 public abstract class UriComponents implements Serializable {
+	/*
+	 * uri中所有组件的get方法
+	 * 例如：host、path、query、scheme、port、userInfo、Fragment、expand、encode
+	 * toString、toUri、toRuiString、
+	 *
+	 */
 
 	/** Captures URI template variable names. */
 	private static final Pattern NAMES_PATTERN = Pattern.compile("\\{([^/]+?)\\}");
@@ -157,6 +163,13 @@ public abstract class UriComponents implements Serializable {
 	 * @return the expanded URI components
 	 */
 	public final UriComponents expand(Map<String, ?> uriVariables) {
+		/*
+		 * 用给定uriVariables中的值替换所有 uri template 变量。
+		 * 给定的映射key代表变量名；相应的值代表变量value。
+		 * 变量的顺序并不重要。
+		 *
+		 * 和 UriBuilder#build 的形参作用类似
+		 */
 		Assert.notNull(uriVariables, "'uriVariables' must not be null");
 		return expandInternal(new MapTemplateVariables(uriVariables));
 	}

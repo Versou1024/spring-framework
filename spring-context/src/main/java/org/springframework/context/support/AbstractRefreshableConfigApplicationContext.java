@@ -39,8 +39,13 @@ import org.springframework.util.StringUtils;
 public abstract class AbstractRefreshableConfigApplicationContext extends AbstractRefreshableApplicationContext
 		implements BeanNameAware, InitializingBean {
 
+	//这里它有两个比较典型的实现类：
+	//
+	//FileSystemXmlApplicationContext：taking the context definition files from the file system or from URLs
+	//ClassPathXmlApplicationContext：taking the context definition files from the class path
+
 	@Nullable
-	private String[] configLocations;
+	private String[] configLocations;  // 配置文件的位置（可能是xml，可能是config哦~ 目前还是不确定的  这里只是提供的抽象存储）
 
 	private boolean setIdCalled = false;
 

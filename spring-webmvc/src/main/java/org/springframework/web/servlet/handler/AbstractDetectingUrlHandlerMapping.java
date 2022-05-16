@@ -32,6 +32,8 @@ import org.springframework.util.ObjectUtils;
  * @see #determineUrlsForHandler
  */
 public abstract class AbstractDetectingUrlHandlerMapping extends AbstractUrlHandlerMapping {
+	// AbstractDetectingUrlHandlerMapping
+	// 这又是个抽象类，继承自AbstractUrlHandlerMapping。它就越来越具有功能化了：Detecting表明它是有检测URL的功能的~
 
 	private boolean detectHandlersInAncestorContexts = false;
 
@@ -56,6 +58,7 @@ public abstract class AbstractDetectingUrlHandlerMapping extends AbstractUrlHand
 	@Override
 	public void initApplicationContext() throws ApplicationContextException {
 		super.initApplicationContext();
+		// 自动检查Handlers
 		detectHandlers();
 	}
 
@@ -68,12 +71,15 @@ public abstract class AbstractDetectingUrlHandlerMapping extends AbstractUrlHand
 	 * @see #determineUrlsForHandler(String)
 	 */
 	protected void detectHandlers() throws BeansException {
+		// 遍历Spring容器中所有的Bean,通过determineUrlsForHandler(beanName)返回urls,如果urls不为空
+		// 那么就表示这些urls是当前bean以后作为handler可以处理的连接
+		// 然后通过registerHandler(urls,beanName)注册进去
+
 		ApplicationContext applicationContext = obtainApplicationContext();
 		String[] beanNames = (this.detectHandlersInAncestorContexts ?
 				BeanFactoryUtils.beanNamesForTypeIncludingAncestors(applicationContext, Object.class) :
 				applicationContext.getBeanNamesForType(Object.class));
 
-		// Take any bean name that we can determine URLs for.
 		for (String beanName : beanNames) {
 			String[] urls = determineUrlsForHandler(beanName);
 			if (!ObjectUtils.isEmpty(urls)) {

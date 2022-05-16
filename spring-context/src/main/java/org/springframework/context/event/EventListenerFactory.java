@@ -29,12 +29,16 @@ import org.springframework.context.ApplicationListener;
  */
 public interface EventListenerFactory {
 
+	/*
+	 * 为@EventListner标注的Method生产ApplicationListener
+	 */
+
 	/**
 	 * Specify if this factory supports the specified {@link Method}.
 	 * @param method an {@link EventListener} annotated method
 	 * @return {@code true} if this factory supports the specified method
 	 */
-	boolean supportsMethod(Method method);
+	boolean supportsMethod(Method method); // 是否支持此方法 支持才create
 
 	/**
 	 * Create an {@link ApplicationListener} for the specified method.
@@ -43,6 +47,6 @@ public interface EventListenerFactory {
 	 * @param method the {@link EventListener} annotated method
 	 * @return an application listener, suitable to invoke the specified method
 	 */
-	ApplicationListener<?> createApplicationListener(String beanName, Class<?> type, Method method);
+	ApplicationListener<?> createApplicationListener(String beanName, Class<?> type, Method method); // 根据Method等相关信息，生成一个ApplicationListener
 
 }

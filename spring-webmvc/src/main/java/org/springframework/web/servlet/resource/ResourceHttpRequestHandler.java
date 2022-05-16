@@ -97,8 +97,7 @@ import org.springframework.web.util.UrlPathHelper;
  * @author Rossen Stoyanchev
  * @since 3.0.4
  */
-public class ResourceHttpRequestHandler extends WebContentGenerator
-		implements HttpRequestHandler, EmbeddedValueResolverAware, InitializingBean, CorsConfigurationSource {
+public class ResourceHttpRequestHandler extends WebContentGenerator implements HttpRequestHandler, EmbeddedValueResolverAware, InitializingBean, CorsConfigurationSource {
 
 	private static final Log logger = LogFactory.getLog(ResourceHttpRequestHandler.class);
 

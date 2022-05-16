@@ -28,16 +28,21 @@ import org.springframework.web.context.request.WebRequest;
  * @since 2.5
  */
 public interface WebBindingInitializer {
+	/**
+	 * 用于初始化WebDataBinder以在特定web请求的上下文中执行数据绑定的回调接口。
+	 *
+	 * 方法 - 初始化给定的DataBinder
+	 */
 
 	/**
-	 * Initialize the given DataBinder.
+	 * 初始化给定的DataBinder
 	 * @param binder the DataBinder to initialize
 	 * @since 5.0
 	 */
 	void initBinder(WebDataBinder binder);
 
 	/**
-	 * Initialize the given DataBinder for the given (Servlet) request.
+	 * 为了给定的request而初始化给定的DataBinder
 	 * @param binder the DataBinder to initialize
 	 * @param request the web request that the data binding happens within
 	 * @deprecated as of 5.0 in favor of {@link #initBinder(WebDataBinder)}

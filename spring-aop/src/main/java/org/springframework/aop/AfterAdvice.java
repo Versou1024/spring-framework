@@ -27,5 +27,5 @@ import org.aopalliance.aop.Advice;
  * @see BeforeAdvice
  */
 public interface AfterAdvice extends Advice {
-
+	// 后置通知
 }

@@ -35,8 +35,15 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public class PrioritizedParameterNameDiscoverer implements ParameterNameDiscoverer {
+	/**
+	 * 非具体实现者 -
+	 * ParameterNameDiscoverer 仅仅提供方法和构造函数的形参名发现方法；
+	 *
+	 * 1、PrioritizedParameterNameDiscoverer 不但实现上述两个方法，作为默认模板实现
+	 * 2、PrioritizedParameterNameDiscoverer 在原有的基础上，聚合多个 ParameterNameDiscoverer，并在模板中实现遍历参数名发现器，优先级从index0开始使用
+	 */
 
-	private final List<ParameterNameDiscoverer> parameterNameDiscoverers = new LinkedList<>();
+	private final List<ParameterNameDiscoverer> parameterNameDiscoverers = new LinkedList<>(); // LinkedList类型，在使用增强for循环时，需要注意是能够保证顺序
 
 
 	/**
@@ -51,6 +58,7 @@ public class PrioritizedParameterNameDiscoverer implements ParameterNameDiscover
 	@Override
 	@Nullable
 	public String[] getParameterNames(Method method) {
+		// 模板实现 - 遍历形参名发现器，直到其中一个可以完成形参名的解析
 		for (ParameterNameDiscoverer pnd : this.parameterNameDiscoverers) {
 			String[] result = pnd.getParameterNames(method);
 			if (result != null) {
@@ -63,6 +71,7 @@ public class PrioritizedParameterNameDiscoverer implements ParameterNameDiscover
 	@Override
 	@Nullable
 	public String[] getParameterNames(Constructor<?> ctor) {
+		// 模板实现 - 遍历形参名发现器，直到其中一个可以完成形参名的解析
 		for (ParameterNameDiscoverer pnd : this.parameterNameDiscoverers) {
 			String[] result = pnd.getParameterNames(ctor);
 			if (result != null) {

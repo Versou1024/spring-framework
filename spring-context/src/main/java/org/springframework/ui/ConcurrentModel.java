@@ -38,6 +38,8 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class ConcurrentModel extends ConcurrentHashMap<String, Object> implements Model {
+	// ConcurrentModel
+	// 它是Spring5.0后才有的，是线程安全的Model，并没提供什么新鲜东西，略（运用于有线程安全问题的场景）
 
 	/**
 	 * Construct a new, empty {@code ConcurrentModel}.

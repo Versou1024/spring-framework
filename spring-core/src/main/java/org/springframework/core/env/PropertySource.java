@@ -58,6 +58,15 @@ import org.springframework.util.ObjectUtils;
  * @see org.springframework.context.annotation.PropertySource
  */
 public abstract class PropertySource<T> {
+	/*
+	 * 1、PropertySource 表示名称/值的属性对的抽象基类。底层源对象可以是封装属性的任何类型的T。
+	 * 例如java.util.Properties java.util.Map、ServletContext和ServletConfig对象（用于访问init参数）。浏览PropertySource类型层次结构以查看提供的实现。
+	 * 2、PropertySource对象通常不是单独使用的，而是通过PropertySources对象使用的，PropertySources对象聚合PropertySource，
+	 * 并与PropertyResolver实现结合使用，实现可以属性的查找执行基于优先级属性配置源的查找。
+	 * 3、PropertySource标识不是基于封装属性的内容，而是仅基于PropertySource的名称。这对于在集合上下文中操作PropertySource对象非常有用。
+	 *
+	 * 请注意，在使用@Configuration时，搭配@PropertySource注释提供了一种方便且声明性的方式，可以将属性源即属性文件添加到封闭环境中。
+	 */
 
 	protected final Log logger = LogFactory.getLog(getClass());
 

@@ -49,7 +49,7 @@ import org.springframework.util.ErrorHandler;
 public class SimpleApplicationEventMulticaster extends AbstractApplicationEventMulticaster {
 
 	@Nullable
-	private Executor taskExecutor;
+	private Executor taskExecutor;// 若set了一个执行器，那所有的监听器都将会异步执行
 
 	@Nullable
 	private ErrorHandler errorHandler;
@@ -124,15 +124,21 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 
 	@Override
 	public void multicastEvent(ApplicationEvent event) {
+		// 发布实现了ApplicationEvent的event
 		multicastEvent(event, resolveDefaultEventType(event));
 	}
 
 	@Override
 	public void multicastEvent(final ApplicationEvent event, @Nullable ResolvableType eventType) {
 		ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
+		// 获取一个执行器
+		// 这里面有个细节：如果有执行器executor ，那就会扔给线程池异步去执行
+		// 默认情况下是没有的（Spring默认情况下同步执行这些监听器的）  我们可以调用set方法配置一个执行器（建议）
 		Executor executor = getTaskExecutor();
+		// 获取支持这个 event + type 的listener
 		for (ApplicationListener<?> listener : getApplicationListeners(event, type)) {
 			if (executor != null) {
+				// 放在线程池里执行，相当于异步执行。绝大多数情况下，这里都是null
 				executor.execute(() -> invokeListener(listener, event));
 			}
 			else {
@@ -142,6 +148,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	}
 
 	private ResolvableType resolveDefaultEventType(ApplicationEvent event) {
+		// 直接为ApplicationEvent创建对应的ResolvableType即可
 		return ResolvableType.forInstance(event);
 	}
 
@@ -169,6 +176,8 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private void doInvokeListener(ApplicationListener listener, ApplicationEvent event) {
 		try {
+			// 如果是实现了ApplicationListener接口，则直接调用其中的onApplicationEvent()方法；
+			// 如果是用@EventListener注释，则调用ApplicationListenerMethodAdapter中的onApplicationEvent()方法
 			listener.onApplicationEvent(event);
 		}
 		catch (ClassCastException ex) {

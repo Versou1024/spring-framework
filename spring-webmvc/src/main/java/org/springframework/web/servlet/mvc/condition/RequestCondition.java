@@ -35,6 +35,12 @@ import org.springframework.lang.Nullable;
  * with and compared to
  */
 public interface RequestCondition<T> {
+	/**
+	 * RequestCondition 请求条件
+	 * 1、使用combine方法合并不同的条件 -- 将此条件与另一个条件相结合，例如来自class级别和method级别@RequestMapping注释的条件
+	 * 2、getMatchingConditon方法获取映射 -- 检查条件是否匹配返回为当前请求创建的实例
+	 * 3、compareTo方法为映射排序
+	 */
 
 	/**
 	 * Combine this condition with another such as conditions from a

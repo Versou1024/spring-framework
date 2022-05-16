@@ -39,6 +39,24 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.support.ChildBeanDefinition
  */
 public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
+	/*
+	 * BeanDefinition 接口用于描述一个Bean的实例，拥有propertyValues、constructor以及更多信息
+	 * 包括：Bean的ClassName、当前Bean实例化的依赖Bean即DependsOn、销毁方法名、初始化方法名、FactoryBean的名字、FactoryMethod名字
+	 * 原始BeanDefinition、作用域单例或者原型、是否延迟加载、是否允许当前Bean对象被其他对象注入setAutowireCandidate(boolean autowireCandidate)、
+	 * 当出现一个类对象有多个实例在容器中时, @Autowired注入的时候是否以当前对象为主, 如果没设置即@Primary
+	 *
+	 * 分析: BeanDefinition定义了一个通用的bean对象的大部分方法, 以及一些常量, 这些方法都会在其子类
+	 * AbstractBeanDefinition中实现, 同样的, 一些bean对象可能由额外的属性, 这些操作都在
+	 * BeanMetadataAttributeAccessor这个类中实现了, 接下来就是通过AbstractBeanDefinition来实现接口
+	 * BeanDefinition, 以及继承BeanMetadataAttributeAccessor类, 这样就能够将这些功能统一起来了, 下面
+	 * 我们先来看看目前的一个类的UML图
+	 *
+	 * 官网中认为有4中元数据：
+	 * 全限定类名， 通常是Bean的实际实现类；
+	 * Bean行为配置元素，它们说明Bean在容器中的行为（作用域、生命周期回调等等）；
+	 * Bean执行工作所需要的的其他Bean的引用，这些Bean也称为协作者或依赖项；
+	 * 其他配置信息，例如，管理连接池的bean中，限制池的大小或者使用的连接的数量
+	 */
 
 	/**
 	 * Scope identifier for the standard singleton scope: {@value}.
@@ -61,7 +79,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * Role hint indicating that a {@code BeanDefinition} is a major part
 	 * of the application. Typically corresponds to a user-defined bean.
 	 */
-	int ROLE_APPLICATION = 0;
+	int ROLE_APPLICATION = 0; //应用程序重要组成部分
 
 	/**
 	 * Role hint indicating that a {@code BeanDefinition} is a supporting
@@ -72,7 +90,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * {@link org.springframework.beans.factory.parsing.ComponentDefinition},
 	 * but not when looking at the overall configuration of an application.
 	 */
-	int ROLE_SUPPORT = 1;
+	int ROLE_SUPPORT = 1; //做为大量配置的一部分（支持、扩展类）  实际上就是说，我这个Bean是用户的，是从配置文件中过来
 
 	/**
 	 * Role hint indicating that a {@code BeanDefinition} is providing an
@@ -80,7 +98,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * used when registering beans that are completely part of the internal workings
 	 * of a {@link org.springframework.beans.factory.parsing.ComponentDefinition}.
 	 */
-	int ROLE_INFRASTRUCTURE = 2;
+	int ROLE_INFRASTRUCTURE = 2;  //指内部工作的基础构造  实际上是说我这Bean是Spring自己的，和你用户没有一毛钱关系
 
 
 	// Modifiable attributes
@@ -94,7 +112,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * Return the name of the parent definition of this bean definition, if any.
 	 */
 	@Nullable
-	String getParentName();
+	String getParentName(); // 父BeanDefinition的名字
 
 	/**
 	 * Specify the bean class name of this bean definition.
@@ -119,14 +137,14 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * @see #getFactoryMethodName()
 	 */
 	@Nullable
-	String getBeanClassName();
+	String getBeanClassName(); // Bean的ClassName
 
 	/**
 	 * Override the target scope of this bean, specifying a new scope name.
 	 * @see #SCOPE_SINGLETON
 	 * @see #SCOPE_PROTOTYPE
 	 */
-	void setScope(@Nullable String scope);
+	void setScope(@Nullable String scope); // 设置或获取范围Scope
 
 	/**
 	 * Return the name of the current target scope for this bean,
@@ -146,7 +164,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * Return whether this bean should be lazily initialized, i.e. not
 	 * eagerly instantiated on startup. Only applicable to a singleton bean.
 	 */
-	boolean isLazyInit();
+	boolean isLazyInit(); // 是否懒加载
 
 	/**
 	 * Set the names of the beans that this bean depends on being initialized.
@@ -167,12 +185,12 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * if the specified bean is not marked as an autowire candidate. As a consequence,
 	 * autowiring by name will nevertheless inject a bean if the name matches.
 	 */
-	void setAutowireCandidate(boolean autowireCandidate);
+	void setAutowireCandidate(boolean autowireCandidate); // 设置是否允许当前bean对象被其它对象注入, 其
 
 	/**
 	 * Return whether this bean is a candidate for getting autowired into some other bean.
 	 */
-	boolean isAutowireCandidate();
+	boolean isAutowireCandidate(); // 是否允许其它对象通过@Autowired类似的方式注入
 
 	/**
 	 * Set whether this bean is a primary autowire candidate.
@@ -180,6 +198,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * matching candidates, it will serve as a tie-breaker.
 	 */
 	void setPrimary(boolean primary);
+	//  当出现一个类对象有多个实例在容器中时, 只用@Autowired注入的时候是否以当前对象为主, 如果没设置@Primary则会报错, 错误信息就是发现在容器中有多个xxx类实例
 
 	/**
 	 * Return whether this bean is a primary autowire candidate.
@@ -198,6 +217,9 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 */
 	@Nullable
 	String getFactoryBeanName();
+	// 在xml配置的时候, 有如下配置<bean id="bean1" factory-method="test" class="com.A">,
+	// 那么在容器中就会有一个BeanDefinition, id为bean1, FactoryMethodName为test, 由该BeanDefinition
+	// 生成的bean对象是由com.A的test方法生成的
 
 	/**
 	 * Specify a factory method, if any. This method will be invoked with
@@ -221,6 +243,8 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * @return the ConstructorArgumentValues object (never {@code null})
 	 */
 	ConstructorArgumentValues getConstructorArgumentValues();
+	// 等价于xml配置中bean标签的子标签constructor-args, 用来定义创建bean对象时的构造器, 在创建对象
+	// 的时候, 会根据ConstructorArgumentValues的值来选择构造器,
 
 	/**
 	 * Return if there are constructor argument values defined for this bean.
@@ -323,7 +347,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * returned on all calls.
 	 * @see #SCOPE_SINGLETON
 	 */
-	boolean isSingleton();
+	boolean isSingleton(); // 是否单例
 
 	/**
 	 * Return whether this a <b>Prototype</b>, with an independent instance
@@ -331,12 +355,12 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	 * @since 3.0
 	 * @see #SCOPE_PROTOTYPE
 	 */
-	boolean isPrototype();
+	boolean isPrototype(); // 是否原型
 
 	/**
 	 * Return whether this bean is "abstract", that is, not meant to be instantiated.
 	 */
-	boolean isAbstract();
+	boolean isAbstract(); // 该beanDefinition中定义的类是否是抽象类, 如果该值为true, 则不会创建bean对象
 
 	/**
 	 * Return a description of the resource that this bean definition

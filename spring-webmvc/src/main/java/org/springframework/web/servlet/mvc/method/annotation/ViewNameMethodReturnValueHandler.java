@@ -43,7 +43,10 @@ import org.springframework.web.servlet.RequestToViewNameTranslator;
  * @since 3.1
  */
 public class ViewNameMethodReturnValueHandler implements HandlerMethodReturnValueHandler {
+	// 可以直接返回一个视图名，最终会交给`RequestToViewNameTranslator`翻译一下~~~
 
+	// Spring4.1之后支持自定义重定向的匹配规则
+	// Spring4.1之前还只能支持redirect:这个固定的前缀~~~~
 	@Nullable
 	private String[] redirectPatterns;
 
@@ -70,25 +73,33 @@ public class ViewNameMethodReturnValueHandler implements HandlerMethodReturnValu
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
+		// 支持返回类型时void\String类型的
+		// 同样的这个在DispatcherServlet#getDefaultReturnValueHandlers()也是非常靠后的一个返回值处理
+		// 原因:String这种返回类型,是一个多用途的类型值,不能确定其返回值String就是用viewName
+		// 因此需要放在
+
 		Class<?> paramType = returnType.getParameterType();
 		return (void.class == paramType || CharSequence.class.isAssignableFrom(paramType));
 	}
 
+	// 注意：若返回值是void，此方法都不会进来
 	@Override
-	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
-			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType, ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
 
+		// 1. 返回值是否为String
 		if (returnValue instanceof CharSequence) {
 			String viewName = returnValue.toString();
+			// 1.1 设置到mavContainer的viewName
 			mavContainer.setViewName(viewName);
+			// 1.2 检查是否为重定向视图名,如果是的话,就将mavContainer设置为重定向场景吧
 			if (isRedirectViewName(viewName)) {
 				mavContainer.setRedirectModelScenario(true);
 			}
 		}
+		// 2. 不支持返回值为null的场景
 		else if (returnValue != null) {
 			// should not happen
-			throw new UnsupportedOperationException("Unexpected return type: " +
-					returnType.getParameterType().getName() + " in method: " + returnType.getMethod());
+			throw new UnsupportedOperationException("Unexpected return type: " + returnType.getParameterType().getName() + " in method: " + returnType.getMethod());
 		}
 	}
 
@@ -101,6 +112,8 @@ public class ViewNameMethodReturnValueHandler implements HandlerMethodReturnValu
 	 * reference; "false" otherwise.
 	 */
 	protected boolean isRedirectViewName(String viewName) {
+		// 是否为重定向的viewName
+		// 1. 可以根据自定义的redirectPatterns判断重定向,也可以直接铜鼓redirect:前缀判断
 		return (PatternMatchUtils.simpleMatch(this.redirectPatterns, viewName) || viewName.startsWith("redirect:"));
 	}
 

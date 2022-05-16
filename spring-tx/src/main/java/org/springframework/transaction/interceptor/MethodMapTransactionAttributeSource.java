@@ -43,15 +43,21 @@ import org.springframework.util.PatternMatchUtils;
  * @see #isMatch
  * @see NameMatchTransactionAttributeSource
  */
-public class MethodMapTransactionAttributeSource
-		implements TransactionAttributeSource, BeanClassLoaderAware, InitializingBean {
+public class MethodMapTransactionAttributeSource implements TransactionAttributeSource, BeanClassLoaderAware, InitializingBean {
+
+	/*
+	 * MethodMapTransactionAttributeSource
+	 * 它的使用方式和NameMatchTransactionAttributeSource基本相同，但是有一个不同在于：
+	 *
+	 * 如果使用NameMatchTransactionAttributeSource配置属性源，比如get*配置为执行事务，那么所有的bean的get方法都会被加上事务，这可能不是我们想要的，因此对于自动代理，我们更好的选择是MethodMapTransactionAttributeSource，它需要指定需要事务化的完整类名和方法名
+	 */
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	/** Map from method name to attribute value. */
 	@Nullable
-	private Map<String, TransactionAttribute> methodMap;
+	private Map<String, TransactionAttribute> methodMap; // 从方法名称映射到属性值。
 
 	@Nullable
 	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();

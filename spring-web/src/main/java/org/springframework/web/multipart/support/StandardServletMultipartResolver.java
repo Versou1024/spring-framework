@@ -59,6 +59,9 @@ import org.springframework.web.multipart.MultipartResolver;
  * @see org.springframework.web.multipart.commons.CommonsMultipartResolver
  */
 public class StandardServletMultipartResolver implements MultipartResolver {
+	/**
+	 * StandardServletMultipartResolver 是基于 Servlet 3.0来处理 multipart 请求的(基于request.getParts()方法)，使用支持 Servlet 3.0的容器
+	 */
 
 	private boolean resolveLazily = false;
 
@@ -79,22 +82,25 @@ public class StandardServletMultipartResolver implements MultipartResolver {
 
 	@Override
 	public boolean isMultipart(HttpServletRequest request) {
+		// 核心：request 的 ContentType 是 multipart/ 开头就认为是 multipart request
 		return StringUtils.startsWithIgnoreCase(request.getContentType(), "multipart/");
 	}
 
 	@Override
 	public MultipartHttpServletRequest resolveMultipart(HttpServletRequest request) throws MultipartException {
+		// 核心： HttpServletRequest -> MultipartHttpServletRequest
 		return new StandardMultipartHttpServletRequest(request, this.resolveLazily);
 	}
 
 	@Override
 	public void cleanupMultipart(MultipartHttpServletRequest request) {
+		// 核心：资源清理
+		// 前提：request属于 AbstractMultipartHttpServletRequest
 		if (!(request instanceof AbstractMultipartHttpServletRequest) ||
 				((AbstractMultipartHttpServletRequest) request).isResolved()) {
-			// To be on the safe side: explicitly delete the parts,
-			// but only actual file parts (for Resin compatibility)
+			//为了安全起见：明确删除part，但只有实际的文件部分（用于树脂兼容性）
 			try {
-				for (Part part : request.getParts()) {
+				for (Part part : request.getParts()) { // 获取上传的各个部分
 					if (request.getFile(part.getName()) != null) {
 						part.delete();
 					}

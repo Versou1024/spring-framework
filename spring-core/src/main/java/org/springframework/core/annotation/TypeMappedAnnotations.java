@@ -39,6 +39,9 @@ import org.springframework.lang.Nullable;
  * @since 5.2
  */
 final class TypeMappedAnnotations implements MergedAnnotations {
+	/*
+	 * MergedAnnotations的实现类 -- 用于搜索注解和元注解
+	 */
 
 	/**
 	 * Shared instance that can be used when there are no annotations.

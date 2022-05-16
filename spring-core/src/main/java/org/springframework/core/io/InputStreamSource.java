@@ -39,6 +39,9 @@ import java.io.InputStream;
  * @see ByteArrayResource
  */
 public interface InputStreamSource {
+	/*
+	任何资源都必有的特点 - 输入流
+	 */
 
 	/**
 	 * Return an {@link InputStream} for the content of an underlying resource.

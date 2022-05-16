@@ -32,6 +32,14 @@ import org.springframework.util.ObjectUtils;
  * @param <T> the value type
  */
 abstract class AbstractNameValueExpression<T> implements NameValueExpression<T> {
+	/**
+	 * AbstractNameValueExpression 实现 NameValueExpression --  避免污染子类
+	 *
+	 * 目的：
+	 * 1、聚合name、value、isNegated，并实现NameValueExpression方法
+	 * 2、提供构造器，解析experssion
+	 * 3、提供matcher模板方法，主要是matchValue和matchName
+	 */
 
 	protected final String name;
 
@@ -42,12 +50,18 @@ abstract class AbstractNameValueExpression<T> implements NameValueExpression<T> 
 
 
 	AbstractNameValueExpression(String expression) {
+		// 构造器 -- 解析expression
+
+
 		int separator = expression.indexOf('=');
+		// 1. 没有"=",那么value就是null,
 		if (separator == -1) {
+			// 1.1 检查是否有!非逻辑语义
 			this.isNegated = expression.startsWith("!");
 			this.name = (this.isNegated ? expression.substring(1) : expression);
 			this.value = null;
 		}
+		// 2. 如果有"=",就需要分割出来 name 与 value
 		else {
 			this.isNegated = (separator > 0) && (expression.charAt(separator - 1) == '!');
 			this.name = (this.isNegated ? expression.substring(0, separator - 1) : expression.substring(0, separator));
@@ -75,18 +89,20 @@ abstract class AbstractNameValueExpression<T> implements NameValueExpression<T> 
 	public final boolean match(HttpServletRequest request) {
 		boolean isMatch;
 		if (this.value != null) {
-			isMatch = matchValue(request);
+			// 如果value不为空，就需要检查name和value是否匹配，而matchValue中首先就是根据name查找是否存在
+			isMatch = matchValue(request); // [抽象]
 		}
 		else {
-			isMatch = matchName(request);
+			// 若value为空，就只需要matchName检查name是否存在即可
+			isMatch = matchName(request); // [抽象]
 		}
 		return this.isNegated != isMatch;
 	}
 
 
-	protected abstract boolean isCaseSensitiveName();
+	protected abstract boolean isCaseSensitiveName(); // 是否忽略大小写
 
-	protected abstract T parseValue(String valueExpression);
+	protected abstract T parseValue(String valueExpression); // 解析Value
 
 	protected abstract boolean matchName(HttpServletRequest request);
 

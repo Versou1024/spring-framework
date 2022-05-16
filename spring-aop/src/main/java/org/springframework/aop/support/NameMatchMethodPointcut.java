@@ -38,6 +38,8 @@ import org.springframework.util.PatternMatchUtils;
  */
 @SuppressWarnings("serial")
 public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut implements Serializable {
+	// 静态方法匹配切入点：只关注方法匹配、而classFilter配置为TRUE
+	// NameMatchMethodPointcut 是根据方法名进行匹配代理method的，同时支持ant风格的路径匹配
 
 	private List<String> mappedNames = new ArrayList<>();
 

@@ -40,6 +40,11 @@ import org.springframework.util.ResourceUtils;
  * @see org.springframework.context.ResourceLoaderAware
  */
 public interface ResourceLoader {
+	/**
+	 * Spring框架为了更方便的获取资源，尽量弱化程序员对各个Resource接口的实现类的感知（那么多实现类要程序员去记忆，其实也是不小的一个工作量），因此定义了另一个ResourceLoader接口。
+	 *
+	 * 其中 getResource 用于返回Resource的某种实现类，其中会使用 ResourcePatternResolver 来帮忙做解析判断
+	 */
 
 	/** Pseudo URL prefix for loading from the class path: "classpath:". */
 	String CLASSPATH_URL_PREFIX = ResourceUtils.CLASSPATH_URL_PREFIX;

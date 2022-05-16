@@ -59,6 +59,15 @@ import org.springframework.util.CollectionUtils;
  * @see org.springframework.aop.framework.AopProxy
  */
 public class AdvisedSupport extends ProxyConfig implements Advised {
+	/*
+	 * AdvisedSupport 从类名就可以看出，主要是实现Advised接口
+	 *
+	 * AdvisedSupport 组合有目标对象TargetSource
+	 *
+	 * AdvisedSupport 用来注册被代理目标对象、通知和需要代理的接口
+	 *
+	 * AdvisedSupport本身不会提供创建代理的任何方法，专注于生成拦截器链。委托给ProxyCreatorSupport去创建代理对象
+	 */
 
 	/** use serialVersionUID from Spring 2.0 for interoperability. */
 	private static final long serialVersionUID = 2651364800145442165L;
@@ -72,40 +81,41 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 
 
 	/** Package-protected to allow direct access for efficiency. */
-	TargetSource targetSource = EMPTY_TARGET_SOURCE;
+	TargetSource targetSource = EMPTY_TARGET_SOURCE; // 持有目标对象
 
 	/** Whether the Advisors are already filtered for the specific target class. */
-	private boolean preFiltered = false;
+	private boolean preFiltered = false; // 对于给定的targetClass，是否这些 Advisors 已经被过滤
 
 	/** The AdvisorChainFactory to use. */
-	AdvisorChainFactory advisorChainFactory = new DefaultAdvisorChainFactory();
+	AdvisorChainFactory advisorChainFactory = new DefaultAdvisorChainFactory(); // advisorChainFactory 工厂
 
 	/** Cache with Method as key and advisor chain List as value. */
-	private transient Map<MethodCacheKey, List<Object>> methodCache;
+	private transient Map<MethodCacheKey, List<Object>> methodCache; // 缓存：以 method 为key，以 Advisor 列表为value
 
 	/**
 	 * Interfaces to be implemented by the proxy. Held in List to keep the order
 	 * of registration, to create JDK proxy with specified order of interfaces.
 	 */
-	private List<Class<?>> interfaces = new ArrayList<>();
+	private List<Class<?>> interfaces = new ArrayList<>(); // 代理类需要实现的所有接口，会被一个List集合保持注册顺序，在创建JDK代理时是有用的
 
 	/**
 	 * List of Advisors. If an Advice is added, it will be wrapped
 	 * in an Advisor before being added to this List.
 	 */
-	private List<Advisor> advisors = new ArrayList<>();
+	private List<Advisor> advisors = new ArrayList<>(); // Advisor列表，如果一个Advice被添加，就会被一个Advisor给包装在Advice被添加到List之前
 
 	/**
 	 * Array updated on changes to the advisors list, which is easier
 	 * to manipulate internally.
 	 */
-	private Advisor[] advisorArray = new Advisor[0];
+	private Advisor[] advisorArray = new Advisor[0]; //
 
 
 	/**
 	 * No-arg constructor for use as a JavaBean.
 	 */
 	public AdvisedSupport() {
+		// 初始化 methodCache
 		this.methodCache = new ConcurrentHashMap<>(32);
 	}
 
@@ -211,6 +221,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 		}
 		if (!this.interfaces.contains(intf)) {
 			this.interfaces.add(intf);
+			// 改变advice状态
 			adviceChanged();
 		}
 	}
@@ -233,6 +244,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 
 	@Override
 	public boolean isInterfaceProxied(Class<?> intf) {
+		// 是否有这个暴露的接口
 		for (Class<?> proxyIntf : this.interfaces) {
 			if (intf.isAssignableFrom(proxyIntf)) {
 				return true;
@@ -249,6 +261,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 
 	@Override
 	public void addAdvisor(Advisor advisor) {
+		// 添加到advisors中
 		int pos = this.advisors.size();
 		addAdvisor(pos, advisor);
 	}
@@ -256,6 +269,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	@Override
 	public void addAdvisor(int pos, Advisor advisor) throws AopConfigException {
 		if (advisor instanceof IntroductionAdvisor) {
+			// 一种特殊类型的Advisor，即IntroductionAdvisor
 			validateIntroductionAdvisor((IntroductionAdvisor) advisor);
 		}
 		addAdvisorInternal(pos, advisor);
@@ -355,15 +369,19 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 
 	private void addAdvisorInternal(int pos, Advisor advisor) throws AopConfigException {
 		Assert.notNull(advisor, "Advisor must not be null");
+		// 如果已经冻结AopConfig，直接报错
 		if (isFrozen()) {
 			throw new AopConfigException("Cannot add advisor: Configuration is frozen.");
 		}
+		// 超过 advisors.size() 就直接报出异常
 		if (pos > this.advisors.size()) {
-			throw new IllegalArgumentException(
-					"Illegal position " + pos + " in advisor list with size " + this.advisors.size());
+			throw new IllegalArgumentException("Illegal position " + pos + " in advisor list with size " + this.advisors.size());
 		}
+		// 添加到 advisors
 		this.advisors.add(pos, advisor);
+		// 由于添加了新的Advisor，需要将methodCache清空
 		updateAdvisorArray();
+		// 由于添加了新的Advisor，需要将methodCache清空
 		adviceChanged();
 	}
 
@@ -386,7 +404,9 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 
 	@Override
 	public void addAdvice(Advice advice) throws AopConfigException {
+		// 直接添加一个Advice
 		int pos = this.advisors.size();
+		// 在最后的位置，加入这个添加的Advice
 		addAdvice(pos, advice);
 	}
 
@@ -406,6 +426,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 			throw new AopConfigException("DynamicIntroductionAdvice may only be added as part of IntroductionAdvisor");
 		}
 		else {
+			// 普通的Advice - 包装为默认的Advisor -- DefaultPointcutAdvisor
 			addAdvisor(pos, new DefaultPointcutAdvisor(advice));
 		}
 	}
@@ -476,11 +497,16 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	 * @return a List of MethodInterceptors (may also include InterceptorAndDynamicMethodMatchers)
 	 */
 	public List<Object> getInterceptorsAndDynamicInterceptionAdvice(Method method, @Nullable Class<?> targetClass) {
+		// 以这个Method生成一个key，准备缓存
+		// 此处小技巧：当你的key比较复杂事，可以用类来处理。然后重写它的equals、hashCode、toString、compare等方法
 		MethodCacheKey cacheKey = new MethodCacheKey(method);
+		// 从缓存中获取过滤器链
 		List<Object> cached = this.methodCache.get(cacheKey);
 		if (cached == null) {
-			cached = this.advisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice(
-					this, method, targetClass);
+			// 缓存未命中，就需要为其生成过滤器链，然后存入缓存
+			// 这个方法最终在这 DefaultAdvisorChainFactory#getInterceptorsAndDynamicInterceptionAdvice
+			// DefaultAdvisorChainFactory：生成通知器链的工厂，实现了interceptor链的获取过程
+			cached = this.advisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice(this, method, targetClass);
 			this.methodCache.put(cacheKey, cached);
 		}
 		return cached;
@@ -580,6 +606,9 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	 * caching methods, for efficient equals and hashCode comparisons.
 	 */
 	private static final class MethodCacheKey implements Comparable<MethodCacheKey> {
+		/**
+		 * 作为缓存的key，即封装有method和对应的hashCode
+		 */
 
 		private final Method method;
 

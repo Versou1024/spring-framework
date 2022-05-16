@@ -46,6 +46,31 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  */
 public interface WebMvcConfigurer {
 
+	/*
+	 * WebMvcConfigurer定义回调方法，以通过@EnableWebMvc定制Spring MVC的基于Java的配置。
+	 * @EnableWebMvc注释的@Configuration配置类可以实现此接口，以便回调，并有机会自定义默认配置。
+	 *
+	 *
+	 * 大家从网上及源码注释上查到的解释是，在spring中配置WebMvc时有两种方法，
+	 * 		一种是继承WebMvcConfigurationSupport，重写里面相应的方法，
+	 * 		还有一种是继承WebMvcConfigurer的子抽象类WebMvcConfigurerAdapter，也是重写里面相应的方法，但是需要在配置类上添加@EnableWebMvc注解。
+	 * 那这两个类直接是什么关系呢？
+	 *
+	 * 细心的开发者会发现，
+	 * 		WebMvcConfigurationSupport中那些子类可以重写的空方法在WebMvcConfigurer都有，
+	 * 		这说明WebMvcConfigurer只是WebMvcConfigurationSupport的一个扩展类，它并没有扩展新功能，只是为让用户更方便安全的添加自定义配置，为什么说是安全呢？
+	 * 		因为如果直接继承WebMvcConfigurationSupport，那么用户可以重写默认的配置，如果对原理不是很清楚地开发者不小心重写了默认的配置，
+	 * 		springmvc可能相关功能就无法生效，是一种不安全的行为。但如果是继承WebMvcConfigurerAdapter，
+	 * 		那么开发者是在默认配置的基础上添加自定义配置，相对来说更安全一些，只不过要多加一个@EnableWebMvc注解。从这个角度来说，最佳实践还是继承WebMvcConfigurerAdapter，如下
+	 *
+	 * 为什么WebMvcConfigurer实现要加@EnableWebMvc
+	 *
+	 * @EnableWebMvc注解类上导入了DelegatingWebMvcConfiguration类，该类是WebMvcConfigurationSupport的子类，该类除了实例化WebMvcConfigurationSupport实例以外，另一个作用就是收集BeanFactory中所有WebMvcConfigurer的实现，汇集到WebMvcConfigurerComposite中，在WebMvcConfigurationSupport实例化过程中会分别调用这些实现，将相应的实例传入这些实现中，供开发者在此基础上添加自定义的配置。这也就是在WebMvcConfigurerAdapter子类上要加@EnableWebMvc的原因，因为要先实例化WebMvcConfigurationSupport。
+	 * 为什么可以存在多个WebMvcConfigurer的实现？
+	 * 一般来讲一个应用中一个WebMvcConfigurer的已经足够，设计成收集多个是不是有些多余？从springboot的autoconfigure机制来看并不多余，反而更灵活，比如我要写一个mybatis的AutoConfiguration和JPA的AutoConfiguration，我就可以在不同的AutoConfiguration里面定义一个WebMvcConfigurer的实现，里面只配置与mybatis或JPA相关的配置，这样需要那个启用那个，不需要人工通过注释代码来转换mybatis和JPA，注意：在springboot下自定义的WebMvcConfigurer实现配置类上是不需要添加@EnableWebMvc的，因为springboot已经实例化了WebMvcConfigurationSupport，如果添加了该注解，默认的WebMvcConfigurationSupport配置类是不会生效的，也就是以用户定义的为主，一般建议还是不覆盖默认的好。
+	 */
+
+
 	/**
 	 * Helps with configuring HandlerMappings path matching options such as trailing slash match,
 	 * suffix registration, path matcher and path helper.
@@ -57,19 +82,19 @@ public interface WebMvcConfigurer {
 	 * </ul>
 	 * @since 4.0.3
 	 */
-	default void configurePathMatch(PathMatchConfigurer configurer) {
+	default void configurePathMatch(PathMatchConfigurer configurer) { // 路径匹配配置
 	}
 
 	/**
 	 * Configure content negotiation options.
 	 */
-	default void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+	default void configureContentNegotiation(ContentNegotiationConfigurer configurer) { // 内容配置
 	}
 
 	/**
 	 * Configure asynchronous request handling options.
 	 */
-	default void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+	default void configureAsyncSupport(AsyncSupportConfigurer configurer) { // 异步配置
 	}
 
 	/**
@@ -85,7 +110,7 @@ public interface WebMvcConfigurer {
 	 * Add {@link Converter Converters} and {@link Formatter Formatters} in addition to the ones
 	 * registered by default.
 	 */
-	default void addFormatters(FormatterRegistry registry) {
+	default void addFormatters(FormatterRegistry registry) { // 添加converters或formatters
 	}
 
 	/**
@@ -94,7 +119,7 @@ public interface WebMvcConfigurer {
 	 * Interceptors can be registered to apply to all requests or be limited
 	 * to a subset of URL patterns.
 	 */
-	default void addInterceptors(InterceptorRegistry registry) {
+	default void addInterceptors(InterceptorRegistry registry) { // 添加拦截器
 	}
 
 	/**
@@ -102,14 +127,14 @@ public interface WebMvcConfigurer {
 	 * files from specific locations under web application root, the classpath,
 	 * and others.
 	 */
-	default void addResourceHandlers(ResourceHandlerRegistry registry) {
+	default void addResourceHandlers(ResourceHandlerRegistry registry) { // 添加资源Handler
 	}
 
 	/**
 	 * Configure cross origin requests processing.
 	 * @since 4.2
 	 */
-	default void addCorsMappings(CorsRegistry registry) {
+	default void addCorsMappings(CorsRegistry registry) { // 添加跨域陪住
 	}
 
 	/**
@@ -119,7 +144,7 @@ public interface WebMvcConfigurer {
 	 * home page, perform simple site URL redirects, return a 404 status with
 	 * HTML content, a 204 with no content, and more.
 	 */
-	default void addViewControllers(ViewControllerRegistry registry) {
+	default void addViewControllers(ViewControllerRegistry registry) { // 添加视图Controller
 	}
 
 	/**
@@ -129,6 +154,7 @@ public interface WebMvcConfigurer {
 	 * @since 4.1
 	 */
 	default void configureViewResolvers(ViewResolverRegistry registry) {
+		// 配置视图解析器
 	}
 
 	/**
@@ -139,6 +165,7 @@ public interface WebMvcConfigurer {
 	 * @param resolvers initially an empty list
 	 */
 	default void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+		// 添加参数解析器
 	}
 
 	/**
@@ -149,6 +176,7 @@ public interface WebMvcConfigurer {
 	 * @param handlers initially an empty list
 	 */
 	default void addReturnValueHandlers(List<HandlerMethodReturnValueHandler> handlers) {
+		// 添加返回值解析器
 	}
 
 	/**
@@ -172,6 +200,7 @@ public interface WebMvcConfigurer {
 	 * @since 4.1.3
 	 */
 	default void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+		// 扩展或修改converters
 	}
 
 	/**
@@ -200,7 +229,7 @@ public interface WebMvcConfigurer {
 	 * @since 4.3
 	 * @see WebMvcConfigurationSupport#addDefaultHandlerExceptionResolvers(List, org.springframework.web.accept.ContentNegotiationManager)
 	 */
-	default void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
+	default void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) { // 扩展定制的异常处理器
 	}
 
 	/**

@@ -121,6 +121,10 @@ import java.lang.annotation.Target;
 @Documented
 @Import(AspectJAutoProxyRegistrar.class)
 public @interface EnableAspectJAutoProxy {
+	/*
+	 * 用于启动AOP功能
+	 * 关注：AspectJAutoProxyRegistrar注册的是哪一个自动创建器
+	 */
 
 	/**
 	 * Indicate whether subclass-based (CGLIB) proxies are to be created as opposed

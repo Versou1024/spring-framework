@@ -36,6 +36,31 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.view.XmlViewResolver
  */
 public interface ViewResolver {
+	/*
+	 * 视图解析接口：
+	 * API:
+	 * 通过viewName、locale解析为View
+	 *
+	 *
+	 * ViewResolver用来将String类型的视图名和Locale解析为View类型的视图。
+	 * View是用来渲染页面的，也就是将程序返回的参数填入模板里，生成html（也可能是其它类型）文件。
+	 * 这里就有两个关键问题：
+	 * 		使用哪个模板？
+	 * 		用什么技术（规则）填入参数？
+	 * 这其实是ViewResolver主要要做的工作
+	 *
+	 * ViewResolver需要找到渲染render所用的模板和所用的技术（也就是视图的类型）进行渲染，具体的渲染过程则交由不同的View实现类自己完成。
+	 *
+	 * 实现类：
+	 * 		AbstractCachingViewResolver 基于缓存的抽象视图解析器
+	 * 		UrlBasedViewResolver 实现了缓存，提供了prefix suffix拼接的url视图解析器。
+	 * 		InternalResourceViewResolver 基于url的内部资源视图解析器。
+	 * 		XmlViewResolver 基于xml的缓存视图解析器
+	 * 		BeanNameViewResolver beanName来自容器，并且不支持缓存。
+	 * 		ResourceBundleViewResolver 这个有点复杂
+	 * 		reeMarkerViewResolver、VolocityViewResolver 都基于url 但会解析成特定的view
+	 * 		实现类也非常的多，在Spring MVC里是一个非常非常重要的概念（比如什么时候返回页面，什么时候返回json呢？），因此后面会有专门的文章进行深入解读
+	 */
 
 	/**
 	 * Resolve the given view by name.

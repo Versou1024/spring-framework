@@ -29,6 +29,24 @@ import org.springframework.core.type.AnnotationMetadata;
  * @since 3.1
  */
 public interface ImportAware extends Aware {
+	// 设置importing在@Configuration的class上的注解信息
+	// 这个接口可以被任何标注@Configuration类实现，以期望注入导入这个配置类的@Configuration类上的AnnotationMetadata
+	// 比如
+	//@Configuration
+	//@Import(c2.class)
+	//class c1{
+	//
+	//}
+	//
+	//@Configuration
+	//class c2 implements ImportAware{ // c2 实现了 ImportAware，c2是被c1导入的，因此获取的就是c1的AnnotationMetadata
+	//
+	//	@Override
+	//	public void setImportMetadata(AnnotationMetadata importMetadata) {
+	//
+	//	}
+	//}
+
 
 	/**
 	 * Set the annotation metadata of the importing @{@code Configuration} class.

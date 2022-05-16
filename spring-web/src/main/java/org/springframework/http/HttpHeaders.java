@@ -75,6 +75,15 @@ import org.springframework.util.StringUtils;
  * @since 3.0
  */
 public class HttpHeaders implements MultiValueMap<String, String>, Serializable {
+	/*
+	 * 表示 HTTP 请求或响应标头的数据结构，将 String 标头名称映射到 String 值列表，还为常见的应用程序级数据类型提供访问器
+	 * 除了Map定义的常规方法外，该类还提供了许多常用的便捷方法，例如：
+	 * 		getFirst(String)返回与给定标头名称关联的第一个值
+	 * 		add(String, String)将标题值添加到标题名称的值列表中
+	 * 		set(String, String)将标头值设置为单个字符串值
+	 *
+	 * 重点在于：组合有一个MultiValueMap<String,String>的headers属性
+	 */
 
 	private static final long serialVersionUID = -8578554704772377436L;
 
@@ -887,8 +896,10 @@ public class HttpHeaders implements MultiValueMap<String, String>, Serializable 
 	 * @see #setContentDisposition(ContentDisposition)
 	 */
 	public ContentDisposition getContentDisposition() {
+		// 获取 Content-Disposition 名称的第一个标头值（如果有）
 		String contentDisposition = getFirst(CONTENT_DISPOSITION);
 		if (StringUtils.hasText(contentDisposition)) {
+			// 将其解析为ContentDisposition对象
 			return ContentDisposition.parse(contentDisposition);
 		}
 		return ContentDisposition.empty();

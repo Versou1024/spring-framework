@@ -42,6 +42,13 @@ import org.springframework.util.StringUtils;
  * @see Class#getResourceAsStream(String)
  */
 public class ClassPathResource extends AbstractFileResolvingResource {
+	/**
+	 * ClassPathResource：通过类路径获取资源文件
+	 * 听这名字就知道，它是直接去读取类路径下的资源文件的。
+	 *
+	 * 类路径资源的Resource实现。使用给定的ClassLoader或给定的Class来加载资源。
+	 * 如果类路径资源驻留在文件系统中，则支持解析为java.io.File ，但不支持 JAR 中的资源。始终支持解析为 URL。
+	 */
 
 	private final String path;
 
@@ -187,9 +194,11 @@ public class ClassPathResource extends AbstractFileResolvingResource {
 	public InputStream getInputStream() throws IOException {
 		InputStream is;
 		if (this.clazz != null) {
+			// 如果指定Class对象，就用Class对象的getResourceAsStream
 			is = this.clazz.getResourceAsStream(this.path);
 		}
 		else if (this.classLoader != null) {
+			// 指定ClassLoader，那就是用ClassLoader的方式
 			is = this.classLoader.getResourceAsStream(this.path);
 		}
 		else {

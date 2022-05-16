@@ -47,6 +47,12 @@ import org.springframework.util.Assert;
  * @see AnnotationConfigApplicationContext#register
  */
 public class AnnotatedBeanDefinitionReader {
+	/*
+	 * 总结一下，AnnotatedBeanDefinitionReade读取器用来加载class类型的配置，
+	 * 在它初始化的时候，会调用registerBean预先注册一些BeanPostProcessor和BeanFactoryPostProcessor，这些处理器会在接下来的spring初始化流程中被调用
+	 *
+	 * 持有：BeanDefinition注册表、BeanNameGenerator生成器、Scope范围元数据解析器、Condition系列判断器
+	 */
 
 	private final BeanDefinitionRegistry registry;
 
@@ -84,7 +90,11 @@ public class AnnotatedBeanDefinitionReader {
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		Assert.notNull(environment, "Environment must not be null");
 		this.registry = registry;
+		// ConditionEvaluator完成条件注解的判断，在后面的Spring Boot中有大量的应用
+		// 同时新建了一个ConditionEvaluator哦
 		this.conditionEvaluator = new ConditionEvaluator(registry, environment, null);
+		// 这句会把一些自动注解处理器加入到AnnotationConfigApplicationContext下的BeanFactory的BeanDefinitions中
+		// 例如处理@Autowrite、@PreDestroy、@PostConstructor等等的BeanPostProcess处理器
 		AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
 	}
 
@@ -144,6 +154,7 @@ public class AnnotatedBeanDefinitionReader {
 	 * @param beanClass the class of the bean
 	 */
 	public void registerBean(Class<?> beanClass) {
+		// 最终注册配置类的逻辑，落到doRegisterBean上
 		doRegisterBean(beanClass, null, null, null, null);
 	}
 
@@ -249,24 +260,32 @@ public class AnnotatedBeanDefinitionReader {
 	private <T> void doRegisterBean(Class<T> beanClass, @Nullable String name,
 			@Nullable Class<? extends Annotation>[] qualifiers, @Nullable Supplier<T> supplier,
 			@Nullable BeanDefinitionCustomizer[] customizers) {
-
+		// 先把此实体类型转换为一个BeanDefinition
 		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(beanClass);
+		// abd.getMetadata() 元数据包括注解信息、是否内部类、类Class基本信息等等
+		// 此处由conditionEvaluator#shouldSkip去过滤
 		if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
 			return;
 		}
 
-		abd.setInstanceSupplier(supplier);
+		// supplier 就是在 context#refresh（）中选出来做实例化操作的，可以为null，为null就是用cglib做实例化
+		abd.setInstanceSupplier(supplier); // 设置实例化的方法，可以为null时，context将使用默认的cglib做实例化
+		// 解析Scope
 		ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
-		abd.setScope(scopeMetadata.getScopeName());
+		abd.setScope(scopeMetadata.getScopeName()); // 设置范围，在dogetBean时，将根据scope做判断，单例Bean先从缓存拿、原型Bean直接doCreateBean、其他Scope就要用其他的Scope来处理
+		// 得到Bean的名称 一般为首字母小写（此处为AnnotationBeanNameGenerator）
 		String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
 
-		AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+		// 设定一些注解默认值，如lazy、Primary等等
+		AnnotationConfigUtils.processCommonDefinitionAnnotations(abd); // 处理常见的BEanDefinition相关注解
+		// 上面通过processCommonDefinitionAnnotations处理Bean上的@Primary、@Lazy、@DependsOn注解，
+		// 也可以Bean上没有，但是通过qualifiers参数传递显式其需要的注解
 		if (qualifiers != null) {
 			for (Class<? extends Annotation> qualifier : qualifiers) {
-				if (Primary.class == qualifier) {
+				if (Primary.class == qualifier) { // 带有@Primary注解
 					abd.setPrimary(true);
 				}
-				else if (Lazy.class == qualifier) {
+				else if (Lazy.class == qualifier) { // 带有@Lazy注解
 					abd.setLazyInit(true);
 				}
 				else {
@@ -274,14 +293,19 @@ public class AnnotatedBeanDefinitionReader {
 				}
 			}
 		}
+		// 自定义定制信息(一般都不需要) -- 忽略
 		if (customizers != null) {
 			for (BeanDefinitionCustomizer customizer : customizers) {
+				// 调用定制器的customize方法
 				customizer.customize(abd);
 			}
 		}
 
-		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+		// 下面为解析Scope是否需要代理，最后把这个Bean注册进去
+		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName); // 这里别名alias为null
 		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+
+		// 然后就已经注册到BeanDefinitionRegister注册中心了哦
 		BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
 	}
 

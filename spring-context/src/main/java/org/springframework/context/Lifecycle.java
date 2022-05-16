@@ -48,6 +48,23 @@ package org.springframework.context;
  * @see org.springframework.scheduling.quartz.SchedulerFactoryBean
  */
 public interface Lifecycle {
+	/*
+	 * 定义start/stop生命周期控制方法的通用接口。这方面的典型用例是控制异步处理。
+	 * 注意：此接口并不含有特定的自动启动语义。如果需要考虑为此实现SmartLifecycle。
+	 *
+	 * 可以由组件（通常是在Spring上下文中定义的SpringBean）和容器（通常是Spring ApplicationContext本身）实现。
+	 * 容器将向每个容器中应用的所有组件传播启动/停止信号，例如，对于运行时的停止/重启场景。
+	 *
+	 * 可用于直接调用或通过JMX进行管理操作。在后一种情况下，组织。springframework。jmx。出口MBeanExporter通常由一个组织定义。springframework。jmx。出口汇编程序。InterfaceBasedMBeanInfoAssembler，将活动控制组件的可见性限制在生命周期接口上。
+	 * 请注意，目前的Lifecycle接口仅在顶级单例bean上实现。在任何其他组件上，Lifecycle接口都不会被检测到，因此会被忽略。
+	 * 另外，请注意，扩展的SmartLifecycle接口提供了与应用程序上下文的启动和关闭阶段的复杂集成。
+	 *
+	 * API：start、stop、isRunning
+	 *
+	 * 在 Spring 中还提供了 Lifecycle 接口， Lifecycle 中包含start/stop方法，实现此接口后Spring会保证在启动的时候调用其start方法开始生命周期，并在Spring关闭的时候调用 stop方法来结束生命周期，
+	 * 通常用来配置后台程序，在启动后一直运行（如对 MQ 进行轮询等）。
+	 * 而ApplicationContext的初始化最后正是保证了这一功能的实现。
+	 */
 
 	/**
 	 * Start this component.
@@ -56,7 +73,8 @@ public interface Lifecycle {
 	 * components that apply.
 	 * @see SmartLifecycle#isAutoStartup()
 	 */
-	void start();
+	void start(); // 启动组件component，如果组件component已经启动执行start()也不会抛出异常
+	// 如果是容器的话，就会启动容器中所有的组件
 
 	/**
 	 * Stop this component, typically in a synchronous fashion, such that the component is
@@ -73,7 +91,7 @@ public interface Lifecycle {
 	 * @see SmartLifecycle#stop(Runnable)
 	 * @see org.springframework.beans.factory.DisposableBean#destroy()
 	 */
-	void stop();
+	void stop(); //
 
 	/**
 	 * Check whether this component is currently running.
@@ -81,6 +99,6 @@ public interface Lifecycle {
 	 * components that apply are currently running.
 	 * @return whether the component is currently running
 	 */
-	boolean isRunning();
+	boolean isRunning(); // 监测组件是否正在运行中，如果是一个容器的话，只有容器中所有的组件都在运行才返回true
 
 }

@@ -27,6 +27,11 @@ import org.springframework.transaction.TransactionDefinition;
  * @see ResourceTransactionManager
  */
 public interface ResourceTransactionDefinition extends TransactionDefinition {
+	// 扩展：确定事务资源是否已准备好进行本地优化
+	// 这个子接口非常的新，是Spring5.1才提供的
+	// 它和ResourceTransactionManager的使用相关联。ResourceTransactionManager是PlatformTransactionManager的一个子接口。
+	// 我们最常用的事务管理器DataSourceTransactionManager也实现了这个接口~~~~
+	// 目前Spring还未提供任何ResourceTransactionDefinition它的具体实现~
 
 	/**
 	 * Determine whether the transactional resource is ready for local optimizations.

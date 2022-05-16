@@ -34,5 +34,8 @@ public interface BeanNameGenerator {
 	 * @return the generated bean name
 	 */
 	String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry);
-
+	// definition 被生成名字的BeanDefinition实例；registry 生成名字后注册进的BeanDefinitionRegistry。
+	// BeanNameGenerator有两个实现版本，DefaultBeanNameGenerator和AnnotationBeanNameGenerator。
+	// 		DefaultBeanNameGenerator是给资源文件加载bean时使用（BeanDefinitionReader中使用）；
+	// 		AnnotationBeanNameGenerator是为了处理注解生成bean name的情况。
 }

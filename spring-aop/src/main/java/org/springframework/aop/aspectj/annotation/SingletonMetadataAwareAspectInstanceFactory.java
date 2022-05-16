@@ -33,8 +33,10 @@ import org.springframework.core.annotation.OrderUtils;
  * @see SimpleMetadataAwareAspectInstanceFactory
  */
 @SuppressWarnings("serial")
-public class SingletonMetadataAwareAspectInstanceFactory extends SingletonAspectInstanceFactory
-		implements MetadataAwareAspectInstanceFactory, Serializable {
+public class SingletonMetadataAwareAspectInstanceFactory extends SingletonAspectInstanceFactory implements MetadataAwareAspectInstanceFactory, Serializable {
+	/**
+	 * 实现 MetadataAwareAspectInstanceFactory，通过 getAspectInstance() 的实例
+	 */
 
 	private final AspectMetadata metadata;
 

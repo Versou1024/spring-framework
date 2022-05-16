@@ -37,6 +37,7 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.core.ParameterizedTypeReference
  */
 public interface GenericHttpMessageConverter<T> extends HttpMessageConverter<T> {
+	// HttpMessageConverter的一种特殊化，可以将 HTTP 请求转换为指定泛型类型的目标对象，并将指定泛型类型的源对象转换为 HTTP 响应。
 
 	/**
 	 * Indicates whether the given type can be read by this converter.

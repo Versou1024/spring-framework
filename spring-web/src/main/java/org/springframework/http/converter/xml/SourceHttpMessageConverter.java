@@ -66,6 +66,7 @@ import org.springframework.util.StreamUtils;
  * @param <T> the converted object type
  */
 public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMessageConverter<T> {
+	// 处理一些和xml相关的资源，比如DOMSource、SAXSource、SAXSource等等
 
 	private static final EntityResolver NO_OP_ENTITY_RESOLVER =
 			(publicId, systemId) -> new InputSource(new StringReader(""));
@@ -76,6 +77,7 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	private static final Set<Class<?>> SUPPORTED_CLASSES = new HashSet<>(8);
 
 	static {
+		// 默认支持的class是DOMSource\SAXSource\StAXSource\StreamSource\Source
 		SUPPORTED_CLASSES.add(DOMSource.class);
 		SUPPORTED_CLASSES.add(SAXSource.class);
 		SUPPORTED_CLASSES.add(StAXSource.class);
@@ -96,6 +98,11 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	 * to {@code text/xml} and {@code application/xml}, and {@code application/*-xml}.
 	 */
 	public SourceHttpMessageConverter() {
+		// 注意: 这里将超类的supportedMediaTypes设置为支持以下三种类型
+		// 为text/xml	application/xml		application/*+xml
+		// 这表明:
+		// 读的时候,形参必须为Source\StreamSource等class,且请求头中的content-type为text/xml application/xml application/*+xml 的类型
+		// 返回的时候,同上的概念
 		super(MediaType.APPLICATION_XML, MediaType.TEXT_XML, new MediaType("application", "*+xml"));
 	}
 
@@ -105,6 +112,9 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	 * <p>Default is {@code false} meaning that DTD is disabled.
 	 */
 	public void setSupportDtd(boolean supportDtd) {
+		// 指示是否应支持 DTD 解析。
+		// 默认为false,表示禁用DTD
+		// 因为它所支持的都是 text/xml applicaiton/xml 等xml,所以和DTD有关
 		this.supportDtd = supportDtd;
 	}
 
@@ -138,6 +148,10 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 
 	@Override
 	public boolean supports(Class<?> clazz) {
+		// 重写超类的supports()
+		// 表明SourceHttpMessageConverter支持返回值或形参是SUPPORTED_CLASSES的class即可
+
+
 		return SUPPORTED_CLASSES.contains(clazz);
 	}
 
@@ -145,7 +159,11 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	@SuppressWarnings("unchecked")
 	protected T readInternal(Class<? extends T> clazz, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException {
+		// 重写超类: readInternal()
 
+
+		// 1. 获取InputStream,根据形参值类型做一个做不同的调用
+		// 具体不做了解展示
 		InputStream body = inputMessage.getBody();
 		if (DOMSource.class == clazz) {
 			return (T) readDOMSource(body, inputMessage);
@@ -240,6 +258,9 @@ public class SourceHttpMessageConverter<T extends Source> extends AbstractHttpMe
 	@Override
 	@Nullable
 	protected Long getContentLength(T t, @Nullable MediaType contentType) {
+		// 重写超类的getContentLength()方法
+		//
+
 		if (t instanceof DOMSource) {
 			try {
 				CountingOutputStream os = new CountingOutputStream();

@@ -83,6 +83,16 @@ import javax.servlet.http.HttpServletRequest;
  * @see org.springframework.web.servlet.DispatcherServlet
  */
 public interface MultipartResolver {
+	/**
+	 * 上传multipart解析器：定义以下方法
+	 * 1、是否为Multipart请求
+	 * 2、解析 HttpServletRequest 转为 MultipartHttpServletRequest 【MultipartHttpServletRequest继承了HttpServletRequest】
+	 * 3、清理用于multipart handle的任何资源，例如用于存储上传文件的存储。
+	 *
+	 * 两个实现分支：
+	 * 		CommonsMultipartResolver 使用 commons FileUpload 来处理 multipart 请求，所以在使用时，必须要引入相应的 jar 包
+	 * 		StandardServletMultipartResolver 是基于 Servlet 3.0来处理 multipart 请求的(基于request.getParts()方法)，使用支持 Servlet 3.0的容器
+	 */
 
 	/**
 	 * Determine if the given request contains multipart content.

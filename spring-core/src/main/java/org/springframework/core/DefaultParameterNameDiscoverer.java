@@ -38,12 +38,20 @@ package org.springframework.core;
  * @see KotlinReflectionParameterNameDiscoverer
  */
 public class DefaultParameterNameDiscoverer extends PrioritizedParameterNameDiscoverer {
+	/**
+	 * 继承 PrioritizedParameterNameDiscoverer
+	 *
+	 * DefaultParameterNameDiscoverer：它其实就是个聚合的作用
+	 */
 
 	public DefaultParameterNameDiscoverer() {
+		// 这里非常非常需要注意的一点是：用于存储的是一个LinkedList（见父类：PrioritizedParameterNameDiscoverer）
+		// LinkedList是先进先出的。所以for循环遍历的时候，会最先执行Kotlin、Standard、Local... 按照这个优先级
 		if (KotlinDetector.isKotlinReflectPresent() && !GraalDetector.inImageCode()) {
 			addDiscoverer(new KotlinReflectionParameterNameDiscoverer());
 		}
-		addDiscoverer(new StandardReflectionParameterNameDiscoverer());
+		// 默认至少添加一下两个形参名发现器 【StandardReflectionParameterNameDiscoverer】 / 【LocalVariableTableParameterNameDiscoverer】
+		addDiscoverer(new StandardReflectionParameterNameDiscoverer()); // 两个具体的形参名实现者
 		addDiscoverer(new LocalVariableTableParameterNameDiscoverer());
 	}
 

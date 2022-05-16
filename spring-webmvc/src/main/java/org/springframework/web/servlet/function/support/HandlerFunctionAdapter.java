@@ -39,6 +39,11 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @since 5.2
  */
 public class HandlerFunctionAdapter implements HandlerAdapter, Ordered {
+	/**
+	 * Handler适配器: 适配handler是通过实现HandlerFunction接口的
+	 *
+	 * 这是：5.2 spring mvc 提供的响应式编程接口 --- 不理解哦
+	 */
 
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
@@ -59,14 +64,13 @@ public class HandlerFunctionAdapter implements HandlerAdapter, Ordered {
 
 	@Override
 	public boolean supports(Object handler) {
+		// 支持适配的Handler的要求
 		return handler instanceof HandlerFunction;
 	}
 
 	@Nullable
 	@Override
-	public ModelAndView handle(HttpServletRequest servletRequest,
-			HttpServletResponse servletResponse,
-			Object handler) throws Exception {
+	public ModelAndView handle(HttpServletRequest servletRequest, HttpServletResponse servletResponse, Object handler) throws Exception {
 
 
 		HandlerFunction<?> handlerFunction = (HandlerFunction<?>) handler;

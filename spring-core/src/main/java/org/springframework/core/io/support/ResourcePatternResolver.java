@@ -52,6 +52,9 @@ import org.springframework.core.io.ResourceLoader;
  * @see org.springframework.context.ResourceLoaderAware
  */
 public interface ResourcePatternResolver extends ResourceLoader {
+	/*
+	 * 在ResourceLoader的基础上扩展支持Pattern，支持正则的模式匹配的location，非常的强大~~~
+	 */
 
 	/**
 	 * Pseudo URL prefix for all matching resources from the class path: "classpath*:"
@@ -61,6 +64,7 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * @see org.springframework.core.io.ResourceLoader#CLASSPATH_URL_PREFIX
 	 */
 	String CLASSPATH_ALL_URL_PREFIX = "classpath*:";
+	// classpath: 不同于 classpath*: 前者只能在当前项目的类路径中查询，而后者甚至会去找所有的jar包的类路径开始查找，所以现在是可议找到多个的~~~
 
 	/**
 	 * Resolve the given location pattern into Resource objects.
@@ -72,5 +76,6 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * @throws IOException in case of I/O errors
 	 */
 	Resource[] getResources(String locationPattern) throws IOException;
+	// 一个locationPattern是可以匹配多个资源的 -- 扩展支持Pattern、Ant风格
 
 }

@@ -34,6 +34,10 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.transaction.annotation.AnnotationTransactionAttributeSource
  */
 public interface TransactionAttributeSource {
+	// TransactionInterceptor用于元数据检索的策略接口。
+
+	// getTransactionAttribute()知道如何从method上获取事务属性，无论是从配置、源级别的元数据属性（例如 Java 5 注释）还是其他任何地方
+	// 同时能够帮助检查类是否需要被代理，及调用 isCandidateClass()
 
 	/**
 	 * Determine whether the given class is a candidate for transaction attributes
@@ -49,7 +53,7 @@ public interface TransactionAttributeSource {
 	 * implementation returns {@code true}, leading to regular introspection.
 	 * @since 5.2
 	 */
-	default boolean isCandidateClass(Class<?> targetClass) {
+	default boolean isCandidateClass(Class<?> targetClass) { // 默认方法 - 直接返回true
 		return true;
 	}
 
@@ -63,5 +67,18 @@ public interface TransactionAttributeSource {
 	 */
 	@Nullable
 	TransactionAttribute getTransactionAttribute(Method method, @Nullable Class<?> targetClass);
+	/**
+	 * 这里有很多人不明白了，为何都给了Method，为啥还要传入Class呢？难道Method还不知道它所属的类？？？
+	 * 这里做如下解释：
+	 *
+	 * method – 目前正在进行的方法调用
+	 * targetClass – 真正要调用的方法所在的类
+	 * 这里是有细微差别的：
+	 *
+	 * method的所属类不一样是targetClass。比如：method是代理对象的方法，它的所属类是代理出来的类
+	 * 但是：targetClass一定会有一个方法和method的方法签名一样
+	 *
+	 * -- 通常情况下，method的所属类会是targetClass的某个祖先类或者实现的某个接口。(动态代理)
+	 */
 
 }

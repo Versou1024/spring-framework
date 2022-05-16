@@ -54,6 +54,9 @@ import org.springframework.lang.Nullable;
  */
 public class MimeType implements Comparable<MimeType>, Serializable {
 
+	// 表示 MIME 类型，最初在 RFC 2046 中定义，随后用于包括 HTTP 在内的其他 Internet 协议。
+	// 但是，此类不包含对 HTTP 内容协商中使用的 q 参数的支持。这些可以在spring-web模块的子类org.springframework.http.MediaType中找到
+
 	private static final long serialVersionUID = 4085923477777865903L;
 
 
@@ -98,12 +101,15 @@ public class MimeType implements Comparable<MimeType>, Serializable {
 		TOKEN.andNot(separators);
 	}
 
+	// 以 application/json 或 image/jpeg 为例
+	// 主类型就是image
+	// 子类型就是jpeg
 
-	private final String type;
+	private final String type; // 主类型
 
-	private final String subtype;
+	private final String subtype; // 子类型
 
-	private final Map<String, String> parameters;
+	private final Map<String, String> parameters; // q参数\字符集类型
 
 	@Nullable
 	private transient Charset resolvedCharset;

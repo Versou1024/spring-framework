@@ -38,9 +38,11 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * @since 3.1
  */
 public class ModelMethodProcessor implements HandlerMethodArgumentResolver, HandlerMethodReturnValueHandler {
+	// 支持处理Model类型
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
+		// 支持处理Model类型
 		return Model.class.isAssignableFrom(parameter.getParameterType());
 	}
 
@@ -55,6 +57,7 @@ public class ModelMethodProcessor implements HandlerMethodArgumentResolver, Hand
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
+		// 支持处理Model类型
 		return Model.class.isAssignableFrom(returnType.getParameterType());
 	}
 
@@ -66,6 +69,7 @@ public class ModelMethodProcessor implements HandlerMethodArgumentResolver, Hand
 			return;
 		}
 		else if (returnValue instanceof Model) {
+			// 直接将返回值model中的存入mavContainer中
 			mavContainer.addAllAttributes(((Model) returnValue).asMap());
 		}
 		else {

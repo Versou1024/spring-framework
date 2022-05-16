@@ -103,14 +103,13 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private final Set<String> activeProfiles = new LinkedHashSet<>();
+	private final Set<String> activeProfiles = new LinkedHashSet<>(); // 激活的环境
 
-	private final Set<String> defaultProfiles = new LinkedHashSet<>(getReservedDefaultProfiles());
+	private final Set<String> defaultProfiles = new LinkedHashSet<>(getReservedDefaultProfiles()); // 默认的环境
 
-	private final MutablePropertySources propertySources = new MutablePropertySources();
+	private final MutablePropertySources propertySources = new MutablePropertySources(); // PropertySource 属性源的结合 -- 核心哦
 
-	private final ConfigurablePropertyResolver propertyResolver =
-			new PropertySourcesPropertyResolver(this.propertySources);
+	private final ConfigurablePropertyResolver propertyResolver = new PropertySourcesPropertyResolver(this.propertySources); // 属性解析器
 
 
 	/**
@@ -121,7 +120,8 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	 * @see #customizePropertySources(MutablePropertySources)
 	 */
 	public AbstractEnvironment() {
-		customizePropertySources(this.propertySources);
+		// 定制属性源
+		customizePropertySources(this.propertySources); // 【空方法体】子类需要注入的属性源
 	}
 
 
@@ -233,8 +233,10 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	 * @see #ACTIVE_PROFILES_PROPERTY_NAME
 	 */
 	protected Set<String> doGetActiveProfiles() {
+		// 获取应用配置上的spring.profile.active
 		synchronized (this.activeProfiles) {
 			if (this.activeProfiles.isEmpty()) {
+				// 懒加载 - 创建模式
 				String profiles = getProperty(ACTIVE_PROFILES_PROPERTY_NAME);
 				if (StringUtils.hasText(profiles)) {
 					setActiveProfiles(StringUtils.commaDelimitedListToStringArray(
@@ -262,11 +264,12 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 
 	@Override
 	public void addActiveProfile(String profile) {
+		// 注册当前激活的profile
 		if (logger.isDebugEnabled()) {
 			logger.debug("Activating profile '" + profile + "'");
 		}
-		validateProfile(profile);
-		doGetActiveProfiles();
+		validateProfile(profile); // profie检查是为合理的String
+		doGetActiveProfiles(); // 获取spring.profiles.active属性，并注入到activeProfiles
 		synchronized (this.activeProfiles) {
 			this.activeProfiles.add(profile);
 		}
@@ -291,6 +294,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	 * @see #getReservedDefaultProfiles()
 	 */
 	protected Set<String> doGetDefaultProfiles() {
+		// 获取：spring.profiles.default的值
 		synchronized (this.defaultProfiles) {
 			if (this.defaultProfiles.equals(getReservedDefaultProfiles())) {
 				String profiles = getProperty(DEFAULT_PROFILES_PROPERTY_NAME);
@@ -369,6 +373,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	 * @see #setDefaultProfiles
 	 */
 	protected void validateProfile(String profile) {
+		// profile字符串不能为空，并且第一个字符不能为!
 		if (!StringUtils.hasText(profile)) {
 			throw new IllegalArgumentException("Invalid profile [" + profile + "]: must contain text");
 		}
@@ -386,7 +391,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	public Map<String, Object> getSystemProperties() {
 		try {
-			return (Map) System.getProperties();
+			return (Map) System.getProperties(); // 获取系统属性
 		}
 		catch (AccessControlException ex) {
 			return (Map) new ReadOnlySystemAttributesMap() {
@@ -415,7 +420,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 			return Collections.emptyMap();
 		}
 		try {
-			return (Map) System.getenv();
+			return (Map) System.getenv(); // 获取系统的环境属性
 		}
 		catch (AccessControlException ex) {
 			return (Map) new ReadOnlySystemAttributesMap() {

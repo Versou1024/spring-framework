@@ -40,7 +40,8 @@ public class ServletRequestDataBinderFactory extends InitBinderDataBinderFactory
 	 */
 	public ServletRequestDataBinderFactory(@Nullable List<InvocableHandlerMethod> binderMethods,
 			@Nullable WebBindingInitializer initializer) {
-
+		// binderMethods 是表名@InitBinder用来额外扩展DataBinder的
+		// initializer 是初始DataBinder的
 		super(binderMethods, initializer);
 	}
 

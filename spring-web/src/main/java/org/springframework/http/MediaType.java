@@ -50,6 +50,7 @@ import org.springframework.util.StringUtils;
  *     HTTP 1.1: Semantics and Content, section 3.1.1.1</a>
  */
 public class MediaType extends MimeType implements Serializable {
+	// MimeType的子类，添加了对 HTTP 规范中定义的质量参数q的支持。
 
 	private static final long serialVersionUID = 2069937152339670231L;
 

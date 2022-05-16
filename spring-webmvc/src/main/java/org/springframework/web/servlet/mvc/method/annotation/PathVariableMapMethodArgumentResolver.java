@@ -43,11 +43,17 @@ import org.springframework.web.servlet.HandlerMapping;
  */
 public class PathVariableMapMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
+	/**
+	 * PathVariableMapMethodArgumentResolver 支持
+	 * @PathVariable 不带任何value时，且形参类型时map的，就将所有的路径参数传给map形参
+	 */
+
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
+		// 支持前提 -- 形参上有指定注解@PathVariable
 		PathVariable ann = parameter.getParameterAnnotation(PathVariable.class);
-		return (ann != null && Map.class.isAssignableFrom(parameter.getParameterType()) &&
-				!StringUtils.hasText(ann.value()));
+		// 注解不为空，同时要求，要求@PathVariable注解的属性是Map的子类，且@PathVariable的注解值不能有任何值
+		return (ann != null && Map.class.isAssignableFrom(parameter.getParameterType()) && !StringUtils.hasText(ann.value()));
 	}
 
 	/**
@@ -56,16 +62,15 @@ public class PathVariableMapMethodArgumentResolver implements HandlerMethodArgum
 	@Override
 	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
-
+		// 从request中获取属性 uriTemplateVariables
+		// key为path路径名，value为路径属性值
 		@SuppressWarnings("unchecked")
-		Map<String, String> uriTemplateVars =
-				(Map<String, String>) webRequest.getAttribute(
-						HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
+		Map<String, String> uriTemplateVars = (Map<String, String>) webRequest.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
 
 		if (!CollectionUtils.isEmpty(uriTemplateVars)) {
+			// 传递出 uriTemplateVars
 			return new LinkedHashMap<>(uriTemplateVars);
-		}
-		else {
+		} else {
 			return Collections.emptyMap();
 		}
 	}

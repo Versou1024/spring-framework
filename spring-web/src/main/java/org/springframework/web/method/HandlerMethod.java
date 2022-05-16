@@ -60,6 +60,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * @since 3.1
  */
 public class HandlerMethod {
+	/*
+	 * HandlerMethod即请求的指定方法，是一个聚合类
+	 *
+	 * 聚合有：bean、BeanFactory、BeanType、目标方法method、方法参数MethodParameters、HttpStatus、HandlerMethod
+	 * 方法上的注解数组、描述信息description
+	 */
 
 	/** Logger that is available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -152,6 +158,7 @@ public class HandlerMethod {
 	 * Copy constructor for use in subclasses.
 	 */
 	protected HandlerMethod(HandlerMethod handlerMethod) {
+		// 仅仅需要传递HandlerMethod，就可以获取 bean、beanFactory、beanType、method、parameters、responseStatus、description等等
 		Assert.notNull(handlerMethod, "HandlerMethod is required");
 		this.bean = handlerMethod.bean;
 		this.beanFactory = handlerMethod.beanFactory;
@@ -193,10 +200,16 @@ public class HandlerMethod {
 	}
 
 	private void evaluateResponseStatus() {
+		/*
+		 * 该方法将在 HandlerMethod 的构造器中完成解析
+		 */
+		// 直接获取HandlerMethod上的@ResponseStatus注解
 		ResponseStatus annotation = getMethodAnnotation(ResponseStatus.class);
 		if (annotation == null) {
+			// 直接获取不到，就对HandlerMethod做递归的注解扫描@ResponseStatus
 			annotation = AnnotatedElementUtils.findMergedAnnotation(getBeanType(), ResponseStatus.class);
 		}
+		// 注解不为空，就设置responseStatus、以及responseStatusReason
 		if (annotation != null) {
 			this.responseStatus = annotation.code();
 			this.responseStatusReason = annotation.reason();
@@ -410,6 +423,7 @@ public class HandlerMethod {
 
 	@Nullable
 	protected static Object findProvidedArgument(MethodParameter parameter, @Nullable Object... providedArgs) {
+		// providedArgs为null，返回null
 		if (!ObjectUtils.isEmpty(providedArgs)) {
 			for (Object providedArg : providedArgs) {
 				if (parameter.getParameterType().isInstance(providedArg)) {

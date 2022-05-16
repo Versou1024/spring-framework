@@ -56,8 +56,15 @@ import org.springframework.util.StringUtils;
  * @see ChildBeanDefinition
  */
 @SuppressWarnings("serial")
-public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccessor
-		implements BeanDefinition, Cloneable {
+public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccessor implements BeanDefinition, Cloneable {
+	/*
+	 * 完整的BeanDefinition类，考虑了GenericBeanDefinition、RootBeanDefinition和ChildBeanDefinition的共同属性。
+	 * autowire常量与AutowireCapableBeanFactory接口中定义的常量匹配。
+	 *
+	 * AbstractBeanDefinition的主要功能就是实现BeanDefinition中的方法, 并在方法要求的常量上定义应该拥有的属性,
+	 * 比如scope属性, 在此基础上, 通过继承BeanMetadataAttributeAccessor类, 整合了上面我们所说的额外属性以及获取源文件这样的功能
+	 * 链接：https://juejin.cn/post/6844904167933231117
+	 */
 
 	/**
 	 * Constant for the default scope name: {@code ""}, equivalent to singleton
@@ -99,31 +106,33 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Deprecated
 	public static final int AUTOWIRE_AUTODETECT = AutowireCapableBeanFactory.AUTOWIRE_AUTODETECT;
 
+	//检查依赖是否合法，在本类中，默认不进行依赖检查
+
 	/**
 	 * Constant that indicates no dependency check at all.
 	 * @see #setDependencyCheck
 	 */
-	public static final int DEPENDENCY_CHECK_NONE = 0;
+	public static final int DEPENDENCY_CHECK_NONE = 0; // 不进行检查
 
 	/**
 	 * Constant that indicates dependency checking for object references.
 	 * @see #setDependencyCheck
 	 */
-	public static final int DEPENDENCY_CHECK_OBJECTS = 1;
+	public static final int DEPENDENCY_CHECK_OBJECTS = 1; //如果依赖类型为对象引用，则需要检查
 
 	/**
 	 * Constant that indicates dependency checking for "simple" properties.
 	 * @see #setDependencyCheck
 	 * @see org.springframework.beans.BeanUtils#isSimpleProperty
 	 */
-	public static final int DEPENDENCY_CHECK_SIMPLE = 2;
+	public static final int DEPENDENCY_CHECK_SIMPLE = 2;  //对简单属性的依赖进行检查
 
 	/**
 	 * Constant that indicates dependency checking for all properties
 	 * (object references as well as "simple" properties).
 	 * @see #setDependencyCheck
 	 */
-	public static final int DEPENDENCY_CHECK_ALL = 3;
+	public static final int DEPENDENCY_CHECK_ALL = 3; //对所有属性的依赖进行检查
 
 	/**
 	 * Constant that indicates the container should attempt to infer the
@@ -135,7 +144,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * <p>Currently, the method names detected during destroy method inference
 	 * are "close" and "shutdown", if present on the specific bean class.
 	 */
+	// 若Bean未指定销毁方法，容器应该尝试推断Bean的销毁方法的名字，目前来说，推断的销毁方法的名字一般为close或是shutdown
+	//（即未指定Bean的销毁方法，但是内部定义了名为close或是shutdown的方法，则容器推断其为销毁方法）
 	public static final String INFER_METHOD = "(inferred)";
+
 
 
 	@Nullable
@@ -147,61 +159,74 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	private boolean abstractFlag = false;
 
 	@Nullable
-	private Boolean lazyInit;
+	private Boolean lazyInit; // 是否延迟初始化
 
-	private int autowireMode = AUTOWIRE_NO;
+	private int autowireMode = AUTOWIRE_NO; // 自动配置模式 -- 不是懒加载
 
-	private int dependencyCheck = DEPENDENCY_CHECK_NONE;
+	private int dependencyCheck = DEPENDENCY_CHECK_NONE; // 默认不进行懒加载
 
 	@Nullable
-	private String[] dependsOn;
+	private String[] dependsOn; // 当前Bean依赖的其他的Class
 
-	private boolean autowireCandidate = true;
+	private boolean autowireCandidate = true; // 默认是为自动装配的候选者
 
-	private boolean primary = false;
+	private boolean primary = false; // 默认不是为自动装配的主要者 - 默认为false
 
+
+	//用于记录Qualifier，对应子元素qualifier=======这个字段有必要解释一下
+	// 唯一向这个字段放值的方法为本类的：public void addQualifier(AutowireCandidateQualifier qualifier)    copyQualifiersFrom这个不算，那属于拷贝
+	// 调用处：AnnotatedBeanDefinitionReader#doRegisterBean  但是Spring所有调用处，qualifiers字段传的都是null~~~~~~~~~尴尬
+	// 通过我多放跟踪发现，此处这个字段目前【永远】不会被赋值（除非我们手动调用对应方法为其赋值）   但是有可能我才疏学浅，若有知道的  请告知，非常非常感谢  我考虑到它可能是预留字段~~~~
+	// 我起初以为这样可以赋值：
+	//@Qualifier("aaa")
+	//@Service
+	//public class HelloServiceImpl   没想到，也是不好使的，Bean定义里面也不会有值
+	// 因此对应的方法getQualifier和getQualifiers 目前应该基本上都返回null或者[]
 	private final Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>();
 
+	//我理解为通过这个函数的逻辑初始化Bean，而不是构造函数或是工厂方法（相当于自己去实例化，而不是交给Bean工厂）
 	@Nullable
-	private Supplier<?> instanceSupplier;
+	private Supplier<?> instanceSupplier; // 实例化的提供者
 
-	private boolean nonPublicAccessAllowed = true;
+	private boolean nonPublicAccessAllowed = true; // 是否允许访问非public方法和属性，应用于构造函数、工厂方法、init、destroy方法的解析 默认是true，表示啥都可以访问
 
-	private boolean lenientConstructorResolution = true;
-
-	@Nullable
-	private String factoryBeanName;
+	private boolean lenientConstructorResolution = true; // 是否以一种宽松的模式解析构造函数，默认为true（宽松和严格体现在类型匹配上）
 
 	@Nullable
-	private String factoryMethodName;
+	private String factoryBeanName; //工厂类名（注意是String类型，不是Class类型） 对应bean属性factory-method
 
 	@Nullable
-	private ConstructorArgumentValues constructorArgumentValues;
+	private String factoryMethodName; //工厂方法名（注意是String类型，不是Method类型）
 
 	@Nullable
-	private MutablePropertyValues propertyValues;
-
-	private MethodOverrides methodOverrides = new MethodOverrides();
+	private ConstructorArgumentValues constructorArgumentValues; // 记录构造函数注入属性，对应bean属性constructor-arg
 
 	@Nullable
-	private String initMethodName;
+	private MutablePropertyValues propertyValues; //Bean属性的名称以及对应的值，这里不会存放构造函数相关的参数值，只会存放通过setter注入的依赖
+
+	private MethodOverrides methodOverrides = new MethodOverrides(); //方法重写的持有者，记录lookup-method、replaced-method元素、@Lookup等
 
 	@Nullable
-	private String destroyMethodName;
+	private String initMethodName; // 初始化方法名
 
-	private boolean enforceInitMethod = true;
+	@Nullable
+	private String destroyMethodName; // 销毁方法名
 
-	private boolean enforceDestroyMethod = true;
+	private boolean enforceInitMethod = true; // 是否强制init
 
+	private boolean enforceDestroyMethod = true; // 是否强制destroy
+
+	// 是否是合成类（是不是应用自定义的，例如生成AOP代理时，会用到某些辅助类，这些辅助类不是应用自定义的，这个就是合成类）
+	// 创建AOP时候为true
 	private boolean synthetic = false;
 
-	private int role = BeanDefinition.ROLE_APPLICATION;
+	private int role = BeanDefinition.ROLE_APPLICATION; //Bean的角色，为用户自定义Bean
 
 	@Nullable
-	private String description;
+	private String description;// Bean的描述信息
 
 	@Nullable
-	private Resource resource;
+	private Resource resource; // 这个Bean哪儿来的，即从那个resource中.class文件加载
 
 
 	/**
@@ -226,6 +251,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @param original the original bean definition to copy from
 	 */
 	protected AbstractBeanDefinition(BeanDefinition original) {
+		// 深度复制original的BeanDefinition
 		setParentName(original.getParentName());
 		setBeanClassName(original.getBeanClassName());
 		setScope(original.getScope());
@@ -757,6 +783,9 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @see #setPropertyValues(MutablePropertyValues)
 	 */
 	public void setInstanceSupplier(@Nullable Supplier<?> instanceSupplier) {
+		// 可以人为提供一个 实例化策略，这样就可以跳过构造器或者FactoryMethod
+		// 在 AbstractAutowriteCapableBeanFactory#createBeanInstance 创建Bean实例的时候，就会去检查用户是否提供了
+		// 没有提供再使用构造器策略进行注入
 		this.instanceSupplier = instanceSupplier;
 	}
 
@@ -1129,8 +1158,13 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
 	public void prepareMethodOverrides() throws BeanDefinitionValidationException {
-		// Check that lookup methods exist and determine their overloaded status.
+		// bean标签中的lookup-method和replace-method属性就是放在
+		// BeanDefinition的methodOverrides属性中（关于这两个属性的分析后续再来分析），
+		// 这里就是对methodOverrides属性进行处理，动态为当前bean生产代理并使用对应的拦截器为bean做增强处理。
+
+		// 如果方法有lookup-method和replace-method
 		if (hasMethodOverrides()) {
+			// 获取出来，进行递归，AbstractBeanDefinition#prepareMethodOverride(MethodOverride)方法
 			getMethodOverrides().getOverrides().forEach(this::prepareMethodOverride);
 		}
 	}
@@ -1143,14 +1177,23 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
 	protected void prepareMethodOverride(MethodOverride mo) throws BeanDefinitionValidationException {
+
+		// 如果方法名个数为0，则抛出BeanDefinitionValidationException异常，
+		// 		原因其实很简单：通过方法名去查找，而又没有找到，则说明有问题，抛出异常。
+		// 如果方法名个数为1，则设置该方法未被重载（overloaded属性模式为true）。
+		// 		如果一个类存在多个重载方法，在方法调用的时候还需根据参数类型来判断到底重载的是哪个方法，这里通过count=1，来表示该方法未被重载，
+		// 		在调用的时候可以直接找方法而不需要进行方法参数的校验，相当于一个小小的优化，提升后面调用函数的速度。
 		int count = ClassUtils.getMethodCountForName(getBeanClass(), mo.getMethodName());
 		if (count == 0) {
+			// 没有就报错
 			throw new BeanDefinitionValidationException(
 					"Invalid method override: no method with name '" + mo.getMethodName() +
 					"' on class [" + getBeanClassName() + "]");
 		}
 		else if (count == 1) {
+			// 有的话，应该也只是有一个
 			// Mark override as not overloaded, to avoid the overhead of arg type checking.
+			// 将override标记为not重载，以避免arg类型检查的开销。
 			mo.setOverloaded(false);
 		}
 	}

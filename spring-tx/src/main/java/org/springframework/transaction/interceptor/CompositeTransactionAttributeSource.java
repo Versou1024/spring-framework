@@ -31,6 +31,8 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class CompositeTransactionAttributeSource implements TransactionAttributeSource, Serializable {
+	// 一种组合模式：这个实现方法也很容易。多个TransactionAttributeSource放在一起，只要任意一个匹配上就成
+	// 备注：若匹配上多个，请注意先后顺序就成   这里面是数组  会保持和你放入的顺序一样~~~
 
 	private final TransactionAttributeSource[] transactionAttributeSources;
 

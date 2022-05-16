@@ -43,6 +43,10 @@ import org.springframework.util.ObjectUtils;
  * @param <T> the source type
  */
 public abstract class EnumerablePropertySource<T> extends PropertySource<T> {
+	/**
+	 * 扩展PropertySource的能力：
+	 * 1、能够查询其底层源对象，以枚举所有可能的属性名称/值对
+	 */
 
 	/**
 	 * Create a new {@code EnumerablePropertySource} with the given name and source object.

@@ -40,19 +40,19 @@ public interface AnnotationFilter {
 	 * and their subpackages.
 	 * <p>This is the default filter in the {@link MergedAnnotations} model.
 	 */
-	AnnotationFilter PLAIN = packages("java.lang", "org.springframework.lang");
+	AnnotationFilter PLAIN = packages("java.lang", "org.springframework.lang"); // 通过packages过滤
 
 	/**
 	 * {@link AnnotationFilter} that matches annotations in the
 	 * {@code java} and {@code javax} packages and their subpackages.
 	 */
-	AnnotationFilter JAVA = packages("java", "javax");
+	AnnotationFilter JAVA = packages("java", "javax"); // 通过packages过滤
 
 	/**
 	 * {@link AnnotationFilter} that always matches and can be used when no
 	 * relevant annotation types are expected to be present at all.
 	 */
-	AnnotationFilter ALL = new AnnotationFilter() {
+	AnnotationFilter ALL = new AnnotationFilter() { // 任何都返回true
 		@Override
 		public boolean matches(Annotation annotation) {
 			return true;
@@ -80,7 +80,7 @@ public interface AnnotationFilter {
 	 * @see #PLAIN
 	 */
 	@Deprecated
-	AnnotationFilter NONE = new AnnotationFilter() {
+	AnnotationFilter NONE = new AnnotationFilter() { // 任何都返回false
 		@Override
 		public boolean matches(Annotation annotation) {
 			return false;

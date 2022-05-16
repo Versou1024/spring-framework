@@ -42,6 +42,26 @@ import javax.servlet.ServletResponse;
  */
 public class CompositeFilter implements Filter {
 
+	/**
+	 * 复合过滤器：聚合Filter，并由外界调用CompositeFilter#doFilter触发内部所有的Filter的执行
+	 *
+	 * 类似 装饰器模式 + 外观模式 + 过滤器链模式
+	 *
+	 * 从下面的代码不难看出：
+	 * 	1、当执行到CompositeFilter时，如果filters不为空的话，实际上就是去执行VirtualFilterChain，先完成聚合的filters
+	 * 	2、然后当filters执行完后，才能够去执行FilterChain
+	 *
+	 * 	大致如下：
+	 * 	|
+	 * 	|
+	 * 	| -> 假设为CompositeFilter，同时里面有3个Filter，就会如下先执行这三个Fitler
+	 * 	  |
+	 * 	  |
+	 * 	  |
+	 * 	|
+	 * 	|
+	 *
+	 */
 	private List<? extends Filter> filters = new ArrayList<>();
 
 
@@ -56,6 +76,7 @@ public class CompositeFilter implements Filter {
 	 */
 	@Override
 	public void init(FilterConfig config) throws ServletException {
+		// 触发所有Filters的init
 		for (Filter filter : this.filters) {
 			filter.init(config);
 		}
@@ -80,6 +101,7 @@ public class CompositeFilter implements Filter {
 	 */
 	@Override
 	public void destroy() {
+		// 触发filters的销毁操作
 		for (int i = this.filters.size(); i-- > 0;) {
 			Filter filter = this.filters.get(i);
 			filter.destroy();
@@ -88,9 +110,17 @@ public class CompositeFilter implements Filter {
 
 
 	private static class VirtualFilterChain implements FilterChain {
+		/**
+		 * 虚拟的过滤器链：
+		 * 由于CompositeFilter的复合作用，其实质的doFilter过程，就是在借鉴FilterChain过滤器链的设计模式
+		 *
+		 * FilterChain 与 Filter 的 doFilter 区别是 前者没有FilterChain参数，只有request和response两个参数
+		 */
 
+		// 原始的过滤器链
 		private final FilterChain originalChain;
 
+		// 扩展的过滤器链表
 		private final List<? extends Filter> additionalFilters;
 
 		private int currentPosition = 0;
@@ -103,8 +133,9 @@ public class CompositeFilter implements Filter {
 		@Override
 		public void doFilter(final ServletRequest request, final ServletResponse response)
 				throws IOException, ServletException {
-
+			// 首选完成扩展的过滤器链表additionalFilters
 			if (this.currentPosition == this.additionalFilters.size()) {
+				// 扩展的过滤器执行结束后，就执行原始的过滤器链FilterChain
 				this.originalChain.doFilter(request, response);
 			}
 			else {

@@ -70,6 +70,14 @@ import java.util.Map;
  * @see org.springframework.context.ConfigurableApplicationContext#getEnvironment
  */
 public interface ConfigurableEnvironment extends Environment, ConfigurablePropertyResolver {
+	/**
+	 * 配置转换器
+	 * 配置环境的一些profiles
+	 * 例如：当前激活的profile、添加激活的profile、设置默认的profile、获取属性源头PropertySources、SystemProperties
+	 *
+	 * Environment 接口只有get相关的profile
+	 * ConfigurableEnvironment 就是扩展出set相关的profile
+	 */
 
 	/**
 	 * Specify the set of profiles active for this {@code Environment}. Profiles are

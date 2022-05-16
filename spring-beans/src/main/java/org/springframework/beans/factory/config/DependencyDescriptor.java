@@ -51,34 +51,48 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class DependencyDescriptor extends InjectionPoint implements Serializable {
+	/**
+	 * 因为继承自InjectionPoint,一个依赖描述符DependencyDescriptor首先包含了自己所描述的注入点的信息，除此之外，它还包含了其他一些信息 :
+	 *	依赖是否必要required;
+	 * 	是否饥饿加载eager;
+	 * 	嵌套级别 nestingLevel;
+	 * 以及一些其他信息
+	 */
 
+	// 保存所包装依赖(成员属性或者成员方法的某个参数)所在的声明类，
+	// 其实该信息在 field/methodParameter 中已经隐含
 	private final Class<?> declaringClass;
 
 	@Nullable
-	private String methodName;
+	private String methodName; // 如果所包装依赖是成员方法的某个参数，则这里记录该成员方法的名称
 
 	@Nullable
-	private Class<?>[] parameterTypes;
+	private Class<?>[] parameterTypes;  // 如果所包装的是成员方法的某个参数，则这里记录该参数的类型
 
-	private int parameterIndex;
+	private int parameterIndex; // 如果所包装的是成员方法的某个参数，则这里记录该参数在该函数参数列表中的索引
 
 	@Nullable
-	private String fieldName;
+	private String fieldName;   //如果所包装的是成员属性，则这里记录该成员属性的名称
 
+
+	// 标识所包装依赖是否必要依赖
 	private final boolean required;
 
+	// 标识所包装依赖是否需要饥饿加载
 	private final boolean eager;
 
+	// 标识所包装依赖的嵌套级别
 	private int nestingLevel = 1;
 
-	@Nullable
-	private Class<?> containingClass;
 
 	@Nullable
-	private transient volatile ResolvableType resolvableType;
+	private Class<?> containingClass; // 标识所包装依赖的包含者类，通常和声明类是同一个
 
 	@Nullable
-	private transient volatile TypeDescriptor typeDescriptor;
+	private transient volatile ResolvableType resolvableType; // 所包装依赖 ResolvableType 的缓存
+
+	@Nullable
+	private transient volatile TypeDescriptor typeDescriptor; // 所包装依赖 TypeDescriptor 的缓存
 
 
 	/**
@@ -100,7 +114,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	 */
 	public DependencyDescriptor(MethodParameter methodParameter, boolean required, boolean eager) {
 		super(methodParameter);
-
+		// 解析方法参数的相关信息
 		this.declaringClass = methodParameter.getDeclaringClass();
 		if (methodParameter.getMethod() != null) {
 			this.methodName = methodParameter.getMethod().getName();
@@ -131,7 +145,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	 */
 	public DependencyDescriptor(Field field, boolean required, boolean eager) {
 		super(field);
-
+		// 解析字段相关信息
 		this.declaringClass = field.getDeclaringClass();
 		this.fieldName = field.getName();
 		this.required = required;
@@ -143,6 +157,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	 * @param original the original descriptor to create a copy from
 	 */
 	public DependencyDescriptor(DependencyDescriptor original) {
+		// 复制构造函数
 		super(original);
 
 		this.declaringClass = original.declaringClass;
@@ -307,6 +322,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	 * @since 4.0
 	 */
 	public ResolvableType getResolvableType() {
+		// 懒加载
 		ResolvableType resolvableType = this.resolvableType;
 		if (resolvableType == null) {
 			resolvableType = (this.field != null ?

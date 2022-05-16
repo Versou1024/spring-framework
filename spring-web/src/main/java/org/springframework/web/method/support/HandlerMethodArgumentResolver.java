@@ -31,6 +31,12 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @see HandlerMethodReturnValueHandler
  */
 public interface HandlerMethodArgumentResolver {
+	/**
+	 * 参数解析器：就是一个处理Handler方法的入参值的接口
+	 * 重点方法
+	 * 1、是否支持解析参数 -- supportsParameter
+	 * 2、如何解析参数 -- resolveArgument
+	 */
 
 	/**
 	 * Whether the given {@linkplain MethodParameter method parameter} is

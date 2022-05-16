@@ -56,6 +56,12 @@ import org.springframework.util.StringUtils;
  * @see java.nio.file.Files
  */
 public class FileSystemResource extends AbstractResource implements WritableResource {
+	/**
+	 * FileSystemResource：通过文件系统获取资源
+	 * 代表java.io.File资源，对于getInputStream操作将返回底层文件的字节流，isOpen将永远返回false，从而表示可多次读取底层文件的字节流。
+	 *
+	 * 这个实现类就大名鼎鼎了。此类在Spring5以后，就使用NIO.2的API比如ReadableByteChannel等来操作读写了。提高了效率。这点就和PathResource特别的像了
+	 */
 
 	private final String path;
 

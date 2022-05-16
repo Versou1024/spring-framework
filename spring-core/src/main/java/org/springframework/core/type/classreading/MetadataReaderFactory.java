@@ -30,6 +30,9 @@ import org.springframework.core.io.Resource;
  * @see CachingMetadataReaderFactory
  */
 public interface MetadataReaderFactory {
+	/**
+	 * 对于 MetadataReader，Spring 也提供了对应的 工厂类 去获取，顶层接口 MetadataReaderFactory，类图如下
+	 */
 
 	/**
 	 * Obtain a MetadataReader for the given class name.

@@ -50,9 +50,17 @@ import javax.servlet.ServletContextListener;
  * @see System#getProperty
  */
 public class WebAppRootListener implements ServletContextListener {
+	/*
+	 * 监听web.xml中的配置param-name为webAppRootKey的值：
+	 * 作用：它会在ServletContext上下文初始化的时候，
+	 * 首先获取根传递进来的servletContext得到物理路径，
+	 * String path=servletContext.getRealPath("/");
+	 * 然后找到context-param的webAooRootKey对应的param-value，把param-value的值作为key，上面配置的是"myroot"。
+	 */
 
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
+		// 核心，向System中设置属性，其属性名默认为webapp.root，可以配置，属性value就是ServletContext
 		WebUtils.setWebAppRootSystemProperty(event.getServletContext());
 	}
 

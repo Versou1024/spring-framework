@@ -49,6 +49,13 @@ import org.springframework.web.util.pattern.PathPatternParser;
 public abstract class AbstractHandlerMapping extends ApplicationObjectSupport
 		implements HandlerMapping, Ordered, BeanNameAware {
 
+	/**
+	 * HandlerMapping：定义getHandle方法
+	 * Ordered接口：允许排序
+	 * BeanNameAware：聚合当前具体类的BeanName，取决于实现类的BeanName
+	 * ApplicationObjectSupport类：
+	 */
+
 	private static final WebHandler REQUEST_HANDLED_HANDLER = exchange -> Mono.empty();
 
 

@@ -44,6 +44,7 @@ import org.springframework.util.ObjectUtils;
  * @since 4.3.4
  */
 class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor {
+	// ApplicationListenerDetector：把所有的ApplicationListener的Bean，都加入到addApplicationListener里面，放到广播器里面
 
 	private static final Log logger = LogFactory.getLog(ApplicationListenerDetector.class);
 
@@ -59,23 +60,31 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// postProcessMergedBeanDefinition() 在 postProcessAfterInitialization() 之前执行
+		// 即 postProcessMergedBeanDefinition() -> 属性填充 -> postProcessBeforeInitialization() -> 初始化 -> postProcessAfterInitialization()
 		if (ApplicationListener.class.isAssignableFrom(beanType)) {
+			// 属于ApplicationListener，就加入singletonNames，方便后续postProcessAfterInitialization处理
 			this.singletonNames.put(beanName, beanDefinition.isSingleton());
 		}
 	}
 
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) {
+		// 不作任何处理
 		return bean;
 	}
 
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
+		// 初始化之后的处理
+		// 如果初始化的bean是ApplicationListener进行处理
 		if (bean instanceof ApplicationListener) {
 			// potentially not detected as a listener by getBeanNamesForType retrieval
+			// getBeanNamesForType检索可能未检测到侦听器
 			Boolean flag = this.singletonNames.get(beanName);
 			if (Boolean.TRUE.equals(flag)) {
 				// singleton bean (top-level or inner): register on the fly
+				// 就调用applicationContext.addApplicationListener()
 				this.applicationContext.addApplicationListener((ApplicationListener<?>) bean);
 			}
 			else if (Boolean.FALSE.equals(flag)) {
@@ -86,6 +95,7 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 							"because it does not have singleton scope. Only top-level listener beans are allowed " +
 							"to be of non-singleton scope.");
 				}
+				// 不是单例的就从缓存移除吧~~~~
 				this.singletonNames.remove(beanName);
 			}
 		}
@@ -94,8 +104,10 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 
 	@Override
 	public void postProcessBeforeDestruction(Object bean, String beanName) {
+		// 销毁之前的处理
 		if (bean instanceof ApplicationListener) {
 			try {
+				// 移除已注册的ApplicationListener
 				ApplicationEventMulticaster multicaster = this.applicationContext.getApplicationEventMulticaster();
 				multicaster.removeApplicationListener((ApplicationListener<?>) bean);
 				multicaster.removeApplicationListenerBean(beanName);

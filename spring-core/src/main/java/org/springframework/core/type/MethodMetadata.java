@@ -30,6 +30,9 @@ package org.springframework.core.type;
  * @see AnnotatedTypeMetadata
  */
 public interface MethodMetadata extends AnnotatedTypeMetadata {
+	/*
+	 * MethodMetadata:用来描述java.lang.reflect.Method
+	 */
 
 	/**
 	 * Return the name of the method.

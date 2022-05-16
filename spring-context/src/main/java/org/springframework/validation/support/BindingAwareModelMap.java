@@ -38,9 +38,11 @@ import org.springframework.validation.BindingResult;
  */
 @SuppressWarnings("serial")
 public class BindingAwareModelMap extends ExtendedModelMap {
+	// Spring MVC默认使用的就是这个ModelMap，但它提供的感知功能大多数情况下我们都用不着。不过反正也不用你管，乖乖用着呗
 
 	@Override
 	public Object put(String key, @Nullable Object value) {
+		// // 注解复写了Map的put方法，一下子就拦截了所有的addAttr方法。。。因为所有的addAttribute()方法都是通过put方法完成的
 		removeBindingResultIfNecessary(key, value);
 		return super.put(key, value);
 	}

@@ -83,6 +83,7 @@ public @interface RequestMapping {
 	 * @see org.springframework.web.servlet.handler.HandlerMethodMappingNamingStrategy
 	 */
 	String name() default "";
+	//给这个Mapping取一个名字。若不填写，就用HandlerMethodMappingNamingStrategy去按规则生成
 
 	/**
 	 * The primary mapping expressed by this annotation.
@@ -97,6 +98,7 @@ public @interface RequestMapping {
 	 */
 	@AliasFor("path")
 	String[] value() default {};
+	// 路径  数组形式  可以写多个。  一般都是按照Ant风格进行书写~
 
 	/**
 	 * The path mapping URIs (e.g. {@code "/profile"}).
@@ -122,6 +124,9 @@ public @interface RequestMapping {
 	 * HTTP method restriction.
 	 */
 	RequestMethod[] method() default {};
+	// 请求方法：GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS, TRACE
+	// 显然可以指定多个方法。如果不指定，表示适配所有方法类型~~
+	// 同时还有类似的枚举类：org.springframework.http.HttpMethod
 
 	/**
 	 * The parameters of the mapped request, narrowing the primary mapping.
@@ -137,6 +142,11 @@ public @interface RequestMapping {
 	 * parameter restriction.
 	 */
 	String[] params() default {};
+	// 指定request中必须包含某些参数值时，才让该方法处理
+	// 使用 params 元素，你可以让多个处理方法处理到同一个URL 的请求, 而这些请求的参数是不一样的
+	// 如：@RequestMapping(value = "/fetch", params = {"personId=10"} 和 @RequestMapping(value = "/fetch", params = {"personId=20"}
+	// 这两个方法都处理请求`/fetch`，但是参数不一样，进入的方法也不一样~~~~
+	// 支持!myParam和myParam!=myValue这种~~~
 
 	/**
 	 * The headers of the mapped request, narrowing the primary mapping.
@@ -159,6 +169,8 @@ public @interface RequestMapping {
 	 * @see org.springframework.http.MediaType
 	 */
 	String[] headers() default {};
+	// 指定request中必须包含某些指定的header值，才能让该方法处理请求
+	// @RequestMapping(value = "/head", headers = {"content-type=text/plain"}
 
 	/**
 	 * Narrows the primary mapping by media types that can be consumed by the
@@ -179,6 +191,11 @@ public @interface RequestMapping {
 	 * @see javax.servlet.http.HttpServletRequest#getContentType()
 	 */
 	String[] consumes() default {};
+	// 指定处理请求request的**提交内容类型**(Content-Type),例如application/json、text/html等
+	// 相当于只有指定的这些Content-Type的才处理
+	// @RequestMapping(value = "/cons", consumes = {"application/json", "application/XML"}
+	// 不指定表示处理所有~~  取值参见枚举类：org.springframework.http.MediaType
+	// 它可以使用!text/plain形如这样非的表达方式
 
 	/**
 	 * Narrows the primary mapping by media types that can be produced by the
@@ -205,5 +222,17 @@ public @interface RequestMapping {
 	 * @see org.springframework.http.MediaType
 	 */
 	String[] produces() default {};
+	// 指定返回的内容类型，返回的内容类型必须是request请求头(Accept)中所包含的类型
+	// 仅当request请求头中的(Accept)类型中包含该指定类型才返回；
+	// 参见枚举类：org.springframework.http.MediaType
+	// 它可以使用!text/plain形如这样非的表达方式
 
+
+	// Spring4.3之后提供了组合注解5枚：
+	//
+	// @GetMapping
+	// @PostMapping
+	// @PutMapping
+	// @DeleteMapping
+	// @PatchMapping
 }

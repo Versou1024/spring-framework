@@ -31,6 +31,16 @@ import org.springframework.lang.Nullable;
  * @see ServletRequestAttributes
  */
 public interface RequestAttributes {
+	/*
+	用于访问与请求关联的属性对象的抽象。通过可选的“全局会话”概念，
+	支持访问request scope的属性以及session scope的属性。
+	可以实现任何类型的request/session机制，尤其是servlet请求。
+
+	封装 - 将request、session封装在一起的
+
+	常用实现类：
+		AbstractRequestAttributes 抽象的接口实现者，主要注册销毁回调功能
+	 */
 
 	/**
 	 * Constant that indicates request scope.
@@ -116,7 +126,7 @@ public interface RequestAttributes {
 	 * @param callback the destruction callback to be executed
 	 * @param scope the scope identifier
 	 */
-	void registerDestructionCallback(String name, Runnable callback, int scope);
+	void registerDestructionCallback(String name, Runnable callback, int scope); // Destruction 摧毁 Construction 构造
 
 	/**
 	 * Resolve the contextual reference for the given key, if any.
@@ -127,6 +137,8 @@ public interface RequestAttributes {
 	 */
 	@Nullable
 	Object resolveReference(String key);
+	// 解析给定键的上下文引用（如果有）。
+	// 最少：键“request”关联HttpServletRequest引用，键“session”关联HttpSession引用。
 
 	/**
 	 * Return an id for the current underlying session.

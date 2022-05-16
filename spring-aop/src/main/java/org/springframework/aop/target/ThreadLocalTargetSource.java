@@ -49,16 +49,15 @@ import org.springframework.core.NamedThreadLocal;
  * @see org.springframework.beans.factory.DisposableBean#destroy()
  */
 @SuppressWarnings("serial")
-public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
-		implements ThreadLocalTargetSourceStats, DisposableBean {
+public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource implements ThreadLocalTargetSourceStats, DisposableBean {
+	// 每个原型对象和ThreadLocal绑定，即和线程绑定
 
 	/**
 	 * ThreadLocal holding the target associated with the current
 	 * thread. Unlike most ThreadLocals, which are static, this variable
 	 * is meant to be per thread per instance of the ThreadLocalTargetSource class.
 	 */
-	private final ThreadLocal<Object> targetInThread =
-			new NamedThreadLocal<>("Thread-local instance of bean '" + getTargetBeanName() + "'");
+	private final ThreadLocal<Object> targetInThread = new NamedThreadLocal<>("Thread-local instance of bean '" + getTargetBeanName() + "'");
 
 	/**
 	 * Set of managed targets, enabling us to keep track of the targets we've created.
@@ -77,6 +76,7 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 	 */
 	@Override
 	public Object getTarget() throws BeansException {
+		// invoke target的次数
 		++this.invocationCount;
 		Object target = this.targetInThread.get();
 		if (target == null) {
@@ -85,13 +85,16 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 						"creating one and binding it to thread '" + Thread.currentThread().getName() + "'");
 			}
 			// Associate target with ThreadLocal.
+			//  ThreadLocal中没有原型bean，就调用父类的newPrototypeInstance创建原型Bean
 			target = newPrototypeInstance();
+			// 设置到ThreadLocal中
 			this.targetInThread.set(target);
 			synchronized (this.targetSet) {
 				this.targetSet.add(target);
 			}
 		}
 		else {
+			// 命中次数
 			++this.hitCount;
 		}
 		return target;
@@ -106,6 +109,7 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 		logger.debug("Destroying ThreadLocalTargetSource bindings");
 		synchronized (this.targetSet) {
 			for (Object target : this.targetSet) {
+				// 调用父类的destroyPrototypeInstance
 				destroyPrototypeInstance(target);
 			}
 			this.targetSet.clear();
@@ -117,6 +121,7 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 
 	@Override
 	public int getInvocationCount() {
+		// 记录的代理对象对target的invoke引用次数
 		return this.invocationCount;
 	}
 

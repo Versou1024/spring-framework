@@ -50,6 +50,7 @@ class ApplicationListenerMethodTransactionalAdapter extends ApplicationListenerM
 
 	public ApplicationListenerMethodTransactionalAdapter(String beanName, Class<?> targetClass, Method method) {
 		super(beanName, targetClass, method);
+		// 1. 找出 TransactionalEventListener 注解
 		TransactionalEventListener ann = AnnotatedElementUtils.findMergedAnnotation(method, TransactionalEventListener.class);
 		if (ann == null) {
 			throw new IllegalStateException("No TransactionalEventListener annotation found on method: " + method);
@@ -60,17 +61,26 @@ class ApplicationListenerMethodTransactionalAdapter extends ApplicationListenerM
 
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
-		if (TransactionSynchronizationManager.isSynchronizationActive() &&
-				TransactionSynchronizationManager.isActualTransactionActive()) {
+		// 事件处理
+
+		// 1.1. 当前线程的事务同步处于活动状态,且返回当前是否有实际的事务活动。这表明当前线程是否与实际事务相关联，而不仅仅是与活动事务同步相关联
+		// 就根据这个event\listener\监听阶段来创建一个事务同步器适配者,并将这个事务同步器注册到事务管理器中,和当前线程做一个绑定
+		if (TransactionSynchronizationManager.isSynchronizationActive() && TransactionSynchronizationManager.isActualTransactionActive()) {
+			// 一般我们认为都是进入这个代码块中!!
 			TransactionSynchronization transactionSynchronization = createTransactionSynchronization(event);
 			TransactionSynchronizationManager.registerSynchronization(transactionSynchronization);
 		}
+		// 1.2. 执行到这:说明没有事务这个方法上执行,注解中annotation.fallbackExecution()若表名如果没有事务正在运行，也需要处理这个事件时
+		// 就直接使用这个监听器适配者this的processEvent处理事件吧
 		else if (this.annotation.fallbackExecution()) {
 			if (this.annotation.phase() == TransactionPhase.AFTER_ROLLBACK && logger.isWarnEnabled()) {
 				logger.warn("Processing " + event + " as a fallback execution on AFTER_ROLLBACK phase");
 			}
+			// 1.2.1 直接处理事件,不和事务的阶段有关系,即annotation.phase()没屁用
 			processEvent(event);
 		}
+		// 1.3 当前线程的没有事务开启,或者事务已经被关闭,这个@TransactionalEventListener注解同时表名没有事务时不响应监听到的event时
+		// 做一个日志记录,就直接返回跳过
 		else {
 			// No transactional event execution at all
 			if (logger.isDebugEnabled()) {
@@ -80,17 +90,18 @@ class ApplicationListenerMethodTransactionalAdapter extends ApplicationListenerM
 	}
 
 	private TransactionSynchronization createTransactionSynchronization(ApplicationEvent event) {
+		// 会创建一个事务同步器的适配器,获取注解中的phase阶段为止
 		return new TransactionSynchronizationEventAdapter(this, event, this.annotation.phase());
 	}
 
 
 	private static class TransactionSynchronizationEventAdapter extends TransactionSynchronizationAdapter {
 
-		private final ApplicationListenerMethodAdapter listener;
+		private final ApplicationListenerMethodAdapter listener; // 监听器适配者
 
-		private final ApplicationEvent event;
+		private final ApplicationEvent event; // 事务监听的事件
 
-		private final TransactionPhase phase;
+		private final TransactionPhase phase; // 事务同步阶段
 
 		public TransactionSynchronizationEventAdapter(ApplicationListenerMethodAdapter listener,
 				ApplicationEvent event, TransactionPhase phase) {
@@ -107,13 +118,16 @@ class ApplicationListenerMethodTransactionalAdapter extends ApplicationListenerM
 
 		@Override
 		public void beforeCommit(boolean readOnly) {
+			// 判断阶段是否正确,如果正确,就调用 listener.processEvent() 方法
 			if (this.phase == TransactionPhase.BEFORE_COMMIT) {
+				// 是否处理这个Event,还取决于这里的ProcessEvent()方法
 				processEvent();
 			}
 		}
 
 		@Override
 		public void afterCompletion(int status) {
+			// 同样的也是需要判断阶段数的
 			if (this.phase == TransactionPhase.AFTER_COMMIT && status == STATUS_COMMITTED) {
 				processEvent();
 			}

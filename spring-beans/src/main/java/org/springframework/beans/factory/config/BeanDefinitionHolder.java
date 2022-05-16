@@ -38,6 +38,7 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.beans.factory.support.ChildBeanDefinition
  */
 public class BeanDefinitionHolder implements BeanMetadataElement {
+	// BeanDefinitionHolder 对象用来存储Bean的name与alias的对应关系,提供BeanDefinition的访问方式
 
 	private final BeanDefinition beanDefinition;
 

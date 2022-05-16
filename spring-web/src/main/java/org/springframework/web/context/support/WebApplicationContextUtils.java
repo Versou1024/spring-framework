@@ -64,9 +64,13 @@ import org.springframework.web.context.request.WebRequest;
  * @see org.springframework.web.jsf.el.SpringBeanFacesELResolver
  */
 public abstract class WebApplicationContextUtils {
+	/*
+	通过给定ServletContext的找到WebApplicationContext的便捷方法。这对于从自定义web视图或MVC操作中以编程方式访问Spring应用程序上下文非常有用。
+	请注意，对于许多web框架，有更方便的方法访问根上下文，可以是Spring的一部分，也可以作为外部库提供。
+	这个helper类只是访问根上下文的最通用的方法。
+	 */
 
-	private static final boolean jsfPresent =
-			ClassUtils.isPresent("javax.faces.context.FacesContext", RequestContextHolder.class.getClassLoader());
+	private static final boolean jsfPresent = ClassUtils.isPresent("javax.faces.context.FacesContext", RequestContextHolder.class.getClassLoader());
 
 
 	/**
@@ -182,7 +186,9 @@ public abstract class WebApplicationContextUtils {
 	 */
 	public static void registerWebApplicationScopes(ConfigurableListableBeanFactory beanFactory,
 			@Nullable ServletContext sc) {
-
+		/*
+		注册范围Scope，并提供一些Bean的依赖实现
+		 */
 		beanFactory.registerScope(WebApplicationContext.SCOPE_REQUEST, new RequestScope());
 		beanFactory.registerScope(WebApplicationContext.SCOPE_SESSION, new SessionScope());
 		if (sc != null) {
@@ -192,6 +198,8 @@ public abstract class WebApplicationContextUtils {
 			sc.setAttribute(ServletContextScope.class.getName(), appScope);
 		}
 
+		// 注册了一些Bean的依赖实现
+		// 比如若Spring容器内注入ServletRequest，则会得到RequestObjectFactory实例，如果RequestObjectFactory实例是一个ObjectFactory接口的实现类，则返回getObject()方法得到的对象。
 		beanFactory.registerResolvableDependency(ServletRequest.class, new RequestObjectFactory());
 		beanFactory.registerResolvableDependency(ServletResponse.class, new ResponseObjectFactory());
 		beanFactory.registerResolvableDependency(HttpSession.class, new SessionObjectFactory());
@@ -326,6 +334,13 @@ public abstract class WebApplicationContextUtils {
 
 		@Override
 		public ServletRequest getObject() {
+			// 不难看出，实际上最终@Autowrited获取到的ServletRequest是不同的；
+			// 即使我们在Controller上如下代码"
+			// @Autowrited
+			// private ServletRequest servletRequest;
+			// 注入的实际上就是 RequestObjectFactory 的JDK代理类，因此这里唯一的
+			// 但是在调用servletRequest相关方法例如getAttribute()时，实际上先调用 RequestObjectFactory代理类的 getObejct 获取指定请求request
+			// 然后利用JDK反射对对应request做getAttribute操作
 			return currentRequestAttributes().getRequest();
 		}
 

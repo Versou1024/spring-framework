@@ -37,6 +37,10 @@ import org.springframework.util.ReflectionUtils;
  */
 @SuppressWarnings("serial")
 class ObjenesisCglibAopProxy extends CglibAopProxy {
+	/**
+	 * 基于对象的CglibAopProxy扩展，用于创建代理实例，而无需调用类的构造函数。从Spring 4开始默认使用。
+	 * Objenesis它专门用来创建对象，即使你没有空的构造函数，都木有问题~~ 可谓非常的强大，它不使用构造方法创建Java对象，所以即使你有空的构造方法，也是不会执行的。
+	 */
 
 	private static final Log logger = LogFactory.getLog(ObjenesisCglibAopProxy.class);
 
@@ -54,9 +58,15 @@ class ObjenesisCglibAopProxy extends CglibAopProxy {
 
 	@Override
 	protected Object createProxyClassAndInstance(Enhancer enhancer, Callback[] callbacks) {
+		// 创建一个代理得实例
 		Class<?> proxyClass = enhancer.createClass();
 		Object proxyInstance = null;
 
+		// 如果为true，那我们就采用objenesis去new一个实例
+		// Spring为我们提供了一个isWorthTrying()方法：
+		// 是否需要尝试：也就是说，它是否还没有被使用过，或者已知是否有效。方法返回true，表示值得尝试
+		// 如果配置的Objenesis Instantiator策略被确定为不处理当前JVM。或者系统属性"spring.objenesis.ignore"值设置为true，表示不尝试了
+		// 这个在ObjenesisCglibAopProxy创建代理实例的时候用到了。若不尝试使用Objenesis，那就还是用老的方式用空构造函数吧
 		if (objenesis.isWorthTrying()) {
 			try {
 				proxyInstance = objenesis.newInstance(proxyClass, enhancer.getUseCache());
@@ -67,12 +77,14 @@ class ObjenesisCglibAopProxy extends CglibAopProxy {
 			}
 		}
 
+		// 若果还为null，就再去拿到构造函数（指定参数的）
 		if (proxyInstance == null) {
 			// Regular instantiation via default constructor...
 			try {
 				Constructor<?> ctor = (this.constructorArgs != null ?
 						proxyClass.getDeclaredConstructor(this.constructorArgTypes) :
 						proxyClass.getDeclaredConstructor());
+				// 通过此构造函数  去new一个实例
 				ReflectionUtils.makeAccessible(ctor);
 				proxyInstance = (this.constructorArgs != null ?
 						ctor.newInstance(this.constructorArgs) : ctor.newInstance());

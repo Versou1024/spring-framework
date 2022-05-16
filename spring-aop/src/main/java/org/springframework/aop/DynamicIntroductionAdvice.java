@@ -37,6 +37,7 @@ import org.aopalliance.aop.Advice;
  * @see IntroductionAdvisor
  */
 public interface DynamicIntroductionAdvice extends Advice {
+	// 动态方法增强
 
 	/**
 	 * Does this introduction advice implement the given interface?

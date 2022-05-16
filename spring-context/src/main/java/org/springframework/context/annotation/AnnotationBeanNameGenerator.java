@@ -77,7 +77,12 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 
 	@Override
 	public String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry) {
+		// 判断是否是AnnotatedBeanDefinition的子类， AnnotatedBeanDefinition是BeanDefinition的一个子类
+		// 显然这个生成器只为AnnotatedBeanDefinition它来自动生成名称
 		if (definition instanceof AnnotatedBeanDefinition) {
+			// determineBeanNameFromAnnotation这个方法简而言之，就是看你的注解有没有标注value值，例如@Component、@Bean等等可以向ioc容器注入Bean的注解，
+			// 若指定了就以指定的为准，支持的所有注解：上面已经说明了~~~
+			// 此处若配置了多个注解且都指定了value值，但发现value值有不同的，就抛出异常了~~~~~
 			String beanName = determineBeanNameFromAnnotation((AnnotatedBeanDefinition) definition);
 			if (StringUtils.hasText(beanName)) {
 				// Explicit bean name found.
@@ -85,6 +90,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 			}
 		}
 		// Fallback: generate a unique default bean name.
+		// 若没指定，交给默认生成器来生成吧~~~
 		return buildDefaultBeanName(definition, registry);
 	}
 
@@ -95,10 +101,13 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	 */
 	@Nullable
 	protected String determineBeanNameFromAnnotation(AnnotatedBeanDefinition annotatedDef) {
+		// 获取注解元数据
 		AnnotationMetadata amd = annotatedDef.getMetadata();
+		// 获取所有注解的全限定类名
 		Set<String> types = amd.getAnnotationTypes();
 		String beanName = null;
 		for (String type : types) {
+			// 将 type 中所有的注解属性获取出来
 			AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(amd, type);
 			if (attributes != null) {
 				Set<String> metaTypes = this.metaAnnotationTypesCache.computeIfAbsent(type, key -> {
@@ -106,6 +115,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 					return (result.isEmpty() ? Collections.emptySet() : result);
 				});
 				if (isStereotypeWithNameValue(type, metaTypes, attributes)) {
+					// 获取@Component注解的value属性值
 					Object value = attributes.get("value");
 					if (value instanceof String) {
 						String strVal = (String) value;
@@ -134,6 +144,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	protected boolean isStereotypeWithNameValue(String annotationType,
 			Set<String> metaAnnotationTypes, @Nullable Map<String, Object> attributes) {
 
+		// 本身就是Component注解、或者其元注解有Component注解、获取注解权限丁类名有javax.annotation.ManagedBean
 		boolean isStereotype = annotationType.equals(COMPONENT_ANNOTATION_CLASSNAME) ||
 				metaAnnotationTypes.contains(COMPONENT_ANNOTATION_CLASSNAME) ||
 				annotationType.equals("javax.annotation.ManagedBean") ||
@@ -150,6 +161,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	 * @return the default bean name (never {@code null})
 	 */
 	protected String buildDefaultBeanName(BeanDefinition definition, BeanDefinitionRegistry registry) {
+		// 它的方法是protected 由此可见若我们想自定义生成器的话  可以继承它,然后复写
 		return buildDefaultBeanName(definition);
 	}
 
@@ -164,9 +176,11 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	 * @return the default bean name (never {@code null})
 	 */
 	protected String buildDefaultBeanName(BeanDefinition definition) {
+		// 这里是先拿到ClassUtils.getShortName 短名称
 		String beanClassName = definition.getBeanClassName();
 		Assert.state(beanClassName != null, "No bean class name set");
 		String shortClassName = ClassUtils.getShortName(beanClassName);
+		// 调用java.beans.Introspector的方法  首字母小写
 		return Introspector.decapitalize(shortClassName);
 	}
 

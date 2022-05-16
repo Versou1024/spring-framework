@@ -43,6 +43,7 @@ import org.springframework.web.cors.CorsUtils;
  * @since 3.1
  */
 public final class RequestMethodsRequestCondition extends AbstractRequestCondition<RequestMethodsRequestCondition> {
+	// 请求方式条件匹配器
 
 	/** Per HTTP method cache to return ready instances from getMatchingCondition. */
 	private static final Map<String, RequestMethodsRequestCondition> requestMethodConditionCache;
@@ -50,12 +51,13 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 	static {
 		requestMethodConditionCache = new HashMap<>(RequestMethod.values().length);
 		for (RequestMethod method : RequestMethod.values()) {
+			// 缓存 -- 以method.name()为key,以RequestMethodsRequestCondition(method)为value
 			requestMethodConditionCache.put(method.name(), new RequestMethodsRequestCondition(method));
 		}
 	}
 
 
-	private final Set<RequestMethod> methods;
+	private final Set<RequestMethod> methods; // 支持使用的methods
 
 
 	/**
@@ -64,8 +66,8 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 	 * if, 0 the condition will match to every request
 	 */
 	public RequestMethodsRequestCondition(RequestMethod... requestMethods) {
-		this.methods = (ObjectUtils.isEmpty(requestMethods) ?
-				Collections.emptySet() : new LinkedHashSet<>(Arrays.asList(requestMethods)));
+		// 构造
+		this.methods = (ObjectUtils.isEmpty(requestMethods) ? Collections.emptySet() : new LinkedHashSet<>(Arrays.asList(requestMethods)));
 	}
 
 	/**
@@ -99,6 +101,9 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 	 */
 	@Override
 	public RequestMethodsRequestCondition combine(RequestMethodsRequestCondition other) {
+		// 联合其他 方法匹配器 ; 核心就是set.addAll(other.methods)两者支持的method进行合并
+		// 然后返回一个新的RequestMethodsRequestCondition,合并前的this和other不会改变
+
 		if (isEmpty() && other.isEmpty()) {
 			return this;
 		}
@@ -125,19 +130,26 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 	@Override
 	@Nullable
 	public RequestMethodsRequestCondition getMatchingCondition(HttpServletRequest request) {
+		// 检查request是否匹配当前请求方式条件匹配器
+
+		// 1. 预检请求
 		if (CorsUtils.isPreFlightRequest(request)) {
 			return matchPreFlight(request);
 		}
 
+		// 2. methods为空
 		if (getMethods().isEmpty()) {
+			// 2.1 methods为空,且当前request是OPTIONS请求,且不是error转发类型,就直接返回null,表示不支持OPTIONS
 			if (RequestMethod.OPTIONS.name().equals(request.getMethod()) &&
 					!DispatcherType.ERROR.equals(request.getDispatcherType())) {
 
 				return null; // We handle OPTIONS transparently, so don't match if no explicit declarations
 			}
+			// 2.2 methods,非OPTIONS请求,都是支持的
 			return this;
 		}
 
+		// 3. methods不为空,就需要进行匹配
 		return matchRequestMethod(request.getMethod());
 	}
 
@@ -157,12 +169,16 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 
 	@Nullable
 	private RequestMethodsRequestCondition matchRequestMethod(String httpMethodValue) {
+		// 请求的method是否匹配
+
 		RequestMethod requestMethod;
 		try {
+			// 1. requestMethod在methods中存在
 			requestMethod = RequestMethod.valueOf(httpMethodValue);
 			if (getMethods().contains(requestMethod)) {
 				return requestMethodConditionCache.get(httpMethodValue);
 			}
+			// 2. requestMethod是HEAD, methods存在GET,
 			if (requestMethod.equals(RequestMethod.HEAD) && getMethods().contains(RequestMethod.GET)) {
 				return requestMethodConditionCache.get(HttpMethod.GET.name());
 			}

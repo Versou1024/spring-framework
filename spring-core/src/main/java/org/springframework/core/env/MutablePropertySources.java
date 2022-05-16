@@ -40,6 +40,11 @@ import org.springframework.lang.Nullable;
  * @see PropertySourcesPropertyResolver
  */
 public class MutablePropertySources implements PropertySources {
+	/**
+	 * 1、PropertySources接口的默认实现MutablePropertySources。允许操纵包含的属性源，并提供用于复制现有PropertySources实例的构造函数。
+	 * 2、在addFirst和addLast等方法中提到优先级的地方，这与使用PropertyResolver解析给定属性时搜索属性源的顺序有关。
+	 * 3、有具体的优先级，例如addFirst、addBefore、addAfter、addAfter
+	 */
 
 	private final List<PropertySource<?>> propertySourceList = new CopyOnWriteArrayList<>();
 

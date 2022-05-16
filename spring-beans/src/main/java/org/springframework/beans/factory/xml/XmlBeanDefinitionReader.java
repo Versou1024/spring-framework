@@ -77,6 +77,13 @@ import org.springframework.util.xml.XmlValidationModeDetector;
  * @see org.springframework.context.support.GenericApplicationContext
  */
 public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
+	/**
+	 * 我们注解配置中@Configuration上也可以加上@ImportResource导入外置的xml配置文件。
+	 * 它由此方法ConfigurationClassBeanDefinitionReader#loadBeanDefinitionsFromImportedResources处理，内部借助的就是XmlBeanDefinitionReader去解析它的
+	 * ————————————————
+	 * 版权声明：本文为CSDN博主「方向盘(YourBatman)」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+	 * 原文链接：https://blog.csdn.net/f641385712/article/details/88683596
+	 */
 
 	/**
 	 * Indicates that the validation should be disabled.

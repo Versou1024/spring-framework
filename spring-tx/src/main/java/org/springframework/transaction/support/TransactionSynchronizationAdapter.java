@@ -31,6 +31,8 @@ import org.springframework.core.Ordered;
  * @since 22.01.2004
  */
 public abstract class TransactionSynchronizationAdapter implements TransactionSynchronization, Ordered {
+	// TransactionSynchronizationAdapter 是一个适配器
+	// 将所有的接口做一个空方法的适配,并且扩展order排序能力
 
 	@Override
 	public int getOrder() {

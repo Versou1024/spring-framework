@@ -61,8 +61,10 @@ import org.springframework.core.annotation.AliasFor;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@EventListener
+@EventListener //有类似于注解继承的效果
 public @interface TransactionalEventListener {
+	// @since 4.2  显然，注解的方式提供得还是挺晚的，而API的方式第一个版本就已经提供了
+	// 另外最重要的是，它头上有一个注解：`@EventListener`  so
 
 	/**
 	 * Phase to bind the handling of an event to.
@@ -71,17 +73,24 @@ public @interface TransactionalEventListener {
 	 * all unless {@link #fallbackExecution} has been enabled explicitly.
 	 */
 	TransactionPhase phase() default TransactionPhase.AFTER_COMMIT;
+	// 这个注解取值有：BEFORE_COMMIT、AFTER_COMMIT、AFTER_ROLLBACK、AFTER_COMPLETION
+	// 各个值都代表什么意思表达什么功能，非常清晰~
+	// 需要注意的是：AFTER_COMMIT + AFTER_COMPLETION是可以同时生效的
+	// AFTER_ROLLBACK + AFTER_COMPLETION是可以同时生效的
 
 	/**
 	 * Whether the event should be handled if no transaction is running.
 	 */
 	boolean fallbackExecution() default false;
+	// 若没有事务的时候，对应的event是否已经执行  默认值为false表示  没事务就不执行了
 
 	/**
 	 * Alias for {@link #classes}.
 	 */
 	@AliasFor(annotation = EventListener.class, attribute = "classes")
 	Class<?>[] value() default {};
+	// 这里巧妙的用到了@AliasFor的能力，放到了@EventListener身上
+	// 注意：一般我建议都需要指定此值，否则默认可以处理所有类型的事件  范围太广了
 
 	/**
 	 * The event classes that this listener handles.

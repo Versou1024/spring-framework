@@ -33,6 +33,8 @@ package org.springframework.context;
 @FunctionalInterface
 public interface ApplicationEventPublisher {
 
+	// Spring提供了ApplicationEventMulticaster接口，负责管理ApplicationListener和真正发布ApplicationEvent（ApplicationContext是委托给它完成的）
+
 	/**
 	 * Notify all <strong>matching</strong> listeners registered with this
 	 * application of an application event. Events may be framework events
@@ -67,5 +69,8 @@ public interface ApplicationEventPublisher {
 	 * @see PayloadApplicationEvent
 	 */
 	void publishEvent(Object event);
+	// 这个接口是Spring4.2后提供的，可以发布任意的事件对象（即使不是ApplicationEvent的子类了）
+	// 当这个对象不是一个ApplicationEvent,我们会使用PayloadApplicationEvent来包装一下再发送
+	// 比如后面会建讲到的@EventListener注解标注的放 就是使用的它
 
 }

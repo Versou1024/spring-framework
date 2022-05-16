@@ -46,6 +46,10 @@ import org.springframework.util.ResourceUtils;
  * @since 28.12.2003
  */
 public abstract class AbstractResource implements Resource {
+	/*
+	抽象类AbstractResource
+	对于任何的接口而言，这个直接抽象类是重中之重，里面浓缩了接口的大部分公共实现，所以这里直接拿源码开刀
+	 */
 
 	/**
 	 * This implementation checks whether a File can be opened,
@@ -55,6 +59,7 @@ public abstract class AbstractResource implements Resource {
 	@Override
 	public boolean exists() {
 		// Try file existence: can we find the file in the file system?
+		// 尝试判断文件存在：我们能在文件系统中找到文件吗？
 		if (isFile()) {
 			try {
 				return getFile().exists();
@@ -67,6 +72,7 @@ public abstract class AbstractResource implements Resource {
 			}
 		}
 		// Fall back to stream existence: can we open the stream?
+		// 回到问题是否存在对应的Stream
 		try {
 			getInputStream().close();
 			return true;
@@ -159,6 +165,8 @@ public abstract class AbstractResource implements Resource {
 	 */
 	@Override
 	public long contentLength() throws IOException {
+		// 获取内容的字节数组长度
+		// 调用此方法，也相当于吧流的read了一遍，请务必注意
 		InputStream is = getInputStream();
 		try {
 			long size = 0;

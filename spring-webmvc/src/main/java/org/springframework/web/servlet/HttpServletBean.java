@@ -81,6 +81,20 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  */
 @SuppressWarnings("serial")
 public abstract class HttpServletBean extends HttpServlet implements EnvironmentCapable, EnvironmentAware {
+	/**
+	 * Servlet接口：定义Servlet的生命周期init、destroy，以及执行service，以及获取servletContext和servletConfig的方法
+	 *
+	 * GenericServlet抽象类：实现Servlet接口，主要是聚合ServletConfig，提供servletConfig
+	 * 		同时实现ServletConfig接口，提供Servlet的相关参数，比如servletName、initParameters、servletContext等
+	 *
+	 * HttpServlet 抽象类：继承GenericServlet抽象类，主要目的是将无协议的Servlet作为有协议的Http的Servlet，
+	 * 		即将原有的service的形参转为HttpServletRequest和HttpServletResponse的service方法，并根据requestMethod解耦为doGet、doPost等具体方法
+	 *
+	 * HttpServletBean 继承HttpServlet
+	 * 作用：依赖注入 ConfigurableEnvironment
+	 * 重点：关注init
+	 *
+	 */
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -147,16 +161,28 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	 */
 	@Override
 	public final void init() throws ServletException {
+		/**
+		 * Servlet容器在启动后，就会加载Servlet的Class信息到内存上，但不一定立即执行Servlet#init()的初始化方法；
+		 * 如果Servlet被配置为loadStartUp=1，即表示立即初始化，将会在类加载之后马上调用Servlet#init()方法 -- 即当前所重写的方法
+		 */
 
-		// Set bean properties from init parameters.
+		// HttpServletBean的初始化init() - 主要将Servlet的InitParameters转为PropertyValues,然后设置到当前对象中
 		PropertyValues pvs = new ServletConfigPropertyValues(getServletConfig(), this.requiredProperties);
 		if (!pvs.isEmpty()) {
 			try {
-				BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
-				ResourceLoader resourceLoader = new ServletContextResourceLoader(getServletContext());
-				bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, getEnvironment()));
-				initBeanWrapper(bw);
-				bw.setPropertyValues(pvs, true);
+				// BeanWrapper是一个实体包装类，简单地说，BeanWrapper提供分析和操作JavaBean的方案，如值的set/get方法、描述的set/get方法以及属性的可读可写性
+
+				//这里面我们并没有给此Servlet初始化的一些参数，所以此处为空，为false
+				//若进来了，可以看到里面会做一些处理：将这个DispatcherServlet转换成一个BeanWrapper对象，从而能够以spring的方式来对初始化参数的值进行注入。这些属性如contextConfigLocation、namespace等等。
+				//同时注册一个属性编辑器，一旦在属性注入的时候遇到Resource类型的属性就会使用ResourceEditor去解析。再留一个initBeanWrapper(bw)方法给子类覆盖，让子类处真正执行BeanWrapper的属性注入工作。
+				//但是HttpServletBean的子类FrameworkServlet和DispatcherServlet都没有覆盖其initBeanWrapper(bw)方法，所以创建的BeanWrapper对象没有任何作用。
+
+				//备注：此部分把当前Servlet封装成一个BeanWrapper在把它交给Spring管理部分非常重要，比如后续我们讲到SpringBoot源码的时候，会看出来这部分代码的重要性了。。。
+				BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this); // 包装的target对象就是当前对象
+				ResourceLoader resourceLoader = new ServletContextResourceLoader(getServletContext()); //
+				bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, getEnvironment())); // BeanWrapper需要一个属性编辑者
+				initBeanWrapper(bw); // 【抽象方法】目前没有任何子类实现
+				bw.setPropertyValues(pvs, true); // target对象的属性来自pvs中
 			}
 			catch (BeansException ex) {
 				if (logger.isErrorEnabled()) {
@@ -166,7 +192,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 			}
 		}
 
-		// Let subclasses do whatever initialization they like.
+		// 让具体子类实现他们需要的初始化操作
 		initServletBean();
 	}
 
@@ -207,6 +233,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	 * PropertyValues implementation created from ServletConfig init parameters.
 	 */
 	private static class ServletConfigPropertyValues extends MutablePropertyValues {
+		// ServletConfigPropertyValues 目的：将ServletConfig的initParameter信息转为Spring管理的PropertyValues
+		// 作为一个适配器
 
 		/**
 		 * Create new ServletConfigPropertyValues.
@@ -215,12 +243,12 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 		 * we can't accept default values
 		 * @throws ServletException if any required properties are missing
 		 */
-		public ServletConfigPropertyValues(ServletConfig config, Set<String> requiredProperties)
-				throws ServletException {
+		public ServletConfigPropertyValues(ServletConfig config, Set<String> requiredProperties) throws ServletException {
+			// ServletConfigPropertyValues 构造函数()
 
-			Set<String> missingProps = (!CollectionUtils.isEmpty(requiredProperties) ?
-					new HashSet<>(requiredProperties) : null);
+			Set<String> missingProps = (!CollectionUtils.isEmpty(requiredProperties) ? new HashSet<>(requiredProperties) : null);
 
+			// 1. 遍历servletConfig中的配置initParameter,提取property和对应value
 			Enumeration<String> paramNames = config.getInitParameterNames();
 			while (paramNames.hasMoreElements()) {
 				String property = paramNames.nextElement();

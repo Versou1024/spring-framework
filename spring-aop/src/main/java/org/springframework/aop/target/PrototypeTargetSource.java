@@ -33,6 +33,7 @@ import org.springframework.beans.BeansException;
  */
 @SuppressWarnings("serial")
 public class PrototypeTargetSource extends AbstractPrototypeBasedTargetSource {
+	// 最终基于BeanFactory总共的原型target的TargetSource类
 
 	/**
 	 * Obtain a new prototype instance for every call.
@@ -40,6 +41,7 @@ public class PrototypeTargetSource extends AbstractPrototypeBasedTargetSource {
 	 */
 	@Override
 	public Object getTarget() throws BeansException {
+		// getTarget就是获取原型对象
 		return newPrototypeInstance();
 	}
 

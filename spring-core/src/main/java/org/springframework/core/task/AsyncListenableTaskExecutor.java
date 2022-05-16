@@ -29,6 +29,7 @@ import org.springframework.util.concurrent.ListenableFuture;
  * @see ListenableFuture
  */
 public interface AsyncListenableTaskExecutor extends AsyncTaskExecutor {
+	// 在 AsyncTaskExecutor 基础上扩展：返回ListenableFuture的能力
 
 	/**
 	 * Submit a {@code Runnable} task for execution, receiving a {@code ListenableFuture}

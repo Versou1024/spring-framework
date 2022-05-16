@@ -51,6 +51,7 @@ public class Constants {
 
 	/** Map from String field name to object value. */
 	private final Map<String, Object> fieldCache = new HashMap<>();
+	// 缓存指定Class中的静态变量以及其值
 
 
 	/**
@@ -64,10 +65,11 @@ public class Constants {
 		this.className = clazz.getName();
 		Field[] fields = clazz.getFields();
 		for (Field field : fields) {
+			// 只缓存所有PublicStaticFinal
 			if (ReflectionUtils.isPublicStaticFinal(field)) {
 				String name = field.getName();
 				try {
-					Object value = field.get(null);
+					Object value = field.get(null); // 静态变量无须指定target
 					this.fieldCache.put(name, value);
 				}
 				catch (IllegalAccessException ex) {

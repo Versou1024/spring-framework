@@ -34,6 +34,10 @@ import org.springframework.util.ClassUtils;
  */
 @SuppressWarnings("serial")
 public class ProxyFactory extends ProxyCreatorSupport {
+	/**
+	 * ProxyFactory 代理工厂：
+	 * 主要提供不同的 getProxy() 方法
+	 */
 
 	/**
 	 * Create a new ProxyFactory.
@@ -47,7 +51,9 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 * @param target the target object to be proxied
 	 */
 	public ProxyFactory(Object target) {
+		// 通过传入target，设置targetSource
 		setTarget(target);
+		// ClassUtils.getAllInterfaces(target) 获取target实现的接口
 		setInterfaces(ClassUtils.getAllInterfaces(target));
 	}
 

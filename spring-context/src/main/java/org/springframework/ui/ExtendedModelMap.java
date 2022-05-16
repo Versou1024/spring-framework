@@ -35,6 +35,9 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class ExtendedModelMap extends ModelMap implements Model {
+	// 通过 ModelMap 的方法完成对Model接口的抽象方法进行书写
+	// 通过名字可知: ExtendedModelMap 就是 扩展的 ModelMap 实现 Model接口 的方法
+
 
 	@Override
 	public ExtendedModelMap addAttribute(String attributeName, @Nullable Object attributeValue) {

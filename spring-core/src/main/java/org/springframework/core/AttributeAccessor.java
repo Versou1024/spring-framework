@@ -26,6 +26,12 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public interface AttributeAccessor {
+	/**
+	 * 分析: 由名字可以知道, 这就是一个属性的访问接口, 提供了对属性的访问、设置功能, 同样的, BeanDefiniton
+	 * 也是间接的实现了这个接口的, 之所以要实现这个接口是为了存储一些属性, 这些属性不应该放入到Bean的定义
+	 * 中, 即为了实现类的单一职责, BeanDefinition仅仅用来定义bean对象的公共属性, 对于特殊的bean对象, 如
+	 * 果还需要其它属性的定义, 那么就应该通过AttributeAccessor接口提供的功能来实现
+	 */
 
 	/**
 	 * Set the attribute defined by {@code name} to the supplied {@code value}.

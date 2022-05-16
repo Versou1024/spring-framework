@@ -105,12 +105,16 @@ public abstract class AopUtils {
 	 * @see org.springframework.aop.framework.AopProxyUtils#ultimateTargetClass(Object)
 	 */
 	public static Class<?> getTargetClass(Object candidate) {
+		// 获取目标Class
 		Assert.notNull(candidate, "Candidate object must not be null");
 		Class<?> result = null;
+
+		// 实现了TargetClassAware，直接调用getTargetClass
 		if (candidate instanceof TargetClassAware) {
 			result = ((TargetClassAware) candidate).getTargetClass();
 		}
 		if (result == null) {
+			// 是否为Cglib代理，是的话获取superClass，否则直接获取Class
 			result = (isCglibProxy(candidate) ? candidate.getClass().getSuperclass() : candidate.getClass());
 		}
 		return result;
@@ -133,8 +137,8 @@ public abstract class AopUtils {
 			return method;
 		}
 		Method methodToUse = MethodIntrospector.selectInvocableMethod(method, targetType);
-		if (Modifier.isPrivate(methodToUse.getModifiers()) && !Modifier.isStatic(methodToUse.getModifiers()) &&
-				SpringProxy.class.isAssignableFrom(targetType)) {
+		// 方法为私有的、非静态的、且部署SpringProxy，就报出异常
+		if (Modifier.isPrivate(methodToUse.getModifiers()) && !Modifier.isStatic(methodToUse.getModifiers()) && SpringProxy.class.isAssignableFrom(targetType)) {
 			throw new IllegalStateException(String.format(
 					"Need to invoke method '%s' found on proxy for target class '%s' but cannot " +
 					"be delegated to target bean. Switch its visibility to package or protected.",
@@ -193,6 +197,9 @@ public abstract class AopUtils {
 	 * @see org.springframework.util.ClassUtils#getMostSpecificMethod
 	 */
 	public static Method getMostSpecificMethod(Method method, @Nullable Class<?> targetClass) {
+		// getMostSpecificMethod -> 获取最具体的方法
+
+		// 步骤：避免targetClass是代理类，首先获取userClass，然后借用ClassUtils.getMostSpecificMethod
 		Class<?> specificTargetClass = (targetClass != null ? ClassUtils.getUserClass(targetClass) : null);
 		Method resolvedMethod = ClassUtils.getMostSpecificMethod(method, specificTargetClass);
 		// If we are dealing with method with generic parameters, find the original method.
@@ -223,17 +230,22 @@ public abstract class AopUtils {
 	 */
 	public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasIntroductions) {
 		Assert.notNull(pc, "Pointcut must not be null");
+		// 首先检查类是否匹配
 		if (!pc.getClassFilter().matches(targetClass)) {
 			return false;
 		}
 
+		// 然后检查方法是否有匹配的
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
 		if (methodMatcher == MethodMatcher.TRUE) {
 			// No need to iterate the methods if we're matching any method anyway...
+			// 如果是恒等式true，那就毫无疑问全匹配楼
 			return true;
 		}
 
-		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
+		//IntroductionAwareMethodMatcher 是MethodMatcher的子类  增加了匹配方法：
+		// boolean matches(Method method, @Nullable Class<?> targetClass, boolean hasIntroductions);
+		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null; // 引介增强比 -- 其中AspectJExpressionPointcut就实现了这个接口
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
 			introductionAwareMethodMatcher = (IntroductionAwareMethodMatcher) methodMatcher;
 		}
@@ -243,7 +255,7 @@ public abstract class AopUtils {
 			classes.add(ClassUtils.getUserClass(targetClass));
 		}
 		classes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
-
+		// 这里注意：会对类以及接口中所有的方法对MethodMatcher的匹配
 		for (Class<?> clazz : classes) {
 			Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
 			for (Method method : methods) {
@@ -281,10 +293,13 @@ public abstract class AopUtils {
 	 * @return whether the pointcut can apply on any method
 	 */
 	public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
+		// 检查advisor是否支持targetClass
+		// 例如：调用classFilter.matches、
 		if (advisor instanceof IntroductionAdvisor) {
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
 		else if (advisor instanceof PointcutAdvisor) {
+			// 一般都是这种情况
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}
@@ -303,21 +318,30 @@ public abstract class AopUtils {
 	 * (may be the incoming List as-is)
 	 */
 	public static List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> clazz) {
+		// 在给定的一组建议(candidateAdvisors)中，返回能够匹配指定类型的建议者列表
+		// 这个方法很总要：在自动代理创建器AbstractAdvisorAutoProxyCreator中，都是这样筛选的能够匹配上此类型的Advisor们~~~
+
 		if (candidateAdvisors.isEmpty()) {
+			// 返回空集合不影响
 			return candidateAdvisors;
 		}
-		List<Advisor> eligibleAdvisors = new ArrayList<>();
+		// 这里遍历了candidateAdvisors两次   注意这个技巧
+		// 第一次遍历：找出所有的IntroductionAdvisor 类型的，并且canApply的Advisor们
+		List<Advisor> eligibleAdvisors = new ArrayList<>(); // eligible 符合的，正确的
 		for (Advisor candidate : candidateAdvisors) {
+			// candidate 一般都不是IntroductionAdvisor
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
+		// hasIntroductions：如果上面不为空，这里就是true  然后继续便利  吧canApply的找出来
 		boolean hasIntroductions = !eligibleAdvisors.isEmpty();
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor) {
 				// already processed
 				continue;
 			}
+			// 非Introduction类型的advisor，直接调用canApply判断
 			if (canApply(candidate, clazz, hasIntroductions)) {
 				eligibleAdvisors.add(candidate);
 			}
@@ -335,12 +359,12 @@ public abstract class AopUtils {
 	 * @throws org.springframework.aop.AopInvocationException in case of a reflection error
 	 */
 	@Nullable
-	public static Object invokeJoinpointUsingReflection(@Nullable Object target, Method method, Object[] args)
-			throws Throwable {
+	public static Object invokeJoinpointUsingReflection(@Nullable Object target, Method method, Object[] args) throws Throwable {
 
 		// Use reflection to invoke the method.
 		try {
 			ReflectionUtils.makeAccessible(method);
+			// 直接对连接点使用反射的方式进行调用
 			return method.invoke(target, args);
 		}
 		catch (InvocationTargetException ex) {

@@ -31,6 +31,7 @@ import org.springframework.aop.interceptor.ExposeInvocationInterceptor;
  * @since 2.0
  */
 public abstract class AspectJProxyUtils {
+	// 同样的，它相对于AopProxyUtils，它只是专门处理AspectJ代理对象的工具类。
 
 	/**
 	 * Add special advisors if necessary to work with a proxy chain that contains AspectJ advisors:
@@ -43,6 +44,13 @@ public abstract class AspectJProxyUtils {
 	 * otherwise {@code false}
 	 */
 	public static boolean makeAdvisorChainAspectJCapableIfNecessary(List<Advisor> advisors) {
+		// 只提供这么一个公共方法，但是这个方法都还是非常重要的。 Capable：有能力的
+		// 它在自动代理创建器`AspectJAwareAdvisorAutoProxyCreator#extendAdvisors`方法中有调用（重要~~~）
+		// 在AspectJProxyFactory#addAdvisorsFromAspectInstanceFactory方法中也有调用
+		// 它的作用：只要发现有AspectJ的Advisor存在，并且advisors还不包含有ExposeInvocationInterceptor.ADVISOR
+		// 那就在第一个位置上调添加一个ExposeInvocationInterceptor.ADVISOR
+		// 这个`ExposeInvocationInterceptor.ADVISOR`的作用：就是获取到当前的currentInvocation，也是使用的ThreadLocal
+		// 可以暴露当前Spring AOP的invocation，这个的调用不影响advisor chain的调用
 		// Don't add advisors to an empty list; may indicate that proxying is just not required
 		if (!advisors.isEmpty()) {
 			boolean foundAspectJAdvice = false;
@@ -67,6 +75,7 @@ public abstract class AspectJProxyUtils {
 	 * @param advisor the Advisor to check
 	 */
 	private static boolean isAspectJAdvice(Advisor advisor) {
+		// 判断，该Advisor是否是AspectJ的的增强器
 		return (advisor instanceof InstantiationModelAwarePointcutAdvisor ||
 				advisor.getAdvice() instanceof AbstractAspectJAdvice ||
 				(advisor instanceof PointcutAdvisor &&

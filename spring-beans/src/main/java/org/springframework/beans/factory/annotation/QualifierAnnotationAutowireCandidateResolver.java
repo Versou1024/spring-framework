@@ -58,6 +58,8 @@ import org.springframework.util.StringUtils;
  * @see Value
  */
 public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwareAutowireCandidateResolver {
+	// 在 GenericTypeAwareAutowireCandidateResolver 的基础上
+	// 额外支持：@Value注解、@Qualifier注解
 
 	private final Set<Class<? extends Annotation>> qualifierTypes = new LinkedHashSet<>(2);
 
@@ -71,6 +73,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	 */
 	@SuppressWarnings("unchecked")
 	public QualifierAnnotationAutowireCandidateResolver() {
+		// 默认情况：都是使用构造函数，将qualifierTypes配置为Qualifier注解的class
 		this.qualifierTypes.add(Qualifier.class);
 		try {
 			this.qualifierTypes.add((Class<? extends Annotation>) ClassUtils.forName("javax.inject.Qualifier",
@@ -144,10 +147,20 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	 */
 	@Override
 	public boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
+		// 会一直向上依次调用
+		// 调用 SimpleAutowireCandidateResolver 的 isAutowireCandidate 查看 BeanDefinition 中的 AutowireCandidate 是否为tru
+		// 调用 GenericTypeAwareAutowireCandidateResolver 的  isAutowireCandidate 查看 是否为泛型，在泛型的情况下是否能够满足匹配呢
 		boolean match = super.isAutowireCandidate(bdHolder, descriptor);
+		// 如果是false，说明beanDefinition.autowireCandidate 或者 依赖上泛型没有匹配上(那就不用继续往下走了)
+		// 如果是true，那就继续，解析@Qualifier注解啦
+		// 所以若你标记了@Qualifier注解，也是需要对应上
 		if (match) {
+			// 这个逻辑比较简单，看看有没有标注@Qualifier注解(没有标注也是返回true~~)
+			// 需要注意的是，Spring这里支持自己的@Qualifier，也支持javax.inject.Qualifier
+			// checkQualifiers() 这个方法有一些有意思的处理，因此还是决定讲解一下，请参见下面的解析~~~~~
 			match = checkQualifiers(bdHolder, descriptor.getAnnotations());
 			if (match) {
+				// 兼容到方法形参级别的注入~~~~~~~~~~~~~
 				MethodParameter methodParam = descriptor.getMethodParameter();
 				if (methodParam != null) {
 					Method method = methodParam.getMethod();
@@ -157,13 +170,16 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 				}
 			}
 		}
+		// 最终返回是否支持
 		return match;
 	}
-
 	/**
 	 * Match the given qualifier annotations against the candidate bean definition.
+	 * 将给定的@Qualifier注解与候选bean定义匹配~~~（简单的书就是看看类型已匹配上的，@Qualifier是否还能匹配上）
 	 */
 	protected boolean checkQualifiers(BeanDefinitionHolder bdHolder, Annotation[] annotationsToSearch) {
+		// 这里一般会有两个注解  一个@Autowired 一个@Qualifier
+		// 或者还有其余的组合注解~~~
 		if (ObjectUtils.isEmpty(annotationsToSearch)) {
 			return true;
 		}
@@ -172,14 +188,31 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 			Class<? extends Annotation> type = annotation.annotationType();
 			boolean checkMeta = true;
 			boolean fallbackToMeta = false;
+
+			// isQualifier：判断是不是@Qualifier注解以及 JSR330的`javax.inject.Qualifier`注解也是支持的
+			// 这里是检查type是否有直接注解@Qualifier
 			if (isQualifier(type)) {
+				// checkQualifier 最重要的方法就是这个了，它是个重载方法。。。它的内容非常长，大致我在这里解析步骤如下：
+				//1、bd.getQualifier 看看Bean定义里是否已经定义过Qualifier们(但是经过我的跟踪，Bean定义得这个字段：private final Map<String, AutowireCandidateQualifier> qualifiers;永远不会被赋值 如有人知道，请告知我 了能事Spring预留得吧)
+				//2、该Bean定义得AnnotatedElement qualifiedElement的这个属性上是否有指定的注解，有就拿出这个Annotation，否则继续下一步
+				//3、resolvedFactoryMethod工厂方法上是否有这个注解，否则进行下一步（下一步事关键。。。）
+				//4、Look for matching annotation on the target class  JavaDoc得意思备注也很清晰，就是去具体得类上面，看有没有有对应的注解，有就拿出来。
+				//（有个细节）：即使这个类被代理了，也是能拿到标注在它上面的注解的  因为： AnnotationUtils.getAnnotation(ClassUtils.getUserClass(bd.getBeanClass()), type)
+				//5、到这里，如国获得了对应的@Qualifier注解，那就会比较。如果value值也相同，那就return true，否则继续往下走
+				//6、接下来拿到这个注解的attributes，然后判断若@Qualifier没有value值或者是空串，就只return false了  否则继续看
+				//7、最终会和Bean上面那个注解（一般都是@Component等注解）的value值和@Qualifier得value值进行比较，若相等  就最终返回true勒（请注意：此处Bean得alias别名若相等也是会返回true）
+				//8、======就这样，我们就完成了Bean定义和@Qualifier得一个匹配过程======
 				if (!checkQualifier(bdHolder, annotation, typeConverter)) {
 					fallbackToMeta = true;
 				}
 				else {
+					// 是否需要去检查元注解
 					checkMeta = false;
 				}
 			}
+
+			// 这一步非常有效：相当于支持到了组合注解的情况。 它连注解的注解都会解析
+			// 比如我们@MyAnno上面还有@Qualifier注解，仍然会被这里解析到的  内部有一个递归
 			if (checkMeta) {
 				boolean foundMeta = false;
 				for (Annotation metaAnn : type.getAnnotations()) {
@@ -201,6 +234,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 		}
 		return true;
 	}
+
 
 	/**
 	 * Checks whether the given annotation type is a recognized qualifier type.
@@ -332,6 +366,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	 */
 	@Override
 	public boolean hasQualifier(DependencyDescriptor descriptor) {
+		// 获取依赖注入上的注解，检查是否有@Qualifier注解
 		for (Annotation ann : descriptor.getAnnotations()) {
 			if (isQualifier(ann.annotationType())) {
 				return true;
@@ -347,13 +382,16 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	@Override
 	@Nullable
 	public Object getSuggestedValue(DependencyDescriptor descriptor) {
+		// 拿到value注解的这个属性（若标注有@Value注解的话）
 		Object value = findValue(descriptor.getAnnotations());
 		if (value == null) {
+			// 字段没有使用@Value，就看形参方法上有没有(前提是注入的形参，而不是类字段，常见注入的形参就是@Bean标注的方法的形参)
 			MethodParameter methodParam = descriptor.getMethodParameter();
 			if (methodParam != null) {
 				value = findValue(methodParam.getMethodAnnotations());
 			}
 		}
+		// 获取@Value的value属性值，注意属性值是没有经过spel解析或占位符解析的哦
 		return value;
 	}
 
@@ -363,9 +401,10 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	@Nullable
 	protected Object findValue(Annotation[] annotationsToSearch) {
 		if (annotationsToSearch.length > 0) {   // qualifier annotations have to be local
-			AnnotationAttributes attr = AnnotatedElementUtils.getMergedAnnotationAttributes(
-					AnnotatedElementUtils.forAnnotations(annotationsToSearch), this.valueAnnotationType);
+			// 对于给定的annotationsToSearch注解生成一个AnnotationElement元素，这样AnnotatedElementUtils才可以会使用
+			AnnotationAttributes attr = AnnotatedElementUtils.getMergedAnnotationAttributes(AnnotatedElementUtils.forAnnotations(annotationsToSearch), this.valueAnnotationType);
 			if (attr != null) {
+				// 提取@value属性的value值
 				return extractValue(attr);
 			}
 		}

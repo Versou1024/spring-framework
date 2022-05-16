@@ -36,6 +36,8 @@ import org.springframework.transaction.TransactionDefinition;
 @SuppressWarnings("serial")
 public class DefaultTransactionDefinition implements TransactionDefinition, Serializable {
 
+	// 默认的事务定义信息
+
 	/** Prefix for the propagation constants defined in TransactionDefinition. */
 	public static final String PREFIX_PROPAGATION = "PROPAGATION_";
 
@@ -85,6 +87,7 @@ public class DefaultTransactionDefinition implements TransactionDefinition, Seri
 	 * @see #setName
 	 */
 	public DefaultTransactionDefinition(TransactionDefinition other) {
+		// copy
 		this.propagationBehavior = other.getPropagationBehavior();
 		this.isolationLevel = other.getIsolationLevel();
 		this.timeout = other.getTimeout();

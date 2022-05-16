@@ -35,9 +35,15 @@ import java.util.Properties;
  */
 public class PropertiesPropertySource extends MapPropertySource {
 
+	/**
+	 * 数据源为Properties
+	 * 请注意，由于Properties对象在实现上是一个<object，object>哈希表，因此可能包含非字符串键或值。
+	 * 然而，这种实现仅限于访问基于字符串的键和值，方式与属性相同。getProperty和Properties。setProperty。
+	 */
+
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	public PropertiesPropertySource(String name, Properties source) {
-		super(name, (Map) source);
+		super(name, (Map) source); // Properties类本身就是通过继承HansTab实现的，因此这里的Properties属性源继承了Map属性源
 	}
 
 	protected PropertiesPropertySource(String name, Map<String, Object> source) {

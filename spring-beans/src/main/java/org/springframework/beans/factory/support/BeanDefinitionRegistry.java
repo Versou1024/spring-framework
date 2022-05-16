@@ -46,6 +46,17 @@ import org.springframework.core.AliasRegistry;
  * @see PropertiesBeanDefinitionReader
  */
 public interface BeanDefinitionRegistry extends AliasRegistry {
+	/*
+	 * BeanDefinitionRegistry 注册中心
+	 * API: 是否包含对应BeanDefinition、获取指定的BeanDefinition、获取BeanDefinition的数量
+	 * 获取BeanDefinition的名字数量、注册BeanDefinition、移除BeanDefinition
+	 *
+	 * 它大概有如下功能：
+	 * 1、以Map<String, BeanDefinition>的形式注册bean
+	 * 2、根据beanName 删除和获取 beanDefiniation
+	 * 3、得到持有的beanDefiniation的数目
+	 * 4、根据beanName 判断是否包含beanDefiniation
+	 */
 
 	/**
 	 * Register a new bean definition with this registry.

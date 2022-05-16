@@ -181,6 +181,10 @@ import org.springframework.util.StringUtils;
  * @see ClassLoader#getResources(String)
  */
 public class PathMatchingResourcePatternResolver implements ResourcePatternResolver {
+	/**
+	 * 该实现类是本文的重中之重。
+	 * 它是基于模式匹配的，默认使用org.springframework.util.AntPathMatcher进行路径匹配，它除了支持ResourceLoader支持的前缀外，还额外支持classpath*:用于加载所有匹配的类路径Resource
+	 */
 
 	private static final Log logger = LogFactory.getLog(PathMatchingResourcePatternResolver.class);
 
@@ -277,17 +281,22 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	@Override
 	public Resource[] getResources(String locationPattern) throws IOException {
 		Assert.notNull(locationPattern, "Location pattern must not be null");
+		// locationPattern 是否以 classPath*: 开头
 		if (locationPattern.startsWith(CLASSPATH_ALL_URL_PREFIX)) {
 			// a class path resource (multiple resources for same name possible)
+			// 去掉 前缀 classPath*:，然后判断是否为路径匹配，返回false，就表明是一个绝对路径
 			if (getPathMatcher().isPattern(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()))) {
 				// a class path resource pattern
+				// ClassPath的资源匹配
 				return findPathMatchingResources(locationPattern);
 			}
 			else {
 				// all class path resources with the given name
+				// 所有ClassPath资源通过精确的name
 				return findAllClassPathResources(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()));
 			}
 		}
+		// 不是
 		else {
 			// Generally only look for a pattern after a prefix here,
 			// and on Tomcat only after the "*/" separator for its "war:" protocol.
@@ -318,6 +327,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 		if (path.startsWith("/")) {
 			path = path.substring(1);
 		}
+		// 核心：doFindAllClassPathResources 查找所有ClassPathResources
 		Set<Resource> result = doFindAllClassPathResources(path);
 		if (logger.isTraceEnabled()) {
 			logger.trace("Resolved classpath location [" + location + "] to resources " + result);

@@ -185,6 +185,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	@Override
 	public void destroy() {
 		if (!CollectionUtils.isEmpty(this.beanPostProcessors)) {
+			// 销毁的前置处理器
 			for (DestructionAwareBeanPostProcessor processor : this.beanPostProcessors) {
 				processor.postProcessBeforeDestruction(this.bean, this.beanName);
 			}
@@ -383,6 +384,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	 * @param postProcessors the post-processor candidates
 	 */
 	public static boolean hasApplicableProcessors(Object bean, List<BeanPostProcessor> postProcessors) {
+		// 检查是否有可以应用的 销毁增强处理器
 		if (!CollectionUtils.isEmpty(postProcessors)) {
 			for (BeanPostProcessor processor : postProcessors) {
 				if (processor instanceof DestructionAwareBeanPostProcessor) {

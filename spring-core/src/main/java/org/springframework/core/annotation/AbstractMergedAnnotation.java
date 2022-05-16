@@ -34,6 +34,9 @@ import org.springframework.util.Assert;
  * @param <A> the annotation type
  */
 abstract class AbstractMergedAnnotation<A extends Annotation> implements MergedAnnotation<A> {
+	/**
+	 * MergedAnnotation 的抽象实现
+	 */
 
 	@Nullable
 	private volatile A synthesizedAnnotation;
@@ -221,6 +224,10 @@ abstract class AbstractMergedAnnotation<A extends Annotation> implements MergedA
 		}
 		return value;
 	}
+
+	// 两个重要的抽象核心方法
+	// getAttributeValue
+	// createSynthesized
 
 	/**
 	 * Get the underlying attribute value.

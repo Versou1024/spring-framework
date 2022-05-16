@@ -29,6 +29,12 @@ import org.springframework.web.context.request.WebRequest;
 public interface SessionAttributeStore {
 
 	/**
+	 * 会话属性的容器接口，需要实现一下几个功能：
+	 * 1、给指定请求，存储对应的key-value
+	 * 2、检索指定请求的指定key的value值
+	 * 3、将请求的所有属性值都清空
+	 */
+	/**
 	 * Store the supplied attribute in the backend session.
 	 * <p>Can be called for new attributes as well as for existing attributes.
 	 * In the latter case, this signals that the attribute value may have been modified.

@@ -40,6 +40,7 @@ import org.springframework.core.task.AsyncTaskExecutor;
  * @see org.springframework.scheduling.commonj.WorkManagerTaskExecutor
  */
 public interface SchedulingTaskExecutor extends AsyncTaskExecutor {
+	// 在 AsyncTaskExecutor 的基础上，继续扩展：提供一个Executor更加倾向短工作还是长工作的选项
 
 	/**
 	 * Does this {@code TaskExecutor} prefer short-lived tasks over long-lived tasks?

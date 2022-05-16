@@ -56,6 +56,9 @@ import org.springframework.util.CollectionUtils;
  * @see org.springframework.scheduling.annotation.SchedulingConfigurer
  */
 public class ScheduledTaskRegistrar implements ScheduledTaskHolder, InitializingBean, DisposableBean {
+	// @since 3.0 它在Spring3.0就有了
+	// 这里面又有一个重要的接口：我们可议通过扩展实现此接口，来定制化属于自己的ScheduledTaskRegistrar 下文会有详细介绍
+	// 它实现了InitializingBean和DisposableBean，所以我们也可以把它放进容器里面
 
 	/**
 	 * A special cron expression value that indicates a disabled trigger: {@value}.
@@ -69,11 +72,15 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	public static final String CRON_DISABLED = "-";
 
 
+	// 任务调度器 -- 可以向其中注册定时任务
 	@Nullable
 	private TaskScheduler taskScheduler;
 
+	// 该类事JUC包中的类
 	@Nullable
 	private ScheduledExecutorService localExecutor;
+
+	// 对任务进行分类 管理
 
 	@Nullable
 	private List<TriggerTask> triggerTasks;
@@ -96,6 +103,7 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 * Set the {@link TaskScheduler} to register scheduled tasks with.
 	 */
 	public void setTaskScheduler(TaskScheduler taskScheduler) {
+		// 调用者可以自己指定一个TaskScheduler
 		Assert.notNull(taskScheduler, "TaskScheduler must not be null");
 		this.taskScheduler = taskScheduler;
 	}
@@ -334,6 +342,7 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 * @since 3.2
 	 */
 	public boolean hasTasks() {
+		// 是否有triggerTasks、cronTasks、fixedRateTasks、fixedDelayTasks
 		return (!CollectionUtils.isEmpty(this.triggerTasks) ||
 				!CollectionUtils.isEmpty(this.cronTasks) ||
 				!CollectionUtils.isEmpty(this.fixedRateTasks) ||
@@ -346,6 +355,7 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 */
 	@Override
 	public void afterPropertiesSet() {
+		// 核心 -- 开始将定时任务注册到调度器中
 		scheduleTasks();
 	}
 
@@ -356,9 +366,11 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	@SuppressWarnings("deprecation")
 	protected void scheduleTasks() {
 		if (this.taskScheduler == null) {
+			// 还是没有调度器，就只能做一个newSingleThreadScheduledExecutor()单例的线程池啦 -- 所以为了并发，我们一般都是需要配置这个TaskExecutor的
 			this.localExecutor = Executors.newSingleThreadScheduledExecutor();
 			this.taskScheduler = new ConcurrentTaskScheduler(this.localExecutor);
 		}
+		// 下面几步：将各种tasks转换为ScheduledTask后加入到scheduledTasks集合中
 		if (this.triggerTasks != null) {
 			for (TriggerTask task : this.triggerTasks) {
 				addScheduledTask(scheduleTriggerTask(task));
@@ -382,6 +394,7 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	}
 
 	private void addScheduledTask(@Nullable ScheduledTask task) {
+		// 全部加入到scheduledTasks
 		if (task != null) {
 			this.scheduledTasks.add(task);
 		}
@@ -424,13 +437,16 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 		ScheduledTask scheduledTask = this.unresolvedTasks.remove(task);
 		boolean newTask = false;
 		if (scheduledTask == null) {
+			// 这是一个新的任务Task，即newTask为null
 			scheduledTask = new ScheduledTask(task);
 			newTask = true;
 		}
 		if (this.taskScheduler != null) {
+			// 调度器不为空，就直接调用调度的schedule方法执行
 			scheduledTask.future = this.taskScheduler.schedule(task.getRunnable(), task.getTrigger());
 		}
 		else {
+			// 如果暂时没有调度器，就先加入到cronTasks中，并将其加入中缓存到unresolvedTasks
 			addCronTask(task);
 			this.unresolvedTasks.put(task, scheduledTask);
 		}
@@ -471,18 +487,18 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 		if (this.taskScheduler != null) {
 			if (task.getInitialDelay() > 0) {
 				Date startTime = new Date(System.currentTimeMillis() + task.getInitialDelay());
-				scheduledTask.future =
-						this.taskScheduler.scheduleAtFixedRate(task.getRunnable(), startTime, task.getInterval());
+				scheduledTask.future = this.taskScheduler.scheduleAtFixedRate(task.getRunnable(), startTime, task.getInterval());
 			}
 			else {
-				scheduledTask.future =
-						this.taskScheduler.scheduleAtFixedRate(task.getRunnable(), task.getInterval());
+				scheduledTask.future = this.taskScheduler.scheduleAtFixedRate(task.getRunnable(), task.getInterval());
 			}
 		}
 		else {
+			// 没有调度器，就预先添加到FixedRateTask结合中
 			addFixedRateTask(task);
 			this.unresolvedTasks.put(task, scheduledTask);
 		}
+		// 如果是newTask，就返回新建的scheduledTask，否则返回null
 		return (newTask ? scheduledTask : null);
 	}
 

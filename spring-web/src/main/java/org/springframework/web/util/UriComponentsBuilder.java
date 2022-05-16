@@ -67,6 +67,13 @@ import org.springframework.web.util.UriComponents.UriTemplateVariables;
  * @see #fromUri(URI)
  */
 public class UriComponentsBuilder implements UriBuilder, Cloneable {
+	/*
+	UriComponents 的构建者
+	典型使用：
+		1、创建一个UriComponentBuilder使用静态工厂方法，比如 fromPath、fromUri
+		2、设置多样的URI Components，通过以下特定方法：scheme、userInfo、host、port、path、pathSegement
+		3、Builde UriComponents示例通过build方法
+	 */
 
 	private static final Pattern QUERY_PARAM_PATTERN = Pattern.compile("([^&=]+)(=?)([^&]+)?");
 
@@ -403,6 +410,7 @@ public class UriComponentsBuilder implements UriBuilder, Cloneable {
 	 * characters that should have been encoded.
 	 */
 	public UriComponents build(boolean encoded) {
+		// 是否启动编码
 		return buildInternal(encoded ? EncodingHint.FULLY_ENCODED :
 				(this.encodeTemplate ? EncodingHint.ENCODE_TEMPLATE : EncodingHint.NONE));
 	}

@@ -48,6 +48,7 @@ public final class AopContext {
 	 * @see ProxyConfig#setExposeProxy
 	 */
 	private static final ThreadLocal<Object> currentProxy = new NamedThreadLocal<>("Current AOP proxy");
+	// 使用ThreadLocal，用来存储Proxy代理对象
 
 
 	private AopContext() {
@@ -82,13 +83,16 @@ public final class AopContext {
 	 */
 	@Nullable
 	static Object setCurrentProxy(@Nullable Object proxy) {
+		// 向AopContext中设置当前Proxy代理对象
 		Object old = currentProxy.get();
 		if (proxy != null) {
+			// 向ThreadLocal中设置proxy代理对象，和线程所绑定
 			currentProxy.set(proxy);
 		}
 		else {
 			currentProxy.remove();
 		}
+		// 返回直接存储的代理对象
 		return old;
 	}
 

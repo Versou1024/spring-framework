@@ -35,7 +35,15 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.validation.DataBinder
  */
 public interface PropertyEditorRegistry {
-
+	/**
+	 * 为属性编辑器注册中心定义接口
+	 * 1、注册定义编辑器：registerCustomEditor
+	 * 2、查找定制编辑器：findCustomEditor
+	 *
+	 * PropertyEditor的API
+	 * setValue(Object):void、getValue():Object、
+	 * setValueAsText(String):void、getValueAsTest():String
+	 */
 	/**
 	 * Register the given custom property editor for all properties of the given type.
 	 * @param requiredType the type of the property

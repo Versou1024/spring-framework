@@ -30,6 +30,12 @@ import org.springframework.lang.Nullable;
  * @see DefaultAopProxyFactory
  */
 public interface AopProxy {
+	/*
+	 * 高层Aop代理的策略接口，主要由JDK和Cglib实现，定义了主要方法：
+	 * Object getProxy()
+	 *
+	 * 主要实现类：CglibAopProxy、JDKDynamicProxy
+	 */
 
 	/**
 	 * Create a new proxy object.

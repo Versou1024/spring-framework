@@ -31,6 +31,7 @@ import org.springframework.util.ObjectUtils;
  * @author Juergen Hoeller
  */
 public final class EmptyTargetSource implements TargetSource, Serializable {
+	// 类名可知，target就是单例的null
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 3680494563553489691L;

@@ -39,12 +39,18 @@ import org.springframework.util.Assert;
  * @since 01.03.2003
  */
 public abstract class HtmlUtils {
+	/*
+	 用于HTML转义的实用程序类。
+	 基于W3C HTML 4.01建议的转义和取消转义，处理字符实体引用。
+
+	 转义(用转义字符表示)(用十六进制表示)(用数字表示)
+	 返转义
+	 */
 
 	/**
 	 * Shared instance of pre-parsed HTML character entity references.
 	 */
-	private static final HtmlCharacterEntityReferences characterEntityReferences =
-			new HtmlCharacterEntityReferences();
+	private static final HtmlCharacterEntityReferences characterEntityReferences = new HtmlCharacterEntityReferences();
 
 
 	/**

@@ -43,6 +43,8 @@ import org.springframework.lang.Nullable;
  */
 public interface TransactionDefinition {
 
+	// 事务定义信息： 隔离级别、传播特性、超时时间、是否只读、
+
 	/**
 	 * Support a current transaction; create a new one if none exists.
 	 * Analogous to the EJB transaction attribute of the same name.
@@ -274,7 +276,8 @@ public interface TransactionDefinition {
 	 */
 	@Nullable
 	default String getName() {
-		return null;
+		return null; // 返回事务的名字，如果适用，一般用作在事务监视器中显示的事务名称
+		// 在Spring中一般都是方法的全限定名
 	}
 
 

@@ -28,7 +28,11 @@ package org.springframework.core.io;
  * @see org.springframework.web.context.support.ServletContextResource
  */
 public interface ContextResource extends Resource {
-
+	/*
+	 * 其中，ContextResource接口增加了一个方法：
+	 * 	String getPathWithinContext(); //  返回上下文内的路径
+	 * 这个方法使得它的实现类有了返回当前上下文路径的能力。
+	 */
 	/**
 	 * Return the path within the enclosing 'context'.
 	 * <p>This is typically path relative to a context-specific root directory,

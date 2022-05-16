@@ -44,6 +44,14 @@ import org.springframework.util.Assert;
  */
 public class InputStreamResource extends AbstractResource {
 
+	/**
+	 * InputStreamResource：获取输入流封装的资源
+	 * InputStreamResource代表java.io.InputStream字节流，对于“getInputStream ”操作将直接返回该字节流，因此只能读取一次该字节流，即“isOpen”永远返回true。
+	 * 给定InputStream的Resource实现。
+	 * 只有在没有其他特定Resource实现适用时才应使用。特别是，尽可能首选ByteArrayResource或任何基于文件的Resource实现。
+	 * 与其他Resource实现相比，这是一个已打开资源的描述符 - 因此从isOpen()返回true 。如果您需要将资源描述符保存在某处，或者如果您需要从流中多次读取，请不要使用InputStreamResource 。
+	 */
+
 	private final InputStream inputStream;
 
 	private final String description;

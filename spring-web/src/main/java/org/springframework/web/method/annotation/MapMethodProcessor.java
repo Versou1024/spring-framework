@@ -39,11 +39,14 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * @since 3.1
  */
 public class MapMethodProcessor implements HandlerMethodArgumentResolver, HandlerMethodReturnValueHandler {
+	// MapMethodProcessor 支持解析 Map类型的入参 以及 Map类型的返回值
+	// 注意一下:
+	// Map这种返回值可以被解释为多种途径，依赖于Handler上面的额注解，
+	// 如：@ModelAttribute和@ResponseBody这种注解。所以请务必使它放在这些处理器的后面，作为最后的兜底最后执行~~~
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
-		return (Map.class.isAssignableFrom(parameter.getParameterType()) &&
-				parameter.getParameterAnnotations().length == 0);
+		return (Map.class.isAssignableFrom(parameter.getParameterType()) && parameter.getParameterAnnotations().length == 0);
 	}
 
 	@Override
@@ -64,6 +67,9 @@ public class MapMethodProcessor implements HandlerMethodArgumentResolver, Handle
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+		// 做的事非常简单，仅仅只是把我们的Map放进Model里面~~~
+		// 但是此处需要注意的是：它并没有setViewName，所以它此时是没有视图名称的~~~
+		// ModelAndViewContainer#setRequestHandled(true) 所以后续若还有处理器可以继续处理
 
 		if (returnValue instanceof Map){
 			mavContainer.addAllAttributes((Map) returnValue);

@@ -36,11 +36,13 @@ class AfterReturningAdviceAdapter implements AdvisorAdapter, Serializable {
 
 	@Override
 	public boolean supportsAdvice(Advice advice) {
+		// 支持 AfterReturningAdvice 返回的增强通知
 		return (advice instanceof AfterReturningAdvice);
 	}
 
 	@Override
 	public MethodInterceptor getInterceptor(Advisor advisor) {
+		// 返回时的增强通知
 		AfterReturningAdvice advice = (AfterReturningAdvice) advisor.getAdvice();
 		return new AfterReturningAdviceInterceptor(advice);
 	}

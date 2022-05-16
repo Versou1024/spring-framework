@@ -100,4 +100,18 @@ import org.springframework.context.annotation.Import;
 @Documented
 @Import(DelegatingWebMvcConfiguration.class)
 public @interface EnableWebMvc {
+	// 为什么WebMvcConfigurer实现要加@EnableWebMvc
+	// @EnableWebMvc注解类上导入了DelegatingWebMvcConfiguration类，该类是WebMvcConfigurationSupport的子类，
+	// 该类除了实例化WebMvcConfigurationSupport实例以外，另一个作用就是收集BeanFactory中所有WebMvcConfigurer的实现，
+	// 汇集到WebMvcConfigurerComposite中，在WebMvcConfigurationSupport实例化过程中会分别调用这些实现，将
+	// 相应的实例传入这些实现中，供开发者在此基础上添加自定义的配置。这也就是在WebMvcConfigurerAdapter子类上要加@EnableWebMvc的原因，因为要先实例化WebMvcConfigurationSupport。
+
+	// 为什么可以存在多个WebMvcConfigurer的实现？
+	// 一般来讲一个应用中一个WebMvcConfigurer的已经足够，设计成收集多个是不是有些多余？
+	// 从springboot的autoconfigure机制来看并不多余，反而更灵活，
+	// 比如我要写一个mybatis的AutoConfiguration和JPA的AutoConfiguration，我就可以在不同的AutoConfiguration里面定义一个WebMvcConfigurer的实现，
+	// 里面只配置与mybatis或JPA相关的配置，这样需要那个启用那个，不需要人工通过注释代码来转换mybatis和JPA，
+	// 注意：在springboot下自定义的WebMvcConfigurer实现配置类上是不需要添加@EnableWebMvc的，
+	// 因为springboot已经实例化了WebMvcConfigurationSupport，如果添加了该注解，默认的WebMvcConfigurationSupport配置类是不会生效的，
+	// 也就是以用户定义的为主，一般建议还是不覆盖默认的好。
 }

@@ -25,5 +25,5 @@ package org.springframework.aop;
  * @see org.springframework.aop.support.AopUtils#isAopProxy(Object)
  */
 public interface SpringProxy {
-
+	// 标记性接口，被所有的AOP代理锁实现，用于去监测是否有Spring生成的代理类
 }

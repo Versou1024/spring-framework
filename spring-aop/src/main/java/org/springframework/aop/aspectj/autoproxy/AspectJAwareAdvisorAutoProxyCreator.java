@@ -45,7 +45,12 @@ import org.springframework.util.ClassUtils;
  */
 @SuppressWarnings("serial")
 public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProxyCreator {
+	// AspectJAwareAdvisorAutoProxyCreator
+	//顾名思义，该类主要来处理AspectJ切面的。这也是当下最流行，也是功能最为强大的一种方式吧~~~
+	//
+	//它对父类，做了如下几点扩展：
 
+	// 默认的排序器，它就不是根据Order来了，而是根据@Afeter @Before类似的标注来排序
 	private static final Comparator<Advisor> DEFAULT_PRECEDENCE_COMPARATOR = new AspectJPrecedenceComparator();
 
 
@@ -67,10 +72,12 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 	 */
 	@Override
 	protected List<Advisor> sortAdvisors(List<Advisor> advisors) {
+		// 核心逻辑：它重写了排序
+		// 这个排序和`org.aspectj.util`提供的PartialOrder和PartialComparable有关 具体不详叙了
+		// 这块排序算法还是比较复杂的，控制着最终的执行顺序~
 		List<PartiallyComparableAdvisorHolder> partiallyComparableAdvisors = new ArrayList<>(advisors.size());
 		for (Advisor advisor : advisors) {
-			partiallyComparableAdvisors.add(
-					new PartiallyComparableAdvisorHolder(advisor, DEFAULT_PRECEDENCE_COMPARATOR));
+			partiallyComparableAdvisors.add(new PartiallyComparableAdvisorHolder(advisor, DEFAULT_PRECEDENCE_COMPARATOR));
 		}
 		List<PartiallyComparableAdvisorHolder> sorted = PartialOrder.sort(partiallyComparableAdvisors);
 		if (sorted != null) {
@@ -92,6 +99,10 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 	 */
 	@Override
 	protected void extendAdvisors(List<Advisor> candidateAdvisors) {
+		// 这个就是对已有的Advisor做了一个扩展：
+		// AspectJProxyUtils这个工具类只有这一个方法  （其实每次addAspect()的时候，都会调用此方法）
+		// Capable：能干的  有才华的
+		// 它的作用：（若存在AspectJ的Advice），就会在advisors的第一个位置加入`ExposeInvocationInterceptor.ADVISOR`这个advisor
 		AspectJProxyUtils.makeAdvisorChainAspectJCapableIfNecessary(candidateAdvisors);
 	}
 
@@ -99,12 +110,15 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 	protected boolean shouldSkip(Class<?> beanClass, String beanName) {
 		// TODO: Consider optimization by caching the list of the aspect names
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
+		// 如果查出候选的advisor即所有的切面类后，beanName就是其中摸一个切面类
+		// 切面类不需要proxy，应该跳过skip，返回true
 		for (Advisor advisor : candidateAdvisors) {
 			if (advisor instanceof AspectJPointcutAdvisor &&
 					((AspectJPointcutAdvisor) advisor).getAspectName().equals(beanName)) {
 				return true;
 			}
 		}
+		// 父类返回的false
 		return super.shouldSkip(beanClass, beanName);
 	}
 

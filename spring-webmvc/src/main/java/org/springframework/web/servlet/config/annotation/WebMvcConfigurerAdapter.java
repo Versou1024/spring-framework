@@ -40,6 +40,12 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 @Deprecated
 public abstract class WebMvcConfigurerAdapter implements WebMvcConfigurer {
 
+	/*
+	 * 具有空方法的WebMvcConfigurer实现，允许子类仅覆盖他们感兴趣的方法。
+	 * 已弃用
+	 * 从 5.0 开始， WebMvcConfigurer具有默认方法（通过 Java 8 基线实现），无需此适配器即可直接实现
+	 */
+
 	/**
 	 * {@inheritDoc}
 	 * <p>This implementation is empty.

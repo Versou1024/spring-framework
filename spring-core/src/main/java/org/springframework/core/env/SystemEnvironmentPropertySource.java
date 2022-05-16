@@ -64,6 +64,28 @@ import org.springframework.util.Assert;
  * @see AbstractEnvironment#ACTIVE_PROFILES_PROPERTY_NAME
  */
 public class SystemEnvironmentPropertySource extends MapPropertySource {
+	/*
+	 * MapPropertySource专门用于系统环境变量。
+	 *
+	 * 而SystemEnvironmentPropertySource补偿Bash和其他shell中不允许包含句点字符和/或连字符的变量的约束。
+	 * 允许在属性名上使用大写字母，以便更惯用地使用shell。
+	 * 例如，对getProperty（“foo.bar”）的调用将尝试查找原始属性或任何“等效”属性的值，并返回第一个找到的值：
+	 * 有以下四种变体
+	 * foo.bar - the original name
+	 * foo_bar - with underscores for periods (if any)
+	 * FOO.BAR - original, with upper case
+	 * FOO_BAR - with underscores and upper case
+	 * 上述任何连字符变体都可以使用，甚至可以混合使用点/连字符变体。
+	 *
+	 * 这同样适用于对containsProperty（String）的调用，如果存在上述任何属性，则返回true，否则返回false。
+	 * 当将活动或默认配置文件指定为环境变量时，此功能特别有用。
+	 *
+	 * Bash下不允许出现以下情况：
+	 * spring.profiles.active=p1 java -classpath ... MyApp
+	 * 但是，以下语法是允许的，也是更常规的：
+	 * SPRING_PROFILES_ACTIVE=p1 java -classpath ... MyApp
+	 * 默认情况下，该属性源包含在StandardEnvironment及其所有子类中。
+	 */
 
 	/**
 	 * Create a new {@code SystemEnvironmentPropertySource} with the given name and

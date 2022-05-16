@@ -76,6 +76,7 @@ class TypeConverterDelegate {
 	 * @param targetObject the target object to work on (as context that can be passed to editors)
 	 */
 	public TypeConverterDelegate(PropertyEditorRegistrySupport propertyEditorRegistry, @Nullable Object targetObject) {
+		// 注册中心、目标类型
 		this.propertyEditorRegistry = propertyEditorRegistry;
 		this.targetObject = targetObject;
 	}
@@ -115,17 +116,22 @@ class TypeConverterDelegate {
 	public <T> T convertIfNecessary(@Nullable String propertyName, @Nullable Object oldValue, @Nullable Object newValue,
 			@Nullable Class<T> requiredType, @Nullable TypeDescriptor typeDescriptor) throws IllegalArgumentException {
 
-		// Custom editor for this type?
+		// 1、为目标类型requiredType查找指定的属性编辑器
 		PropertyEditor editor = this.propertyEditorRegistry.findCustomEditor(requiredType, propertyName);
 
 		ConversionFailedException conversionAttemptEx = null;
 
 		// No custom editor but custom ConversionService specified?
+		// 2、未设置或指定自定义属性编辑器，但指定了自定义转换服务的话，还是可以做转换
 		ConversionService conversionService = this.propertyEditorRegistry.getConversionService();
 		if (editor == null && conversionService != null && newValue != null && typeDescriptor != null) {
+			// 3、获取用户传入的propertyValue的value的类型属性 -- 例如 new PropertyValue("name","1");
+			// 那么 sourceTypeDesc 就是特指String类型的
 			TypeDescriptor sourceTypeDesc = TypeDescriptor.forObject(newValue);
+			// 4、是否可以从 sourceTypeDesc类型 转为指定的 typeDescriptor类型
 			if (conversionService.canConvert(sourceTypeDesc, typeDescriptor)) {
 				try {
+					// 5、如果转换器支持这种转换，就开始转换，将 newValue 转换为目标类型 typeDescriptor
 					return (T) conversionService.convert(newValue, sourceTypeDesc, typeDescriptor);
 				}
 				catch (ConversionFailedException ex) {
@@ -138,59 +144,71 @@ class TypeConverterDelegate {
 		Object convertedValue = newValue;
 
 		// Value not of required type?
+		// 值是否为不需要转换的类型？ -> 比如目标类型是String，用户提供的propertyValue的value也是String类型的
 		if (editor != null || (requiredType != null && !ClassUtils.isAssignableValue(requiredType, convertedValue))) {
-			if (typeDescriptor != null && requiredType != null && Collection.class.isAssignableFrom(requiredType) &&
-					convertedValue instanceof String) {
-				TypeDescriptor elementTypeDesc = typeDescriptor.getElementTypeDescriptor();
+			if (typeDescriptor != null && requiredType != null && Collection.class.isAssignableFrom(requiredType) && convertedValue instanceof String) {
+				// requiredType 是集合类型的
+				TypeDescriptor elementTypeDesc = typeDescriptor.getElementTypeDescriptor(); // 获取元素的类型描述器
 				if (elementTypeDesc != null) {
-					Class<?> elementType = elementTypeDesc.getType();
+					Class<?> elementType = elementTypeDesc.getType(); // 获取元素的实际类型
 					if (Class.class == elementType || Enum.class.isAssignableFrom(elementType)) {
+						// 元素类型是枚举的
 						convertedValue = StringUtils.commaDelimitedListToStringArray((String) convertedValue);
 					}
 				}
 			}
+			// 查找不到编辑器
 			if (editor == null) {
+				// 尝试查找默认的编辑器
 				editor = findDefaultEditor(requiredType);
 			}
+			// 尝试转换：用户给定值为convertedValue、目标类型requiredtype、使用编辑器为editor
+			// convertedValue 经过属性编辑器转换后的值
 			convertedValue = doConvertValue(oldValue, convertedValue, requiredType, editor);
 		}
 
-		boolean standardConversion = false;
+		boolean standardConversion = false; // 是否完成标准转换
 
 		if (requiredType != null) {
-			// Try to apply some standard type conversion rules if appropriate.
-
+			// 如果合适，尝试应用一些标准类型转换规则 -- 帮助将结果转换
 			if (convertedValue != null) {
+				// Object
 				if (Object.class == requiredType) {
 					return (T) convertedValue;
 				}
+				// 数组类型
 				else if (requiredType.isArray()) {
-					// Array required -> apply appropriate conversion of elements.
+					// 需要数组->应用适当的元素转换。
 					if (convertedValue instanceof String && Enum.class.isAssignableFrom(requiredType.getComponentType())) {
 						convertedValue = StringUtils.commaDelimitedListToStringArray((String) convertedValue);
 					}
 					return (T) convertToTypedArray(convertedValue, propertyName, requiredType.getComponentType());
 				}
+				// 集合类型
 				else if (convertedValue instanceof Collection) {
-					// Convert elements to target type, if determined.
+					// 将元素转换为目标类型（如果确定）.
 					convertedValue = convertToTypedCollection(
 							(Collection<?>) convertedValue, propertyName, requiredType, typeDescriptor);
 					standardConversion = true;
 				}
+				// Map结构
 				else if (convertedValue instanceof Map) {
 					// Convert keys and values to respective target type, if determined.
 					convertedValue = convertToTypedMap(
 							(Map<?, ?>) convertedValue, propertyName, requiredType, typeDescriptor);
 					standardConversion = true;
 				}
+				// 为数组且只有一个元素
 				if (convertedValue.getClass().isArray() && Array.getLength(convertedValue) == 1) {
 					convertedValue = Array.get(convertedValue, 0);
 					standardConversion = true;
 				}
+				// 对任何基本类型进行转换
 				if (String.class == requiredType && ClassUtils.isPrimitiveOrWrapper(convertedValue.getClass())) {
 					// We can stringify any primitive value...
 					return (T) convertedValue.toString();
 				}
+				// 转换后的结果为String类型 且 转换结果不是目标类型的实现
 				else if (convertedValue instanceof String && !requiredType.isInstance(convertedValue)) {
 					if (conversionAttemptEx == null && !requiredType.isInterface() && !requiredType.isEnum()) {
 						try {
@@ -217,6 +235,7 @@ class TypeConverterDelegate {
 					convertedValue = attemptToConvertStringToEnum(requiredType, trimmedValue, convertedValue);
 					standardConversion = true;
 				}
+				// 转换结果是Number类型的，就调用NumberUtils做数字转换
 				else if (convertedValue instanceof Number && Number.class.isAssignableFrom(requiredType)) {
 					convertedValue = NumberUtils.convertNumberToTargetClass(
 							(Number) convertedValue, (Class<Number>) requiredType);
@@ -230,6 +249,7 @@ class TypeConverterDelegate {
 				}
 			}
 
+			// 转换结果convertedValue不是requiredType的实例，就进入if
 			if (!ClassUtils.isAssignableValue(requiredType, convertedValue)) {
 				if (conversionAttemptEx != null) {
 					// Original exception from former ConversionService call above...
@@ -264,6 +284,7 @@ class TypeConverterDelegate {
 			}
 		}
 
+		// 是否有转换气场
 		if (conversionAttemptEx != null) {
 			if (editor == null && !standardConversion && requiredType != null && Object.class != requiredType) {
 				throw conversionAttemptEx;
@@ -272,6 +293,7 @@ class TypeConverterDelegate {
 					"PropertyEditor based conversion eventually succeeded", conversionAttemptEx);
 		}
 
+		// 返回转换值
 		return (T) convertedValue;
 	}
 
@@ -330,10 +352,10 @@ class TypeConverterDelegate {
 	private PropertyEditor findDefaultEditor(@Nullable Class<?> requiredType) {
 		PropertyEditor editor = null;
 		if (requiredType != null) {
-			// No custom editor -> check BeanWrapperImpl's default editors.
+			// 没有找到定制的 editor -> 转换到检查 BeanWrapperImpl's 的默认编辑器
 			editor = this.propertyEditorRegistry.getDefaultEditor(requiredType);
 			if (editor == null && String.class != requiredType) {
-				// No BeanWrapper default editor -> check standard JavaBean editor.
+				// 没有找到 BeanWrapper 的默认编辑器 -> check standard JavaBean editor.
 				editor = BeanUtils.findEditorByConvention(requiredType);
 			}
 		}
@@ -357,18 +379,18 @@ class TypeConverterDelegate {
 
 		Object convertedValue = newValue;
 
+		// 编辑器不为空，且给定的值不是String
 		if (editor != null && !(convertedValue instanceof String)) {
-			// Not a String -> use PropertyEditor's setValue.
-			// With standard PropertyEditors, this will return the very same object;
-			// we just want to allow special PropertyEditors to override setValue
-			// for type conversion from non-String values to the required type.
+			// 不是字符串的情况->使用PropertyEditor的设置值。对于标准或者内置的PropertyEditor，这将返回完全相同的对象；
+			// 但是，我们只想允许特殊属性编辑器覆盖setValue。用于将非字符串值转换为所需类型。
 			try {
+				// 调用属性编辑器设置值
 				editor.setValue(convertedValue);
+				// 调用属性编辑器获取结果 -- 标准属性编辑器，设置convertedValue的结果newConvertedValue英爱是一样的
 				Object newConvertedValue = editor.getValue();
 				if (newConvertedValue != convertedValue) {
 					convertedValue = newConvertedValue;
-					// Reset PropertyEditor: It already did a proper conversion.
-					// Don't use it again for a setAsText call.
+					//重置属性编辑器：它已经进行了正确的转换。不要在setAsText调用中再次使用它。
 					editor = null;
 				}
 			}
@@ -383,9 +405,9 @@ class TypeConverterDelegate {
 		Object returnValue = convertedValue;
 
 		if (requiredType != null && !requiredType.isArray() && convertedValue instanceof String[]) {
-			// Convert String array to a comma-separated String.
-			// Only applies if no PropertyEditor converted the String array before.
-			// The CSV String will be passed into a PropertyEditor's setAsText method, if any.
+			// 将用户给定的字符串数组转换为逗号分隔的字符串。
+			// 仅适用于之前没有PropertyEditor转换字符串数组的情况。
+			// CSV字符串将被传递到PropertyEdit的setAsText方法（如果有的话）。
 			if (logger.isTraceEnabled()) {
 				logger.trace("Converting String array to comma-delimited String [" + convertedValue + "]");
 			}
@@ -393,12 +415,14 @@ class TypeConverterDelegate {
 		}
 
 		if (convertedValue instanceof String) {
+			// 用户给定值属于字符串类型
 			if (editor != null) {
-				// Use PropertyEditor's setAsText in case of a String value.
+				// 如果是字符串值，请使用PropertyEdit的setAsText。
 				if (logger.isTraceEnabled()) {
 					logger.trace("Converting String to [" + requiredType + "] using property editor [" + editor + "]");
 				}
 				String newTextValue = (String) convertedValue;
+				// 属性编辑器适合String转其他类型，因此标准属性编辑器是可以的
 				return doConvertTextValue(oldValue, newTextValue, editor);
 			}
 			else if (String.class == requiredType) {
@@ -418,6 +442,7 @@ class TypeConverterDelegate {
 	 */
 	private Object doConvertTextValue(@Nullable Object oldValue, String newTextValue, PropertyEditor editor) {
 		try {
+			// 设置oldValue
 			editor.setValue(oldValue);
 		}
 		catch (Exception ex) {
@@ -426,7 +451,9 @@ class TypeConverterDelegate {
 			}
 			// Swallow and proceed.
 		}
+		// 将newTextValue通过属性编辑器转换为给属性编辑器的的类型
 		editor.setAsText(newTextValue);
+		// 获取编辑器转换后的值
 		return editor.getValue();
 	}
 

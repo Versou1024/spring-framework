@@ -45,6 +45,12 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.view.InternalResourceView
  */
 public interface View {
+	/*
+	 * View 视图接口：
+	 * 三个属性：响应状态码.responseStatus、路径变量.pathVariables、选择的ContentType是.selectedContentType
+	 * API：
+	 * View - 视图拥有渲染能力 -- 根据Model封装的数据、request、response进行渲染
+	 */
 
 	/**
 	 * Name of the {@link HttpServletRequest} attribute that contains the response status code.
@@ -80,6 +86,7 @@ public interface View {
 	 */
 	@Nullable
 	default String getContentType() {
+		// 可用于提前检查视图的内容类型，即在实际渲染尝试之前。
 		return null;
 	}
 
@@ -96,5 +103,6 @@ public interface View {
 	 */
 	void render(@Nullable Map<String, ?> model, HttpServletRequest request, HttpServletResponse response)
 			throws Exception;
+	// 实际渲染操作
 
 }

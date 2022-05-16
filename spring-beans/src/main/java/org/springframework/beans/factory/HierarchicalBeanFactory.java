@@ -32,6 +32,9 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#setParentBeanFactory
  */
 public interface HierarchicalBeanFactory extends BeanFactory {
+	/*
+	HierarchicalBeanFactory–>扩展了BeanFactory接口,并提供了访问父容器的能力
+	 */
 
 	/**
 	 * Return the parent bean factory, or {@code null} if there is none.
@@ -49,5 +52,7 @@ public interface HierarchicalBeanFactory extends BeanFactory {
 	 * @see BeanFactory#containsBean
 	 */
 	boolean containsLocalBean(String name);
+	//返回本地bean工厂是否包含给定名称的bean，忽略在祖先上下文中定义的bean。
+	//这是containsBean的另一种选择，忽略来自祖先bean工厂的给定名称的bean。
 
 }

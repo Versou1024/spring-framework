@@ -48,6 +48,19 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.handler.SimpleServletHandlerAdapter
  */
 public interface HandlerAdapter {
+	/*
+	 * Spring MVC通过HandlerAdapter来实际调用Handler函数
+	 * 原因是SpringMVC有多种书写Handler的方法,有注解\实现接口等方式
+	 *
+	 * 方法：
+	 * 1、supports(Object) - 是否支持指定的Handler
+	 * 2、handle(request,response,handler) - 使用给定的handler处理器请求
+	 * 3、getLastModified - 是否支持302
+	 *
+	 *
+	 * HandlerMapping的作用主要是根据request请求匹配/映射上能够处理当前request的handler
+	 * HandlerAdapter的作用在于将request中的各个属性，如request param适配为handler能够处理的形式- 参数绑定、数据校验、内容协商…几乎所有的web层问题都在在这里完成的。
+	 */
 
 	/**
 	 * Given a handler instance, return whether or not this {@code HandlerAdapter}

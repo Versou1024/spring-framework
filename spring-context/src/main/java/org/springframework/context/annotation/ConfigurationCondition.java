@@ -28,10 +28,15 @@ package org.springframework.context.annotation;
  * @see Configuration
  */
 public interface ConfigurationCondition extends Condition {
+	/*
+	 * getConfigurationPhase() 定义了子类必须实现，返回下面枚举的一种
+	 */
 
 	/**
 	 * Return the {@link ConfigurationPhase} in which the condition should be evaluated.
 	 */
+
+	// 判断阶段
 	ConfigurationPhase getConfigurationPhase();
 
 
@@ -46,7 +51,8 @@ public interface ConfigurationCondition extends Condition {
 		 * <p>If the condition does not match at this point, the {@code @Configuration}
 		 * class will not be added.
 		 */
-		PARSE_CONFIGURATION,
+		PARSE_CONFIGURATION,  // 当前的Condition在配置类解析时执行.如果该condition返回false,则该配置类不会被解析
+		// 因此如果@Configuration的class在解析阶段没有通过这个条件，就会不会加到BeanDefinition注册中心
 
 		/**
 		 * The {@link Condition} should be evaluated when adding a regular
@@ -55,7 +61,10 @@ public interface ConfigurationCondition extends Condition {
 		 * <p>At the time that the condition is evaluated, all {@code @Configuration}
 		 * classes will have been parsed.
 		 */
-		REGISTER_BEAN
+		REGISTER_BEAN 		// 当前的Condition在注册bean时执行
+		// 在添加常规（非@Configuration）bean时，应该评估该条件。该条件不会阻止添加@Configuration类。
+		// 在计算条件时，所有@Configuration类都将被解析。
+
 	}
 
 }

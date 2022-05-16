@@ -32,8 +32,7 @@ import org.springframework.web.servlet.handler.HandlerMethodMappingNamingStrateg
  * @author Rossen Stoyanchev
  * @since 4.1
  */
-public class RequestMappingInfoHandlerMethodMappingNamingStrategy
-		implements HandlerMethodMappingNamingStrategy<RequestMappingInfo> {
+public class RequestMappingInfoHandlerMethodMappingNamingStrategy implements HandlerMethodMappingNamingStrategy<RequestMappingInfo> {
 
 	/** Separator between the type and method-level parts of a HandlerMethod mapping name. */
 	public static final String SEPARATOR = "#";
@@ -41,6 +40,11 @@ public class RequestMappingInfoHandlerMethodMappingNamingStrategy
 
 	@Override
 	public String getName(HandlerMethod handlerMethod, RequestMappingInfo mapping) {
+		/*
+		 * 核心：
+		 * 1、RequestMappingInfo有name就直接返回
+		 * 2、指定Handler的SimpleName + "#" + HandlerMethod的方法名
+		 */
 		if (mapping.getName() != null) {
 			return mapping.getName();
 		}

@@ -42,29 +42,31 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 @SuppressWarnings("serial")
-final class InstantiationModelAwarePointcutAdvisorImpl
-		implements InstantiationModelAwarePointcutAdvisor, AspectJPrecedenceInformation, Serializable {
+final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationModelAwarePointcutAdvisor, AspectJPrecedenceInformation, Serializable {
+	/**
+	 * AspectJPointcutAdvisor 的内部实现。请注意，每个目标方法将有一个此advisor的实例。
+	 */
 
 	private static final Advice EMPTY_ADVICE = new Advice() {};
 
 
-	private final AspectJExpressionPointcut declaredPointcut;
+	private final AspectJExpressionPointcut declaredPointcut; // 切入点
 
-	private final Class<?> declaringClass;
+	private final Class<?> declaringClass; // 通知方法所在的类
 
-	private final String methodName;
+	private final String methodName; // 通知方法名
 
-	private final Class<?>[] parameterTypes;
+	private final Class<?>[] parameterTypes; // 通知方法的参数类型
 
-	private transient Method aspectJAdviceMethod;
+	private transient Method aspectJAdviceMethod; // 通知方法
 
-	private final AspectJAdvisorFactory aspectJAdvisorFactory;
+	private final AspectJAdvisorFactory aspectJAdvisorFactory; // 获取切面类Advisor的工厂
 
-	private final MetadataAwareAspectInstanceFactory aspectInstanceFactory;
+	private final MetadataAwareAspectInstanceFactory aspectInstanceFactory; // 获取aspectInstance和aspectMetadata的工厂 -- 切面类工厂
 
-	private final int declarationOrder;
+	private final int declarationOrder; // 指定声明的顺序
 
-	private final String aspectName;
+	private final String aspectName; // 切面类的名字
 
 	private final Pointcut pointcut;
 
@@ -74,10 +76,10 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	private Advice instantiatedAdvice;
 
 	@Nullable
-	private Boolean isBeforeAdvice;
+	private Boolean isBeforeAdvice; // 是否前置
 
 	@Nullable
-	private Boolean isAfterAdvice;
+	private Boolean isAfterAdvice; // 是否后置
 
 
 	public InstantiationModelAwarePointcutAdvisorImpl(AspectJExpressionPointcut declaredPointcut,
@@ -94,6 +96,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 		this.declarationOrder = declarationOrder;
 		this.aspectName = aspectName;
 
+		// 只要不是PerTarget、PerThis、Within类，那么就是单例的Aspect，说明需要提前实例化，而不是懒加载
 		if (aspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) {
 			// Static part of the pointcut is a lazy type.
 			Pointcut preInstantiationPointcut = Pointcuts.union(
@@ -107,10 +110,10 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 			this.lazy = true;
 		}
 		else {
-			// A singleton aspect.
+			// A singleton aspect -- 一个单例的Aspect
 			this.pointcut = this.declaredPointcut;
-			this.lazy = false;
-			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut);
+			this.lazy = false; // 非懒加载
+			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut); // 为整个@Pointcut生成advice
 		}
 	}
 
@@ -146,6 +149,10 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	}
 
 	private Advice instantiateAdvice(AspectJExpressionPointcut pointcut) {
+		// 核心方法之一：实例化advice
+
+		// 利用 Advisor工厂 开始生产 Advisor
+		// 传入 aspectJAdviceMethod、pointcut、aspectInstanceFactory、declarationOrder、aspectName
 		Advice advice = this.aspectJAdvisorFactory.getAdvice(this.aspectJAdviceMethod, pointcut,
 				this.aspectInstanceFactory, this.declarationOrder, this.aspectName);
 		return (advice != null ? advice : EMPTY_ADVICE);
@@ -194,6 +201,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	@Override
 	public boolean isBeforeAdvice() {
 		if (this.isBeforeAdvice == null) {
+			// 懒加载
 			determineAdviceType();
 		}
 		return this.isBeforeAdvice;
@@ -202,6 +210,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	@Override
 	public boolean isAfterAdvice() {
 		if (this.isAfterAdvice == null) {
+			// 懒加载
 			determineAdviceType();
 		}
 		return this.isAfterAdvice;
@@ -212,23 +221,27 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	 * creation of the advice.
 	 */
 	private void determineAdviceType() {
-		AspectJAnnotation<?> aspectJAnnotation =
-				AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(this.aspectJAdviceMethod);
+		// 又利用AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod()方法查找通知方法上的通知增强注解
+		AspectJAnnotation<?> aspectJAnnotation = AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(this.aspectJAdviceMethod);
 		if (aspectJAnnotation == null) {
+			// 如果为空，啥都不是，sb
 			this.isBeforeAdvice = false;
 			this.isAfterAdvice = false;
 		}
 		else {
 			switch (aspectJAnnotation.getAnnotationType()) {
+				// around或pointcut都是无效的
 				case AtPointcut:
 				case AtAround:
 					this.isBeforeAdvice = false;
 					this.isAfterAdvice = false;
 					break;
+					// AtBefore 为 isBeforeAdvice = true
 				case AtBefore:
 					this.isBeforeAdvice = true;
 					this.isAfterAdvice = false;
 					break;
+					// AtAfter\AtAfterReturning\AtAfterThrowing 的 isAfterAdvice = true
 				case AtAfter:
 				case AtAfterReturning:
 				case AtAfterThrowing:

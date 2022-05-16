@@ -56,6 +56,14 @@ import org.springframework.util.Assert;
  * @see FileSystemResource
  */
 public class PathResource extends AbstractResource implements WritableResource {
+	/**
+	 * 它是基于@since 4.0，也是基于JDK7提供的java.nio.file.Path的。
+	 * 实现原理也非常的简单，更像是对java.nio.file.Path进行了包装（java.nio.file.Files）
+	 * 另外它还实现了WritableResource，证明它拥有对资源写的能力~~~
+	 * Path句柄的Resource实现，通过Path API 执行所有操作和转换。支持作为File和URL的解析。实现扩展的WritableResource接口。
+	 * 注意：从 5.1 开始， FileSystemResource也提供Path支持，应用 Spring 的标准基于字符串的路径转换，但通过Files API 执行所有操作。
+	 * 这个PathResource是一个纯粹的基于java.nio.path.Path的替代方案，具有不同的createRelative行为。
+	 */
 
 	private final Path path;
 

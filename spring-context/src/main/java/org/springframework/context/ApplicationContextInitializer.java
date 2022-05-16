@@ -40,6 +40,10 @@ package org.springframework.context;
  * @see org.springframework.web.servlet.FrameworkServlet#applyInitializers
  */
 public interface ApplicationContextInitializer<C extends ConfigurableApplicationContext> {
+	// 用于在根容器和子容器刷新之前, 初始化 Spring ConfigurableApplicationContext 的回调接口。
+	// 通常在需要对应用程序上下文进行一些编程初始化的 Web 应用程序中使用
+	// 。例如，针对上下文环境注册属性源或激活配置文件。请参阅ContextLoader和FrameworkServlet支持以分别声明“contextInitializerClasses”上下文参数和初始化参数。
+	// 鼓励ApplicationContextInitializer处理器检测 Spring 的Ordered接口是否已实现或是否存在Order注解，并在调用之前对实例进行相应的排序
 
 	/**
 	 * Initialize the given application context.

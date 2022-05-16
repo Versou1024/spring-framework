@@ -39,6 +39,7 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.DispatcherServlet
  */
 public class SessionScope extends AbstractRequestAttributesScope {
+	// 会话范围
 
 	@Override
 	protected int getScope() {

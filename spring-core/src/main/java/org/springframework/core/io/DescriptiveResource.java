@@ -33,6 +33,14 @@ import org.springframework.lang.Nullable;
  * @since 1.2.6
  */
 public class DescriptiveResource extends AbstractResource {
+	/**
+	 * 包含资源描述但不指向实际可读资源的简单Resource实现。
+	 * 如果 API 需要Resource参数但不一定用于实际读取，则用作占位符。
+	 *
+	 * 这个类实际只是对资源描述的定义，既不是可读，实际文件也是不存在的，其他Resource接口中的方法也并未实现。
+	 * 当一个方法需要你传递一个资源对象，但又不会在方法中真正读取该对象的时候，
+	 * 如果没有合适的资源对象作为参数，就创建一个 DescriptiveResource 资源做参数。比如ConfigurationClass就有使用~~~
+	 */
 
 	private final String description;
 

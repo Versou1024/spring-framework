@@ -26,6 +26,9 @@ package org.springframework.web.util;
  * @see DefaultUriBuilderFactory
  */
 public interface UriBuilderFactory extends UriTemplateHandler {
+	/*
+	UriBuilder的工厂
+	 */
 
 	/**
 	 * Initialize a builder with the given URI template.

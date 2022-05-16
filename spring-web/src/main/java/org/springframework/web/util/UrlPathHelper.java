@@ -49,6 +49,8 @@ import org.springframework.util.StringUtils;
  * @see javax.servlet.RequestDispatcher
  */
 public class UrlPathHelper {
+	// URL 路径匹配的帮助类。为RequestDispatcher中的 URL 路径提供支持，并支持一致的 URL 解码。
+	// 由AbstractUrlHandlerMapping和RequestContext用于路径匹配和/或 URI 确定。
 
 	/**
 	 * Special WebSphere request attribute, indicating the original request URI.
@@ -63,15 +65,15 @@ public class UrlPathHelper {
 	static volatile Boolean websphereComplianceFlag;
 
 
-	private boolean alwaysUseFullPath = false;
+	private boolean alwaysUseFullPath = false; // URL 查找是否应始终使用当前 Web 应用程序上下文中的完整路径
 
-	private boolean urlDecode = true;
+	private boolean urlDecode = true; // 是否需要url解码
 
-	private boolean removeSemicolonContent = true;
+	private boolean removeSemicolonContent = true; // 是否删除url中";'
 
-	private String defaultEncoding = WebUtils.DEFAULT_CHARACTER_ENCODING;
+	private String defaultEncoding = WebUtils.DEFAULT_CHARACTER_ENCODING; // 用于 URL 解码的默认字符编码。根据 Servlet 规范，默认值为 ISO-8859-1。
 
-	private boolean readOnly = false;
+	private boolean readOnly = false; // 切换到不允许进一步配置更改的只读模式
 
 
 	/**
@@ -124,6 +126,7 @@ public class UrlPathHelper {
 	 * <p>Default is "true".
 	 */
 	public void setRemoveSemicolonContent(boolean removeSemicolonContent) {
+		// 如果url有“;” （分号）内容应从请求 URI 中删除
 		checkReadOnly();
 		this.removeSemicolonContent = removeSemicolonContent;
 	}
@@ -349,6 +352,9 @@ public class UrlPathHelper {
 	 * </ul>
 	 */
 	private String getSanitizedPath(final String path) {
+		// 清理给定的路径。使用以下规则：
+		// 用“/”替换所有“//”
+
 		String sanitized = path;
 		while (true) {
 			int index = sanitized.indexOf("//");
@@ -374,10 +380,17 @@ public class UrlPathHelper {
 	 * @return the request URI
 	 */
 	public String getRequestUri(HttpServletRequest request) {
+		// 返回给定请求的请求 URI，如果在 RequestDispatcher 包含中调用，则检测包含请求 URL。
+		// 由于request.getRequestURI()返回的值没有被 servlet 容器解码，所以这个方法会对其进行解码。
+		// Web 容器解析的 URI应该是正确的，但是 JBoss/Jetty 等一些容器错误地包含“;” URI 中的“;jsessionid”之类的字符串。这种方法切断了这些不正确的附录。
+
+		// 1. 根据属性获取
 		String uri = (String) request.getAttribute(WebUtils.INCLUDE_REQUEST_URI_ATTRIBUTE);
 		if (uri == null) {
+			// 2. 根据属性获取失败,直接调用getRequestURI()
 			uri = request.getRequestURI();
 		}
+		// 3. 注意:会进行编解码
 		return decodeAndCleanUriString(request, uri);
 	}
 
@@ -390,14 +403,19 @@ public class UrlPathHelper {
 	 * @return the context path
 	 */
 	public String getContextPath(HttpServletRequest request) {
+
+		// 1. 从属性中获取
 		String contextPath = (String) request.getAttribute(WebUtils.INCLUDE_CONTEXT_PATH_ATTRIBUTE);
 		if (contextPath == null) {
+			// 2. 直接调用getContextPath()
 			contextPath = request.getContextPath();
 		}
+		// 3.如果说contextPath就是/值,那就返回""
 		if (StringUtils.matchesCharacter(contextPath, '/')) {
 			// Invalid case, but happens for includes on Jetty: silently adapt it.
 			contextPath = "";
 		}
+		// 4. url进行编码
 		return decodeRequestString(request, contextPath);
 	}
 
@@ -410,8 +428,11 @@ public class UrlPathHelper {
 	 * @return the servlet path
 	 */
 	public String getServletPath(HttpServletRequest request) {
+
+		// 1. 从属性中获取servletPath
 		String servletPath = (String) request.getAttribute(WebUtils.INCLUDE_SERVLET_PATH_ATTRIBUTE);
 		if (servletPath == null) {
+			// 2. 调用getServletPath()
 			servletPath = request.getServletPath();
 		}
 		if (servletPath.length() > 1 && servletPath.endsWith("/") && shouldRemoveTrailingServletPathSlash(request)) {

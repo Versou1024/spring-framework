@@ -60,6 +60,15 @@ import org.springframework.util.function.SingletonSupplier;
  * @since 3.1.2
  */
 public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
+	/*
+	 * 异步执行器的切面支持 -- 主要提供给想要使用切面完成异步操作的类继承使用
+	 * 因此主要和 执行器、BeanFactory、异常处理器 有关
+	 *
+	 * 核心方法：
+	 * determineAsyncExecutor -- 为异步切面方法查找对应的执行器
+	 * doSubmit -- 提交task
+	 * handleError -- 异常处理
+	 */
 
 	/**
 	 * The default name of the {@link TaskExecutor} bean to pick up: "taskExecutor".
@@ -68,14 +77,19 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	 * @since 4.2.6
 	 */
 	public static final String DEFAULT_TASK_EXECUTOR_BEAN_NAME = "taskExecutor";
+	// 这是备选的。如果找到多个类型为TaskExecutor的Bean，才会备选的再用这个名称去找的~~~
 
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	// 缓存~~~AsyncTaskExecutor是TaskExecutor的子接口
+	// 从这可以看出：不同的方法，对应的异步执行器还不一样咯~~~~~~
 	private final Map<Method, AsyncTaskExecutor> executors = new ConcurrentHashMap<>(16);
 
+	// 默认的线程执行器
 	private SingletonSupplier<Executor> defaultExecutor;
 
+	// 异步异常处理器
 	private SingletonSupplier<AsyncUncaughtExceptionHandler> exceptionHandler;
 
 	@Nullable
@@ -115,7 +129,8 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	 */
 	public void configure(@Nullable Supplier<Executor> defaultExecutor,
 			@Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
-
+		// 用户可以直接配置executor、异常处理器Exceptionhandler
+		// 注意：如果获取不到，那么就会调动getDefaultExecutor(this.beanFactory)
 		this.defaultExecutor = new SingletonSupplier<>(defaultExecutor, () -> getDefaultExecutor(this.beanFactory));
 		this.exceptionHandler = new SingletonSupplier<>(exceptionHandler, SimpleAsyncUncaughtExceptionHandler::new);
 	}
@@ -161,21 +176,34 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	 */
 	@Nullable
 	protected AsyncTaskExecutor determineAsyncExecutor(Method method) {
+		// 核心方法 -- 为切面异步方法查找执行器
 		AsyncTaskExecutor executor = this.executors.get(method);
 		if (executor == null) {
+			// 缓存失效
 			Executor targetExecutor;
+			// 抽象方法：`AnnotationAsyncExecutionInterceptor`有实现。就是@Async注解的value值
+			// 给异步切面类一个机会指定线程池，如果没有指定的话，就只能是获取默认的执行器了
 			String qualifier = getExecutorQualifier(method);
+			// 现在知道@Async直接的value值的作用了吧。就是制定执行此方法的执行器的（容器内执行器的Bean的名称）
+			// 当然有可能为null。注意此处是支持@Qualified注解标注在类上来区分Bean的
+			// 注意：此处targetExecutor仍然可能为null
 			if (StringUtils.hasLength(qualifier)) {
+				// 从BeanFactory中根据qualifier查看targetExecutor
 				targetExecutor = findQualifiedExecutor(this.beanFactory, qualifier);
 			}
+			// 注解没有指定value值，那就去找默认的执行器
 			else {
+				// 获取默认的执行器
 				targetExecutor = this.defaultExecutor.get();
 			}
 			if (targetExecutor == null) {
+				// 若还未null，那就返回null吧
 				return null;
 			}
-			executor = (targetExecutor instanceof AsyncListenableTaskExecutor ?
-					(AsyncListenableTaskExecutor) targetExecutor : new TaskExecutorAdapter(targetExecutor));
+			// 把targetExecutor 包装成一个AsyncTaskExecutor返回，并且缓存起来。
+			// TaskExecutorAdapter就是AsyncListenableTaskExecutor的一个实现类
+			executor = (targetExecutor instanceof AsyncListenableTaskExecutor ? (AsyncListenableTaskExecutor) targetExecutor : new TaskExecutorAdapter(targetExecutor));
+			// 存入缓存
 			this.executors.put(method, executor);
 		}
 		return executor;
@@ -225,14 +253,17 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	 */
 	@Nullable
 	protected Executor getDefaultExecutor(@Nullable BeanFactory beanFactory) {
+		// 获取默认的Executor，前提是用户没有指定Executor
 		if (beanFactory != null) {
 			try {
 				// Search for TaskExecutor bean... not plain Executor since that would
 				// match with ScheduledExecutorService as well, which is unusable for
 				// our purposes here. TaskExecutor is more clearly designed for it.
+				// 尝试获取TaskExecutor
 				return beanFactory.getBean(TaskExecutor.class);
 			}
 			catch (NoUniqueBeanDefinitionException ex) {
+				// 有多个TaskExecutor时，获取指定名字为"taskExecutor"的Executor
 				logger.debug("Could not find unique TaskExecutor bean", ex);
 				try {
 					return beanFactory.getBean(DEFAULT_TASK_EXECUTOR_BEAN_NAME, Executor.class);
@@ -246,6 +277,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 				}
 			}
 			catch (NoSuchBeanDefinitionException ex) {
+				// 没有找到任何一个TaskExecutor时，就只好自己创建啦，
 				logger.debug("Could not find default TaskExecutor bean", ex);
 				try {
 					return beanFactory.getBean(DEFAULT_TASK_EXECUTOR_BEAN_NAME, Executor.class);
@@ -254,6 +286,8 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 					logger.info("No task executor bean found for async processing: " +
 							"no bean of type TaskExecutor and no bean named 'taskExecutor' either");
 				}
+				// 这里还没有获取到，就放弃。 用本地默认的executor吧~~~
+				// 子类可以去复写此方法，发现为null的话可议给一个默认值~~~~比如`AsyncExecutionInterceptor`默认给的就是`SimpleAsyncTaskExecutor`作为执行器的
 				// Giving up -> either using local default executor or none at all...
 			}
 		}
@@ -270,6 +304,9 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	 */
 	@Nullable
 	protected Object doSubmit(Callable<Object> task, AsyncTaskExecutor executor, Class<?> returnType) {
+		// 根据不同的返回值类型，来采用不同的方案去异步执行，但是执行器都是executor
+
+		// CompletableFuture类型，就要用CompletableFuture的方式执行
 		if (CompletableFuture.class.isAssignableFrom(returnType)) {
 			return CompletableFuture.supplyAsync(() -> {
 				try {
@@ -280,12 +317,15 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 				}
 			}, executor);
 		}
+		// ListenableFuture 类型
 		else if (ListenableFuture.class.isAssignableFrom(returnType)) {
 			return ((AsyncListenableTaskExecutor) executor).submitListenable(task);
 		}
+		// Future类型，直接提交
 		else if (Future.class.isAssignableFrom(returnType)) {
 			return executor.submit(task);
 		}
+		// 同上
 		else {
 			executor.submit(task);
 			return null;

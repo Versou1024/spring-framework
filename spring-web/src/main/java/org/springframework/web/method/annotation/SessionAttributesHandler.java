@@ -47,14 +47,24 @@ import org.springframework.web.context.request.WebRequest;
  * @since 3.1
  */
 public class SessionAttributesHandler {
+	/*
+	 * 会话属性处理器
+	 * 管理通过@SessionAttributes声明的特定于控制器的会话属性
+	 * 实际存储被委派给SessionAttributeStore实例。
+	 *
+	 * 作用：
+	 * 1、如果想让参数在多个请求间共享，那么可以用到要说到的@SessionAttribute注解SessionAttribute只能作用在类上
+	 * 2、在每个RequestMapping的方法执行后，这个SessionAttributesHandler都会将它自己管理的“属性”从Model中写入到真正的HttpSession；
+	 * 3、同样，在每个RequestMapping的方法执行前，SessionAttributesHandler会将HttpSession中的被@SessionAttributes注解的属性写入到新的Model中。
+	 */
 
-	private final Set<String> attributeNames = new HashSet<>();
+	private final Set<String> attributeNames = new HashSet<>(); // 构造中完成初始化 - 属性名
 
-	private final Set<Class<?>> attributeTypes = new HashSet<>();
+	private final Set<Class<?>> attributeTypes = new HashSet<>(); // 构造中完成初始化 - 属性值类型
 
-	private final Set<String> knownAttributeNames = Collections.newSetFromMap(new ConcurrentHashMap<>(4));
+	private final Set<String> knownAttributeNames = Collections.newSetFromMap(new ConcurrentHashMap<>(4)); //用于管理类上已知的session属性名
 
-	private final SessionAttributeStore sessionAttributeStore;
+	private final SessionAttributeStore sessionAttributeStore; // 构造中完成初始化 - 属性存取 -- 用于存、检索、移除指定的session属性
 
 
 	/**
@@ -66,13 +76,15 @@ public class SessionAttributesHandler {
 	 */
 	public SessionAttributesHandler(Class<?> handlerType, SessionAttributeStore sessionAttributeStore) {
 		Assert.notNull(sessionAttributeStore, "SessionAttributeStore may not be null");
+		// 已有的会话属性存取工具
 		this.sessionAttributeStore = sessionAttributeStore;
-
+		// 查看当前Controller控制器中是否有@SessionAttribute注解 -- 注意：@SessionAttributes只能注解在类上哦
 		SessionAttributes ann = AnnotatedElementUtils.findMergedAnnotation(handlerType, SessionAttributes.class);
 		if (ann != null) {
-			Collections.addAll(this.attributeNames, ann.names());
-			Collections.addAll(this.attributeTypes, ann.types());
+			Collections.addAll(this.attributeNames, ann.names()); // 添加属性名 -- 即 SessionAttributes#names
+			Collections.addAll(this.attributeTypes, ann.types()); // 添加属性值类型 -- 即 SessionAttributes#types
 		}
+		// 添加到已知的属性命名中
 		this.knownAttributeNames.addAll(this.attributeNames);
 	}
 
@@ -128,8 +140,9 @@ public class SessionAttributesHandler {
 	 */
 	public Map<String, Object> retrieveAttributes(WebRequest request) {
 		Map<String, Object> attributes = new HashMap<>();
+		// 从已知的属性名那种检索
 		for (String name : this.knownAttributeNames) {
-			Object value = this.sessionAttributeStore.retrieveAttribute(request, name);
+			Object value = this.sessionAttributeStore.retrieveAttribute(request, name); // 利用 sessionAttributeStore 从当前request的属性中检索指定的会话属性
 			if (value != null) {
 				attributes.put(name, value);
 			}

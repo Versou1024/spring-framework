@@ -52,6 +52,10 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 	/** Static for optimal serializability. */
 	private static final Log logger = LogFactory.getLog(RuleBasedTransactionAttribute.class);
 
+	// RollbackRuleAttribute：它是个实体类，确定给定异常是否应导致回滚的规则
+	// 相当于封装了这个规则的一个实体，内部封装一个异常  提供一个实例变量： 这个变量相当于回滚规则为只回滚RuntimeException
+	// public static final RollbackRuleAttribute ROLLBACK_ON_RUNTIME_EXCEPTIONS = new RollbackRuleAttribute(RuntimeException.class);
+	// 所以此类最重要的一个属性，就是这个，它能维护多种回滚的规则~~~~
 	@Nullable
 	private List<RollbackRuleAttribute> rollbackRules;
 
@@ -137,6 +141,8 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 		RollbackRuleAttribute winner = null;
 		int deepest = Integer.MAX_VALUE;
 
+		// 这里getDepth()就是去看看异常栈里面  该类型的异常处于啥位置。
+		// 这里用了Integer的最大值，基本相当于不管异常有多深，遇上此异常都应该回滚喽，也就是找到这个winnner了~~~~~
 		if (this.rollbackRules != null) {
 			for (RollbackRuleAttribute rule : this.rollbackRules) {
 				int depth = rule.getDepth(ex);
@@ -152,11 +158,13 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 		}
 
 		// User superclass behavior (rollback on unchecked) if no rule matches.
+		// 这句相当于：如果你没有指定回滚规则，那就交给父类吧（只回滚RuntimeException和Error类型）
 		if (winner == null) {
 			logger.trace("No relevant rollback rule found: applying default rules");
 			return super.rollbackOn(ex);
 		}
 
+		// 最终只要找到了，但是不是NoRollbackRuleAttribute类型就成`~~~~
 		return !(winner instanceof NoRollbackRuleAttribute);
 	}
 

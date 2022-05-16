@@ -38,6 +38,9 @@ import java.util.EventListener;
  */
 @FunctionalInterface
 public interface ApplicationListener<E extends ApplicationEvent> extends EventListener {
+	// ApplicationListener实现了JDK的EventListener，但它抽象出一个onApplicationEvent方法，使用更方便。
+	// 当ApplicationListener的实现类中有具体参数化类型，即 MyApplicationListener implements ApplicationListener<MyApplicationEvent>
+	// 那么每次ApplicationEventMulticaster#multicastEvent(MyApplicationEvent)就可以监听到，触发onApplicationEvent
 
 	/**
 	 * Handle an application event.

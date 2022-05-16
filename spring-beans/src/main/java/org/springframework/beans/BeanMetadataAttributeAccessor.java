@@ -29,6 +29,13 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class BeanMetadataAttributeAccessor extends AttributeAccessorSupport implements BeanMetadataElement {
+	/**
+	 * 分析：BeanDefinition体系中；
+	 * BeanDefinition接口实现了一级接口AttributeAccessor与BeanMetadataElement接口，并扩展了公告的Bean信息，可以认为是二级接口。
+	 * AttributeAccessorSupport 则实现了一级接口AttributeAccessor
+	 * BeanMetadataAttributeAccessor 则继承了AttributeAccessorSupport并同时实现BeanMetadataElement的方法
+	 * 即实现额外属性和源数据的整合
+	 */
 
 	@Nullable
 	private Object source;
@@ -39,6 +46,11 @@ public class BeanMetadataAttributeAccessor extends AttributeAccessorSupport impl
 	 * <p>The exact type of the object will depend on the configuration mechanism used.
 	 */
 	public void setSource(@Nullable Object source) {
+		/**
+		 * 	 * 分析: 该接口仅仅定义了一个getSource方法, 该方法用于返回一个source源,
+		 * 	 * 其实就是返回一个Class文件在磁盘中的绝对路径而已, 在Spring中, BeanDefinition是间接的实现了这个接口的,
+		 * 	 * 从而返回的是在BeanDefinition中定义的类的绝对路径，用来加载BeanDefinition的.class文件
+		 */
 		this.source = source;
 	}
 

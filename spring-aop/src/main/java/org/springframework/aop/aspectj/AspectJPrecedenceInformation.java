@@ -27,6 +27,9 @@ import org.springframework.core.Ordered;
  * @see org.springframework.aop.aspectj.autoproxy.AspectJPrecedenceComparator
  */
 public interface AspectJPrecedenceInformation extends Ordered {
+	// AspectJPrecedenceInformation接口：AspectJ的优先级信息
+	// 这些类型信息可以提供按AspectJ的优先规则对advice/advisors进行排序所需的信息。
+	// 主要是：aspectName、声明的顺序declartionOrder、是否为前置advice、是否为后置advice
 
 	// Implementation note:
 	// We need the level of indirection this interface provides as otherwise the

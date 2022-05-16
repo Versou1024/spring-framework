@@ -48,6 +48,8 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
  */
 public interface TaskScheduler {
+	// Spring任务调度器的核心接口，定义了执行定时任务的主要方法，主要根据任务的不同触发方式调用不同的执行逻辑，其实现类都是对JDK原生的定时器或线程池组件进行包装，并扩展额外的功能。
+	// API：到期一次性触发、根据Trigger周期性运行、根据fixedRate模式周期触发、根据fixedDelay模式周期触发[可额外指定延迟时间]
 
 	/**
 	 * Schedule the given {@link Runnable}, invoking it whenever the trigger

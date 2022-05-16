@@ -37,6 +37,10 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class MatchAlwaysTransactionAttributeSource implements TransactionAttributeSource, Serializable {
+	// MatchAlwaysTransactionAttributeSource
+	//它是TransactionAttributeSource的一个最简单的实现，每次调用，都是返回相同的TransactionAttribute
+	//
+	//当然它是可议set一个TransactionAttribute作为通用的事务属性的实现的
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 

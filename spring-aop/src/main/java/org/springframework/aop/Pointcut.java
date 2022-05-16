@@ -31,6 +31,9 @@ package org.springframework.aop;
  * @see org.springframework.aop.support.MethodMatchers
  */
 public interface Pointcut {
+	/*
+	 * Pointcut 切入点，定义获取ClassFilter类过滤器、MethodMatcher方法匹配器的
+	 */
 
 	/**
 	 * Return the ClassFilter for this pointcut.

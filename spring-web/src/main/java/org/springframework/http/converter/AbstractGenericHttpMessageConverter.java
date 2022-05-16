@@ -34,8 +34,9 @@ import org.springframework.lang.Nullable;
  * @since 4.2
  * @param <T> the converted object type
  */
-public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHttpMessageConverter<T>
-		implements GenericHttpMessageConverter<T> {
+public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHttpMessageConverter<T> implements GenericHttpMessageConverter<T> {
+	// AbstractGenericHttpMessageConverter 大多数 GenericHttpMessageConverter 实现的抽象基类。
+	// 同时将 GenericHttpMessageConverter 方法的实现都利用其超类AbstractHttpMessageConverter的能力实现
 
 	/**
 	 * Construct an {@code AbstractGenericHttpMessageConverter} with no supported media types.
@@ -63,11 +64,18 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 
 	@Override
 	protected boolean supports(Class<?> clazz) {
+		// 支持任何clazz
+		// 由于是泛型的,因此这里会支持任何类型的clazz,因此返回true
 		return true;
 	}
 
 	@Override
 	public boolean canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType) {
+		// type instanceof Class 的话
+		// canRead((Class<?>) type, mediaType) 就是超类AbstractHttpMessageConverter对clazz和type进行检查
+
+		// type instanceof Class 不是的话
+		// canRead(mediaType) 就是超类AbstractHttpMessageConverter只对mediaType进行检查
 		return (type instanceof Class ? canRead((Class<?>) type, mediaType) : canRead(mediaType));
 	}
 
@@ -83,6 +91,7 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 	@Override
 	public final void write(final T t, @Nullable final Type type, @Nullable MediaType contentType,
 			HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
+		// 实现 GenericHttpMessageConverter#write(final T t, @Nullable final Type type, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
 
 		final HttpHeaders headers = outputMessage.getHeaders();
 		addDefaultHeaders(headers, t, contentType);
@@ -107,8 +116,9 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 	}
 
 	@Override
-	protected void writeInternal(T t, HttpOutputMessage outputMessage)
-			throws IOException, HttpMessageNotWritableException {
+	protected void writeInternal(T t, HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
+		// 将超类的 AbstractHttpMessageConverter.writeInternal(T t, HttpOutputMessage outputMessage) 进行重写
+		// 即 改为 writeInternal(t, null, outputMessage)
 
 		writeInternal(t, null, outputMessage);
 	}
@@ -123,5 +133,9 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 	 */
 	protected abstract void writeInternal(T t, @Nullable Type type, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException;
+
+	// 重点: writeInternal(T t, @Nullable Type type, HttpOutputMessage outputMessage)
+	// 携带有一个泛型消息Type,主要是用于JSON序列化和反序列时需要使用
+	// 相比于超类的 writeInternal(T t, HttpOutputMessage outputMessage) 更加适合做序列化操作
 
 }

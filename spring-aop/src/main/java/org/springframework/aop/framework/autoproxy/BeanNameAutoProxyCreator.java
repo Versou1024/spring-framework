@@ -45,9 +45,10 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public class BeanNameAutoProxyCreator extends AbstractAutoProxyCreator {
+	// BeanNameAutoProxyCreator 根据beanName判断是否需要做AOP代理
 
 	@Nullable
-	private List<String> beanNames;
+	private List<String> beanNames; // 用来判断beanName的bean是否需要做AOP代理
 
 
 	/**
@@ -76,24 +77,31 @@ public class BeanNameAutoProxyCreator extends AbstractAutoProxyCreator {
 	 */
 	@Override
 	@Nullable
-	protected Object[] getAdvicesAndAdvisorsForBean(
-			Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
+	protected Object[] getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
+		// 这里面注意一点：BeanNameAutoProxyCreator的此方法并没有去寻找Advisor，所以需要拦截的话
+		// 只能依靠：setInterceptorNames()来指定拦截器。它是根据名字去Bean容器里取的
 
 		if (this.beanNames != null) {
+			// 根据beanNames进行尝试匹配beanName
 			for (String mappedName : this.beanNames) {
+				// beanClass是FactoryBean，那么同样如果要将其匹配为Proxy代理类，mappedName也必须有一个"&"前缀进行匹配
 				if (FactoryBean.class.isAssignableFrom(beanClass)) {
 					if (!mappedName.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {
 						continue;
 					}
+					// 去掉 & 前缀
 					mappedName = mappedName.substring(BeanFactory.FACTORY_BEAN_PREFIX.length());
 				}
+				// 检查是否需要match -- 源码：ant风格 PatternMatchUtils.simpleMatch(mappedName, beanName)
 				if (isMatch(beanName, mappedName)) {
 					return PROXY_WITHOUT_ADDITIONAL_INTERCEPTORS;
 				}
+				// 这里需要注意的是，如国存在Bean工厂，哪怕任意一个alias匹配都是可以的~~~
 				BeanFactory beanFactory = getBeanFactory();
 				if (beanFactory != null) {
 					String[] aliases = beanFactory.getAliases(beanName);
 					for (String alias : aliases) {
+						// 别名也需要尝试匹配
 						if (isMatch(alias, mappedName)) {
 							return PROXY_WITHOUT_ADDITIONAL_INTERCEPTORS;
 						}

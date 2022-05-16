@@ -158,6 +158,7 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 	 */
 	@Override
 	protected ConfigurableEnvironment createEnvironment() {
+		// 这个方法需要注意一下，默认是StandardEnvironment，但是它是protected方法设计，所以之类可以重写（如下图）
 		return new StandardServletEnvironment();
 	}
 
@@ -166,11 +167,14 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 	 */
 	@Override
 	protected void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+		//注册ServletContextAwareProcessor 这样任意Bean都可以很方便的获取到ServletContext了  同时忽略另外两个，因为ServletContextAwareProcessor 都把事情都做了
 		beanFactory.addBeanPostProcessor(new ServletContextAwareProcessor(this.servletContext, this.servletConfig));
 		beanFactory.ignoreDependencyInterface(ServletContextAware.class);
 		beanFactory.ignoreDependencyInterface(ServletConfigAware.class);
 
+		//注册web环境，包括request、session、golableSession、application
 		WebApplicationContextUtils.registerWebApplicationScopes(beanFactory, this.servletContext);
+		//注册servletContext、contextParamters、contextAttributes  、servletConfig单例bean
 		WebApplicationContextUtils.registerEnvironmentBeans(beanFactory, this.servletContext, this.servletConfig);
 	}
 
@@ -208,6 +212,7 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 	@Override
 	protected void initPropertySources() {
 		ConfigurableEnvironment env = getEnvironment();
+		// 初始化web环境中的初始值（比如init等，这个后续会说）
 		if (env instanceof ConfigurableWebEnvironment) {
 			((ConfigurableWebEnvironment) env).initPropertySources(this.servletContext, this.servletConfig);
 		}

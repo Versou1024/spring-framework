@@ -38,6 +38,12 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.context.support.ReloadableResourceBundleMessageSource
  */
 public interface MessageSource {
+	/*
+	 * 用于解析消息的策略接口，支持此类消息的参数化和国际化。
+	 * Spring为生产提供了两种现成的实现：
+	 * ResourceBundleMessageSource：构建在标准java.util.ResourceBundle上，分享其局限性。
+	 * ReloadableResourceBundleMessageSource：高度可配置，尤其是在重新加载消息定义方面。
+	 */
 
 	/**
 	 * Try to resolve the message. Return default message if no message was found.

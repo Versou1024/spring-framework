@@ -77,6 +77,7 @@ import org.springframework.stereotype.Component;
 @Documented
 @Component
 public @interface ControllerAdvice {
+	// 控制器全局增强
 
 	/**
 	 * Alias for the {@link #basePackages} attribute.
@@ -121,6 +122,8 @@ public @interface ControllerAdvice {
 	 * @since 4.0
 	 */
 	Class<?>[] assignableTypes() default {};
+	// 类数组。
+	// @ControllerAdvice注释类将建议可分配给至少一种给定类型的控制器。
 
 	/**
 	 * Array of annotation types.
@@ -131,5 +134,7 @@ public @interface ControllerAdvice {
 	 * @since 4.0
 	 */
 	Class<? extends Annotation>[] annotations() default {};
+	// 注释类型数组。
+	// @ControllerAdvice注解类将建议使用至少一种提供的注释类型注释的控制器
 
 }

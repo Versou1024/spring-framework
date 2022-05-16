@@ -30,6 +30,7 @@ import org.springframework.util.ErrorHandler;
  * @since 3.0
  */
 public class DelegatingErrorHandlingRunnable implements Runnable {
+	// 实现：最常用的task，在run()中会将用户的task和指定或默认的ErrorHandler组合，在task抛出异常时，使用ErrorHandler进行处理
 
 	private final Runnable delegate;
 

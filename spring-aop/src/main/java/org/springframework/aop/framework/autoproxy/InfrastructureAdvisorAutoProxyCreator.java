@@ -29,6 +29,12 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class InfrastructureAdvisorAutoProxyCreator extends AbstractAdvisorAutoProxyCreator {
+	/**
+	 * InfrastructureAdvisorAutoProxyCreator: 基础设施、基建
+	 * 听这名字就知道，这是Spring给自己内部使用的一个自动代理创建器。
+	 * 这个类在@EnableTransactionManagement事务相关里会再次提到（它的AutoProxyRegistrar就是向容器注册了它），
+	 * 其实它的作用非常简单：主要是读取Advisor类，并对符合的bean进行二次代理
+	 */
 
 	@Nullable
 	private ConfigurableListableBeanFactory beanFactory;
@@ -42,6 +48,7 @@ public class InfrastructureAdvisorAutoProxyCreator extends AbstractAdvisorAutoPr
 
 	@Override
 	protected boolean isEligibleAdvisorBean(String beanName) {
+		// 合格bean的标准：beanName对应的bean是ROLE_INFRASTRUCTURE角色
 		return (this.beanFactory != null && this.beanFactory.containsBeanDefinition(beanName) &&
 				this.beanFactory.getBeanDefinition(beanName).getRole() == BeanDefinition.ROLE_INFRASTRUCTURE);
 	}

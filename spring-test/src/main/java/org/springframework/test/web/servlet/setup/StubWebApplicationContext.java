@@ -67,9 +67,13 @@ import org.springframework.web.context.support.ServletContextResourcePatternReso
  * @since 3.2
  */
 class StubWebApplicationContext implements WebApplicationContext {
+	/**
+	 * WebApplicationContext 的具体实现
+	 */
 
 	private final ServletContext servletContext;
 
+	// 拥有自己的Bean工厂 -- 需要注意 ❗️-- 内部类
 	private final StubBeanFactory beanFactory = new StubBeanFactory();
 
 	private final String id = ObjectUtils.identityToString(this);

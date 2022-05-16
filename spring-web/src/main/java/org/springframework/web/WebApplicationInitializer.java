@@ -175,7 +175,8 @@ import javax.servlet.ServletException;
  * @see org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer
  */
 public interface WebApplicationInitializer {
-
+	// Spring提供给Web引用的初始化器
+	// SpringServletContainerInitializer 会在被Servlet容器初始时，就会开始处理 WebApplicationInitializer 的实现类的启动
 	/**
 	 * Configure the given {@link ServletContext} with any servlets, filters, listeners
 	 * context-params and attributes necessary for initializing this web application. See

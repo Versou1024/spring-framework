@@ -45,6 +45,14 @@ import org.springframework.util.ReflectionUtils;
  * @since 2.5
  */
 public class StandardAnnotationMetadata extends StandardClassMetadata implements AnnotationMetadata {
+	/**
+	 * 这里需要理清UML类图关系
+	 * AnnotationMetadata extends ClassMetadata,AnnotationTypeMetadata
+	 * StandardClassMetadata implements ClassMetadata
+	 * StandardAnnotationMetadata extends StandardClassMetadata implements AnnotationMetadata
+	 *
+	 * 因此：StandardAnnotationMetadata 同样基于JDK反射关注AnnotationMetadata的实现即可
+	 */
 
 	private final MergedAnnotations mergedAnnotations;
 
@@ -83,8 +91,7 @@ public class StandardAnnotationMetadata extends StandardClassMetadata implements
 	@Deprecated
 	public StandardAnnotationMetadata(Class<?> introspectedClass, boolean nestedAnnotationsAsMap) {
 		super(introspectedClass);
-		this.mergedAnnotations = MergedAnnotations.from(introspectedClass,
-				SearchStrategy.INHERITED_ANNOTATIONS, RepeatableContainers.none());
+		this.mergedAnnotations = MergedAnnotations.from(introspectedClass, SearchStrategy.INHERITED_ANNOTATIONS, RepeatableContainers.none());
 		this.nestedAnnotationsAsMap = nestedAnnotationsAsMap;
 	}
 
@@ -126,8 +133,10 @@ public class StandardAnnotationMetadata extends StandardClassMetadata implements
 
 	@Override
 	public boolean hasAnnotatedMethods(String annotationName) {
+		// 调用AnnotationUtils
 		if (AnnotationUtils.isCandidateClass(getIntrospectedClass(), annotationName)) {
 			try {
+				// 调用ReflectUtils
 				Method[] methods = ReflectionUtils.getDeclaredMethods(getIntrospectedClass());
 				for (Method method : methods) {
 					if (isAnnotatedMethod(method, annotationName)) {
@@ -166,8 +175,7 @@ public class StandardAnnotationMetadata extends StandardClassMetadata implements
 	}
 
 	private boolean isAnnotatedMethod(Method method, String annotationName) {
-		return !method.isBridge() && method.getAnnotations().length > 0 &&
-				AnnotatedElementUtils.isAnnotated(method, annotationName);
+		return !method.isBridge() && method.getAnnotations().length > 0 && AnnotatedElementUtils.isAnnotated(method, annotationName);
 	}
 
 

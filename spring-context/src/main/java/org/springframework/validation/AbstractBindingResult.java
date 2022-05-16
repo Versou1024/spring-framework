@@ -45,16 +45,19 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractBindingResult extends AbstractErrors implements BindingResult, Serializable {
-
+	/**
+	 * BindingResult接口及其Errors错误的抽象实现。
+	 * 封装ObjectErrors和FieldErrors的常见容器管理操作。
+	 */
 	private final String objectName;
 
 	private MessageCodesResolver messageCodesResolver = new DefaultMessageCodesResolver();
 
-	private final List<ObjectError> errors = new ArrayList<>();
+	private final List<ObjectError> errors = new ArrayList<>();  // errors容器
 
-	private final Map<String, Class<?>> fieldTypes = new HashMap<>();
+	private final Map<String, Class<?>> fieldTypes = new HashMap<>(); // 字段名 -> 字段类型
 
-	private final Map<String, Object> fieldValues = new HashMap<>();
+	private final Map<String, Object> fieldValues = new HashMap<>(); // 字段名 -> 字段value
 
 	private final Set<String> suppressedFields = new HashSet<>();
 

@@ -30,6 +30,7 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public interface RequestToViewNameTranslator {
+	// 策略接口 -- 用于将传入的HttpServletRequest转换为逻辑视图名称
 
 	/**
 	 * Translate the given {@link HttpServletRequest} into a view name.
@@ -40,5 +41,6 @@ public interface RequestToViewNameTranslator {
 	 */
 	@Nullable
 	String getViewName(HttpServletRequest request) throws Exception;
+	// 从request获取ViewName
 
 }

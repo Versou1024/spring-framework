@@ -46,10 +46,21 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.context.support.ClassPathXmlApplicationContext
  */
 public class DefaultResourceLoader implements ResourceLoader {
+	/*
+	 * ResourceLoader接口的默认实现。由ResourceEditor使用，并作为AbstractApplicationContext的基类。也可以单独使用。
+	 *
+	 * getResource()
+	 * 如果位置值是URL，将返回UrlResource ，
+	 * 如果是非URL路径或“classpath:”伪URL，则返回ClassPathResource 。
+	 * 如果是"/"开头，交给子类重写
+	 */
 
 	@Nullable
 	private ClassLoader classLoader;
 
+	// 这个特别重要：ProtocolResolver这个接口事Spring为开发者提供了自定义扩展接口（允许我们自己去介入参与到具体的获取资源的处理上，后面getResouce方法可议看出来）
+	// ProtocolResolver接口Spring没有提供任何实现，开发者可议自己实现，从而参与到资源获取的路子上去
+	// 备注：这个接口@since 4.3  所以只有Spring4.3后才有这个能力哦~~~
 	private final Set<ProtocolResolver> protocolResolvers = new LinkedHashSet<>(4);
 
 	private final Map<Class<?>, Map<Resource, ?>> resourceCaches = new ConcurrentHashMap<>(4);
@@ -106,6 +117,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 	 * @see #getProtocolResolvers()
 	 */
 	public void addProtocolResolver(ProtocolResolver resolver) {
+		// 我们可以自己实现一个ProtocolResolver ，然后实现我们自己的获取资源的逻辑~~~下面会有示例
 		Assert.notNull(resolver, "ProtocolResolver must not be null");
 		this.protocolResolvers.add(resolver);
 	}
@@ -142,8 +154,11 @@ public class DefaultResourceLoader implements ResourceLoader {
 
 	@Override
 	public Resource getResource(String location) {
+		// 这个是核心方法~~~
 		Assert.notNull(location, "Location must not be null");
 
+		// 首先，Spring会看我们自己有没有实现自己的ProtocolResolver 若有实现，会先以我们自己的为准
+		// 备注：它会把ResourceLoader传给开发者，这点特别重要~~~
 		for (ProtocolResolver protocolResolver : getProtocolResolvers()) {
 			Resource resource = protocolResolver.resolve(location, this);
 			if (resource != null) {
@@ -151,20 +166,26 @@ public class DefaultResourceLoader implements ResourceLoader {
 			}
 		}
 
+		// 如果以/打头，就交给getResourceByPath()，注意，它是一个protected方法，子类是可议复写的
 		if (location.startsWith("/")) {
 			return getResourceByPath(location);
 		}
+		// 如果以classpath:打头，毫无疑问，交给ClassPathResource
+		// 需要注意的是，此处必须`classpath:`  区分大小写的哦
 		else if (location.startsWith(CLASSPATH_URL_PREFIX)) {
 			return new ClassPathResource(location.substring(CLASSPATH_URL_PREFIX.length()), getClassLoader());
 		}
+		// 最后的处理方式：就是当作一个URL来处理
 		else {
 			try {
 				// Try to parse the location as a URL...
+				// 如果是文件类型，交给FileUrlResource（@since 5.0.2）
 				URL url = new URL(location);
 				return (ResourceUtils.isFileURL(url) ? new FileUrlResource(url) : new UrlResource(url));
 			}
 			catch (MalformedURLException ex) {
 				// No URL -> resolve as resource path.
+				// fallback  相当于还是交给子类去弄吧
 				return getResourceByPath(location);
 			}
 		}

@@ -41,8 +41,7 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
  * @author Arjen Poutsma
  * @since 06.10.2003
  */
-public abstract class AbstractMultipartHttpServletRequest extends HttpServletRequestWrapper
-		implements MultipartHttpServletRequest {
+public abstract class AbstractMultipartHttpServletRequest extends HttpServletRequestWrapper implements MultipartHttpServletRequest {
 
 	@Nullable
 	private MultiValueMap<String, MultipartFile> multipartFiles;
@@ -127,8 +126,7 @@ public abstract class AbstractMultipartHttpServletRequest extends HttpServletReq
 	 * To be invoked by subclasses on initialization.
 	 */
 	protected final void setMultipartFiles(MultiValueMap<String, MultipartFile> multipartFiles) {
-		this.multipartFiles =
-				new LinkedMultiValueMap<>(Collections.unmodifiableMap(multipartFiles));
+		this.multipartFiles = new LinkedMultiValueMap<>(Collections.unmodifiableMap(multipartFiles));
 	}
 
 	/**
@@ -137,6 +135,7 @@ public abstract class AbstractMultipartHttpServletRequest extends HttpServletReq
 	 * @see #initializeMultipart()
 	 */
 	protected MultiValueMap<String, MultipartFile> getMultipartFiles() {
+		// 获取用于检索的Multipart file文件映射，必要时延迟初始化它。
 		if (this.multipartFiles == null) {
 			initializeMultipart();
 		}

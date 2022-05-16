@@ -47,6 +47,19 @@ import org.springframework.lang.Nullable;
  */
 public class MappingJackson2HttpMessageConverter extends AbstractJackson2HttpMessageConverter {
 
+	/*
+	 * XxxxHttpMessageConverter 就表示将HttpMessage与对应Xxxx类型相互转化；
+	 * 包括不限于常见的：
+	 * ByteArrayHttpMessageConverter 将HttpMessage转换为 byte arrays.
+	 * StringHttpMessageConverter 将HttpMessage转换为 strings.
+	 * ResourceHttpMessageConverter 将HttpMessage转换为 org.springframework.core.io.Resource.
+	 * SourceHttpMessageConverter 将HttpMessage转换为  javax.xml.transform.Source.
+	 * FormHttpMessageConverter 将HttpMessage转换为 MultiValueMap<String,String>.
+	 * MappingJackson2HttpMessageConverter 将HttpMessage转换为 JSON-added if Jackson 2 is present on the classpath.
+	 * MappingJackson2XmlHttpMessageConverter 将HttpMessage转换为 XML-added if Jackson 2 XML extension is present on the classpath.
+	 */
+
+
 	@Nullable
 	private String jsonPrefix;
 
@@ -65,6 +78,7 @@ public class MappingJackson2HttpMessageConverter extends AbstractJackson2HttpMes
 	 * @see Jackson2ObjectMapperBuilder#json()
 	 */
 	public MappingJackson2HttpMessageConverter(ObjectMapper objectMapper) {
+		// 仅仅支持: application/json  application/*+json 两种格式
 		super(objectMapper, MediaType.APPLICATION_JSON, new MediaType("application", "*+json"));
 	}
 
@@ -75,6 +89,7 @@ public class MappingJackson2HttpMessageConverter extends AbstractJackson2HttpMes
 	 * @see #setPrefixJson
 	 */
 	public void setJsonPrefix(String jsonPrefix) {
+		// 指定用于此视图的 JSON 输出的自定义前缀。默认为无
 		this.jsonPrefix = jsonPrefix;
 	}
 

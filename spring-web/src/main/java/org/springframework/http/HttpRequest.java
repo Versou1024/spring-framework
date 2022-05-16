@@ -28,6 +28,9 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public interface HttpRequest extends HttpMessage {
+	// 代表着一个Http请求信息，提供了多的几个API，是对HttpMessage的一个补充。Spring3.1新增的
+	// 补充:获取请求方式\获取URI
+
 
 	/**
 	 * Return the HTTP method of the request.

@@ -29,6 +29,7 @@ import org.springframework.util.Assert;
  * @see org.springframework.scheduling.TaskScheduler#schedule(Runnable, Trigger)
  */
 public class TriggerTask extends Task {
+	// 继承Task，扩展封装一个Trigger，计算下一次的执行时间
 
 	private final Trigger trigger;
 

@@ -32,6 +32,12 @@ import org.springframework.util.MultiValueMap;
  * @since 2.5.2
  */
 public interface MultipartRequest {
+	/*
+	此接口定义了为实际MultiPart请求公开的multi part访问操作。
+	它由multipartTTPServletRequest扩展。
+
+	API：fileNames、file、files、fileMap
+	 */
 
 	/**
 	 * Return an {@link java.util.Iterator} of String objects containing the

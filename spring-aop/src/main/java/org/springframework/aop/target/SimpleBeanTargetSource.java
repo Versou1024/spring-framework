@@ -29,9 +29,12 @@ package org.springframework.aop.target;
  */
 @SuppressWarnings("serial")
 public class SimpleBeanTargetSource extends AbstractBeanFactoryBasedTargetSource {
+	// 简单基于BeanFactory完成getTarget的操作
 
 	@Override
 	public Object getTarget() throws Exception {
+		// 因此如果是单例就总是同一个对象
+		// 如果是原型，那么getTarget就是一个新的原型对象
 		return getBeanFactory().getBean(getTargetBeanName());
 	}
 

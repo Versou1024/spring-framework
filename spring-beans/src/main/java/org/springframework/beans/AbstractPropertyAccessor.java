@@ -35,12 +35,22 @@ import org.springframework.lang.Nullable;
  * @see #setPropertyValue
  */
 public abstract class AbstractPropertyAccessor extends TypeConverterSupport implements ConfigurablePropertyAccessor {
+	/**
+	 * ConfigurablePropertyAccessor 的抽象类，提供基本实现
+	 *
+	 * 关于 ConfigurablePropertyAccessor extends PropertyAccessor, PropertyEditorRegistry, TypeConverter
+	 * 中的PropertyEditorRegistry、TypeConverter都已经委托给直接父类 TypeConverterSupport 或超父类 所实现
+	 * 只需要关注对于 PropertyAccessor 的基本实现
+	 *
+	 * 核心：
+	 * 在于抽象方法 - setPropertyValue(String,Object)方法 -- 具体实现类如何完成属性设置到target上的
+	 */
 
-	private boolean extractOldValueForEditor = false;
+	private boolean extractOldValueForEditor = false; // 是否为编辑器提取旧值
 
-	private boolean autoGrowNestedPaths = false;
+	private boolean autoGrowNestedPaths = false; // 是否自动增长嵌套路径包含一个null值
 
-	boolean suppressNotWritablePropertyException = false;
+	boolean suppressNotWritablePropertyException = false; // 是否支持抛出不可写得异常
 
 
 	@Override
@@ -93,6 +103,7 @@ public abstract class AbstractPropertyAccessor extends TypeConverterSupport impl
 				((MutablePropertyValues) pvs).getPropertyValueList() : Arrays.asList(pvs.getPropertyValues()));
 
 		if (ignoreUnknown) {
+			// 临时开启支持抛出无法write的异常
 			this.suppressNotWritablePropertyException = true;
 		}
 		try {

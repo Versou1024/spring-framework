@@ -24,6 +24,10 @@ package org.springframework.context;
  * @since 3.0
  */
 public interface LifecycleProcessor extends Lifecycle {
+	/*
+	 * 实现LifeCycle接口
+	 * 扩展：onRefresh、onClose两个方法
+	 */
 
 	/**
 	 * Notification of context refresh, e.g. for auto-starting components.

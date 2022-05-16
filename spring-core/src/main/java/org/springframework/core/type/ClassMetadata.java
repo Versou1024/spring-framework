@@ -29,6 +29,11 @@ import org.springframework.lang.Nullable;
  * @see AnnotationMetadata
  */
 public interface ClassMetadata {
+	/*
+	 * Spring元数据的顶层接口：ClassMetadata 类的元数据
+	 * 对Class的抽象和适配
+	 * className、是否为接口、是否抽象等等
+	 */
 
 	/**
 	 * Return the name of the underlying class.
@@ -56,6 +61,7 @@ public interface ClassMetadata {
 	 * i.e. neither an interface nor an abstract class.
 	 */
 	default boolean isConcrete() {
+		// 有默认实现哦
 		return !(isInterface() || isAbstract());
 	}
 
@@ -70,6 +76,7 @@ public interface ClassMetadata {
 	 * can be constructed independently from an enclosing class.
 	 */
 	boolean isIndependent();
+	// 这个类是否为独立的，当这个class是顶级类或者一个静态的内部类，就认为是独立的
 
 	/**
 	 * Return whether the underlying class is declared within an enclosing

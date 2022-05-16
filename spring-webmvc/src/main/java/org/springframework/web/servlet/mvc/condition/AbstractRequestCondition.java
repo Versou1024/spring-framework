@@ -31,6 +31,10 @@ import org.springframework.lang.Nullable;
  * with and compared to
  */
 public abstract class AbstractRequestCondition<T extends AbstractRequestCondition<T>> implements RequestCondition<T> {
+	/*
+	 * 抽象 请求条件类 - 避免污染具体实现类
+	 * 提供基本方法：toString()/hashCode()/equals()
+	 */
 
 	/**
 	 * Indicates whether this condition is empty, i.e. whether or not it

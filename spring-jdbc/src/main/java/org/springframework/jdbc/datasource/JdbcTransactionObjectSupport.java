@@ -47,19 +47,21 @@ import org.springframework.util.Assert;
  * @see DataSourceTransactionManager
  */
 public abstract class JdbcTransactionObjectSupport implements SavepointManager, SmartTransactionObject {
+	// JdbcTransactionObjectSupport 支持JDBC的事务
+	// JDBC事务 支持设置只回滚\以及保存点的设置释放回滚
 
 	private static final Log logger = LogFactory.getLog(JdbcTransactionObjectSupport.class);
 
 
 	@Nullable
-	private ConnectionHolder connectionHolder;
+	private ConnectionHolder connectionHolder; // 连接holder
 
 	@Nullable
-	private Integer previousIsolationLevel;
+	private Integer previousIsolationLevel;  // 隔离级别
 
-	private boolean readOnly = false;
+	private boolean readOnly = false; // 是否只读
 
-	private boolean savepointAllowed = false;
+	private boolean savepointAllowed = false; // 是否允许设置保存点
 
 
 	/**

@@ -65,6 +65,14 @@ package org.springframework.context;
  * @see ConfigurableApplicationContext
  */
 public interface SmartLifecycle extends Lifecycle, Phased {
+	/*
+	 * 实现LifeCycle接口，和阶段数Phased接口：
+	 *
+	 * 扩展重点：
+	 * 因此如果想要，context刷新容器结束时自动回调完成生命周期的接口，就必须实现SmartLifeCycle接口，并设置为autoStartup为true才可以
+	 * 即将 isAutoStartup 重写并设置为true -- 下面默认实现就是返回的true
+	 *
+	 */
 
 	/**
 	 * The default phase for {@code SmartLifecycle}: {@code Integer.MAX_VALUE}.
@@ -76,7 +84,7 @@ public interface SmartLifecycle extends Lifecycle, Phased {
 	 * @see #getPhase()
 	 * @see org.springframework.context.support.DefaultLifecycleProcessor#getPhase(Lifecycle)
 	 */
-	int DEFAULT_PHASE = Integer.MAX_VALUE;
+	int DEFAULT_PHASE = Integer.MAX_VALUE; // 阶段数越大执行越靠后
 
 
 	/**
@@ -114,8 +122,8 @@ public interface SmartLifecycle extends Lifecycle, Phased {
 	 * @see #getPhase()
 	 */
 	default void stop(Runnable callback) {
-		stop();
-		callback.run();
+		stop(); // 支持之前的stop方法
+		callback.run(); // 同时扩展 一个回调方法 的执行
 	}
 
 	/**

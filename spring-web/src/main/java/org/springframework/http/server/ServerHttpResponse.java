@@ -31,6 +31,13 @@ import org.springframework.http.HttpStatus;
  */
 public interface ServerHttpResponse extends HttpOutputMessage, Flushable, Closeable {
 
+	/*
+	 * 聚合实现HttpOutPutMessage、Flushable、Closeable的能力：
+	 * 即在响应体输出流、获取headers、关闭close和刷新flush的能力上
+	 *
+	 * 扩展 server上的响应response的其余特性：比如状态码statusCode、
+	 */
+
 	/**
 	 * Set the HTTP status code of the response.
 	 * @param status the HTTP status as an HttpStatus enum value

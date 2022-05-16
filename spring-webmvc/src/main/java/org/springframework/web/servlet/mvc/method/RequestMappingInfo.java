@@ -56,7 +56,26 @@ import org.springframework.web.util.UrlPathHelper;
  * @since 3.1
  */
 public final class RequestMappingInfo implements RequestCondition<RequestMappingInfo> {
+	/*
+	 * RequestMappingInfo请求映射信息 封装以下请求映射条件：
+	 * PatternsRequestCondition
+	 * RequestMethodsRequestCondition
+	 * ParamsRequestCondition
+	 * HeadersRequestCondition
+	 * ConsumesRequestCondition
+	 * ProducesRequestCondition
+	 *
+	 * 1、RequestMappingInfo实现RequestCondition,集中将各种RequestCondition进行combine,getMatchingConditon,compareTo
+	 */
 
+
+	// 如果一个request想要匹配一个HandlerMethod,在AbstractHandlerMethodMapping中registry仅仅是根据url做了匹配
+	// 实际上还需要根据 requestMethod请求方法/ParamsRequest请求参数/HeadersRequest请求头/ConsumesRequest消费类型/ProducesRequest生成类型 等做匹配
+	// 才算是真正意义的匹配
+
+	// 这些个匹配器都继承自 AbstractRequestCondition，会进行各自的匹配工作
+	// 下面会以PatternsRequestCondition为例进行示例讲解~~~~~
+	// 他们顶级抽象接口为：RequestCondition  @since 3.1 ：Contract for request mapping conditions
 	private static final PatternsRequestCondition EMPTY_PATTERNS = new PatternsRequestCondition();
 
 	private static final RequestMethodsRequestCondition EMPTY_REQUEST_METHODS = new RequestMethodsRequestCondition();
@@ -202,6 +221,9 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	 */
 	@Override
 	public RequestMappingInfo combine(RequestMappingInfo other) {
+		// 因为类上和方法上都可能会有@RequestMapping注解，所以这里是把语意思合并
+		// 该方法来自顶层接口
+
 		String name = combineNames(other);
 		PatternsRequestCondition patterns = this.patternsCondition.combine(other.patternsCondition);
 		RequestMethodsRequestCondition methods = this.methodsCondition.combine(other.methodsCondition);
@@ -239,6 +261,9 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	@Override
 	@Nullable
 	public RequestMappingInfo getMatchingCondition(HttpServletRequest request) {
+		// 合并后，就开始发挥作用了，该接口来自于顶层接口~~~~
+		// 遍历所有的条件器,任何一个不满足返回null,那么就直接退出,即意味着request不满足这个mappingInfo
+
 		RequestMethodsRequestCondition methods = this.methodsCondition.getMatchingCondition(request);
 		if (methods == null) {
 			return null;
@@ -268,6 +293,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 			return null;
 		}
 
+		// 将所有通过的检验的信息存入RequestMappingInfo
 		return new RequestMappingInfo(this.name, patterns,
 				methods, params, headers, consumes, produces, custom.getCondition());
 	}
@@ -280,6 +306,9 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	 */
 	@Override
 	public int compareTo(RequestMappingInfo other, HttpServletRequest request) {
+		// RequestMappingInfo 默认实现了比较方法
+		// 依次比较 methods\patterns\params\headers\consumes\produces\methods\custom
+
 		int result;
 		// Automatic vs explicit HTTP HEAD mapping
 		if (HttpMethod.HEAD.matches(request.getMethod())) {
@@ -399,6 +428,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	 * @since 4.2
 	 */
 	public interface Builder {
+		// 建造者模式
 
 		/**
 		 * Set the path patterns.
@@ -439,12 +469,12 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 		/**
 		 * Set a custom condition to use.
 		 */
-		Builder customCondition(RequestCondition<?> condition);
+		Builder customCondition(RequestCondition<?> condition); // 设置要使用的自定义条件。
 
 		/**
 		 * Provide additional configuration needed for request mapping purposes.
 		 */
-		Builder options(BuilderConfiguration options);
+		Builder options(BuilderConfiguration options); // 提供请求映射所需的额外配置。
 
 		/**
 		 * Build the RequestMappingInfo.
@@ -546,7 +576,9 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 		@Override
 		@SuppressWarnings("deprecation")
 		public RequestMappingInfo build() {
+			// 构建者模式: 构建出 RequestMappingInfo
 
+			// 1. 构建 路径条件匹配器
 			PatternsRequestCondition patternsCondition = ObjectUtils.isEmpty(this.paths) ? null :
 					new PatternsRequestCondition(
 							this.paths, this.options.getUrlPathHelper(), this.options.getPathMatcher(),
@@ -579,6 +611,8 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	 * @see Builder#options
 	 */
 	public static class BuilderConfiguration {
+		// RequsetMappingInfo 需要的工具类
+		// 在RequestMappingHandlerMapping中完成初始化操作
 
 		@Nullable
 		private UrlPathHelper urlPathHelper;

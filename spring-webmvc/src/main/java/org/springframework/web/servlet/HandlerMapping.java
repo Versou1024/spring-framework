@@ -54,6 +54,11 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
  */
 public interface HandlerMapping {
+	/**
+	 * HandlerMapping 就是提供获取Handler执行链的【HandlerExecutionChain】
+	 *
+	 * 具体映射：url -> HandlerMethod
+	 */
 
 	/**
 	 * Name of the {@link HttpServletRequest} attribute that contains the mapped
@@ -61,6 +66,7 @@ public interface HandlerMapping {
 	 * @since 4.3.21
 	 */
 	String BEST_MATCHING_HANDLER_ATTRIBUTE = HandlerMapping.class.getName() + ".bestMatchingHandler";
+	// 存储找到的最佳的Handler
 
 	/**
 	 * Name of the {@link HttpServletRequest} attribute that contains the path
@@ -70,6 +76,7 @@ public interface HandlerMapping {
 	 * @since 5.2
 	 */
 	String LOOKUP_PATH = HandlerMapping.class.getName() + ".lookupPath";
+	// 用于存储通过UrlPathHelper#getLookupPathForRequest(request)获取的path
 
 	/**
 	 * Name of the {@link HttpServletRequest} attribute that contains the path
@@ -81,6 +88,7 @@ public interface HandlerMapping {
 	 * this request attribute to be present in all scenarios.
 	 */
 	String PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE = HandlerMapping.class.getName() + ".pathWithinHandlerMapping";
+	//
 
 	/**
 	 * Name of the {@link HttpServletRequest} attribute that contains the
@@ -91,6 +99,7 @@ public interface HandlerMapping {
 	 * this request attribute to be present in all scenarios.
 	 */
 	String BEST_MATCHING_PATTERN_ATTRIBUTE = HandlerMapping.class.getName() + ".bestMatchingPattern";
+	// 未精确匹配时,存储最佳匹配的模式值
 
 	/**
 	 * Name of the boolean {@link HttpServletRequest} attribute that indicates
@@ -109,6 +118,7 @@ public interface HandlerMapping {
 	 * this request attribute to be present in all scenarios.
 	 */
 	String URI_TEMPLATE_VARIABLES_ATTRIBUTE = HandlerMapping.class.getName() + ".uriTemplateVariables";
+	// 存储设置模板变量,例如 /com/{id} 传的是: /com/123,那么对应存储的map就是 key为id,value为123
 
 	/**
 	 * Name of the {@link HttpServletRequest} attribute that contains a map with

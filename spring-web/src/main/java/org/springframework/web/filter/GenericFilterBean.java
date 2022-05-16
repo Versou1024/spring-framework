@@ -81,23 +81,34 @@ import org.springframework.web.util.NestedServletException;
  */
 public abstract class GenericFilterBean implements Filter, BeanNameAware, EnvironmentAware,
 		EnvironmentCapable, ServletContextAware, InitializingBean, DisposableBean {
+	/*
+	 * 通用FilterBean - GenericFilterBean
+	 * 重点： InitializingBean#afterPropertiesSet、DisposableBean#destroy
+	 * Filter#doFilter、Filter#init、Filter#destory
+	 *
+	 * 主要作用：
+	 * 1、过滤器的简单基本实现，将其配置参数（web.xml中过滤器标记内的init param条目）作为bean属性处理。
+	 * 2、对于任何类型的过滤器来说都是一个方便的超类。配置参数init-parameters的类型转换是自动的，使用转换后的值newValue调用相应的setter方法。子类也可以指定所需的属性。没有匹配bean属性设置器的参数将被忽略。
+	 * 3、这个通用过滤器将实际的过滤doFilter()方法留给子类，这些子类必须实现过滤器。
+	 * 4、这个通用过滤器对Spring ApplicationContext没有依赖性。过滤器通常不加载自己的上下文，而是从Spring根应用程序上下文访问服务bean。
+	 */
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	@Nullable
-	private String beanName;
+	private String beanName; // filter的Name
 
 	@Nullable
 	private Environment environment;
 
 	@Nullable
-	private ServletContext servletContext;
+	private ServletContext servletContext; // Servlet上下文
 
 	@Nullable
-	private FilterConfig filterConfig;
+	private FilterConfig filterConfig; // 聚合：FilterName、InitParameters、ServletContext
 
-	private final Set<String> requiredProperties = new HashSet<>(4);
+	private final Set<String> requiredProperties = new HashSet<>(4); // filter的InitParameter转换为的Propertyvalue
 
 
 	/**
@@ -146,6 +157,8 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 	 * @since 4.3.9
 	 */
 	protected Environment createEnvironment() {
+		// 注意：如果没有通过Spring注入GenericFilterBean，那么就无法触发EnvironmentAware#setEnvironment
+		// 而客户通过new出来的Filter，是没有Environment，因此只能是在getEnvironment中创建environment
 		return new StandardServletEnvironment();
 	}
 
@@ -171,7 +184,8 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 	 */
 	@Override
 	public void afterPropertiesSet() throws ServletException {
-		initFilterBean();
+		// 通过Spring注入的初始化
+		initFilterBean(); // 【抽象】
 	}
 
 	/**
@@ -209,22 +223,30 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 	 */
 	@Override
 	public final void init(FilterConfig filterConfig) throws ServletException {
+		/*
+		 * 通过@WebFilter进行的初始化操作
+		 */
 		Assert.notNull(filterConfig, "FilterConfig must not be null");
 
 		this.filterConfig = filterConfig;
 
 		// Set bean properties from init parameters.
+		// 从初始化参数init parameters 去设置 bean properties 对象属性
 		PropertyValues pvs = new FilterConfigPropertyValues(filterConfig, this.requiredProperties);
 		if (!pvs.isEmpty()) {
 			try {
+				// 为当前Filter做一个BeanWrapper，帮助设置属性
 				BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
 				ResourceLoader resourceLoader = new ServletContextResourceLoader(filterConfig.getServletContext());
 				Environment env = this.environment;
 				if (env == null) {
 					env = new StandardServletEnvironment();
 				}
+				// 提供一个ResourceEditor的编辑器
 				bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, env));
+				// 初始化BeanWrapper
 				initBeanWrapper(bw);
+				// 将Filter相关的初始化参数转换为pvs，然后通过BeanWrapper的setPropertyValues，设置到目标即当前Filter的属性上去
 				bw.setPropertyValues(pvs, true);
 			}
 			catch (BeansException ex) {
@@ -235,7 +257,7 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 			}
 		}
 
-		// Let subclasses do whatever initialization they like.
+		// 让子类做他们喜欢的任何初始化。
 		initFilterBean();
 
 		if (logger.isDebugEnabled()) {
@@ -252,6 +274,7 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 	 * @see org.springframework.beans.BeanWrapper#registerCustomEditor
 	 */
 	protected void initBeanWrapper(BeanWrapper bw) throws BeansException {
+		// 空方法体，交给子类实现，例如子类可以向bw中提供额外自定义的属性编辑器等等
 	}
 
 	/**
@@ -328,6 +351,9 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 	 */
 	@SuppressWarnings("serial")
 	private static class FilterConfigPropertyValues extends MutablePropertyValues {
+		/*
+		 * 根据FilterConfig init parameters创建的PropertyValue实现。
+		 */
 
 		/**
 		 * Create new FilterConfigPropertyValues.
@@ -336,23 +362,24 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 		 * we can't accept default values
 		 * @throws ServletException if any required properties are missing
 		 */
-		public FilterConfigPropertyValues(FilterConfig config, Set<String> requiredProperties)
-				throws ServletException {
+		public FilterConfigPropertyValues(FilterConfig config, Set<String> requiredProperties) throws ServletException {
 
-			Set<String> missingProps = (!CollectionUtils.isEmpty(requiredProperties) ?
-					new HashSet<>(requiredProperties) : null);
+			Set<String> missingProps = (!CollectionUtils.isEmpty(requiredProperties) ? new HashSet<>(requiredProperties) : null);
 
+			// 获取 init parameters
 			Enumeration<String> paramNames = config.getInitParameterNames();
 			while (paramNames.hasMoreElements()) {
 				String property = paramNames.nextElement();
 				Object value = config.getInitParameter(property);
+				// 添加到PropertyValue中
 				addPropertyValue(new PropertyValue(property, value));
 				if (missingProps != null) {
 					missingProps.remove(property);
 				}
 			}
 
-			// Fail if we are still missing properties.
+			// Fail if we are still missing properties
+			// 如果仍然有属性没有被设置到PropertyValue中，就需要提出异常.
 			if (!CollectionUtils.isEmpty(missingProps)) {
 				throw new ServletException(
 						"Initialization from FilterConfig for filter '" + config.getFilterName() +

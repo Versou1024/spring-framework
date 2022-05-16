@@ -38,7 +38,7 @@ import org.springframework.scheduling.config.TaskManagementConfigUtils;
 @Configuration
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class SchedulingConfiguration {
-
+	// 导入配置类
 	@Bean(name = TaskManagementConfigUtils.SCHEDULED_ANNOTATION_PROCESSOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public ScheduledAnnotationBeanPostProcessor scheduledAnnotationProcessor() {

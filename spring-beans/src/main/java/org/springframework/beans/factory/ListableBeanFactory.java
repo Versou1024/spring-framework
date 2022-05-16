@@ -56,6 +56,9 @@ import org.springframework.lang.Nullable;
  * @see BeanFactoryUtils
  */
 public interface ListableBeanFactory extends BeanFactory {
+	/*
+	ListableBeanFactory–>扩展了BeanFactory接口,并提供了对bean的额外枚举能力
+	 */
 
 	/**
 	 * Check if this bean factory contains a bean definition with the given name.
@@ -209,6 +212,8 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see BeanFactoryUtils#beanNamesForTypeIncludingAncestors(ListableBeanFactory, Class, boolean, boolean)
 	 */
 	String[] getBeanNamesForType(@Nullable Class<?> type, boolean includeNonSingletons, boolean allowEagerInit);
+	// includeNonSingletons - 是包括原型bean还是scoped bean，还是只包括单例 - false就表示只包括单例Bean，true表示还包括非单例Bean
+	// allowEagerInit - 是否需要初始化 懒加载的单例Bean 或者 对象是通过FactoryBean创建的
 
 	/**
 	 * Return the bean instances that match the given object type (including

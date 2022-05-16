@@ -37,6 +37,10 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.validation.DataBinder#registerCustomEditor
  */
 public class CustomBooleanEditor extends PropertyEditorSupport {
+	/*
+	 * Boolean属性编辑器
+	 * true、on、yes、1 都是认识Boolean.True
+	 */
 
 	/**
 	 * Value of {@code "true"}.
@@ -85,7 +89,7 @@ public class CustomBooleanEditor extends PropertyEditorSupport {
 	@Nullable
 	private final String falseString;
 
-	private final boolean allowEmpty;
+	private final boolean allowEmpty; // 是否允许为NULL，为falst表示抛出异常
 
 
 	/**
@@ -130,26 +134,32 @@ public class CustomBooleanEditor extends PropertyEditorSupport {
 	@Override
 	public void setAsText(@Nullable String text) throws IllegalArgumentException {
 		String input = (text != null ? text.trim() : null);
+		// input为null或空字符串，同时允许为空，就设置为null
 		if (this.allowEmpty && !StringUtils.hasLength(input)) {
 			// Treat empty String as null value.
 			setValue(null);
 		}
+		// 自定义的trueString不为空，且与input相等
 		else if (this.trueString != null && this.trueString.equalsIgnoreCase(input)) {
 			setValue(Boolean.TRUE);
 		}
+		// 自定义的falseString不为空，且与input相等
 		else if (this.falseString != null && this.falseString.equalsIgnoreCase(input)) {
 			setValue(Boolean.FALSE);
 		}
+		// 自定义的trueString为空，且与true、on、1、yes相等
 		else if (this.trueString == null &&
 				(VALUE_TRUE.equalsIgnoreCase(input) || VALUE_ON.equalsIgnoreCase(input) ||
 						VALUE_YES.equalsIgnoreCase(input) || VALUE_1.equals(input))) {
 			setValue(Boolean.TRUE);
 		}
+		// 自定义的falseString为空，且与false、off、0、no相等
 		else if (this.falseString == null &&
 				(VALUE_FALSE.equalsIgnoreCase(input) || VALUE_OFF.equalsIgnoreCase(input) ||
 						VALUE_NO.equalsIgnoreCase(input) || VALUE_0.equals(input))) {
 			setValue(Boolean.FALSE);
 		}
+		// 未知参数
 		else {
 			throw new IllegalArgumentException("Invalid boolean value [" + text + "]");
 		}

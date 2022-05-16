@@ -30,6 +30,14 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.scheduling.support.CronTrigger
  */
 public interface Trigger {
+	// 触发器：计算下一次的执行时间
+	// 两个实现类：
+	// CronTrigger：
+	//  	根据Cron表达式计算每一次的执行时间，由CronSequenceGenerator实现
+	// PeriodicTrigger：
+	//      支持两种模式：
+	//      fixedRate：两次任务开始时间之间间隔指定时长
+	//      fixedDelay: 上一次任务的结束时间与下一次任务开始时间``间隔指定时长
 
 	/**
 	 * Determine the next execution time according to the given trigger context.

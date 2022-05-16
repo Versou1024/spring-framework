@@ -35,6 +35,7 @@ import org.springframework.lang.Nullable;
  * @see GenericApplicationListenerAdapter
  */
 public interface GenericApplicationListener extends ApplicationListener<ApplicationEvent>, Ordered {
+	// 扩展：ApplicationListener
 
 	/**
 	 * Determine whether this listener actually supports the given event type.

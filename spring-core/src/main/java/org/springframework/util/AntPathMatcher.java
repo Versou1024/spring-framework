@@ -77,9 +77,9 @@ public class AntPathMatcher implements PathMatcher {
 
 	private static final int CACHE_TURNOFF_THRESHOLD = 65536;
 
-	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{[^/]+?\\}");
+	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{[^/]+?\\}"); // 匹配正则
 
-	private static final char[] WILDCARD_CHARS = { '*', '?', '{' };
+	private static final char[] WILDCARD_CHARS = { '*', '?', '{' }; // 支持的通配符
 
 
 	private String pathSeparator;
@@ -123,6 +123,7 @@ public class AntPathMatcher implements PathMatcher {
 	 * <p>Default is "/", as in Ant.
 	 */
 	public void setPathSeparator(@Nullable String pathSeparator) {
+		// 设置路径分隔符
 		this.pathSeparator = (pathSeparator != null ? pathSeparator : DEFAULT_PATH_SEPARATOR);
 		this.pathSeparatorPatternCache = new PathSeparatorPatternCache(this.pathSeparator);
 	}
@@ -133,6 +134,7 @@ public class AntPathMatcher implements PathMatcher {
 	 * @since 4.2
 	 */
 	public void setCaseSensitive(boolean caseSensitive) {
+		// 大小写敏感
 		this.caseSensitive = caseSensitive;
 	}
 
@@ -141,6 +143,7 @@ public class AntPathMatcher implements PathMatcher {
 	 * <p>Default is {@code false}.
 	 */
 	public void setTrimTokens(boolean trimTokens) {
+		//
 		this.trimTokens = trimTokens;
 	}
 
@@ -169,10 +172,17 @@ public class AntPathMatcher implements PathMatcher {
 
 	@Override
 	public boolean isPattern(@Nullable String path) {
+		// 是否为支持的动态路径
+
 		if (path == null) {
 			return false;
 		}
 		boolean uriVar = false;
+		// 含有 * ？ {} 就认为是
+		// * 一个路径
+		// ** 多个路径
+		// ？ 0个或一个
+		// {} uri的路径参数
 		for (int i = 0; i < path.length(); i++) {
 			char c = path.charAt(i);
 			if (c == '*' || c == '?') {

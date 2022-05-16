@@ -85,14 +85,16 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 
 		super(request);
 		if (!lazyParsing) {
+			// 非懒加载
 			parseRequest(request);
 		}
 	}
 
 
 	private void parseRequest(HttpServletRequest request) {
+		// 解析请求
 		try {
-			Collection<Part> parts = request.getParts();
+			Collection<Part> parts = request.getParts(); // 获取 multipart/form-data 的表单上每个部分Part
 			this.multipartParameterNames = new LinkedHashSet<>(parts.size());
 			MultiValueMap<String, MultipartFile> files = new LinkedMultiValueMap<>(parts.size());
 			for (Part part : parts) {
@@ -100,9 +102,11 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 				ContentDisposition disposition = ContentDisposition.parse(headerValue);
 				String filename = disposition.getFilename();
 				if (filename != null) {
+					// 是否需哟啊Mime解码
 					if (filename.startsWith("=?") && filename.endsWith("?=")) {
 						filename = MimeDelegate.decode(filename);
 					}
+					// 加入files
 					files.add(part.getName(), new StandardMultipartFile(part, filename));
 				}
 				else {
@@ -126,6 +130,7 @@ public class StandardMultipartHttpServletRequest extends AbstractMultipartHttpSe
 
 	@Override
 	protected void initializeMultipart() {
+		// 延迟初始话，解析Request
 		parseRequest(getRequest());
 	}
 

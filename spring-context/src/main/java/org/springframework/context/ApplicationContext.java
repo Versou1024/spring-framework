@@ -57,6 +57,28 @@ import org.springframework.lang.Nullable;
  */
 public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
 		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
+	/*
+	 * ApplicationContext以一种更向面向框架的方式工作以及对上下文进行分层和实现继承
+	 *
+	 * 集众多接口：
+	 * 		EnvironmentCapable：可配置Environment
+	 * 		ListableBeanFactory：前面有介绍：可将Bean逐一列出的工厂
+	 * 		HierarchicalBeanFactory：前面有介绍：分层的工厂
+	 * 		MessageSource：可管理message实现国际化等功能
+	 * 		ApplicationEventPublisher：可publish事件，调用Listener
+	 * 		ResourcePatternResolver：加载pattern指定的资源
+	 *
+	 * 因此 ApplicationContext 和 BeanFactory 相比之下有额外的功能：
+	 * 1、事件发布能力；2、拥有允许环境Environment，其中包括profiles与properties；3、具备加载资源、解析资源的能力；4、具有BeanFactory的各种能力
+	 *
+	 * getId 应用上下文的id
+	 * getApplicationName 应用上下文的名字， 部署的Web应用的名称 web应用一般会把servletContext.getContextPath()赋值给他，非Web应用就是""
+	 * getStartupDate 容器首次被加载、启动的时间
+	 * getParent 获取父容器 有可能为null
+	 *
+	 * 上面都没什么大作用，这个方法：虽然不继承AutowireCapableBeanFactory,但是我们可通过此方法得到它，从而用它的相关功能
+	 * getAutowireCapableBeanFactory
+	 */
 
 	/**
 	 * Return the unique id of this application context.

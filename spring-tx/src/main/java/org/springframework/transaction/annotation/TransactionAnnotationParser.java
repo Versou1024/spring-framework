@@ -36,6 +36,8 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
  * @see JtaTransactionAnnotationParser
  */
 public interface TransactionAnnotationParser {
+	// 用于解析已知事务注解类型的策略接口。 AnnotationTransactionAttributeSource 委托给此类解析器以支持特定的注解类型，
+	// 例如 Spring 自己的@Transactional注解解析器
 
 	/**
 	 * Determine whether the given class is a candidate for transaction attributes
@@ -65,6 +67,6 @@ public interface TransactionAnnotationParser {
 	 * @see AnnotationTransactionAttributeSource#determineTransactionAttribute
 	 */
 	@Nullable
-	TransactionAttribute parseTransactionAnnotation(AnnotatedElement element);
+	TransactionAttribute parseTransactionAnnotation(AnnotatedElement element); // 核心解析方法
 
 }

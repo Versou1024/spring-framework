@@ -56,6 +56,7 @@ public class OrderComparator implements Comparator<Object> {
 	 * Shared default instance of {@code OrderComparator}.
 	 */
 	public static final OrderComparator INSTANCE = new OrderComparator();
+	// 单例模式 - 饿汉式
 
 
 	/**
@@ -74,16 +75,19 @@ public class OrderComparator implements Comparator<Object> {
 	}
 
 	private int doCompare(@Nullable Object o1, @Nullable Object o2, @Nullable OrderSourceProvider sourceProvider) {
+		// 比较排序的优先级
+		// 1、首先PriorityOrdered优先级比高
+		// 2、都是PriorityOrdered时，或都不是PriorityOrdered时，通过比较order值
 		boolean p1 = (o1 instanceof PriorityOrdered);
 		boolean p2 = (o2 instanceof PriorityOrdered);
 		if (p1 && !p2) {
-			return -1;
+			return -1; // -1 表示 o1的优先级比o2高
 		}
 		else if (p2 && !p1) {
 			return 1;
 		}
 
-		int i1 = getOrder(o1, sourceProvider);
+		int i1 = getOrder(o1, sourceProvider); // sourceProvider 一般为null
 		int i2 = getOrder(o2, sourceProvider);
 		return Integer.compare(i1, i2);
 	}
@@ -97,6 +101,7 @@ public class OrderComparator implements Comparator<Object> {
 	 */
 	private int getOrder(@Nullable Object obj, @Nullable OrderSourceProvider sourceProvider) {
 		Integer order = null;
+		// sourceProvider 若为null，直接跳过这个if
 		if (obj != null && sourceProvider != null) {
 			Object orderSource = sourceProvider.getOrderSource(obj);
 			if (orderSource != null) {
@@ -113,6 +118,8 @@ public class OrderComparator implements Comparator<Object> {
 				}
 			}
 		}
+		// order 通常在sourceProvider 为null为空
+		// order 如果为null，就调用getOrder(Obj)
 		return (order != null ? order : getOrder(obj));
 	}
 
@@ -127,9 +134,11 @@ public class OrderComparator implements Comparator<Object> {
 		if (obj != null) {
 			Integer order = findOrder(obj);
 			if (order != null) {
+				// 实现Ordered接口时，返回指定的order值
 				return order;
 			}
 		}
+		// 没有实现Ordered接口时，默认就是最低优先级
 		return Ordered.LOWEST_PRECEDENCE;
 	}
 
@@ -142,6 +151,7 @@ public class OrderComparator implements Comparator<Object> {
 	 */
 	@Nullable
 	protected Integer findOrder(Object obj) {
+		// 如果属于Ordered接口实现类，就可以获取Order值，否则返回null
 		return (obj instanceof Ordered ? ((Ordered) obj).getOrder() : null);
 	}
 

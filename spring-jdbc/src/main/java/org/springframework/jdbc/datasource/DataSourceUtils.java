@@ -180,6 +180,7 @@ public abstract class DataSourceUtils {
 
 		boolean debugEnabled = logger.isDebugEnabled();
 		// Set read-only flag.
+		// 1. 有需要时就设置连接的只读标记
 		if (definition != null && definition.isReadOnly()) {
 			try {
 				if (debugEnabled) {
@@ -202,12 +203,15 @@ public abstract class DataSourceUtils {
 		}
 
 		// Apply specific isolation level, if any.
+		// 2. 接受定制的隔离级别,如果有的话
 		Integer previousIsolationLevel = null;
+		// 2.1 用户没有使用默认的隔离级别时就需要设置连接的隔离界别
 		if (definition != null && definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT) {
 			if (debugEnabled) {
 				logger.debug("Changing isolation level of JDBC Connection [" + con + "] to " +
 						definition.getIsolationLevel());
 			}
+			// 2.2 连接的隔离级别如果不是定制的值,就重新设置
 			int currentIsolation = con.getTransactionIsolation();
 			if (currentIsolation != definition.getIsolationLevel()) {
 				previousIsolationLevel = currentIsolation;
@@ -215,6 +219,7 @@ public abstract class DataSourceUtils {
 			}
 		}
 
+		// 3. 返回链接的隔离级别,用于保证归还连接时,重新设置回去
 		return previousIsolationLevel;
 	}
 

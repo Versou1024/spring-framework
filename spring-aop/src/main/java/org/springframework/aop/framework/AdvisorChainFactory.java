@@ -29,6 +29,15 @@ import org.springframework.lang.Nullable;
  */
 public interface AdvisorChainFactory {
 
+	/*
+	 * advisor链的工厂
+	 * 唯一实现类：就是DefaultAdvisorChainFactory
+	 * 这个接口主要定义了从 Advised中获取 Advisor 并判断其是否与 对应的 Method 相匹配,
+	 * 最终返回的是MethodInterceptor。
+	 * (其中对 Advisor 转化成 MethodInterceptor 的工作都是交由 DefaultAdvisorAdapterRegistry 来完成, )
+	 * 它的实现类为：DefaultAdvisorChainFactory，提供的唯一方法是：
+	 */
+
 	/**
 	 * Determine a list of {@link org.aopalliance.intercept.MethodInterceptor} objects
 	 * for the given advisor chain configuration.
@@ -39,5 +48,6 @@ public interface AdvisorChainFactory {
 	 * @return a List of MethodInterceptors (may also include InterceptorAndDynamicMethodMatchers)
 	 */
 	List<Object> getInterceptorsAndDynamicInterceptionAdvice(Advised config, Method method, @Nullable Class<?> targetClass);
+	// 确定一个列表：其中都是MethodInterceptor对象，其持有advisor链
 
 }

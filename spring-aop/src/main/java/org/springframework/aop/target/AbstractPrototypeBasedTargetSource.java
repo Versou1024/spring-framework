@@ -45,12 +45,14 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractPrototypeBasedTargetSource extends AbstractBeanFactoryBasedTargetSource {
+	// 扩展原型的targetSource在BeanFactory中
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
 		super.setBeanFactory(beanFactory);
 
 		// Check whether the target bean is defined as prototype.
+		// 非原型的TargetBean就直接报错
 		if (!beanFactory.isPrototype(getTargetBeanName())) {
 			throw new BeanDefinitionStoreException(
 					"Cannot use prototype-based TargetSource against non-prototype bean with name '" +
@@ -66,6 +68,7 @@ public abstract class AbstractPrototypeBasedTargetSource extends AbstractBeanFac
 		if (logger.isDebugEnabled()) {
 			logger.debug("Creating new instance of bean '" + getTargetBeanName() + "'");
 		}
+		// 重新获取getBean即可获取原型Bean
 		return getBeanFactory().getBean(getTargetBeanName());
 	}
 
@@ -78,10 +81,12 @@ public abstract class AbstractPrototypeBasedTargetSource extends AbstractBeanFac
 			logger.debug("Destroying instance of bean '" + getTargetBeanName() + "'");
 		}
 		if (getBeanFactory() instanceof ConfigurableBeanFactory) {
+			// 销毁bean
 			((ConfigurableBeanFactory) getBeanFactory()).destroyBean(getTargetBeanName(), target);
 		}
 		else if (target instanceof DisposableBean) {
 			try {
+				// 本身就是DIsposableBean
 				((DisposableBean) target).destroy();
 			}
 			catch (Throwable ex) {

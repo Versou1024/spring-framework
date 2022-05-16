@@ -31,6 +31,9 @@ import org.springframework.core.Ordered;
  * @since 4.2
  */
 public class DefaultEventListenerFactory implements EventListenerFactory, Ordered {
+	/**
+	 * 在Bean工厂准备好后，默认都会注册的6大Bean之一
+	 */
 
 	private int order = LOWEST_PRECEDENCE;
 
@@ -47,11 +50,14 @@ public class DefaultEventListenerFactory implements EventListenerFactory, Ordere
 
 	@Override
 	public boolean supportsMethod(Method method) {
+		// 支持任何的@EventListener标注的Method
+		// 匹配所有的标注了@EventListener 的方法
 		return true;
 	}
 
 	@Override
 	public ApplicationListener<?> createApplicationListener(String beanName, Class<?> type, Method method) {
+		// ApplicationListenerMethodAdapter是一个通用的方法监听适配器~~~~
 		return new ApplicationListenerMethodAdapter(beanName, type, method);
 	}
 

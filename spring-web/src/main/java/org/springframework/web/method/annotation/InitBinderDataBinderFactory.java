@@ -37,6 +37,12 @@ import org.springframework.web.method.support.InvocableHandlerMethod;
  * @since 3.1
  */
 public class InitBinderDataBinderFactory extends DefaultDataBinderFactory {
+	/**
+	 * 继承 DefaultDataBinderFactory
+	 *
+	 * 扩展
+	 * 1、初始化@InitBinder的方法容器
+	 */
 
 	private final List<InvocableHandlerMethod> binderMethods;
 

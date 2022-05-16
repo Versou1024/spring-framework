@@ -51,14 +51,14 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	private ConnectionHandle connectionHandle;
 
 	@Nullable
-	private Connection currentConnection;
+	private Connection currentConnection; // 持有一个Connection
 
-	private boolean transactionActive = false;
+	private boolean transactionActive = false; // 事务活跃标记位
 
 	@Nullable
-	private Boolean savepointsSupported;
+	private Boolean savepointsSupported; // 保存点支持与否
 
-	private int savepointCounter = 0;
+	private int savepointCounter = 0; // 保存点数量
 
 
 	/**
@@ -79,6 +79,7 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	 * @see #ConnectionHolder(java.sql.Connection, boolean)
 	 */
 	public ConnectionHolder(Connection connection) {
+		// SimpleConnectionHandle 有一个Connection对象
 		this.connectionHandle = new SimpleConnectionHandle(connection);
 	}
 

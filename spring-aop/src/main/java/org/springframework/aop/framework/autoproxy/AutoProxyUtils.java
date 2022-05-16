@@ -32,6 +32,7 @@ import org.springframework.util.StringUtils;
  * @see AbstractAutoProxyCreator
  */
 public abstract class AutoProxyUtils {
+//	为自动代理组件准备的工具类。主要用于框架内部使用（AbstractAutoProxyCreator）
 
 	/**
 	 * Bean definition attribute that may indicate whether a given bean is supposed
@@ -44,6 +45,8 @@ public abstract class AutoProxyUtils {
 	 */
 	public static final String PRESERVE_TARGET_CLASS_ATTRIBUTE =
 			Conventions.getQualifiedAttributeName(AutoProxyUtils.class, "preserveTargetClass");
+	// preserve：保护的  保留的
+	// determine：查明  测定
 
 	/**
 	 * Bean definition attribute that indicates the original target class of an
@@ -65,8 +68,10 @@ public abstract class AutoProxyUtils {
 	 * @param beanName the name of the bean
 	 * @return whether the given bean should be proxied with its target class
 	 */
-	public static boolean shouldProxyTargetClass(
-			ConfigurableListableBeanFactory beanFactory, @Nullable String beanName) {
+	public static boolean shouldProxyTargetClass(ConfigurableListableBeanFactory beanFactory, @Nullable String beanName) {
+		// 判断该beanName是否应该被代理
+		// `AbstractAutoProxyCreator`里就有判断是否能够被代理。  如果能够被代理，那就采用CGLIB的代理方式了
+		// 往里setAttr,目前只有`ConfigurationClassPostProcessor`对config配置类进行增强的时候
 
 		if (beanName != null && beanFactory.containsBeanDefinition(beanName)) {
 			BeanDefinition bd = beanFactory.getBeanDefinition(beanName);
@@ -85,9 +90,10 @@ public abstract class AutoProxyUtils {
 	 * @see org.springframework.beans.factory.BeanFactory#getType(String)
 	 */
 	@Nullable
-	public static Class<?> determineTargetClass(
-			ConfigurableListableBeanFactory beanFactory, @Nullable String beanName) {
-
+	public static Class<?> determineTargetClass(ConfigurableListableBeanFactory beanFactory, @Nullable String beanName) {
+		// 看看这个Bean定义的TargetClass
+		// 如果Bean定义信息里面有ORIGINAL_TARGET_CLASS_ATTRIBUTE这个字段，那就不用getType()了
+		// 以及ScopedProxyUtils创建和Scope有关的代理类的时候，其余地方都不会设置此属性
 		if (beanName == null) {
 			return null;
 		}
@@ -108,9 +114,9 @@ public abstract class AutoProxyUtils {
 	 * @param targetClass the corresponding target class
 	 * @since 4.2.3
 	 */
-	static void exposeTargetClass(
-			ConfigurableListableBeanFactory beanFactory, @Nullable String beanName, Class<?> targetClass) {
-
+	static void exposeTargetClass(ConfigurableListableBeanFactory beanFactory, @Nullable String beanName, Class<?> targetClass) {
+		// AbstractAutoProxyCreator 与 AbstractBeanFactoryAwareAdvisingPostProcessor 作为两个AOP代理创建者
+		// 一旦为某一个类创建AOP，那么就需要调用 exposeTargetClass 将 targetClass 作为属性存入到AOP代理对象即代理Bean的属性ORIGINAL_TARGET_CLASS_ATTRIBUTE中
 		if (beanName != null && beanFactory.containsBeanDefinition(beanName)) {
 			beanFactory.getMergedBeanDefinition(beanName).setAttribute(ORIGINAL_TARGET_CLASS_ATTRIBUTE, targetClass);
 		}

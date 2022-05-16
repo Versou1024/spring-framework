@@ -39,6 +39,9 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class ModelMap extends LinkedHashMap<String, Object> {
+	// 继承HashMap
+	// ModelMap继承自LinkedHashMap，因此它的本质其实就是个Map而已。
+	//它的特点是：借助Map的能力间接的实现了org.springframework.ui.Model的接口方法，这种设计技巧更值得我们参考学习的（曲线救国的意思有木有~）。
 
 	/**
 	 * Construct a new, empty {@code ModelMap}.
@@ -125,6 +128,8 @@ public class ModelMap extends LinkedHashMap<String, Object> {
 	 * replaced).
 	 */
 	public ModelMap mergeAttributes(@Nullable Map<String, ?> attributes) {
+		// 从map合并属性到this
+
 		if (attributes != null) {
 			attributes.forEach((key, value) -> {
 				if (!containsKey(key)) {
@@ -141,6 +146,7 @@ public class ModelMap extends LinkedHashMap<String, Object> {
 	 * @return whether this model contains a corresponding attribute
 	 */
 	public boolean containsAttribute(String attributeName) {
+		// 属性name是否被map包含
 		return containsKey(attributeName);
 	}
 
@@ -152,6 +158,7 @@ public class ModelMap extends LinkedHashMap<String, Object> {
 	 */
 	@Nullable
 	public Object getAttribute(String attributeName) {
+		// 获取指定属性name的value值
 		return get(attributeName);
 	}
 

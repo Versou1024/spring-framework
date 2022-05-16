@@ -58,6 +58,13 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.context.request.SessionScope
  */
 public interface Scope {
+	/*
+	1、ConfigurableBeanFactory使用的策略接口，表示持有bean实例的目标范围。这使得BeanFactory的标准Scope“singleton”和“prototype”可以扩展为更多自定义Scope，并为特定key注册。
+	2、WebApplicationContext 就需要组合添加标准的范围定义为它们自己的环境，例如“request”和“session”两个范围
+	3、即使它的主要用途是用于web环境中的扩展Scope，这个SPI也是完全通用的：它提供了从任何底层存储机制（如HTTP session或自定义对话机制）获取和放置对象的能力。
+		传入此类的get和remove方法的name将标识当前Scope中的目标对象。
+	4、Scope接口实现应该是线程安全的。如果需要，一个Scope实例可以同时与多个bean工厂一起使用（除非它明确希望知道包含BeanFactory的内容），任何数量的线程都可以从任意数量的工厂并发访问该Scope。
+	 */
 
 	/**
 	 * Return the object with the given name from the underlying scope,

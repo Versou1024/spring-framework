@@ -29,6 +29,7 @@ import org.springframework.lang.Nullable;
  * @since 2.5
  */
 public class SimpleAutowireCandidateResolver implements AutowireCandidateResolver {
+	//	SimpleAutowireCandidateResolver没有任何实现，就是一个Adapter
 
 	/**
 	 * Shared instance of {@code SimpleAutowireCandidateResolver}.
@@ -39,6 +40,7 @@ public class SimpleAutowireCandidateResolver implements AutowireCandidateResolve
 
 	@Override
 	public boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
+		// 默认就是查看：BeanDefinition中是否设置AutowrireCandidate为true，即允许作为自动装配的候选者
 		return bdHolder.getBeanDefinition().isAutowireCandidate();
 	}
 

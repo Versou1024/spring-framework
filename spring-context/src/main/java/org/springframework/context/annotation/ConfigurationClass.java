@@ -47,25 +47,27 @@ import org.springframework.util.ClassUtils;
  * @see ConfigurationClassParser
  */
 final class ConfigurationClass {
+	/**
+	 * 用于承载解析@Configuration配置的类的相关信息
+	 * ConfigurationClass代表一个配置类，它内部维护了一些已经解析好的但是还没有被加入进Bean定义信息的原始信息，有必要做如下解释：
+	 */
 
-	private final AnnotationMetadata metadata;
+	private final AnnotationMetadata metadata; // 注解元数据
 
 	private final Resource resource;
 
 	@Nullable
-	private String beanName;
+	private String beanName; // 配置类的bean名字
 
-	private final Set<ConfigurationClass> importedBy = new LinkedHashSet<>(1);
+	private final Set<ConfigurationClass> importedBy = new LinkedHashSet<>(1); // 被当前配置类导入的配置类
 
-	private final Set<BeanMethod> beanMethods = new LinkedHashSet<>();
+	private final Set<BeanMethod> beanMethods = new LinkedHashSet<>();  // 存储当前配置类中的带有@Bean的方法
 
-	private final Map<String, Class<? extends BeanDefinitionReader>> importedResources =
-			new LinkedHashMap<>();
+	private final Map<String, Class<? extends BeanDefinitionReader>> importedResources = new LinkedHashMap<>(); // 当前配置类上@ImportResource导入的资源名、对应的阅读器
 
-	private final Map<ImportBeanDefinitionRegistrar, AnnotationMetadata> importBeanDefinitionRegistrars =
-			new LinkedHashMap<>();
+	private final Map<ImportBeanDefinitionRegistrar, AnnotationMetadata> importBeanDefinitionRegistrars = new LinkedHashMap<>(); // 当前配置类的ImportBeanDefinitionRegistrar的实现
 
-	final Set<String> skippedBeanMethods = new HashSet<>();
+	final Set<String> skippedBeanMethods = new HashSet<>(); // 存储当前配置类中需要跳过的BeanMethod的方法名
 
 
 	/**

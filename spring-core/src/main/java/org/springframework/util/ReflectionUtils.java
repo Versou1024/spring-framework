@@ -44,20 +44,45 @@ import org.springframework.lang.Nullable;
  * @since 1.2.2
  */
 public abstract class ReflectionUtils {
+	/*
+	Spring自带的反射工具：
+	API:
+		查找
+		findField 查找指定name或指定type的Field / findMethod 查找指定方法名name或指定形参类Class<?>的Method
+		accessibleConstructor 获取指定形参列表的构造器，并将构造器的accessiable设为true
+		执行
+		doWithFields 对指定Class以及其超类中的所有Field或者满足匹配规则的Field执行FieldCallback
+		doWithLocalFields 仅仅对指定Class，不针对父类Class的所有Fields或满足FieldFilter做FieldCallback
+		doWithMethods 与 doWithLocalMethod 类似
+		获取
+		getAllDeclaredMethods 获取class包括父类中所有的声明的方法[私有、公有]等等
+		getDeclaredMethods 获取class中所有声明的方法，但注意不包括父类中的声明的方法
+		getUniqueDeclareMethods 获取class中符合MethodFilter的所有的方法，Unique指的是获取叶类和所有超类上声明的唯一方法集。首先包括叶类方法，在遍历超类层次结构时，任何发现的具有与已包括的方法匹配的签名的方法都会被过滤掉。
+		字段设置和获取
+		getField 获取field在target中的值 / setField 向target中设置field对应的值
+		方法的执行
+		invokeMethod 对method传入参数args并进行执行
+		判断
+		isHashCodeMethod、isEqualsMethod、isObjectMethod、isCglibRenamedMethod、isToStringMethod、isPublicStaticMethod、
+		设置可访问
+		makeAccessible 设置可访问
+		异常
+		rethrowException 重新抛出指定异常
+		rethrowRuntimeException 重新抛出运行异常
+
+	 */
 
 	/**
 	 * Pre-built MethodFilter that matches all non-bridge non-synthetic methods
 	 * which are not declared on {@code java.lang.Object}.
 	 * @since 3.0.5
 	 */
-	public static final MethodFilter USER_DECLARED_METHODS =
-			(method -> !method.isBridge() && !method.isSynthetic());
+	public static final MethodFilter USER_DECLARED_METHODS = (method -> !method.isBridge() && !method.isSynthetic());
 
 	/**
 	 * Pre-built FieldFilter that matches all non-static, non-final fields.
 	 */
-	public static final FieldFilter COPYABLE_FIELDS =
-			(field -> !(Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())));
+	public static final FieldFilter COPYABLE_FIELDS = (field -> !(Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())));
 
 
 	/**

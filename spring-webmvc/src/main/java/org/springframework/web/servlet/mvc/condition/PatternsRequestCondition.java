@@ -43,6 +43,17 @@ import org.springframework.web.util.UrlPathHelper;
  * @since 3.1
  */
 public class PatternsRequestCondition extends AbstractRequestCondition<PatternsRequestCondition> {
+	/*
+	 * Spring MVC请求URL带后缀匹配的情况，如/hello.json也能匹配/hello
+	 * RequestMappingInfoHandlerMapping 在处理http请求的时候， 如果 请求url 有后缀，如果找不到精确匹配的那个@RequestMapping方法。
+	 * 那么，就把后缀去掉，然后.*去匹配，这样，一般都可以匹配，默认这个行为是被开启的。
+	 *
+	 * 比如有一个@RequestMapping("/rest"), 那么精确匹配的情况下， 只会匹配/rest请求。 但如果我前端发来一个 /rest.abcdef 这样的请求， 又没有配置 @RequestMapping("/rest.abcdef") 这样映射的情况下， 那么@RequestMapping("/rest") 就会生效。
+	 *
+	 * 这样会带来什么问题呢？绝大多数情况下是没有问题的，但是如果你是一个对权限要求非常严格的系统，强烈关闭此项功能，否则你会有意想不到的"收获"。
+	 *
+	 * 究其原因咱们可以接着上面的分析，其实就到了PatternsRequestCondition这个类上，具体实现是它的匹配逻辑来决定的。
+	 */
 
 	private final static Set<String> EMPTY_PATH_PATTERN = Collections.singleton("");
 
@@ -119,7 +130,7 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	public PatternsRequestCondition(String[] patterns, @Nullable UrlPathHelper urlPathHelper,
 			@Nullable PathMatcher pathMatcher, boolean useSuffixPatternMatch,
 			boolean useTrailingSlashMatch, @Nullable List<String> fileExtensions) {
-
+		// 常用构造器 == 被RequestMappingInfoBuilder的构造器所使用
 		this.patterns = initPatterns(patterns);
 		this.pathHelper = urlPathHelper != null ? urlPathHelper : UrlPathHelper.defaultInstance;
 		this.pathMatcher = pathMatcher != null ? pathMatcher : new AntPathMatcher();
@@ -137,9 +148,13 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	}
 
 	private static Set<String> initPatterns(String[] patterns) {
+		//作用:对patterns进行检查和修正
+
+		// 1. 是否有文本
 		if (!hasPattern(patterns)) {
 			return EMPTY_PATH_PATTERN;
 		}
+		// 2. 修正pattern, 对于没有"/"的就需要添加斜线
 		Set<String> result = new LinkedHashSet<>(patterns.length);
 		for (String pattern : patterns) {
 			if (StringUtils.hasLength(pattern) && !pattern.startsWith("/")) {
@@ -147,6 +162,7 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 			}
 			result.add(pattern);
 		}
+		// 3. return
 		return result;
 	}
 
@@ -165,6 +181,7 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	 * Private constructor for use when combining and matching.
 	 */
 	private PatternsRequestCondition(Set<String> patterns, PatternsRequestCondition other) {
+		// 构造函数 2
 		this.patterns = patterns;
 		this.pathHelper = other.pathHelper;
 		this.pathMatcher = other.pathMatcher;
@@ -200,6 +217,8 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	 */
 	@Override
 	public PatternsRequestCondition combine(PatternsRequestCondition other) {
+		// 合并另一个 路径匹配条件器
+
 		if (isEmptyPathPattern() && other.isEmptyPathPattern()) {
 			return this;
 		}
@@ -243,8 +262,11 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	@Override
 	@Nullable
 	public PatternsRequestCondition getMatchingCondition(HttpServletRequest request) {
+		// 1. 获取lookupPath
 		String lookupPath = this.pathHelper.getLookupPathForRequest(request, HandlerMapping.LOOKUP_PATH);
+		// 2. 核心 -- 获取匹配的Pattern
 		List<String> matches = getMatchingPatterns(lookupPath);
+		// 3. 如果为empty就返回null,否则new PatternsRequestCondition
 		return !matches.isEmpty() ? new PatternsRequestCondition(new LinkedHashSet<>(matches), this) : null;
 	}
 
@@ -258,6 +280,7 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	 */
 	public List<String> getMatchingPatterns(String lookupPath) {
 		List<String> matches = null;
+		// 1. 遍历patterns,查看是否匹配lookupPath,并添加到matches中
 		for (String pattern : this.patterns) {
 			String match = getMatchingPattern(pattern, lookupPath);
 			if (match != null) {
@@ -265,21 +288,35 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 				matches.add(match);
 			}
 		}
+		// 2. 没有任何匹配,返回空集合
 		if (matches == null) {
 			return Collections.emptyList();
 		}
+		// 3. 超过多个match,就需要进行排序啦
+		// 解释一下为何匹配的可能是多个。因为url匹配上了，但是还有可能@RequestMapping的其余属性匹配不上啊，所以此处需要注意  是可能匹配上多个的  最终是唯一匹配就成~
+		// PatternsRequestCondition 就是对Url对匹配的
 		if (matches.size() > 1) {
 			matches.sort(this.pathMatcher.getPatternComparator(lookupPath));
 		}
 		return matches;
 	}
 
+	// // ===============url的真正匹配规则  非常重要~~~===============
+	// 注意这个方法的取名，上面是负数，这里是单数~~~~命名规范也是有艺术感的
 	@Nullable
 	private String getMatchingPattern(String pattern, String lookupPath) {
+		// 核心 - 对每个pattern尝试匹配lookupPath值
+
+		// 1.精准匹配
 		if (pattern.equals(lookupPath)) {
 			return pattern;
 		}
+		// 2.使用后缀模式匹配
+		// 即如果lookupPath是 /hello.json 可以转换为 /hello 然后去匹配pattern -- 对于高权限系统,建议关闭
+		// 这个值默外部给传的true（其实内部默认值是boolean类型为false）
 		if (this.useSuffixPatternMatch) {
+			// 2.1 fileExtensions默认是空的
+			// 这个意思是若useSuffixPatternMatch=true我们支持后缀匹配。我们还可以配置fileExtensions让只支持我们自定义的指定的后缀匹配，而不是下面最终的.*全部支持
 			if (!this.fileExtensions.isEmpty() && lookupPath.indexOf('.') != -1) {
 				for (String extension : this.fileExtensions) {
 					if (this.pathMatcher.match(pattern + extension, lookupPath)) {
@@ -288,18 +325,23 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 				}
 			}
 			else {
+				// 2.2 直接看pattern是否有"."
+				// 若你没有配置指定后缀匹配，并且你的handler也没有.*这样匹配的，那就默认你的pattern就给你添加上后缀".*"，表示匹配所有请求的url的后缀~~~
 				boolean hasSuffix = pattern.indexOf('.') != -1;
 				if (!hasSuffix && this.pathMatcher.match(pattern + ".*", lookupPath)) {
-					return pattern + ".*";
+					return pattern + ".*"; // 返回值加上".*"
 				}
 			}
 		}
+		// 3. 直接使用antPathMatcher匹配
+		// 若匹配上了 直接返回此patter
 		if (this.pathMatcher.match(pattern, lookupPath)) {
 			return pattern;
 		}
+		// 4. 开启使用尾随斜线匹配, 将pattern加上"/"后,尝试进行匹配
 		if (this.useTrailingSlashMatch) {
 			if (!pattern.endsWith("/") && this.pathMatcher.match(pattern + "/", lookupPath)) {
-				return pattern + "/";
+				return pattern + "/"; // 返回值加上"/"
 			}
 		}
 		return null;

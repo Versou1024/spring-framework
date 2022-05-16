@@ -30,6 +30,7 @@ import java.io.OutputStream;
  * @since 3.0
  */
 public interface HttpOutputMessage extends HttpMessage {
+	// 在HttpMessage获取HttpHeaders的能力上获取响应体的能力
 
 	/**
 	 * Return the body of the message as an output stream.

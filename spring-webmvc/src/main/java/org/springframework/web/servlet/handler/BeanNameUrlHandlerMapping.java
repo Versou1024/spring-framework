@@ -54,6 +54,9 @@ public class BeanNameUrlHandlerMapping extends AbstractDetectingUrlHandlerMappin
 	 */
 	@Override
 	protected String[] determineUrlsForHandler(String beanName) {
+		// 只要bean是以"/"开头的,就将这个beanName认为一个可以处理的url, 加入到urls中
+		// 然后检查beanName的别名是,是不是有"/"开头的,是的话,把别名也认为是可处理的url
+
 		List<String> urls = new ArrayList<>();
 		if (beanName.startsWith("/")) {
 			urls.add(beanName);

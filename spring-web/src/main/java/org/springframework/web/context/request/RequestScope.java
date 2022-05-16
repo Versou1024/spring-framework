@@ -38,6 +38,7 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.DispatcherServlet
  */
 public class RequestScope extends AbstractRequestAttributesScope {
+	// 请求返回
 
 	@Override
 	protected int getScope() {

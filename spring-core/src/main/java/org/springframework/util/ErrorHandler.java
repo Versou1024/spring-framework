@@ -27,6 +27,7 @@ package org.springframework.util;
  */
 @FunctionalInterface
 public interface ErrorHandler {
+	// 顶层接口：异步task出现错误时处理器
 
 	/**
 	 * Handle the given error, possibly rethrowing it as a fatal exception.

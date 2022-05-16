@@ -37,6 +37,14 @@ import java.io.Flushable;
  * @see org.springframework.transaction.interceptor.TransactionInterceptor#currentTransactionStatus()
  */
 public interface TransactionStatus extends TransactionExecution, SavepointManager, Flushable {
+	/**
+	 * TransactionStatus 集大成者
+	 * 		SavepointManager保存点管理器
+	 * 		TransactionExecution事务状态通用表示，事务是否已经完成、是否为新的事务、设置只能回滚
+	 * 		Flushable提供flush()方法
+	 *
+	 * 扩展：hasSavepoint()\flush()
+	 */
 
 	/**
 	 * Return whether this transaction internally carries a savepoint,
@@ -49,7 +57,7 @@ public interface TransactionStatus extends TransactionExecution, SavepointManage
 	 * @see #rollbackToSavepoint(Object)
 	 * @see #releaseSavepoint(Object)
 	 */
-	boolean hasSavepoint();
+	boolean hasSavepoint(); // 返回此事务内部是否带有保存点，即是否已创建为基于保存点的嵌套事务
 
 	/**
 	 * Flush the underlying session to the datastore, if applicable:

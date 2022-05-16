@@ -31,11 +31,11 @@ public enum AdviceMode {
 	/**
 	 * JDK proxy-based advice.
 	 */
-	PROXY,
+	PROXY, // JDK、Cglib动态代理模式
 
 	/**
 	 * AspectJ weaving-based advice.
 	 */
-	ASPECTJ
+	ASPECTJ // AspectJ静态代理
 
 }

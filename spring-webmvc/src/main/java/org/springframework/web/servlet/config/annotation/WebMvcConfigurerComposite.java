@@ -36,8 +36,17 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  * @since 3.1
  */
 class WebMvcConfigurerComposite implements WebMvcConfigurer {
+	/*
+	 组合模式：
+	 实现WebMvcConfigurer，并且持有WebMvcConfigurer的集合
 
-	private final List<WebMvcConfigurer> delegates = new ArrayList<>();
+	 主要目的：
+	 在DelegatingWebMvcConfiguration中扫描到所有的WebMvcConfigurer实现类后，
+	 注册到组合模式的WebMvcConfigurerComposite中，然后在DelegatingWebMvcConfiguration通过该
+	 WebMvcConfigurerComposite的方法，间接处理所有已经注册的WebMvcConfigurer的配置信息
+	 */
+
+	private final List<WebMvcConfigurer> delegates = new ArrayList<>(); // 委托者/叶子节点
 
 
 	public void addWebMvcConfigurers(List<WebMvcConfigurer> configurers) {

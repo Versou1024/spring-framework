@@ -59,6 +59,8 @@ import org.springframework.web.servlet.FlashMap;
  * @since 3.1
  */
 public interface RedirectAttributes extends Model {
+	// RedirectAttributesModelMap
+	// 它实现了RedirectAttributes接口，同时也继承自ModelMap，所以"间接"实现了Model接口的所有方法。
 
 	@Override
 	RedirectAttributes addAttribute(String attributeName, @Nullable Object attributeValue);

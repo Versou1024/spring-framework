@@ -56,22 +56,22 @@ import org.springframework.util.concurrent.ListenableFutureTask;
  * @see #setErrorHandler
  */
 @SuppressWarnings("serial")
-public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
-		implements AsyncListenableTaskExecutor, SchedulingTaskExecutor, TaskScheduler {
+public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport implements AsyncListenableTaskExecutor, SchedulingTaskExecutor, TaskScheduler {
+	// 根据Trigger周期性运行、根据fixedRate模式周期触发、根据fixedDelay模式周期触发[可额外指定延迟时间]
 
-	private volatile int poolSize = 1;
+	private volatile int poolSize = 1; // 默认的size 是1
 
 	private volatile boolean removeOnCancelPolicy = false;
 
 	@Nullable
 	private volatile ErrorHandler errorHandler;
 
+	// 内部持有一个JUC的ScheduledExecutorService 的引用
 	@Nullable
 	private ScheduledExecutorService scheduledExecutor;
 
 	// Underlying ScheduledFutureTask to user-level ListenableFuture handle, if any
-	private final Map<Object, ListenableFuture<?>> listenableFutureMap =
-			new ConcurrentReferenceHashMap<>(16, ConcurrentReferenceHashMap.ReferenceType.WEAK);
+	private final Map<Object, ListenableFuture<?>> listenableFutureMap = new ConcurrentReferenceHashMap<>(16, ConcurrentReferenceHashMap.ReferenceType.WEAK);
 
 
 	/**
@@ -111,6 +111,8 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 	}
 
 
+	// 初始化线程池的执行器~~~~ 该方法的父类是ExecutorConfigurationSupport
+	// 它定义了一些线程池的默认配置~~~~~
 	@Override
 	protected ExecutorService initializeExecutor(
 			ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
@@ -140,9 +142,8 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 	 * @see #afterPropertiesSet()
 	 * @see java.util.concurrent.ScheduledThreadPoolExecutor
 	 */
-	protected ScheduledExecutorService createExecutor(
-			int poolSize, ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
-
+	protected ScheduledExecutorService createExecutor(int poolSize, ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
+		// 就是new一个ScheduledThreadPoolExecutor  来作为最终执行任务的执行器
 		return new ScheduledThreadPoolExecutor(poolSize, threadFactory, rejectedExecutionHandler);
 	}
 
@@ -202,6 +203,7 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 	 * @see java.util.concurrent.ScheduledThreadPoolExecutor#getActiveCount()
 	 */
 	public int getActiveCount() {
+		//获取当前活动的线程数 委托给ScheduledThreadPoolExecutor来做得
 		if (this.scheduledExecutor == null) {
 			// Not initialized yet: assume no active threads.
 			return 0;
@@ -214,6 +216,9 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 
 	@Override
 	public void execute(Runnable task) {
+		// 显然最终就是交给ScheduledThreadPoolExecutor去执行了~~~
+		// 提交执行一次的任务
+		// submit\submitListenable方法表示：提交执行一次的任务，并且返回一个Future对象供判断任务状态使用
 		Executor executor = getScheduledExecutor();
 		try {
 			executor.execute(errorHandlingTask(task, false));
@@ -377,6 +382,7 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 
 
 	private Runnable errorHandlingTask(Runnable task, boolean isRepeatingTask) {
+		// 用ErrorHandler修饰Task，以保证task异步执行出现异常时，被其内部的errorHandler的捕获处理
 		return TaskUtils.decorateTaskWithErrorHandler(task, this.errorHandler, isRepeatingTask);
 	}
 

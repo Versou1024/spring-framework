@@ -42,6 +42,10 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractPropertyBindingResult extends AbstractBindingResult {
+	/**
+	 * 抽象类AbstractBindingResult的实现
+	 * 扩展引入：ConversionService
+	 */
 
 	@Nullable
 	private transient ConversionService conversionService;

@@ -32,9 +32,9 @@ import org.springframework.lang.Nullable;
  * @see ProxyAsyncConfiguration
  */
 public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableAsync> {
+	// 导入 AsyncConfiguration 配置类的Import选择器
 
-	private static final String ASYNC_EXECUTION_ASPECT_CONFIGURATION_CLASS_NAME =
-			"org.springframework.scheduling.aspectj.AspectJAsyncConfiguration";
+	private static final String ASYNC_EXECUTION_ASPECT_CONFIGURATION_CLASS_NAME = "org.springframework.scheduling.aspectj.AspectJAsyncConfiguration";
 
 
 	/**
@@ -45,9 +45,11 @@ public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableA
 	@Override
 	@Nullable
 	public String[] selectImports(AdviceMode adviceMode) {
+		// 这里AdviceMode 进行不同的处理，从而向Spring容器注入了不同的Bean~~~
 		switch (adviceMode) {
+			// 大多数情况下都走这里，ProxyAsyncConfiguration会被注入到Bean容器里面~~~
 			case PROXY:
-				return new String[] {ProxyAsyncConfiguration.class.getName()};
+				return new String[] {ProxyAsyncConfiguration.class.getName()}; // 重点进入配置类：ProxyAsyncConfiguration
 			case ASPECTJ:
 				return new String[] {ASYNC_EXECUTION_ASPECT_CONFIGURATION_CLASS_NAME};
 			default:

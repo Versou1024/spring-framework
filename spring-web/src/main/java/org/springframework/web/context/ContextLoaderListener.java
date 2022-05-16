@@ -35,6 +35,15 @@ import javax.servlet.ServletContextListener;
  * @see org.springframework.web.WebApplicationInitializer
  */
 public class ContextLoaderListener extends ContextLoader implements ServletContextListener {
+	/*
+	 * 上下文加载器监听器 -- 继承ContextLoader,并实现ServletContextListener的初始化和摧毁操作
+	 *
+	 * 负责分别在 Web根容器初始化和关闭时 回调监听器的接口,触发 根容器 的初始化例如refresh(),以及关闭
+	 *
+	 * 职责分明:
+	 * ServletContextListenerL: 负责监听web容器的启动和关闭
+	 * ContextLoader: 负责具体的容器刷新启动和资源清理关闭
+	 */
 
 	/**
 	 * Create a new {@code ContextLoaderListener} that will create a web application
@@ -100,7 +109,10 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 */
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
-		initWebApplicationContext(event.getServletContext());
+		// 初始化根 Web 应用程序上下文时被调用 ->
+		// 然后通过继承的初始化 ContextLoader#initWebApplicationContext
+		initWebApplicationContext(event.getServletContext()); // event.getServletContext() 获取初始化的ServletContext
+		// initWebApplicationContext() 主要完成: 检查是否已经初始化/容器乜有激活就需要refresh()/向servletContext设置属性value为这个Context/
 	}
 
 
@@ -109,6 +121,8 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
+		// ServletContext关闭/关闭根 Web 应用程序上下文时被调用 ->
+		// 然后通过继承 ContextLoader#closeWebApplicationContext
 		closeWebApplicationContext(event.getServletContext());
 		ContextCleanupListener.cleanupAttributes(event.getServletContext());
 	}

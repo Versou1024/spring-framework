@@ -37,6 +37,9 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class DefaultAdvisorAutoProxyCreator extends AbstractAdvisorAutoProxyCreator implements BeanNameAware {
+	/*
+	 * BeanNameAutoProxyCreator的加强版。如果说BeanNameAutoProxyCreator就是步枪需要自己装配，DefaultAdvisorAutoProxyCreator就是自动步枪了，Spring可以完成自动匹配的工作了
+	 */
 
 	/** Separator between prefix and remainder of bean name. */
 	public static final String SEPARATOR = ".";
@@ -99,9 +102,14 @@ public class DefaultAdvisorAutoProxyCreator extends AbstractAdvisorAutoProxyCrea
 	 */
 	@Override
 	protected boolean isEligibleAdvisorBean(String beanName) {
+		// Consider {@code Advisor} beans with the specified prefix as eligible, if activated.
+		// 用到了前缀之类的。主要是考虑可以通过前缀匹配某一类Bean，而其他的Advisor我就不匹配了
+		// 前缀的作用：进行分离匹配（而不是拿所有的Advisor~~）
 		if (!isUsePrefix()) {
+			// 不使用前缀，就直接返回true
 			return true;
 		}
+		// 获取advisorBeanNamePrefix，检查beanName是否以其为前缀
 		String prefix = getAdvisorBeanNamePrefix();
 		return (prefix != null && beanName.startsWith(prefix));
 	}

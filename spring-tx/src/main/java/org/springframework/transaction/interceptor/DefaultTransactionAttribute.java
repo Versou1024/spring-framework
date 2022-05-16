@@ -132,6 +132,7 @@ public class DefaultTransactionAttribute extends DefaultTransactionDefinition im
 	 */
 	@Override
 	public boolean rollbackOn(Throwable ex) {
+		// 是否回滚，默认情况就是看是否属于RuntimeException或者Error
 		return (ex instanceof RuntimeException || ex instanceof Error);
 	}
 

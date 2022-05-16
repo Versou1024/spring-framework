@@ -28,10 +28,9 @@ import org.springframework.core.annotation.OrderUtils;
  * @author Juergen Hoeller
  * @since 2.0.4
  */
-public class SimpleMetadataAwareAspectInstanceFactory extends SimpleAspectInstanceFactory
-		implements MetadataAwareAspectInstanceFactory {
+public class SimpleMetadataAwareAspectInstanceFactory extends SimpleAspectInstanceFactory implements MetadataAwareAspectInstanceFactory {
 
-	private final AspectMetadata metadata;
+	private final AspectMetadata metadata; // 直接保存切面元数据，在getAspectMetadata中直接返回
 
 
 	/**

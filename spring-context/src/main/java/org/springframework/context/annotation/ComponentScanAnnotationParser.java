@@ -74,14 +74,17 @@ class ComponentScanAnnotationParser {
 
 
 	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, String declaringClass) {
-		ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
-				componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
+		// 类路径扫描器：需要注入registry、默认过滤器、environment、resourceLoader
+		// 注意：useDefaultFilters这个值特别的重要，能够解释伙伴们为何要配置的原因~~~下面讲解它的时候会有详解
+		ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry, componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
 
+		// BeanName的生成器，我们可以单独制定。若不指定（大部分情况下都不指定），那就是默认的AnnotationBeanNameGenerator
+		// 它的处理方式是：类名首字母小写
 		Class<? extends BeanNameGenerator> generatorClass = componentScan.getClass("nameGenerator");
 		boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
-		scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
-				BeanUtils.instantiateClass(generatorClass));
+		scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator : BeanUtils.instantiateClass(generatorClass));
 
+		// 这两个属性和scope代理相关的，这里略过，使用较少
 		ScopedProxyMode scopedProxyMode = componentScan.getEnum("scopedProxy");
 		if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
 			scanner.setScopedProxyMode(scopedProxyMode);
@@ -91,44 +94,57 @@ class ComponentScanAnnotationParser {
 			scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
 		}
 
+		// 控制去扫描哪些.clsss文件的模版。一般不设置   默认值为：**/*.class  全扫嘛
 		scanner.setResourcePattern(componentScan.getString("resourcePattern"));
 
+		// includeFilters和excludeFilters算是内部处理最复杂的逻辑了，但还好，对使用者是十分友好的
 		for (AnnotationAttributes filter : componentScan.getAnnotationArray("includeFilters")) {
 			for (TypeFilter typeFilter : typeFiltersFor(filter)) {
 				scanner.addIncludeFilter(typeFilter);
 			}
 		}
+		// 设置excludeFilters
 		for (AnnotationAttributes filter : componentScan.getAnnotationArray("excludeFilters")) {
 			for (TypeFilter typeFilter : typeFiltersFor(filter)) {
 				scanner.addExcludeFilter(typeFilter);
 			}
 		}
 
+		// Spring4.1后出现的。哪怕我是扫描的Bean，也支持懒加载啦
 		boolean lazyInit = componentScan.getBoolean("lazyInit");
 		if (lazyInit) {
 			scanner.getBeanDefinitionDefaults().setLazyInit(true);
 		}
 
+		// 设置basePackages
+		// 这里属于核心逻辑，核心逻辑，核心逻辑
 		Set<String> basePackages = new LinkedHashSet<>();
 		String[] basePackagesArray = componentScan.getStringArray("basePackages");
+		// Spring在此处有强大的容错处理，虽他是支持数组的，但是它这里也容错处理：支持,;换行等的符号分隔处理
+		// 并且，并且更强大的地方在于：它支持${...}这种占位符的形式，非常的强大。我们可以动态的进行扫包了~~~~~厉害了我的哥
 		for (String pkg : basePackagesArray) {
-			String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg),
-					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+			String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg), ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
 			Collections.addAll(basePackages, tokenized);
 		}
+		//basePackageClasses有时候也挺好使的。它可以指定class，然后这个class所在的包（含子包）都会被扫描
 		for (Class<?> clazz : componentScan.getClassArray("basePackageClasses")) {
 			basePackages.add(ClassUtils.getPackageName(clazz));
 		}
+		// 如果我们没有指定此值，它会取当前配置类所在的包 -- 比如SpringBoot就是这么来干的
 		if (basePackages.isEmpty()) {
 			basePackages.add(ClassUtils.getPackageName(declaringClass));
 		}
 
+		// 最后，最后，把@ComponentScan的属性都解析好了，就交给scanner去扫描吧
+		// 因为都准备好了，所以这里直接调用的doScan()哦~
 		scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
 			@Override
 			protected boolean matchClassName(String className) {
 				return declaringClass.equals(className);
 			}
 		});
+		// 最后，最后，把@ComponentScan的属性都解析好了，就交给scanner去扫描吧
+		// 因为都准备好了，所以这里直接调用的doScan()哦~
 		return scanner.doScan(StringUtils.toStringArray(basePackages));
 	}
 

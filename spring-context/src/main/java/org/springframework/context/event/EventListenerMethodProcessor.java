@@ -60,8 +60,9 @@ import org.springframework.util.CollectionUtils;
  * @see EventListenerFactory
  * @see DefaultEventListenerFactory
  */
-public class EventListenerMethodProcessor
-		implements SmartInitializingSingleton, ApplicationContextAware, BeanFactoryPostProcessor {
+public class EventListenerMethodProcessor implements SmartInitializingSingleton, ApplicationContextAware, BeanFactoryPostProcessor {
+	// 关注扩展点：BeanFactoryPostProcessor、SmartInitializingSingleton
+	// 处理@EventListener
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -89,9 +90,10 @@ public class EventListenerMethodProcessor
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
-
+		// 查找EventListenerFactory -> 用来处理@EventListener注解，帮助生成一个适配的EventListener类
 		Map<String, EventListenerFactory> beans = beanFactory.getBeansOfType(EventListenerFactory.class, false, false);
 		List<EventListenerFactory> factories = new ArrayList<>(beans.values());
+		// 排序
 		AnnotationAwareOrderComparator.sort(factories);
 		this.eventListenerFactories = factories;
 	}
@@ -99,13 +101,22 @@ public class EventListenerMethodProcessor
 
 	@Override
 	public void afterSingletonsInstantiated() {
+		// 执行时间：所有非懒加载单例Bean加载完成后执行
+		// 坑： @EventListener 相比于 ApplicationListener接口 方式的坑
+		// @EventListener的注册时机
+		// 注册它的是EventListenerMethodProcessor，它是一个SmartInitializingSingleton，它一直到preInstantiateSingletons()所有的单例Bean全部实例化完成了之后，它才被统一注册进去。所以它注册的时机是挺晚的。
+		// 由此知道，如果你在普通的非懒加载的单例Bean初始化期间（比如给属性赋值时、构造函数内。。。）抛出一个事件，用@EventListener这种方式的监听器很有可能是监听不到的。
+
 		ConfigurableListableBeanFactory beanFactory = this.beanFactory;
 		Assert.state(this.beanFactory != null, "No ConfigurableListableBeanFactory set");
+		// 这里厉害了，用Object.class 是拿出容器里面所有的Bean定义~~~  一个一个的检查
 		String[] beanNames = beanFactory.getBeanNamesForType(Object.class);
 		for (String beanName : beanNames) {
+			// 不处理Scope作用域代理的类。 和@Scope类似相关
 			if (!ScopedProxyUtils.isScopedTarget(beanName)) {
 				Class<?> type = null;
 				try {
+					// 防止是代理，把真实的类型拿出来
 					type = AutoProxyUtils.determineTargetClass(beanFactory, beanName);
 				}
 				catch (Throwable ex) {
@@ -115,10 +126,11 @@ public class EventListenerMethodProcessor
 					}
 				}
 				if (type != null) {
+					// type 是 ScopedObject 的子类
 					if (ScopedObject.class.isAssignableFrom(type)) {
 						try {
-							Class<?> targetClass = AutoProxyUtils.determineTargetClass(
-									beanFactory, ScopedProxyUtils.getTargetBeanName(beanName));
+							// 再次判断自动代理问题
+							Class<?> targetClass = AutoProxyUtils.determineTargetClass(beanFactory, ScopedProxyUtils.getTargetBeanName(beanName));
 							if (targetClass != null) {
 								type = targetClass;
 							}
@@ -130,7 +142,9 @@ public class EventListenerMethodProcessor
 							}
 						}
 					}
+					// 最终目的就是：
 					try {
+						// 真正处理这个Bean里面的方法
 						processBean(beanName, type);
 					}
 					catch (Throwable ex) {
@@ -143,12 +157,15 @@ public class EventListenerMethodProcessor
 	}
 
 	private void processBean(final String beanName, final Class<?> targetType) {
-		if (!this.nonAnnotatedClasses.contains(targetType) &&
-				AnnotationUtils.isCandidateClass(targetType, EventListener.class) &&
-				!isSpringContainerClass(targetType)) {
+
+		// 缓存下没有被注解过的Class，这样再次解析此Class就不用再处理了
+		// 这是为了加速父子容器的情况  做的特别优化
+		// 失效的类型缓存中是否有这个targetType、并且实现了@Eventlistener注解、非Spring内部Class
+		if (!this.nonAnnotatedClasses.contains(targetType) && AnnotationUtils.isCandidateClass(targetType, EventListener.class) && !isSpringContainerClass(targetType)) {
 
 			Map<Method, EventListener> annotatedMethods = null;
 			try {
+				// 查找出所有带有@EventListener的方法
 				annotatedMethods = MethodIntrospector.selectMethods(targetType,
 						(MethodIntrospector.MetadataLookup<EventListener>) method ->
 								AnnotatedElementUtils.findMergedAnnotation(method, EventListener.class));
@@ -160,6 +177,7 @@ public class EventListenerMethodProcessor
 				}
 			}
 
+			// 没有找到任何@EventListener的方法，加入到nonAnnotatedClasses，即失效的Type缓存
 			if (CollectionUtils.isEmpty(annotatedMethods)) {
 				this.nonAnnotatedClasses.add(targetType);
 				if (logger.isTraceEnabled()) {
@@ -170,18 +188,29 @@ public class EventListenerMethodProcessor
 				// Non-empty set of methods
 				ConfigurableApplicationContext context = this.applicationContext;
 				Assert.state(context != null, "No ApplicationContext set");
+				// 拿到EventListenerFactory -> 将@EventListener适配为一个EventListener类
 				List<EventListenerFactory> factories = this.eventListenerFactories;
 				Assert.state(factories != null, "EventListenerFactory List not initialized");
+				// 处理这些带有@EventListener注解的方法们
 				for (Method method : annotatedMethods.keySet()) {
+					// 这里面注意：拿到每个EventListenerFactory (一般情况下只有DefaultEventListenerFactory,但是若是注解驱动的事务还会有它：TransactionalEventListenerFactory)
 					for (EventListenerFactory factory : factories) {
+						// 加工的工厂类也可能有多个，但默认只有Spring注册给我们的一个
+						// supportsMethod表示是否支持去处理此方法（因为我们可以定义处理器，只处理指定的Method都是欧克的）  Spring默认实现永远返回true（事务相关的除外，请注意工厂的顺序）
 						if (factory.supportsMethod(method)) {
+							// 简单的说，就是把这个方法弄成一个可以执行的方法（主要和访问权限有关）
+							// 这里注意：若你是JDK的代理类，请不要在实现类里书写@EventListener注解的监听器，否则会报错的。（CGLIB代理的木关系） 原因上面已经说明了
 							Method methodToUse = AopUtils.selectInvocableMethod(method, context.getType(beanName));
-							ApplicationListener<?> applicationListener =
-									factory.createApplicationListener(beanName, targetType, methodToUse);
+							// 把这个方法包装成一个监听器ApplicationListener（ApplicationListenerMethodAdapter类型）
+							// 通过工厂创建出来的监听器  也给添加进context里面去~~~~~
+							ApplicationListener<?> applicationListener = factory.createApplicationListener(beanName, targetType, methodToUse);
 							if (applicationListener instanceof ApplicationListenerMethodAdapter) {
+								// 这个init方法是把ApplicationContext注入进去
 								((ApplicationListenerMethodAdapter) applicationListener).init(context, this.evaluator);
 							}
+							// 添加进去  管理起来
 							context.addApplicationListener(applicationListener);
+							// 这个break意思是：只要有一个工厂处理了这个方法，接下来的工厂就不需要再处理此方法了~~~~（所以工厂之间的排序也比较重要）
 							break;
 						}
 					}

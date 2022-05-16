@@ -30,7 +30,7 @@ public abstract class DynamicMethodMatcher implements MethodMatcher {
 
 	@Override
 	public final boolean isRuntime() {
-		return true;
+		return true;// 永远返回true
 	}
 
 	/**
@@ -39,7 +39,8 @@ public abstract class DynamicMethodMatcher implements MethodMatcher {
 	 */
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
-		return true;
+		return true; // 永远返回true，去匹配动态匹配的方法即可
+		// 说明：因为每次都要对方法参数进行检查，无法对匹配结果进行缓存，所以，匹配效率相对 StatisMethodMatcher 来说要差，但匹配度更高。(实际使用得其实较少)
 	}
 
 }

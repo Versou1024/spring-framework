@@ -91,6 +91,32 @@ import org.springframework.util.MultiValueMap;
  * @see BridgeMethodResolver
  */
 public abstract class AnnotatedElementUtils {
+	/*
+	 * 针对 AnnotatedElement 的工具
+	 * 公共API:
+	 * findAllMergedAnnotations(AnnotatedElement,Class<A>):Set<A> 查找AnnotatedElement上所有符合注解的注解集合
+	 * findAllMergedAnnotations(AnnotatedElement,Set<Class<?extends Annotation>>):Set<Annotation>
+	 * findMergedAnnotation(AnnotatedElement,Class<A>):A  查找最近的注解
+	 * findMergedAnnotationAttributes(AnnotatedElement,Class<?extends Annotation>,boolean,boolean):AnnotationAttributes
+	 * findMergedAnnotationAttributes(AnnotatedElement,String,boolean,boolean):AnnotationAttributes
+	 * findMergedRepeatableAnnotations(AnnotatedElement,Class<A>):Set<A> 针对可重复注解
+	 * findMergedRepeatableAnnotations(AnnotatedElement,Class<A>,Class<?extends Annotation>):Set<A>
+	 * forAnnotations(Annotation...):AnnotatedElement
+	 * getAllAnnotationAttributes(AnnotatedElement,String):MultiValue Map<String,Object>  获取指定注解的所有属性值
+	 * getAllAnnotationAttributes(AnnotatedElement,String,boolean,boolean):MultiValue Map<String,Object> 获取指定注解的所有属性值
+	 * getAllMergedAnnotations(AnnotatedElement,Class<A>):Set<A>
+	 * getAllMergedAnnotations(AnnotatedElement,Set<Class<?extends Annotation>>):Set<Annotation>
+	 * getMergedAnnotation(AnnotatedElement,Class<A>):A
+	 * getMergedAnnotationAttributes(AnnotatedElement,Class<?extends Annotation>):AnnotationAttributes
+	 * getMergedAnnotationAttributes(AnnotatedElement,String):AnnotationAttributes
+	 * getMergedAnnotationAttributes(AnnotatedElement,String,boolean,boolean):AnnotationAttributes
+	 * getMergedRepeatableAnnotations(AnnotatedElement,Class<A>):Set<A> 合并重复注解
+	 * getMetaAnnotationTypes(AnnotatedElement,Class<?extends Annotation>):Set<String> 获取指定注解上的元注解，其中除去Java的元注解
+	 * hasAnnotation(AnnotatedElement,Class<?extends Annotation>):boolean 是否有指定注解
+	 * hasMetaAnnotationTypes(AnnotatedElement,Class<?extends Annotation>):boolean 是否有指定元注解
+	 * isAnnotated(AnnotatedElement,Class<?extends Annotation>):boolean 类class上是否被某个注解所标注，或者超类上是否对应的@Inherit的注解
+	 * isAnnotated(AnnotatedElement,String):boolean 全限定类名
+	 */
 
 	/**
 	 * Build an adapted {@link AnnotatedElement} for the given annotations,

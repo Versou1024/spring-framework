@@ -30,6 +30,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * @see RequestMapping#headers()
  */
 public interface NameValueExpression<T> {
+	/**
+	 * 辅助类：主要用于requestCondition的统一检查
+	 *
+	 * 提供 key和value、以及是否为否定的
+	 */
 
 	String getName();
 

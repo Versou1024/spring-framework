@@ -36,6 +36,10 @@ import org.springframework.util.ObjectUtils;
  * @see org.springframework.aop.framework.AdvisedSupport#setTarget(Object)
  */
 public class SingletonTargetSource implements TargetSource, Serializable {
+	/**
+	 * TargetSource的单例对象target
+	 * 简单封装一个：Object target
+	 */
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 9031246629662423738L;
@@ -72,7 +76,7 @@ public class SingletonTargetSource implements TargetSource, Serializable {
 
 	@Override
 	public boolean isStatic() {
-		return true;
+		return true; // target是单例的，因此isStatic返回true
 	}
 
 

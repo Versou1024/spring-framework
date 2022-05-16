@@ -51,6 +51,13 @@ import org.springframework.web.servlet.FrameworkServlet;
  * @since 3.2
  */
 public abstract class AbstractDispatcherServletInitializer extends AbstractContextLoaderInitializer {
+	/*
+	 * AbstractDispatcherServletInitializer 抽象 DispatcherServlet的初始化
+	 * 目的：负责创建 DispatcherServlet、负责创建 web环境的ioc容器
+	 *
+	 * 作用：在上下文中【【注册DispatcherServlet】】的WebApplicationInitializer实现。
+	 * 大多数应用程序应该考虑扩展Spring java配置子类AbstractAnnotationConfigDispatcherServletInitializer。
+	 */
 
 	/**
 	 * The default servlet name. Can be customized by overriding {@link #getServletName}.
@@ -60,7 +67,9 @@ public abstract class AbstractDispatcherServletInitializer extends AbstractConte
 
 	@Override
 	public void onStartup(ServletContext servletContext) throws ServletException {
+		// 沿用 super.onStartUp() 确保 AbstractContextLoaderInitializer 成功加载Root根容器
 		super.onStartup(servletContext);
+		// 注册DispatcherServlet，让它去初始化Spring MVC的子容器
 		registerDispatcherServlet(servletContext);
 	}
 
@@ -76,34 +85,57 @@ public abstract class AbstractDispatcherServletInitializer extends AbstractConte
 	 * @param servletContext the context to register the servlet against
 	 */
 	protected void registerDispatcherServlet(ServletContext servletContext) {
+		// 1. DispatcherServlet的Bean名字,默认是dispatcher
 		String servletName = getServletName();
 		Assert.hasLength(servletName, "getServletName() must not return null or empty");
 
+		// 2. 【抽象方法】 - 负责创建Servlet应用上下文即web的ioc容器 -- 被 AbstractAnnotationConfigDispatcherServletInitializer,
+		// 创建了一个 AnnotationConfigWebApplicationContext 作为子容器即web容器
 		WebApplicationContext servletAppContext = createServletApplicationContext();
 		Assert.notNull(servletAppContext, "createServletApplicationContext() must not return null");
 
+		// 3. 创建DispatcherServlet -- 就是直接new DispatcherServlet()出来
+		// 注意:子容器即web容器servletAppContext被创建后,是没有调用其refresh() -> 猜测后续会在DispatcherServlet中进行调用[待验证]
 		FrameworkServlet dispatcherServlet = createDispatcherServlet(servletAppContext);
 		Assert.notNull(dispatcherServlet, "createDispatcherServlet(WebApplicationContext) must not return null");
+		// 4. 设置ContextInitializers
 		dispatcherServlet.setContextInitializers(getServletApplicationContextInitializers());
 
+		// 5. 注册servlet到web容器里面，这样就可以接收请求了 -- DispatcherServlet
 		ServletRegistration.Dynamic registration = servletContext.addServlet(servletName, dispatcherServlet);
 		if (registration == null) {
-			throw new IllegalStateException("Failed to register servlet with name '" + servletName + "'. " +
-					"Check if there is another servlet registered under the same name.");
+			throw new IllegalStateException("Failed to register servlet with name '" + servletName + "'. " + "Check if there is another servlet registered under the same name.");
 		}
 
-		registration.setLoadOnStartup(1);
-		registration.addMapping(getServletMappings());
-		registration.setAsyncSupported(isAsyncSupported());
+		// 6. servlet是否立即启动 ->
+		// 6.1 若立即启动,将会调用其servlet的init()方法
+		// 6.2 设置默认的DisPatcherServlet的映射路径
+		// 6.3 设置异步
+		registration.setLoadOnStartup(1); // Servlet 是否立即启动
+		registration.addMapping(getServletMappings()); // 【抽象方法】 Servlet 的映射地址
+		registration.setAsyncSupported(isAsyncSupported()); // 【抽象方法】 Servlet 是否支持异步
 
+		// 7. 处理自定义的Filter进来，一般我们Filter不这么加进来，而是自己@WebFilter，或者借助Spring，  备注：这里添加进来的Filter都仅仅只拦截过滤上面注册的dispatchServlet
 		Filter[] filters = getServletFilters();
 		if (!ObjectUtils.isEmpty(filters)) {
 			for (Filter filter : filters) {
 				registerServletFilter(servletContext, filter);
 			}
 		}
-
+		// 8. 这个很清楚：调用者若相对dispatcherServlet有自己更个性化的参数设置，复写此方法即可
 		customizeRegistration(registration);
+
+
+		// 由于设置了registration.setLoadOnStartup(1);
+		// 在容器启动完成后就调用servlet的init(), DispatcherServlet继承FrameworkServlet继承HttpServletBean继承HttpServlet。
+		// 在HttpServletBean实现了init()：
+
+		// 这里先科普一下Servlet初始化的四大步骤：
+		//
+		//Servlet容器加载Servlet类，把类的.class文件中的数据读到内存中；
+		//Servlet容器中创建一个ServletConfig对象。该对象中包含了Servlet的初始化配置信息；
+		//Servlet容器创建一个Servlet对象（我们也可以手动new，然后手动添加进去）；
+		//Servlet容器调用Servlet对象的init()方法进行初始化。
 	}
 
 	/**

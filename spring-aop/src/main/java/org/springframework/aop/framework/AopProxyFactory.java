@@ -42,6 +42,11 @@ package org.springframework.aop.framework;
  * @author Juergen Hoeller
  */
 public interface AopProxyFactory {
+	/*
+	 * AopProxy工厂，用于创建AopProxy的实现类，
+	 * 常见的AopProxy的动态代理就是：CglibAopProxy、JdkDynamicAopProxy两个类
+	 * AopProxyFactory 默认只有一个实现类即 DefaultAopProxyFactory
+	 */
 
 	/**
 	 * Create an {@link AopProxy} for the given AOP configuration.

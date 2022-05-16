@@ -43,6 +43,9 @@ package org.springframework.beans.factory;
  */
 public interface SmartInitializingSingleton {
 
+	// SmartInitializingSingleton的afterSingletonsInstantiated方法是在所有单例bean都已经被创建后执行的
+	// 就是DefaultListableBeanFactory#preInstantiateSingletons
+
 	/**
 	 * Invoked right at the end of the singleton pre-instantiation phase,
 	 * with a guarantee that all regular singleton beans have been created

@@ -59,18 +59,19 @@ import org.springframework.util.ObjectUtils;
  * @see org.springframework.core.annotation.SynthesizingMethodParameter
  */
 public class MethodParameter {
+	// 封装方法参数规范的助手类，即Method或Constructor加上参数索引和声明的泛型类型的嵌套类型索引。可用作传递的规范对象
 
 	private static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[0];
 
 
-	private final Executable executable;
+	private final Executable executable; // 参数所在的可执行方法
 
-	private final int parameterIndex;
+	private final int parameterIndex; // 参数所在索引
 
 	@Nullable
-	private volatile Parameter parameter;
+	private volatile Parameter parameter; // 参数
 
-	private int nestingLevel;
+	private int nestingLevel; // 嵌套级别
 
 	/** Map from Integer level to Integer type index. */
 	@Nullable
@@ -78,25 +79,25 @@ public class MethodParameter {
 
 	/** The containing class. Could also be supplied by overriding {@link #getContainingClass()} */
 	@Nullable
-	private volatile Class<?> containingClass;
+	private volatile Class<?> containingClass; // 所在的Class
 
 	@Nullable
-	private volatile Class<?> parameterType;
+	private volatile Class<?> parameterType; // 不带泛型的参数类型
 
 	@Nullable
-	private volatile Type genericParameterType;
+	private volatile Type genericParameterType; // 带有泛型的参数烈性
 
 	@Nullable
-	private volatile Annotation[] parameterAnnotations;
+	private volatile Annotation[] parameterAnnotations; // 参数上的注解
 
 	@Nullable
-	private volatile ParameterNameDiscoverer parameterNameDiscoverer;
+	private volatile ParameterNameDiscoverer parameterNameDiscoverer; // 参数名发现器
 
 	@Nullable
-	private volatile String parameterName;
+	private volatile String parameterName; // 参数名
 
 	@Nullable
-	private volatile MethodParameter nestedMethodParameter;
+	private volatile MethodParameter nestedMethodParameter; // 嵌套方法参数
 
 
 	/**

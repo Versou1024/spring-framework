@@ -24,6 +24,12 @@ package org.springframework.http;
  * @since 3.0
  */
 public interface HttpMessage {
+	// HTTPRequest的基本接口
+	// getHeaders() 表示 HTTP 请求和响应消息的基本接口。
+	// 由HttpHeaders组成，可通过getHeaders()检索。
+	// 实现类:
+	// 包括: HttpInputMessage\HttpRequest\HttpOutputMessage\
+	// 以及两个响应式编程的MVC ~~ 忽略
 
 	/**
 	 * Return the headers of this message.

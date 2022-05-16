@@ -160,7 +160,7 @@ import org.springframework.core.Ordered;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Import(TransactionManagementConfigurationSelector.class)
-public @interface EnableTransactionManagement {
+public @interface EnableTransactionManagement { // 开启事务管理器
 
 	/**
 	 * Indicate whether subclass-based (CGLIB) proxies are to be created ({@code true}) as

@@ -42,6 +42,8 @@ import org.springframework.util.StreamUtils;
  * @since 3.0
  */
 public class StringHttpMessageConverter extends AbstractHttpMessageConverter<String> {
+	// StringHttpMessageConverter
+	// 这个是使用得非常广泛的一个消息转换器，专门处理入参/出参字符串类型。
 
 	private static final MediaType APPLICATION_PLUS_JSON = new MediaType("application", "*+json");
 
@@ -49,11 +51,13 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 	 * The default charset used by the converter.
 	 */
 	public static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
+	// 这就是为何你return中文的时候会乱码的原因（若你不设置它的编码的话~）
 
 
 	@Nullable
 	private volatile List<Charset> availableCharsets;
 
+	// 标识是否输出 Response Headers:Accept-Charset(默认true表示输出)
 	private boolean writeAcceptCharset = false;
 
 
@@ -70,6 +74,8 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 	 * type does not specify one.
 	 */
 	public StringHttpMessageConverter(Charset defaultCharset) {
+		// 支持 text/plain */* 类型
+
 		super(defaultCharset, MediaType.TEXT_PLAIN, MediaType.ALL);
 	}
 
@@ -87,15 +93,23 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 
 	@Override
 	public boolean supports(Class<?> clazz) {
+		// 只处理String类型~
+
 		return String.class == clazz;
 	}
 
 	@Override
 	protected String readInternal(Class<? extends String> clazz, HttpInputMessage inputMessage) throws IOException {
+		// 哪编码的原则为：
+		// 1、contentType自己指定了编码就以指定的为准
+		// 2、没指定，但是类型是`application/json`，统一按照UTF_8处理
+		// 3、否则使用默认编码：getDefaultCharset  ISO_8859_1
 		Charset charset = getContentTypeCharset(inputMessage.getHeaders().getContentType());
+		// 按照此编码，转换为字符串~~~
 		return StreamUtils.copyToString(inputMessage.getBody(), charset);
 	}
 
+	// 显然，ContentLength和编码也是有关的~~~
 	@Override
 	protected Long getContentLength(String str, @Nullable MediaType contentType) {
 		Charset charset = getContentTypeCharset(contentType);
@@ -122,7 +136,9 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 		if (this.writeAcceptCharset && headers.get(HttpHeaders.ACCEPT_CHARSET) == null) {
 			headers.setAcceptCharset(getAcceptedCharsets());
 		}
+		// 字符集类型
 		Charset charset = getContentTypeCharset(headers.getContentType());
+		// 按照charset字符集将str字符串写入到body的outputStream中
 		StreamUtils.copy(str, charset, outputMessage.getBody());
 	}
 
@@ -143,15 +159,19 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 	}
 
 	private Charset getContentTypeCharset(@Nullable MediaType contentType) {
+
+		// 1.1 从请求头的conten-type中获取charset
 		if (contentType != null && contentType.getCharset() != null) {
 			return contentType.getCharset();
 		}
+		// 1.2 content-type是json类型的,默认返回UTF_8类型的
 		else if (contentType != null &&
 				(contentType.isCompatibleWith(MediaType.APPLICATION_JSON) ||
 						contentType.isCompatibleWith(APPLICATION_PLUS_JSON))) {
 			// Matching to AbstractJackson2HttpMessageConverter#DEFAULT_CHARSET
 			return StandardCharsets.UTF_8;
 		}
+		// 1.3 获取默认的charset
 		else {
 			Charset charset = getDefaultCharset();
 			Assert.state(charset != null, "No default charset");

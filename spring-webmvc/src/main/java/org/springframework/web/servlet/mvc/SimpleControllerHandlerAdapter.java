@@ -38,6 +38,11 @@ import org.springframework.web.servlet.ModelAndView;
  * @see HttpRequestHandlerAdapter
  */
 public class SimpleControllerHandlerAdapter implements HandlerAdapter {
+	/**
+	 * 简单 HandlerAdapter
+	 *
+	 * 1、支持：handler属于Controller接口
+	 */
 
 	@Override
 	public boolean supports(Object handler) {

@@ -36,6 +36,15 @@ import java.io.Flushable;
  * @see org.springframework.jdbc.datasource.DataSourceUtils#CONNECTION_SYNCHRONIZATION_ORDER
  */
 public interface TransactionSynchronization extends Flushable {
+	// 事务同步器:TransactionSynchronization类非常的重要，它是我们程序员对事务同步的扩展点：用于事务同步回调的接口，AbstractPlatformTransactionManager支持它。
+	// 支持在 事务挂起\事务恢复\刷新之前\提交前\提交后\完成前\完成后 进行回调
+
+	// 自定义一个同步器TransactionSynchronization使用得最多的是afterCommit和afterCompletion这两个方法，但是上面的note一定一定要注意，下面我用“人的语言”尝试翻译如下：
+	//
+	// 事务虽然已经提交，但是我的连接可能还是活动的（比如使用了连接池链接是不会关闭的)
+	// 若你的回调中刚好又使用到了这个链接，它会参与到原始的事务里面去
+	// 这个时候你参与到了原始事务，但是它并不会给你commit提交。（所以你在这里做的update、insert等默认都将不好使）
+	// 回收资源（链接）的时候，因为你使用的就是原始事务的资源，所以Spring事务还会给你回收掉，从而就可能导致你的程序出错
 
 	/** Completion status in case of proper commit. */
 	int STATUS_COMMITTED = 0;

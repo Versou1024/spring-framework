@@ -34,6 +34,13 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.aop.support.DelegatingIntroductionInterceptor
  */
 public interface ProxyMethodInvocation extends MethodInvocation {
+	// 这是Spring提供的对MethodInvocation 的一个扩展。
+	// 它允许访问  方法被调用的代理对象以及其它相关信息
+	/*
+	 * 代理方法调用 -- MethodInvocation # getMethod、getArguments、getThis、getTarget、process、getStaticPart
+	 * 扩展点在于：Proxy
+	 * 提供：getProxy、invocableClone、invocableClone、setArguments
+	 */
 
 	/**
 	 * Return the proxy that this method invocation was made through.
@@ -66,7 +73,7 @@ public interface ProxyMethodInvocation extends MethodInvocation {
 	 * in this chain.
 	 * @param arguments the argument array
 	 */
-	void setArguments(Object... arguments);
+	void setArguments(Object... arguments); // 设置需要被使用的参数arguments
 
 	/**
 	 * Add the specified user attribute with the given value to this invocation.
@@ -75,7 +82,7 @@ public interface ProxyMethodInvocation extends MethodInvocation {
 	 * @param key the name of the attribute
 	 * @param value the value of the attribute, or {@code null} to reset it
 	 */
-	void setUserAttribute(String key, @Nullable Object value);
+	void setUserAttribute(String key, @Nullable Object value); // 设置用户属性
 
 	/**
 	 * Return the value of the specified user attribute.
@@ -84,6 +91,6 @@ public interface ProxyMethodInvocation extends MethodInvocation {
 	 * @see #setUserAttribute
 	 */
 	@Nullable
-	Object getUserAttribute(String key);
+	Object getUserAttribute(String key); // 返回key对应定制的用户属性
 
 }

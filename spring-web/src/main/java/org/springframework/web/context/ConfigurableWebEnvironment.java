@@ -33,6 +33,16 @@ import org.springframework.lang.Nullable;
  * @see ConfigurableWebApplicationContext#getEnvironment()
  */
 public interface ConfigurableWebEnvironment extends ConfigurableEnvironment {
+	/*
+	 * 关于 属性 property 和 环境profiles 的五个核心接口
+	 * PropertyResolver 接口负责 Property 的获取（通过 key 获得 value），
+	 * Environment 继承了这个接口，加入获得 Profile 的内容。
+	 * ConfigurablePropertyResolver 继承了 PropertyResolver，为了解决 Property 的获取过程中涉及到的数据类型的转换和${..}表达式的解析问题。
+	 * ConfigurableEnvironment 在此基础上，加入了 Profile 的设置功能。
+	 * ConfigurableWebEnvironment 扩展了 web 功能，将 servlet 上下文作为配置源。
+	 *
+	 * AbstractEnvironment，StandardEnvironment，StandardServletEnvironment 都是 Spring 对上述功能的实现。
+	 */
 
 	/**
 	 * Replace any {@linkplain
@@ -45,5 +55,6 @@ public interface ConfigurableWebEnvironment extends ConfigurableEnvironment {
 	 * org.springframework.core.env.MutablePropertySources, ServletContext, ServletConfig)
 	 */
 	void initPropertySources(@Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig);
+	// 使用给定的参数，用真正的servlet上下文/config属性源替换充当占位符的任何存根属性源实例。
 
 }

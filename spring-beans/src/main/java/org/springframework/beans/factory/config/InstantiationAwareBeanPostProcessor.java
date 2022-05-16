@@ -45,6 +45,28 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator
  */
 public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
+	/*
+	实例化前后的增强处理即：
+	postProcessBeforeInstantiation：
+		实例化之前执行。给调用者一个机会，返回一个代理对象（相当于可以摆脱Spring的束缚，可以自定义实例化逻辑).
+		若返回null，则不影响Spring流程，继续后续Spring的逻辑。
+		但若返回不为null，就最后面都仅仅只执行 BeanPostProcessor#postProcessAfterInitialization 初始化后置增强 这一个回调方法后就立即结束Spring的管理
+
+	postProcessAfterInstantiation：
+		实例化完毕后、初始化之前执行。
+		若方法返回false，表示后续的属性填充、以及后面的InstantiationAwareBeanPostProcessor都不用再执行了
+		(一般不建议去返回false，它的意义在于若返回false不仅后续的不执行了，就连自己个的且包括后续的处理器的postProcessPropertyValues方法都将不会再执行了）
+		populateBean()的时候调用，若有返回false，下面的postProcessPropertyValues就都不会调用了
+		处理时机：AbstractAutowriteCapableBeanFactory#populateBean
+
+	postProcessProperties
+		属性填充
+		包括常见的实现：
+			1. AutowiredAnnotationBeanPostProcessor执行@Autowired注解注入
+			2. CommonAnnotationBeanPostProcessor执行@Resource等注解的注入，
+			3. PersistenceAnnotationBeanPostProcessor执行@ PersistenceContext等JPA注解的注入，
+			4. RequiredAnnotationBeanPostProcessor执行@ Required注解的检查等等
+	 */
 
 	/**
 	 * Apply this BeanPostProcessor <i>before the target bean gets instantiated</i>.
@@ -141,8 +163,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 */
 	@Deprecated
 	@Nullable
-	default PropertyValues postProcessPropertyValues(
-			PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeansException {
+	default PropertyValues postProcessPropertyValues(PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeansException {
 
 		return pvs;
 	}

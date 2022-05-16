@@ -60,6 +60,22 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.context.ApplicationContext#getAutowireCapableBeanFactory()
  */
 public interface AutowireCapableBeanFactory extends BeanFactory {
+	/*
+	AutowireCapableBeanFactory–>扩展了BeanFactory接口,并提供了自动装配能力
+
+	JavaDoc:
+	BeanFactory接口的扩展AutowireCapableBeanFactory：能够自动装配的bean工厂实现，前提是它们希望为现有bean实例公开此功能。
+	注意：
+		1、BeanFactory的这个子接口不适用于普通的应用程序代码：
+		2、用户更应该典型使用BeanFactory或ListableBeanFactory。
+
+	使用场景：其他框架的集成代码可以利用此接口连接和填充Spring无法控制其生命周期的现有bean实例。
+	请注意，该接口不是ApplicationContext，因为应用程序代码很少使用它。但是它可以从ApplicationContext中获得，
+
+	获取方式：
+		1、通过ApplicationContext.getAutowireCapableBeanFactory()方法。
+		2、你也可以实现BeanFactoryAware接口，即使在应用程序上下文中运行时也会公开内部BeanFactory，以访问AutowireCapableBeanFactory：只需将传入的BeanFactory强制转换为AutowireCapableBeanFactory。
+	 */
 
 	/**
 	 * Constant that indicates no externally defined autowiring. Note that
@@ -378,6 +394,9 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 */
 	@Nullable
 	Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName) throws BeansException;
+	// descriptor : 描述Bean所依赖的的地方：例如字段（@Autowrite某个字段）、方法（@Autowrite某个set方法等）、构造器
+	// 通常需要@Autowrite等方法注入的属性，是需要BeanFactory来解析出来被注入的对象Obj
+	// 注意抛出的异常：找不到、或者找到多个匹配的Bean都会抛出异常
 
 	/**
 	 * Resolve the specified dependency against the beans defined in this factory.
@@ -396,5 +415,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	@Nullable
 	Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
 			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException;
+	// 通常需要@Autowrite等方法注入的属性，是需要BeanFactory来解析出来被注入的对象Obj
+
 
 }

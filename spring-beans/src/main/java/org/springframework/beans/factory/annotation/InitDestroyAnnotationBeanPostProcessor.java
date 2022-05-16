@@ -77,8 +77,9 @@ import org.springframework.util.ReflectionUtils;
  * @see #setDestroyAnnotationType
  */
 @SuppressWarnings("serial")
-public class InitDestroyAnnotationBeanPostProcessor
-		implements DestructionAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor, PriorityOrdered, Serializable {
+public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor, PriorityOrdered, Serializable {
+	//InitDestroyAnnotationBeanPostProcessor：处理声明周期注解方法的处理器。有了它，就允许用注解代替去实现Spring的接口InitializingBean和DisposableBean了。
+	//比如@PostConstruct和@PreDestroy等
 
 	private final transient LifecycleMetadata emptyLifecycleMetadata =
 			new LifecycleMetadata(Object.class, Collections.emptyList(), Collections.emptyList()) {

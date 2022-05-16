@@ -30,6 +30,14 @@ import org.springframework.lang.Nullable;
  * @see FlashMap
  */
 public interface FlashMapManager {
+	/*
+	用来管理FlashMap的，FlashMap主要用在redirect中传递参数。
+
+	功能说明：
+		实际的Session中保存的FlashMap是List类型，也就是说一个Session可以保存多个FlashMap，一个FlashMap保存着一套Redirect转发所传递的参数
+		FlashMap继承自HashMap，除了用于HashMap的功能和设置有效期，
+		还可以保存Redirect后的目标路径和通过url传递的参数，这两项内容主要用来从Session保存的多个FlashMap中查找当前的FlashMap
+	 */
 
 	/**
 	 * Find a FlashMap saved by a previous request that matches to the current

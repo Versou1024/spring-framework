@@ -31,6 +31,22 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class ProxyCreatorSupport extends AdvisedSupport {
+	/**
+	 * AopProxy工厂的封装, 用于方便访问AopProxy。主要是封装AopProxyFactory，用来创建AopProxy
+	 * 帮助其子类创建JDK和Cglib代理
+	 *
+	 * ProxyCreatorSupport 注册和触发监听器，借助DefaultAopProxyFactory获取代理
+	 *
+	 * 有三个子类：一点点发展起来的
+	 * ProxyFactory 是只能通过代码硬编码进行编写 一般都是给spring自己使用。
+	 * ProxyFactoryBean 是将我们的AOP和IOC融合起来，
+	 * AspectJ 是目前大家最常用的 起到集成AspectJ和Spring
+	 *
+	 * Advice:通知，定义在连接点做什么，比如我们在方法前后进行日志打印（前置通知、后置通知、环绕通知等等）
+	 * Pointcut：切点，决定advice应该作用于那个连接点，比如根据正则等规则匹配哪些方法需要增强（Pointcut 目前有getClassFilter（类匹配），getMethodMatcher（方法匹配），Pointcut TRUE （全匹配））
+	 * JoinPoint：连接点，就是spring允许你是通知（Advice）的地方，那可就真多了，基本每个方法的前、后（两者都有也行），或抛出异常是时都可以是连接点，spring只支持方法连接点。其他如AspectJ还可以让你在构造器或属性注入时都行，不过那不是咱们关注的，只要记住，和方法有关的前前后后都是连接点（通知方法里都可以获取到这个连接点，顺便获取到相关信息）。
+	 * Advisor：把pointcut和advice连接起来（可由Spring去完成，我们都交给容器管理就行，当然，你也可以手动完成）Spring的Advisor是Pointcut和Advice的配置器，它是将Advice注入程序中Pointcut位置的代码。
+	 */
 
 	private AopProxyFactory aopProxyFactory;
 
@@ -44,6 +60,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	 * Create a new ProxyCreatorSupport instance.
 	 */
 	public ProxyCreatorSupport() {
+		// 空构造函数，默认构造：DefaultAopProxyFactory
 		this.aopProxyFactory = new DefaultAopProxyFactory();
 	}
 
@@ -99,7 +116,11 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	 * create an AOP proxy with {@code this} as an argument.
 	 */
 	protected final synchronized AopProxy createAopProxy() {
+		// 创建AopProxy
+
+		// active 初始化默认是false
 		if (!this.active) {
+			// 调用active()进行激活，触发监听器的回调
 			activate();
 		}
 		return getAopProxyFactory().createAopProxy(this);
@@ -110,6 +131,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	 * @see AdvisedSupportListener#activated
 	 */
 	private void activate() {
+		// active激活后，需要遍历 AdvisedSupportListener#activated 进行处理
 		this.active = true;
 		for (AdvisedSupportListener listener : this.listeners) {
 			listener.activated(this);

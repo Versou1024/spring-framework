@@ -36,6 +36,11 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.aop.target.PrototypeTargetSource
  */
 public class QuickTargetSourceCreator extends AbstractBeanFactoryBasedTargetSourceCreator {
+	// QuickTargetSourceCreator：可能来自CommonsPool2TargetSource、可能来自ThreadLocalTargetSource、可能来自PrototypeTargetSource（和BeanName有关），可能是null。
+	// 使用 bean name 前缀去创建一个TargetSource，其类型必为以下三个Targetsource之一
+	// 		: CommonsPool2TargetSource 池对象
+	//		% ThreadLocalTargetSource 线程绑定原型
+	//		! PrototypeTargetSource  简单原型
 
 	/**
 	 * The CommonsPool2TargetSource prefix.
@@ -54,22 +59,24 @@ public class QuickTargetSourceCreator extends AbstractBeanFactoryBasedTargetSour
 
 	@Override
 	@Nullable
-	protected final AbstractBeanFactoryBasedTargetSource createBeanFactoryBasedTargetSource(
-			Class<?> beanClass, String beanName) {
-
+	protected final AbstractBeanFactoryBasedTargetSource createBeanFactoryBasedTargetSource(Class<?> beanClass, String beanName) {
+		// beanName 以 : 开头
 		if (beanName.startsWith(PREFIX_COMMONS_POOL)) {
 			CommonsPool2TargetSource cpts = new CommonsPool2TargetSource();
 			cpts.setMaxSize(25);
 			return cpts;
 		}
+		// beanName 以 % 开头
 		else if (beanName.startsWith(PREFIX_THREAD_LOCAL)) {
 			return new ThreadLocalTargetSource();
 		}
+		// beanName 以 ! 开头
 		else if (beanName.startsWith(PREFIX_PROTOTYPE)) {
 			return new PrototypeTargetSource();
 		}
 		else {
 			// No match. Don't create a custom target source.
+			// 不匹返回null
 			return null;
 		}
 	}

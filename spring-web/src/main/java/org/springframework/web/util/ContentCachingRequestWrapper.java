@@ -53,16 +53,16 @@ public class ContentCachingRequestWrapper extends HttpServletRequestWrapper {
 	private static final String FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
 
-	private final ByteArrayOutputStream cachedContent;
+	private final ByteArrayOutputStream cachedContent; // 重点 -- 核心字节数组输出流
 
 	@Nullable
-	private final Integer contentCacheLimit;
+	private final Integer contentCacheLimit; // 缓存的content的上限长度
 
 	@Nullable
-	private ServletInputStream inputStream;
+	private ServletInputStream inputStream; // Request的输入流
 
 	@Nullable
-	private BufferedReader reader;
+	private BufferedReader reader; // 缓存的Reader
 
 
 	/**
@@ -93,6 +93,7 @@ public class ContentCachingRequestWrapper extends HttpServletRequestWrapper {
 	@Override
 	public ServletInputStream getInputStream() throws IOException {
 		if (this.inputStream == null) {
+			// 做一个 ContentCachingInputStream 输入流 -- 保证RequestBody可以多次读取
 			this.inputStream = new ContentCachingInputStream(getRequest().getInputStream());
 		}
 		return this.inputStream;
@@ -205,10 +206,13 @@ public class ContentCachingRequestWrapper extends HttpServletRequestWrapper {
 
 
 	private class ContentCachingInputStream extends ServletInputStream {
+		/*
+		带有缓存功能的输入流
+		 */
 
 		private final ServletInputStream is;
 
-		private boolean overflow = false;
+		private boolean overflow = false; // 是否溢出
 
 		public ContentCachingInputStream(ServletInputStream is) {
 			this.is = is;
@@ -216,14 +220,16 @@ public class ContentCachingRequestWrapper extends HttpServletRequestWrapper {
 
 		@Override
 		public int read() throws IOException {
+			// 上面返回ContentCachingInputStream后，就可以调用read方法
 			int ch = this.is.read();
 			if (ch != -1 && !this.overflow) {
 				if (contentCacheLimit != null && cachedContent.size() == contentCacheLimit) {
+					// 是否超过contentCacheLimit
 					this.overflow = true;
 					handleContentOverflow(contentCacheLimit);
 				}
 				else {
-					cachedContent.write(ch);
+					cachedContent.write(ch); // 将结果数组写入到 ByteArrayOutputStream 中
 				}
 			}
 			return ch;

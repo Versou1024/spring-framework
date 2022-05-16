@@ -29,6 +29,15 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public interface ConfigurablePropertyResolver extends PropertyResolver {
+	/*
+	 * 配置转换器
+	 * 大多数（如果不是所有的话）PropertyResolver类型将实现的配置接口。
+	 * 提供用于访问和自定义将属性值从一种类型转换为另一种类型时使用的转换服务的工具。
+	 *
+	 * 实际转换交给：ConfigurableConversionService
+	 * Configurable通常表示一些配置属性的get和set
+	 * 包含：属性占位符的前缀和后缀、value分隔符、
+	 */
 
 	/**
 	 * Return the {@link ConfigurableConversionService} used when performing type

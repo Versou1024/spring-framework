@@ -58,10 +58,13 @@ public class AspectJAfterThrowingAdvice extends AbstractAspectJAdvice
 
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 这里完成MethodInterceptor的invoke方法
+		// 增强方法是否执行，是要看catch Exception是否有异常
 		try {
 			return mi.proceed();
 		}
 		catch (Throwable ex) {
+			// 调用 shouldInvokeOnThrowing(ex) 判断是否需要引用增强方法
 			if (shouldInvokeOnThrowing(ex)) {
 				invokeAdviceMethod(getJoinPointMatch(), null, ex);
 			}
@@ -74,6 +77,7 @@ public class AspectJAfterThrowingAdvice extends AbstractAspectJAdvice
 	 * is only invoked if the thrown exception is a subtype of the given throwing type.
 	 */
 	private boolean shouldInvokeOnThrowing(Throwable ex) {
+		// 检查已知的异常类型是否为抛出类型的超类，是就会引用增强方法
 		return getDiscoveredThrowingType().isAssignableFrom(ex.getClass());
 	}
 

@@ -175,6 +175,36 @@ import org.springframework.web.util.UrlPathHelper;
  * @see WebMvcConfigurer
  */
 public class WebMvcConfigurationSupport implements ApplicationContextAware, ServletContextAware {
+	/*
+	这是提供Spring mvc背后配置的主类。
+	它通常通过将 @EnableWebMvc 添加到应用程序 @Configuration 类中来导入。
+	另一个更高级的选项是直接从这个类进行扩展，并根据需要重写方法，记住将@Configuration添加到子类中，
+	将@Bean添加到重写的@Bean方法中。有关更多详细信息，请参阅@EnableWebMvc的javadoc。
+
+	此类注册以下HandlerMappings：
+		RequestMappingHandlerMapping		在0处排序，用于将请求request映射到带指定注解的控制器Controller方法。		注册方法 requestMappingHandlerMapping()
+		BeanNameUrlHandlerMapping			在2处排序，以将URL路径映射到控制器bean名称。							注册方法 beanNameHandlerMapping()
+		RouterFunctionMapping				在3处排序，将URL路径直接映射到视图view名称。
+		ResourceHandlerMapping				按Integer.MAX_VALUE-1排序，用于服务静态资源请求。
+		DefaultServletHandlerMapping		按Integer.MAX_VALUE排序，将请求转发到默认servlet。
+
+	注册以下HandlerAdapter：
+		RequestMappingHandlerAdapter 		用于处理带有注解的的控制器方法的请求。
+		HttpRequestHandlerAdapter 			用于处理HttpRequestHandler处理请求。
+		SimpleControllerHandlerAdapter 		用于处理基于Controllers接口的控制器处理请求。
+		HandlerFunctionAdapter				未知
+
+	注册HandlerExceptionResolverComposite持有异常解析器链：
+		ExceptionHandlerExceptionResolver 	用于处理异常ExceptionHandler方法。
+		ResponseStatusExceptionResolver 	用于处理带有@ResponseStatus注解的异常
+		DefaultHandlerExceptionResolver 	用于处理已知的Spring异常类型
+
+	注册AntPathMatcher和UrlPathHelper以供人员使用：
+		RequestMappingHandlerMapping，
+		ViewController的HandlerMapping
+		以及服务资源的HandlerMapping
+
+	 */
 
 	private static final boolean romePresent;
 
@@ -213,25 +243,25 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	private ServletContext servletContext;
 
 	@Nullable
-	private List<Object> interceptors;
+	private List<Object> interceptors; // 拦截器
 
 	@Nullable
-	private PathMatchConfigurer pathMatchConfigurer;
+	private PathMatchConfigurer pathMatchConfigurer; // 路径匹配帮助器
 
 	@Nullable
-	private ContentNegotiationManager contentNegotiationManager;
+	private ContentNegotiationManager contentNegotiationManager; //内容协商管理器
 
 	@Nullable
-	private List<HandlerMethodArgumentResolver> argumentResolvers;
+	private List<HandlerMethodArgumentResolver> argumentResolvers; // 参数解析器
 
 	@Nullable
-	private List<HandlerMethodReturnValueHandler> returnValueHandlers;
+	private List<HandlerMethodReturnValueHandler> returnValueHandlers; // 返回值处理器
 
 	@Nullable
-	private List<HttpMessageConverter<?>> messageConverters;
+	private List<HttpMessageConverter<?>> messageConverters; // 消息转换器
 
 	@Nullable
-	private Map<String, CorsConfiguration> corsConfigurations;
+	private Map<String, CorsConfiguration> corsConfigurations; // cros跨域配置
 
 
 	/**
@@ -280,41 +310,59 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 			@Qualifier("mvcContentNegotiationManager") ContentNegotiationManager contentNegotiationManager,
 			@Qualifier("mvcConversionService") FormattingConversionService conversionService,
 			@Qualifier("mvcResourceUrlProvider") ResourceUrlProvider resourceUrlProvider) {
+		// 产生 RequestMappingHandlerMapping 的地方
 
+		// 1. new出来 请求映射到Handler的Mapping,分别设置 在HandlerMapping中的排序\设置拦截器\设置内容导向管理器\跨域配置
 		RequestMappingHandlerMapping mapping = createRequestMappingHandlerMapping();
-		mapping.setOrder(0);
-		mapping.setInterceptors(getInterceptors(conversionService, resourceUrlProvider));
+		mapping.setOrder(0); // 排序很高,位于第一个
+		mapping.setInterceptors(getInterceptors(conversionService, resourceUrlProvider)); // 用户可提供额外的拦截器
 		mapping.setContentNegotiationManager(contentNegotiationManager);
-		mapping.setCorsConfigurations(getCorsConfigurations());
+		mapping.setCorsConfigurations(getCorsConfigurations()); // 用户可提供额外的跨域配置
 
+		// 2. 获取路径配置器 -- 用户可修改,接入各种配置
 		PathMatchConfigurer configurer = getPathMatchConfigurer();
 
 		Boolean useSuffixPatternMatch = configurer.isUseSuffixPatternMatch();
 		if (useSuffixPatternMatch != null) {
+			// 将模式匹配到请求时是否使用后缀模式匹配（“.*”）。如果启用，映射到“/users”的方法也匹配到“/users.*”。
+			// 也就是 /users.json 是可以匹配到 /users 因为后缀模式会加上 /users.*
+			// 默认值为true 。
 			mapping.setUseSuffixPatternMatch(useSuffixPatternMatch);
 		}
 		Boolean useRegisteredSuffixPatternMatch = configurer.isUseRegisteredSuffixPatternMatch();
 		if (useRegisteredSuffixPatternMatch != null) {
+			// 后缀模式匹配是否应仅针对使用ContentNegotiationManager显式注册的路径扩展。通常建议这样做以减少歧义并避免诸如“。”之类的问题。由于其他原因出现在路径中。
+			// 默认情况下，这设置为“false”。
 			mapping.setUseRegisteredSuffixPatternMatch(useRegisteredSuffixPatternMatch);
 		}
 		Boolean useTrailingSlashMatch = configurer.isUseTrailingSlashMatch();
 		if (useTrailingSlashMatch != null) {
+			// 无论是否存在斜杠，是否匹配 URL。如果启用，映射到“/users”的方法也匹配到“/users/”。
+			// 默认值为true 。
 			mapping.setUseTrailingSlashMatch(useTrailingSlashMatch);
 		}
 
 		UrlPathHelper pathHelper = configurer.getUrlPathHelper();
 		if (pathHelper != null) {
+			// 设置 UrlPathHelper 以用于解析查找路径。使用该方法来对覆盖默认 UrlPathHelper -- 不建议修改
 			mapping.setUrlPathHelper(pathHelper);
 		}
 		PathMatcher pathMatcher = configurer.getPathMatcher();
 		if (pathMatcher != null) {
+			// 设置 PathMatcher 实现以用于将 URL 路径与注册的 URL 模式匹配。默认为 AntPathMatcher -- 不建议修改
 			mapping.setPathMatcher(pathMatcher);
 		}
 		Map<String, Predicate<Class<?>>> pathPrefixes = configurer.getPathPrefixes();
 		if (pathPrefixes != null) {
+			// 配置路径前缀以应用于controller方法。
+			// 前缀用于丰富其controller类型与相应Predicate匹配的每个@RequestMapping方法的映射。使用第一个匹配谓词的前缀
+			// 例如  configurer.addPathPrefix("/api/v1", clazz -> clazz.isAssignableFrom(HelloController.class));
+			// 这样HelloController上的方法自动就会有此前缀了，而别的controller上是不会有的
+			// 注意：这是Spring5.1后才支持的新特性
 			mapping.setPathPrefixes(pathPrefixes);
 		}
 
+		// 3. 返回
 		return mapping;
 	}
 
@@ -332,14 +380,18 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * {@link HandlerMapping} instances with.
 	 * <p>This method cannot be overridden; use {@link #addInterceptors} instead.
 	 */
-	protected final Object[] getInterceptors(
-			FormattingConversionService mvcConversionService,
-			ResourceUrlProvider mvcResourceUrlProvider) {
+	protected final Object[] getInterceptors(FormattingConversionService mvcConversionService, ResourceUrlProvider mvcResourceUrlProvider) {
+		// Mvc配置中心 WebWmcConfigurationSupport 中的获取拦截器的方法: getInterceptors()
+
+		// 1. interceptors 懒加载
 		if (this.interceptors == null) {
 			InterceptorRegistry registry = new InterceptorRegistry();
+			// 1.2 扩展接口,留给用户扩展拦截器 -- 这里就是 DelegatingWebMvcConfiguration 重写的方法被使用的时机
 			addInterceptors(registry);
+			// 1.3 注册默认的拦截器
 			registry.addInterceptor(new ConversionServiceExposingInterceptor(mvcConversionService));
 			registry.addInterceptor(new ResourceUrlProviderExposingInterceptor(mvcResourceUrlProvider));
+			// 1.4 缓存到interceptors
 			this.interceptors = registry.getInterceptors();
 		}
 		return this.interceptors.toArray();
@@ -361,6 +413,8 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	protected PathMatchConfigurer getPathMatchConfigurer() {
 		if (this.pathMatchConfigurer == null) {
 			this.pathMatchConfigurer = new PathMatchConfigurer();
+			// 1. 路径匹配配置中心默认使用的就是: PathMatchConfigurer
+			// configurePathMatch 是提供给用户对 PathMatchConfigurer 路径匹配配置中心修改的能力
 			configurePathMatch(this.pathMatchConfigurer);
 		}
 		return this.pathMatchConfigurer;
@@ -406,9 +460,10 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public ContentNegotiationManager mvcContentNegotiationManager() {
+		// 懒加载 - 返回一个ContentNegotiationManager
 		if (this.contentNegotiationManager == null) {
 			ContentNegotiationConfigurer configurer = new ContentNegotiationConfigurer(this.servletContext);
-			configurer.mediaTypes(getDefaultMediaTypes());
+			configurer.mediaTypes(getDefaultMediaTypes()); // 内容协商管理器 - 需要指定支持的MediaType
 			configureContentNegotiation(configurer);
 			this.contentNegotiationManager = configurer.buildContentNegotiationManager();
 		}
@@ -484,7 +539,10 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	public BeanNameUrlHandlerMapping beanNameHandlerMapping(
 			@Qualifier("mvcConversionService") FormattingConversionService conversionService,
 			@Qualifier("mvcResourceUrlProvider") ResourceUrlProvider resourceUrlProvider) {
+		// 注入排序为第3个的HandlerMapping: beanNameHandlerMapping
+		// beanNameHandlerMapping: 接口从 URL 映射到名称以斜杠（“/”）开头的 bean，类似于 Struts 将 URL 映射到操作名称的方式
 
+		// 1. new出来,设置排序/拦截器/跨域配置
 		BeanNameUrlHandlerMapping mapping = new BeanNameUrlHandlerMapping();
 		mapping.setOrder(2);
 		mapping.setInterceptors(getInterceptors(conversionService, resourceUrlProvider));
@@ -507,7 +565,9 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	public RouterFunctionMapping routerFunctionMapping(
 			@Qualifier("mvcConversionService") FormattingConversionService conversionService,
 			@Qualifier("mvcResourceUrlProvider") ResourceUrlProvider resourceUrlProvider) {
+		// 排序第4的HandlerMapping
 
+		// 1. new出来,设置排序/拦截器/跨域配置/消息转换器
 		RouterFunctionMapping mapping = new RouterFunctionMapping();
 		mapping.setOrder(3);
 		mapping.setInterceptors(getInterceptors(conversionService, resourceUrlProvider));
@@ -533,8 +593,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 		Assert.state(this.applicationContext != null, "No ApplicationContext set");
 		Assert.state(this.servletContext != null, "No ServletContext set");
 
-		ResourceHandlerRegistry registry = new ResourceHandlerRegistry(this.applicationContext,
-				this.servletContext, contentNegotiationManager, urlPathHelper);
+		ResourceHandlerRegistry registry = new ResourceHandlerRegistry(this.applicationContext, this.servletContext, contentNegotiationManager, urlPathHelper);
 		addResourceHandlers(registry);
 
 		AbstractHandlerMapping handlerMapping = registry.getHandlerMapping();
@@ -611,10 +670,16 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 			@Qualifier("mvcValidator") Validator validator) {
 
 		RequestMappingHandlerAdapter adapter = createRequestMappingHandlerAdapter();
+		// 向 RequestMappingHandlerAdapter 中注入的内容协商处理器
 		adapter.setContentNegotiationManager(contentNegotiationManager);
+		// 向 RequestMappingHandlerAdapter 中注入的 HttpMessageConverter
 		adapter.setMessageConverters(getMessageConverters());
 		adapter.setWebBindingInitializer(getConfigurableWebBindingInitializer(conversionService, validator));
+		// 形参处理器
+		// 形参处理器也需要消息转换器的能力 HttpMessageConverter 的转换能力
 		adapter.setCustomArgumentResolvers(getArgumentResolvers());
+		// 返回值处理器
+		// 其中 RequestResponseBodyMethodProcessor 这个返回值处理器就会利用 HttpMessageConverter 的转换能力
 		adapter.setCustomReturnValueHandlers(getReturnValueHandlers());
 
 		if (jackson2Present) {
@@ -693,8 +758,9 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public FormattingConversionService mvcConversionService() {
+		// 返回一个默认的转换服务
 		FormattingConversionService conversionService = new DefaultFormattingConversionService();
-		addFormatters(conversionService);
+		addFormatters(conversionService); // 支持用户定义扩展Formatter转换器
 		return conversionService;
 	}
 
@@ -804,12 +870,17 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * Also see {@link #addDefaultHttpMessageConverters} for adding default message converters.
 	 */
 	protected final List<HttpMessageConverter<?>> getMessageConverters() {
+		// 获取MessageConverters
 		if (this.messageConverters == null) {
 			this.messageConverters = new ArrayList<>();
+			// 允许用户直接全量替换HttpMessageConverter
 			configureMessageConverters(this.messageConverters);
 			if (this.messageConverters.isEmpty()) {
+				// 用户如果重写configureMessageConverters()方法,即没有做全量替换messageConverters
+				// 就需要添加默认的HttpMessageConverter
 				addDefaultHttpMessageConverters(this.messageConverters);
 			}
+			// 允许用户扩展HttpMessageConverter
 			extendMessageConverters(this.messageConverters);
 		}
 		return this.messageConverters;
@@ -825,6 +896,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * @param converters a list to add message converters to (initially an empty list)
 	 */
 	protected void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+		// 直接配置 HttpMessageConverter , 取消默认规则
 	}
 
 	/**
@@ -835,6 +907,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * @since 4.1.3
 	 */
 	protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+		// 扩展 HttpMessageConverter
 	}
 
 	/**
@@ -843,6 +916,14 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * @param messageConverters the list to add the default message converters to
 	 */
 	protected final void addDefaultHttpMessageConverters(List<HttpMessageConverter<?>> messageConverters) {
+		// 默认将提那家以下多个转换器
+		// 请注意优先级:
+		// 字节数组 + application/oceat-steram ByteArrayHttpMessageConverter
+		// String + text/plain StringHttpMessageConverter
+		// Resource ResourceHttpMessageConverter
+		// ResourceRegion ResourceRegionHttpMessageConverter
+		// 如果导入了Jackson的jar包,还会加载 MappingJackson2HttpMessageConverter
+
 		messageConverters.add(new ByteArrayHttpMessageConverter());
 		messageConverters.add(new StringHttpMessageConverter());
 		messageConverters.add(new ResourceHttpMessageConverter());
@@ -1036,10 +1117,8 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * @since 4.1
 	 */
 	@Bean
-	public ViewResolver mvcViewResolver(
-			@Qualifier("mvcContentNegotiationManager") ContentNegotiationManager contentNegotiationManager) {
-		ViewResolverRegistry registry =
-				new ViewResolverRegistry(contentNegotiationManager, this.applicationContext);
+	public ViewResolver mvcViewResolver(@Qualifier("mvcContentNegotiationManager") ContentNegotiationManager contentNegotiationManager) {
+		ViewResolverRegistry registry = new ViewResolverRegistry(contentNegotiationManager, this.applicationContext);
 		configureViewResolvers(registry);
 
 		if (registry.getViewResolvers().isEmpty() && this.applicationContext != null) {
@@ -1076,8 +1155,11 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	protected final Map<String, CorsConfiguration> getCorsConfigurations() {
 		if (this.corsConfigurations == null) {
+			// 1. 跨域注册中心
 			CorsRegistry registry = new CorsRegistry();
+			// 2. 提供给用户向跨域注册中心registry注册跨域配置的能力
 			addCorsMappings(registry);
+			// 3. 缓存到
 			this.corsConfigurations = registry.getCorsConfigurations();
 		}
 		return this.corsConfigurations;

@@ -49,39 +49,41 @@ import org.springframework.util.StringUtils;
  * @see <a href="https://www.w3.org/TR/cors/">CORS spec</a>
  */
 public class CorsConfiguration {
+	// 跨域配置 -- CorsConfiguration是一个用于跨域配置的容器,以及检查给定请求的实际来源
 
 	/** Wildcard representing <em>all</em> origins, methods, or headers. */
 	public static final String ALL = "*";
 
-	private static final List<HttpMethod> DEFAULT_METHODS = Collections.unmodifiableList(
-			Arrays.asList(HttpMethod.GET, HttpMethod.HEAD));
+	// 默认方法
+	private static final List<HttpMethod> DEFAULT_METHODS = Collections.unmodifiableList(Arrays.asList(HttpMethod.GET, HttpMethod.HEAD));
 
-	private static final List<String> DEFAULT_PERMIT_METHODS = Collections.unmodifiableList(
-			Arrays.asList(HttpMethod.GET.name(), HttpMethod.HEAD.name(), HttpMethod.POST.name()));
+	// 默认许可方法names
+	private static final List<String> DEFAULT_PERMIT_METHODS = Collections.unmodifiableList(Arrays.asList(HttpMethod.GET.name(), HttpMethod.HEAD.name(), HttpMethod.POST.name()));
 
+	// 默认允许所有
 	private static final List<String> DEFAULT_PERMIT_ALL = Collections.singletonList(ALL);
 
 
 	@Nullable
-	private List<String> allowedOrigins;
+	private List<String> allowedOrigins; // origin 请求头
 
 	@Nullable
-	private List<String> allowedMethods;
+	private List<String> allowedMethods; // 允许请求方式
 
 	@Nullable
 	private List<HttpMethod> resolvedMethods = DEFAULT_METHODS;
 
 	@Nullable
-	private List<String> allowedHeaders;
+	private List<String> allowedHeaders; // 允许请求头
 
 	@Nullable
-	private List<String> exposedHeaders;
+	private List<String> exposedHeaders; // 允许暴露的请求头
 
 	@Nullable
-	private Boolean allowCredentials;
+	private Boolean allowCredentials; // 是否允许cookies=
 
 	@Nullable
-	private Long maxAge;
+	private Long maxAge; // 不用预检的最大时间
 
 
 	/**

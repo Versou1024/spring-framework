@@ -34,6 +34,10 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  */
 public interface TargetSource extends TargetClassAware {
+	/*
+	 * 封装target目标类，用于对外统一被代理的目标对象
+	 *  getTargetClass、getTarget、isStatic、releaseTarget
+	 */
 
 	/**
 	 * Return the type of targets returned by this {@link TargetSource}.
@@ -52,7 +56,7 @@ public interface TargetSource extends TargetClassAware {
 	 * @return {@code true} if the target is immutable
 	 * @see #getTarget
 	 */
-	boolean isStatic();
+	boolean isStatic(); // 调用getTarget()是否会返回同一个对象
 
 	/**
 	 * Return a target instance. Invoked immediately before the

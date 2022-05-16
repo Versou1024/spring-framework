@@ -55,6 +55,12 @@ import org.springframework.util.ClassUtils;
  * @since 2.0
  */
 public class LocalVariableTableParameterNameDiscoverer implements ParameterNameDiscoverer {
+	// 具体实现者
+	// 通过JVM中的局部变量表去查找形参名
+	// 一般使用很少，因为 DefaultParameterNameDiscoverer 先注册 StandardReflectionParameterNameDiscoverer 然后注册 LocalVariableTableParameterNameDiscoverer
+	// 同时 DefaultParameterNameDiscoverer 将按序调用 getParameterNames，只要返回结果result不为null，那么就会直接返回result，不再编辑
+	// 因此通过反射方式获取形参名的方式优先级比通过获取HVM局部变量表中的形参值更高
+	// 最终借用：通过ASM提供的通过字节码获取方法的参数名称
 
 	private static final Log logger = LogFactory.getLog(LocalVariableTableParameterNameDiscoverer.class);
 

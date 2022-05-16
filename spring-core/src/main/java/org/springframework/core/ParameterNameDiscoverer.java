@@ -34,6 +34,11 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public interface ParameterNameDiscoverer {
+	/**
+	 * 该接口用来定义：
+	 * 1、发现 方法和构造函数 的参数名 -- 因此定义两个方法，获取指定方法或者指定构造函数的方法名
+	 * 2、参数名并不总是可能被发现的，但可以尝试各种策略，例如查找可能在编译时发出的调试信息，以及查找可选地伴随AspectJ注释方法的argname注释值。
+	 */
 
 	/**
 	 * Return parameter names for a method, or {@code null} if they cannot be determined.

@@ -36,6 +36,10 @@ import org.springframework.util.ObjectUtils;
  * @since 1.1
  */
 public abstract class MethodOverride implements BeanMetadataElement {
+	/**
+	 * MethodOverride对象表示IoC容器对托管对象上的方法的重写。
+	 * 注意，覆盖机制并不是用来插入横切代码的通用方法：使用AOP。
+	 */
 
 	private final String methodName;
 

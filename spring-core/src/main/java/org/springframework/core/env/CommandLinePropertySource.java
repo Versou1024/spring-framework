@@ -206,9 +206,13 @@ import org.springframework.util.StringUtils;
  * @see JOptCommandLinePropertySource
  */
 public abstract class CommandLinePropertySource<T> extends EnumerablePropertySource<T> {
+	/*
+	 * 命令行属性源的超类
+	 *
+	 */
 
 	/** The default name given to {@link CommandLinePropertySource} instances: {@value}. */
-	public static final String COMMAND_LINE_PROPERTY_SOURCE_NAME = "commandLineArgs";
+	public static final String COMMAND_LINE_PROPERTY_SOURCE_NAME = "commandLineArgs"; // 属性源名字
 
 	/** The default name of the property representing non-option arguments: {@value}. */
 	public static final String DEFAULT_NON_OPTION_ARGS_PROPERTY_NAME = "nonOptionArgs";

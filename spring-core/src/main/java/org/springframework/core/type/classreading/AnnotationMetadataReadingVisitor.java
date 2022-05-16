@@ -55,6 +55,12 @@ import org.springframework.util.MultiValueMap;
  */
 @Deprecated
 public class AnnotationMetadataReadingVisitor extends ClassMetadataReadingVisitor implements AnnotationMetadata {
+	/**
+	 * AnnotationMetadataReadingVisitor 继承的 ClassMetadataReadingVisitor 完成ASM对Class对象的解析
+	 * AnnotationMetadataReadingVisitor 实现了AnnotationMetadata，扩展基于ASM对Annotation对象的解析
+	 *
+	 * metadataReader。此实现类最终委托给AnnotationMetadataReadingVisitor来做的，而它便是ClassMetadataReadingVisitor的子类（MetadataReader的底层实现就是它，使用的ASM的ClassVisitor模式读取元数据）。
+	 */
 
 	@Nullable
 	protected final ClassLoader classLoader;

@@ -30,6 +30,8 @@ import org.springframework.lang.Nullable;
  * @since 2.5.1
  */
 public interface Model {
+	// 模型 -- 用于封装数据,给前端返回数据-待渲染的数据
+	// 主要操作 -- add\addAll\contains\get\asMap
 
 	/**
 	 * Add the supplied attribute under the supplied name.

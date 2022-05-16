@@ -52,6 +52,10 @@ import org.springframework.transaction.TransactionManager;
  */
 @SuppressWarnings("serial")
 public class TransactionInterceptor extends TransactionAspectSupport implements MethodInterceptor, Serializable {
+	// 构造函数：
+	// 可议不用特殊的指定PlatformTransactionManager 事务管理器，后面会讲解自定义去获取
+	// 可议自己指定Properties 以及 TransactionAttributeSource
+
 
 	/**
 	 * Create a new TransactionInterceptor.
@@ -109,12 +113,17 @@ public class TransactionInterceptor extends TransactionAspectSupport implements 
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation invocation) throws Throwable {
+		// 核心在 TransactionAspectSupport#invokeWithinTransaction 方法
+
+
 		// Work out the target class: may be {@code null}.
 		// The TransactionAttributeSource should be passed the target class
 		// as well as the method, which may be from an interface.
 		Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
 
 		// Adapt to TransactionAspectSupport's invokeWithinTransaction...
+		// invokeWithinTransaction	父类TransactionAspectSupport的模板方法,带有事务的引用
+		// invocation::proceed		本处执行完成  执行目标方法（当然可能还有其余增强器）
 		return invokeWithinTransaction(invocation.getMethod(), targetClass, invocation::proceed);
 	}
 

@@ -42,6 +42,10 @@ import org.springframework.lang.Nullable;
  * @see ValidationUtils
  */
 public interface Errors {
+	// 存储并暴露有关特定对象的数据绑定和验证错误的信息。
+	/**
+	 * Errors聚合ObjectError对象、FiledError对象
+	 */
 
 	/**
 	 * The separator between path elements in a nested path,
@@ -50,7 +54,7 @@ public interface Errors {
 	 * {@link org.springframework.beans.PropertyAccessor#NESTED_PROPERTY_SEPARATOR nested property separator}
 	 * in the beans package.
 	 */
-	String NESTED_PATH_SEPARATOR = PropertyAccessor.NESTED_PROPERTY_SEPARATOR;
+	String NESTED_PATH_SEPARATOR = PropertyAccessor.NESTED_PROPERTY_SEPARATOR; // 嵌套属性路径的分隔符 - 沿用.
 
 
 	/**
@@ -98,8 +102,8 @@ public interface Errors {
 	void popNestedPath() throws IllegalStateException;
 
 	/**
-	 * Register a global error for the entire target object,
-	 * using the given error description.
+	 * 为整个目标对象注册全局错误。
+	 * 全局错误使用给定的错误描述。
 	 * @param errorCode error code, interpretable as a message key
 	 */
 	void reject(String errorCode);
@@ -107,8 +111,8 @@ public interface Errors {
 	/**
 	 * Register a global error for the entire target object,
 	 * using the given error description.
-	 * @param errorCode error code, interpretable as a message key
-	 * @param defaultMessage fallback default message
+	 * @param errorCode 错误代码，可解释为message key
+	 * @param defaultMessage 回退默认消息
 	 */
 	void reject(String errorCode, String defaultMessage);
 
@@ -116,7 +120,7 @@ public interface Errors {
 	 * Register a global error for the entire target object,
 	 * using the given error description.
 	 * @param errorCode error code, interpretable as a message key
-	 * @param errorArgs error arguments, for argument binding via MessageFormat
+	 * @param errorArgs 错误参数，用于通过MessageFormat绑定参数
 	 * (can be {@code null})
 	 * @param defaultMessage fallback default message
 	 */
@@ -185,18 +189,18 @@ public interface Errors {
 	/**
 	 * Return if there were any errors.
 	 */
-	boolean hasErrors();
+	boolean hasErrors(); // 是否存在任何错误
 
 	/**
 	 * Return the total number of errors.
 	 */
-	int getErrorCount();
+	int getErrorCount(); // errors的错误数量
 
 	/**
 	 * Get all errors, both global and field ones.
 	 * @return a list of {@link ObjectError} instances
 	 */
-	List<ObjectError> getAllErrors();
+	List<ObjectError> getAllErrors(); // 获取所有的错误
 
 	/**
 	 * Are there any global errors?

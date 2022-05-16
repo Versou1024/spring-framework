@@ -33,6 +33,8 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class BeanFactoryTransactionAttributeSourceAdvisor extends AbstractBeanFactoryPointcutAdvisor {
+	// AbstractBeanFactoryPointcutAdvisor 完成：封装PointCut、Advice，有ordered能力，通过adviceName加载advice的能力
+	// 作为具体实现类：这里就是主要是具体提供一个默认的切入点：TransactionAttributeSourcePointcut
 
 	@Nullable
 	private TransactionAttributeSource transactionAttributeSource;
@@ -41,6 +43,8 @@ public class BeanFactoryTransactionAttributeSourceAdvisor extends AbstractBeanFa
 		@Override
 		@Nullable
 		protected TransactionAttributeSource getTransactionAttributeSource() {
+			// transactionAttributeSource 作为Source，含有三个对声明式事务的注解的处理器
+			// 可以用来帮助做 ClassFilter、MatchMatch 的功能
 			return transactionAttributeSource;
 		}
 	};

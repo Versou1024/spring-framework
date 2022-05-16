@@ -41,6 +41,11 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class PropertyValue extends BeanMetadataAttributeAccessor implements Serializable {
+	/**
+	 * 属性包装器：
+	 * 1、包含name：value
+	 * 2、property是否为optional，或者是否已经被解析过
+	 */
 
 	private final String name;
 
@@ -69,6 +74,7 @@ public class PropertyValue extends BeanMetadataAttributeAccessor implements Seri
 	 * @param value the value of the property (possibly before type conversion)
 	 */
 	public PropertyValue(String name, @Nullable Object value) {
+		// 常用的构造器方法 -- 因此resolvedTokens、conversionNecessary、convertedValue为空欧
 		Assert.notNull(name, "Name must not be null");
 		this.name = name;
 		this.value = value;

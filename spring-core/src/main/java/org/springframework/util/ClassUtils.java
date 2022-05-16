@@ -894,7 +894,8 @@ public abstract class ClassUtils {
 	 * @return the user-defined class
 	 */
 	public static Class<?> getUserClass(Class<?> clazz) {
-		if (clazz.getName().contains(CGLIB_CLASS_SEPARATOR)) {
+		// 获取UserClass，主要目的是判断是否为Cglib代理，如果是Cglib代理就需要获取超类
+		if (clazz.getName().contains(CGLIB_CLASS_SEPARATOR)) { // Cglib代理类的特点就是有$$
 			Class<?> superclass = clazz.getSuperclass();
 			if (superclass != null && superclass != Object.class) {
 				return superclass;
@@ -1259,19 +1260,24 @@ public abstract class ClassUtils {
 	 * @see #getInterfaceMethodIfPossible
 	 */
 	public static Method getMostSpecificMethod(Method method, @Nullable Class<?> targetClass) {
+		// target不为空，targetClass也不是method的声明class，并且method被targetClass重写了
 		if (targetClass != null && targetClass != method.getDeclaringClass() && isOverridable(method, targetClass)) {
 			try {
+				// method如果为public的
 				if (Modifier.isPublic(method.getModifiers())) {
 					try {
+						// 从targetClass获取重写的方法
 						return targetClass.getMethod(method.getName(), method.getParameterTypes());
 					}
 					catch (NoSuchMethodException ex) {
+						// 没有这个方法，就返回method
 						return method;
 					}
 				}
+				// method不是public的
 				else {
-					Method specificMethod =
-							ReflectionUtils.findMethod(targetClass, method.getName(), method.getParameterTypes());
+					// findMethod
+					Method specificMethod = ReflectionUtils.findMethod(targetClass, method.getName(), method.getParameterTypes());
 					return (specificMethod != null ? specificMethod : method);
 				}
 			}

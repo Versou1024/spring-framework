@@ -34,6 +34,8 @@ import org.springframework.transaction.TransactionTimedOutException;
  * @see org.springframework.jdbc.datasource.DataSourceUtils#applyTransactionTimeout
  */
 public abstract class ResourceHolderSupport implements ResourceHolder {
+	// ResourceHolderSupport:资源持有者方便的基类。
+	// 对参与的事务具有仅回滚支持。可以在一定的秒数或毫秒后过期，以确定事务超时。
 
 	private boolean synchronizedWithTransaction = false;
 

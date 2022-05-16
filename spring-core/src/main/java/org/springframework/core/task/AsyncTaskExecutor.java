@@ -40,6 +40,9 @@ import java.util.concurrent.Future;
  * @see java.util.concurrent.Executors
  */
 public interface AsyncTaskExecutor extends TaskExecutor {
+	// 在TaskExecutor上扩展提交一次性异步能力：execute、submit
+	// TaskExecutor 主要是：定时性周期性任务
+	// AsyncTaskExecutor 主要是：一次性异步任务
 
 	/** Constant that indicates immediate execution. */
 	long TIMEOUT_IMMEDIATE = 0;

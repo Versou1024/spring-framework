@@ -154,18 +154,21 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.util.MultiValueMap
  */
 public class FormHttpMessageConverter implements HttpMessageConverter<MultiValueMap<String, ?>> {
+	// 支持form表单提交/文件下载
 
 	/**
 	 * The default charset used by the converter.
 	 */
-	public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+	public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8; // 默认编码格式:在所有HttpMessageConverter中标明
 
 	private static final MediaType DEFAULT_FORM_DATA_MEDIA_TYPE =
 			new MediaType(MediaType.APPLICATION_FORM_URLENCODED, DEFAULT_CHARSET);
 
 
+	// 缓存下它所支持的MediaType们
 	private List<MediaType> supportedMediaTypes = new ArrayList<>();
 
+	// 用于二进制内容的消息转换器们~~~ 毕竟此转换器还支持`multipart/form-data`这种  可以进行文件下载~~~~~
 	private List<HttpMessageConverter<?>> partConverters = new ArrayList<>();
 
 	private Charset charset = DEFAULT_CHARSET;
@@ -174,14 +177,18 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 	private Charset multipartCharset;
 
 
+	// 唯一的一个构造函数~
 	public FormHttpMessageConverter() {
+		// 默认支持: application/x-www-form-urlencoded multipart/form-dat multipart/mixed
 		this.supportedMediaTypes.add(MediaType.APPLICATION_FORM_URLENCODED);
 		this.supportedMediaTypes.add(MediaType.MULTIPART_FORM_DATA);
 		this.supportedMediaTypes.add(MediaType.MULTIPART_MIXED);
 
-		this.partConverters.add(new ByteArrayHttpMessageConverter());
-		this.partConverters.add(new StringHttpMessageConverter());
-		this.partConverters.add(new ResourceHttpMessageConverter());
+		// === 它自己不仅是个转换器，还内置了这三个转换器 至于他们具体处理那种消息，请看下面 都有详细说明 ==
+		// 注意：这些消息转换器都是去支持part的，支持文件下载
+		this.partConverters.add(new ByteArrayHttpMessageConverter()); // 字节数组
+		this.partConverters.add(new StringHttpMessageConverter()); // String
+		this.partConverters.add(new ResourceHttpMessageConverter()); // 资源
 
 		applyDefaultCharset();
 	}
@@ -292,17 +299,25 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 
 	@Override
 	public boolean canRead(Class<?> clazz, @Nullable MediaType mediaType) {
+		// canRead需要对clazz以及mediaType就进行验证
+
+		// 1. clazz不是MultiValueMap类型,就不支持
 		if (!MultiValueMap.class.isAssignableFrom(clazz)) {
 			return false;
 		}
+		// 2.  clazz是MultiValueMap类型,mediaType为null,就支持
 		if (mediaType == null) {
 			return true;
 		}
+		// 3. clazz是MultiValueMap类型,且mediaType在支持的types中,也是支持解析
 		for (MediaType supportedMediaType : getSupportedMediaTypes()) {
 			if (supportedMediaType.getType().equalsIgnoreCase("multipart")) {
 				// We can't read multipart, so skip this supported media type.
 				continue;
 			}
+			// supportedMediaType.includes(mediaType) 指示此supportedMediaType是否包含给定的媒体类型mediaType。
+			// 例如text/*包括text/plain和text/html ， application/*+xml包括application/soap+xml等。这种方法不是对称的。
+			// 只需调用MimeType.includes(MimeType)但使用MediaType参数声明以实现二进制向后兼容性。
 			if (supportedMediaType.includes(mediaType)) {
 				return true;
 			}
@@ -312,6 +327,8 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 
 	@Override
 	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
+		// 类似: canRead -- 额外添加到 MediaType.ALL 的 支持
+
 		if (!MultiValueMap.class.isAssignableFrom(clazz)) {
 			return false;
 		}
@@ -319,6 +336,9 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 			return true;
 		}
 		for (MediaType supportedMediaType : getSupportedMediaTypes()) {
+			// supportedMediaType.isCompatibleWith(mediaType) 指示supportedMediaType是否被mediaType给兼容
+			// 例如 text/plain或text/html 被 text/* 所兼容
+			// 也就是我的返回类型时MultiValueMap,同时消息转换器的支持的媒体类型被浏览器的accept兼容
 			if (supportedMediaType.isCompatibleWith(mediaType)) {
 				return true;
 			}
@@ -326,16 +346,25 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 		return false;
 	}
 
+	// 把输入信息读进来，成为一个 MultiValueMap<String, String>
+	// 注意：此处发现class这个变量并没有使用~
 	@Override
 	public MultiValueMap<String, String> read(@Nullable Class<? extends MultiValueMap<String, ?>> clazz,
 			HttpInputMessage inputMessage) throws IOException, HttpMessageNotReadableException {
+		// 读
 
+		// 1. 请求的content-type
 		MediaType contentType = inputMessage.getHeaders().getContentType();
+		// 2. 请求内容的解析编码字符集
 		Charset charset = (contentType != null && contentType.getCharset() != null ?
 				contentType.getCharset() : this.charset);
+		// 3. 请求体,转为String
 		String body = StreamUtils.copyToString(inputMessage.getBody(), charset);
 
+		// 4. form表单作为请求体,是用"&"分隔   因为此处body一般都是hello=world&fang=shi这样传进来的
 		String[] pairs = StringUtils.tokenizeToStringArray(body, "&");
+		// 5. 将form表单的各个键值对分开存入LinkedMultiValueMap中
+		// 存入的键值对会经过Url解码的
 		MultiValueMap<String, String> result = new LinkedMultiValueMap<>(pairs.length);
 		for (String pair : pairs) {
 			int idx = pair.indexOf('=');
@@ -348,6 +377,7 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 				result.add(name, value);
 			}
 		}
+		// 6. 最终返回一个 MultiValueMap<String, String>
 		return result;
 	}
 
@@ -355,20 +385,29 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 	@SuppressWarnings("unchecked")
 	public void write(MultiValueMap<String, ?> map, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
+		// 写
 
+		// 1. 检查map
 		if (isMultipart(map, contentType)) {
+			// 1.1 特殊的MultiPart表单
 			writeMultipart((MultiValueMap<String, Object>) map, contentType, outputMessage);
 		}
 		else {
+			// 1.2 欧通的form表单
 			writeForm((MultiValueMap<String, Object>) map, contentType, outputMessage);
 		}
 	}
 
 
 	private boolean isMultipart(MultiValueMap<String, ?> map, @Nullable MediaType contentType) {
+		// 是否为文件上传类型的
+
+		// 1. contentType不为空,且含有multipart字符串
 		if (contentType != null) {
 			return contentType.getType().equalsIgnoreCase("multipart");
 		}
+
+		// 2. 返回值MultiValueMap不为空 - 只要有一个value不是String类型,就是multiPart
 		for (List<?> values : map.values()) {
 			for (Object value : values) {
 				if (value != null && !(value instanceof String)) {
@@ -376,21 +415,30 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 				}
 			}
 		}
+
+		// 3. 否则就是普通的form表单
 		return false;
 	}
 
 	private void writeForm(MultiValueMap<String, Object> formData, @Nullable MediaType contentType,
 			HttpOutputMessage outputMessage) throws IOException {
+		// formData 是handler提供的返回值
+		// contentType 是用户请求提供的accept指示支持的mediaType
 
+		// 1. response的contentType构造
 		contentType = getFormContentType(contentType);
+		// 2.  设置content-type响应头
 		outputMessage.getHeaders().setContentType(contentType);
 
 		Charset charset = contentType.getCharset();
 		Assert.notNull(charset, "No charset"); // should never occur
 
+		// 3. 将formData数据构造为传输的表单格式进行序列化
 		byte[] bytes = serializeForm(formData, charset).getBytes(charset);
+		// 4. 设置 content-length
 		outputMessage.getHeaders().setContentLength(bytes.length);
 
+		// 5. 设置body
 		if (outputMessage instanceof StreamingHttpOutputMessage) {
 			StreamingHttpOutputMessage streamingOutputMessage = (StreamingHttpOutputMessage) outputMessage;
 			streamingOutputMessage.setBody(outputStream -> StreamUtils.copy(bytes, outputStream));
@@ -412,6 +460,13 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 	 * @since 5.2.2
 	 */
 	protected MediaType getFormContentType(@Nullable MediaType contentType) {
+		// 在给定首选内容类型的情况下，返回用于编写表单的内容类型。
+		// 默认情况下，此方法返回给定的内容类型，
+		// 但如果没有字符集，则添加字符集。
+		// 如果contentType为null ，则添加 application/x-www-form-urlencoded; charset=UTF-8
+		// 最终返回application/x-www-form-urlencoded; charset=UTF-8
+
+
 		if (contentType == null) {
 			return DEFAULT_FORM_DATA_MEDIA_TYPE;
 		}
@@ -424,7 +479,10 @@ public class FormHttpMessageConverter implements HttpMessageConverter<MultiValue
 	}
 
 	protected String serializeForm(MultiValueMap<String, Object> formData, Charset charset) {
+		// 组装form表单
+
 		StringBuilder builder = new StringBuilder();
+		// 注意: form表单是MultiValueMap的,一个name对一个list的names
 		formData.forEach((name, values) -> {
 				if (name == null) {
 					Assert.isTrue(CollectionUtils.isEmpty(values), "Null name in form data: " + formData);

@@ -26,6 +26,10 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public interface ExpressionPointcut extends Pointcut {
+	/*
+	 * 表达式切入点：ExpressionPointcut 接口主要是为了支持AspectJ切点表达式语法而定义的接口。
+	 * 这个是最强大的，Spring支持11种切点表达式，也是我们需要关注的重点
+	 */
 
 	/**
 	 * Return the String expression for this pointcut.

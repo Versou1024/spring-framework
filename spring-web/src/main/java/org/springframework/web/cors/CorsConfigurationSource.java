@@ -28,6 +28,8 @@ import org.springframework.lang.Nullable;
  * @since 4.2
  */
 public interface CorsConfigurationSource {
+	// 跨域配置源
+	// 提供getCorsConfiguration()方法
 
 	/**
 	 * Return a {@link CorsConfiguration} based on the incoming request.

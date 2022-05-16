@@ -38,6 +38,10 @@ import java.lang.reflect.AccessibleObject;
  * @see Interceptor
  */
 public interface Joinpoint {
+	/**
+	 * aop联盟的 Joinpoint 连接点：
+	 * 主要是proceed()、getThis、getStaticPart
+	 */
 
 	/**
 	 * Proceed to the next interceptor in the chain.

@@ -43,6 +43,13 @@ import org.springframework.lang.Nullable;
  * @see ServletContextAware#setServletContext
  */
 public interface WebApplicationContext extends ApplicationContext {
+	/*
+	 * SpringMVC实现ApplicationContext，以此提供web应用的上下文
+	 * 顾名思义，web路线下的应用上下文
+	 * 但是它扩展的功能非常非常少~ 该容器是read-only 的
+	 *
+	 * 仅仅扩展：getServletContext方法获取servletContext
+	 */
 
 	/**
 	 * Context attribute to bind root WebApplicationContext to on successful startup.
@@ -53,6 +60,8 @@ public interface WebApplicationContext extends ApplicationContext {
 	 * @see org.springframework.web.context.support.WebApplicationContextUtils#getRequiredWebApplicationContext
 	 */
 	String ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE = WebApplicationContext.class.getName() + ".ROOT";
+
+	// 同时扩展四个范围：request、session、application、servletContext
 
 	/**
 	 * Scope identifier for request scope: "request".

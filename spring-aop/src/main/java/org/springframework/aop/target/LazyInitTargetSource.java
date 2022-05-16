@@ -59,6 +59,7 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class LazyInitTargetSource extends AbstractBeanFactoryBasedTargetSource {
+	// 懒加载的TargetSource，允许第一次加载只有进行一些额外潮州，丰富bean。同样也是基于BeanFactory中
 
 	@Nullable
 	private Object target;

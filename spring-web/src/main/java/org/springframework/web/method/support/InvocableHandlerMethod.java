@@ -43,6 +43,12 @@ import org.springframework.web.method.HandlerMethod;
  */
 public class InvocableHandlerMethod extends HandlerMethod {
 
+	/*
+	 * 继承 HandlerMethod
+	 * 1、聚合 复合参数解析器HandlerMethodArgumentResolverComposite、形参名字解析器ParameterNameDiscoverer
+	 * 2、聚合 数据绑定工厂dataBinderFactory
+	 */
+
 	private static final Object[] EMPTY_ARGS = new Object[0];
 
 
@@ -128,13 +134,13 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	 * @see #doInvoke
 	 */
 	@Nullable
-	public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
-			Object... providedArgs) throws Exception {
-
+	public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer, Object... providedArgs) throws Exception {
+		// 获取方法请求值
 		Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
 		if (logger.isTraceEnabled()) {
 			logger.trace("Arguments: " + Arrays.toString(args));
 		}
+		// 执行Controller方法
 		return doInvoke(args);
 	}
 
@@ -146,24 +152,31 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	 */
 	protected Object[] getMethodArgumentValues(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
 			Object... providedArgs) throws Exception {
+		// 核心 -- > 参数解析 -- 完整过程
 
+		// 获取方法请求参数
 		MethodParameter[] parameters = getMethodParameters();
 		if (ObjectUtils.isEmpty(parameters)) {
 			return EMPTY_ARGS;
 		}
 
+		// args 用来存储解析出来的结果
 		Object[] args = new Object[parameters.length];
 		for (int i = 0; i < parameters.length; i++) {
 			MethodParameter parameter = parameters[i];
+			// 向parameter设置参数名发现器
 			parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
 			args[i] = findProvidedArgument(parameter, providedArgs);
-			if (args[i] != null) {
+			if (args[i] != null) { // 为false
 				continue;
 			}
+			// 通过合成参数解析器查看是否支持支持当前请求参数
 			if (!this.resolvers.supportsParameter(parameter)) {
+				// 不支持就报错
 				throw new IllegalStateException(formatArgumentError(parameter, "No suitable resolver"));
 			}
 			try {
+				// 支持的话，就调用方法来解析
 				args[i] = this.resolvers.resolveArgument(parameter, mavContainer, request, this.dataBinderFactory);
 			}
 			catch (Exception ex) {

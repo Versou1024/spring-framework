@@ -48,6 +48,9 @@ import org.springframework.util.ClassUtils;
  */
 @SuppressWarnings("serial")
 public class AspectJProxyFactory extends ProxyCreatorSupport {
+	/*
+	 * 将 aop 与 AspectJ 结合
+	 */
 
 	/** Cache for singleton aspect instances. */
 	private static final Map<Class<?>, Object> aspectCache = new ConcurrentHashMap<>();
@@ -68,7 +71,9 @@ public class AspectJProxyFactory extends ProxyCreatorSupport {
 	 */
 	public AspectJProxyFactory(Object target) {
 		Assert.notNull(target, "Target object must not be null");
+		// 获取target所有可用接口
 		setInterfaces(ClassUtils.getAllInterfaces(target));
+		// 设置目标target
 		setTarget(target);
 	}
 
@@ -91,13 +96,15 @@ public class AspectJProxyFactory extends ProxyCreatorSupport {
 	public void addAspect(Object aspectInstance) {
 		Class<?> aspectClass = aspectInstance.getClass();
 		String aspectName = aspectClass.getName();
+		// 创建aspectMetadata元数据
 		AspectMetadata am = createAspectMetadata(aspectClass, aspectName);
 		if (am.getAjType().getPerClause().getKind() != PerClauseKind.SINGLETON) {
 			throw new IllegalArgumentException(
 					"Aspect class [" + aspectClass.getName() + "] does not define a singleton aspect");
 		}
-		addAdvisorsFromAspectInstanceFactory(
-				new SingletonMetadataAwareAspectInstanceFactory(aspectInstance, aspectName));
+		// 从 AspectInstanceFactory 中获取
+		// 从切面工厂里，把对应切面实例里面的增强器（通知）都获取到~~~
+		addAdvisorsFromAspectInstanceFactory(new SingletonMetadataAwareAspectInstanceFactory(aspectInstance, aspectName));
 	}
 
 	/**
@@ -121,8 +128,10 @@ public class AspectJProxyFactory extends ProxyCreatorSupport {
 		List<Advisor> advisors = this.aspectFactory.getAdvisors(instanceFactory);
 		Class<?> targetClass = getTargetClass();
 		Assert.state(targetClass != null, "Unresolvable target class");
+		//  查找适合targetClass的advisors
 		advisors = AopUtils.findAdvisorsThatCanApply(advisors, targetClass);
 		AspectJProxyUtils.makeAdvisorChainAspectJCapableIfNecessary(advisors);
+		// advisors 进行排序
 		AnnotationAwareOrderComparator.sort(advisors);
 		addAdvisors(advisors);
 	}
@@ -131,8 +140,9 @@ public class AspectJProxyFactory extends ProxyCreatorSupport {
 	 * Create an {@link AspectMetadata} instance for the supplied aspect type.
 	 */
 	private AspectMetadata createAspectMetadata(Class<?> aspectClass, String aspectName) {
-		AspectMetadata am = new AspectMetadata(aspectClass, aspectName);
+		AspectMetadata am = new AspectMetadata(aspectClass, aspectName); // 注意：这里面有很多东西
 		if (!am.getAjType().isAspect()) {
+			// 必须保证类上有@Aspect
 			throw new IllegalArgumentException("Class [" + aspectClass.getName() + "] is not a valid aspect type");
 		}
 		return am;

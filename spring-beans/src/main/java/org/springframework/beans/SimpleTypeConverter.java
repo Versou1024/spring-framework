@@ -34,6 +34,7 @@ public class SimpleTypeConverter extends TypeConverterSupport {
 
 	public SimpleTypeConverter() {
 		this.typeConverterDelegate = new TypeConverterDelegate(this);
+		// 开启注册默认属性编辑器
 		registerDefaultEditors();
 	}
 

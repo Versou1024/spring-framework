@@ -28,6 +28,7 @@ import org.springframework.scheduling.TriggerContext;
  * @since 3.0
  */
 public class SimpleTriggerContext implements TriggerContext {
+	// TriggerContext 唯一的简单实现类
 
 	@Nullable
 	private volatile Date lastScheduledExecutionTime;

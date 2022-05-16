@@ -83,8 +83,12 @@ import org.springframework.web.servlet.ModelAndView;
  * @since 1.1.1
  * @see ServletForwardingController
  */
-public class ServletWrappingController extends AbstractController
-		implements BeanNameAware, InitializingBean, DisposableBean {
+public class ServletWrappingController extends AbstractController implements BeanNameAware, InitializingBean, DisposableBean {
+	// 这是一个与Servlet相关的控制器，还有一个与Servlet相关的控制器是ServletForwardingController。
+	//
+	//ServletWrappingController则是将当前应用中的某个 Servlet直接包装为一个Controller，所有到ServletWrappingController的请求实际上是由它内部所包装的这个Servlet来处理的。
+	//
+	//它内部包装了servlet，对外并不公开，相当于屏蔽了servlet的效果。
 
 	@Nullable
 	private Class<? extends Servlet> servletClass;
@@ -143,12 +147,15 @@ public class ServletWrappingController extends AbstractController
 	 */
 	@Override
 	public void afterPropertiesSet() throws Exception {
+		// 必须制定它关联的是哪个Servlet
 		if (this.servletClass == null) {
 			throw new IllegalArgumentException("'servletClass' is required");
 		}
+		// 如果没有指定servlet的名字，就用beanName作为名字~
 		if (this.servletName == null) {
 			this.servletName = this.beanName;
 		}
+		// 对servlet进行init方法  初始化
 		this.servletInstance = ReflectionUtils.accessibleConstructor(this.servletClass).newInstance();
 		this.servletInstance.init(new DelegatingServletConfig());
 	}
@@ -161,7 +168,7 @@ public class ServletWrappingController extends AbstractController
 	@Override
 	protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response)
 			throws Exception {
-
+		// 最终请求是交给了这个servlet去真正处理的~~~~~
 		Assert.state(this.servletInstance != null, "No Servlet instance");
 		this.servletInstance.service(request, response);
 		return null;

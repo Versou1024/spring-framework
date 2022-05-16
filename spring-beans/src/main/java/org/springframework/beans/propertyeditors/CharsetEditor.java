@@ -34,6 +34,16 @@ import org.springframework.util.StringUtils;
  */
 public class CharsetEditor extends PropertyEditorSupport {
 
+	/**
+	 * PropertyEditorSupport 属性编辑器的支持实现
+	 * 1、聚合有属性修改时的，事件类的source
+	 * 2、聚合目标对象value，即要编辑的新目标对象。请注意，PropertyEditor不应修改此对象，而应创建一个新对象来保存任何修改后的值。
+	 *
+	 * 字符属性编辑器
+	 * 1、目标value实际为Charset
+	 * 2、通过setAsText将string转为charset设置到value上
+	 * 3、或从getAsText获取对应的String
+	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasText(text)) {

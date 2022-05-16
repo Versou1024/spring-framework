@@ -43,6 +43,8 @@ import org.springframework.util.CollectionUtils;
  */
 @Configuration
 public abstract class AbstractTransactionManagementConfiguration implements ImportAware {
+	// 抽象事务管理配置
+	// 抽象基类@Configuration为启用 Spring 的注解驱动事务管理功能提供通用结构
 
 	@Nullable
 	protected AnnotationAttributes enableTx;
@@ -54,16 +56,25 @@ public abstract class AbstractTransactionManagementConfiguration implements Impo
 	protected TransactionManager txManager;
 
 
+	// 用于在处理时感知@Import的注解元数据
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
-		this.enableTx = AnnotationAttributes.fromMap(
-				importMetadata.getAnnotationAttributes(EnableTransactionManagement.class.getName(), false));
+		// AbstractTransactionManagementConfiguration 被 ProxyTransactionManagementConfiguration 实现
+		// ProxyTransactionManagementConfiguration 是被 TransactionManagementConfigurationSelector#selectImports() 导入的
+		// TransactionManagementConfigurationSelector 是被 @EnableTransactionManagement 的 元注解 @Import(TransactionManagementConfigurationSelector.class)
+		// 用户配置类上使用 @EnableTransactionManagement 启动声明式事务注解
+
+		// 此处：只拿到@EnableTransactionManagement这个注解的就成~~~~~
+		// 作为AnnotationAttributes保存起来
+		this.enableTx = AnnotationAttributes.fromMap(importMetadata.getAnnotationAttributes(EnableTransactionManagement.class.getName(), false));
+		// 这个注解是必须的~~~~~~~~~~~~~~~~
 		if (this.enableTx == null) {
-			throw new IllegalArgumentException(
-					"@EnableTransactionManagement is not present on importing class " + importMetadata.getClassName());
+			throw new IllegalArgumentException("@EnableTransactionManagement is not present on importing class " + importMetadata.getClassName());
 		}
 	}
 
+	// 这里和@Async的处理一样，配置文件可以实现这个接口。然后给注解驱动的给一个默认的事务管理器~~~~
+	// 设计模式都是想通的~~~
 	@Autowired(required = false)
 	void setConfigurers(Collection<TransactionManagementConfigurer> configurers) {
 		if (CollectionUtils.isEmpty(configurers)) {
@@ -77,6 +88,8 @@ public abstract class AbstractTransactionManagementConfiguration implements Impo
 	}
 
 
+	// 注册一个监听器工厂，用以支持@TransactionalEventListener注解标注的方法，来监听事务相关的事件
+	// 后面会专门讨论，通过事件监听模式来实现事务的监控~~~~
 	@Bean(name = TransactionManagementConfigUtils.TRANSACTIONAL_EVENT_LISTENER_FACTORY_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public static TransactionalEventListenerFactory transactionalEventListenerFactory() {

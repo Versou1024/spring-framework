@@ -30,6 +30,7 @@ import java.io.InputStream;
  * @since 3.0
  */
 public interface HttpInputMessage extends HttpMessage {
+	// 在HttpMessage获取headers的基础上,扩展获取请求体的输入流的能力
 
 	/**
 	 * Return the body of the message as an input stream.

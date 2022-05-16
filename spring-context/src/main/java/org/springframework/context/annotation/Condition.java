@@ -40,6 +40,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  */
 @FunctionalInterface
 public interface Condition {
+	// 只需要定义一个Condition子类即可，并且说明只有满足了当前Condition的matches方法时才会将当前@Component注册成Bean。
 
 	/**
 	 * Determine if the condition matches.

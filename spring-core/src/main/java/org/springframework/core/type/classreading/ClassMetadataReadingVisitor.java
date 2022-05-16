@@ -48,6 +48,13 @@ import org.springframework.util.StringUtils;
  */
 @Deprecated
 class ClassMetadataReadingVisitor extends ClassVisitor implements ClassMetadata {
+	/**
+	 * 继承自ClassMetadataReadingVisitor，同样的ClassMetadata部分实现交给了它。
+	 * 同样作为 ClassMetadata 两大分支之一 ： 基于ASM实现的ClassMetadata接口
+	 * 
+	 * 说明：ClassMetadataReadingVisitor是org.springframework.core.type.classreading包下的类，
+	 * 同包的还有我下面重点讲述的MetadataReader。此实现类最终委托给AnnotationMetadataReadingVisitor来做的，而它便是ClassMetadataReadingVisitor的子类（MetadataReader的底层实现就是它，使用的ASM的ClassVisitor模式读取元数据）
+	 */
 
 	private String className = "";
 

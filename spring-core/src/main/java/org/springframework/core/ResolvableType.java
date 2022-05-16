@@ -82,6 +82,17 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public class ResolvableType implements Serializable {
+	/**
+	 * Spring为我们提供的ResolvableType：它为java语言中的所有类型提供了相同的数据结构，其内部封装了一个java.lang.reflect.Type类型的对象
+	 *
+	 * 对象创建：ResolvableType所有构造函数都是私有的。我们不能直接new，只能使用其提供的静态方法进行类型获取
+	 * forClass、forRawClass、forClassWithGenerics、forField、forConstructorParameter、forMethodReturnType、forMethodParameter、forType
+	 * 提供的方法：
+	 * getComponentType、getGeneric、getGenerics、getInterface、getNested、getRawClass、getSource、getSourceType、getSuperType
+	 * getType、
+	 *
+	 * resolve 从Type对象转到Class对象
+	 */
 
 	/**
 	 * {@code ResolvableType} returned when no value is available. {@code NONE} is used
@@ -91,14 +102,13 @@ public class ResolvableType implements Serializable {
 
 	private static final ResolvableType[] EMPTY_TYPES_ARRAY = new ResolvableType[0];
 
-	private static final ConcurrentReferenceHashMap<ResolvableType, ResolvableType> cache =
-			new ConcurrentReferenceHashMap<>(256);
+	private static final ConcurrentReferenceHashMap<ResolvableType, ResolvableType> cache = new ConcurrentReferenceHashMap<>(256);
 
 
 	/**
 	 * The underlying Java type being managed.
 	 */
-	private final Type type;
+	private final Type type; // 封装有Java最原始的type类型
 
 	/**
 	 * Optional provider for the type.

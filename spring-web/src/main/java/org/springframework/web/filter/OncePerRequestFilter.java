@@ -67,11 +67,20 @@ import org.springframework.web.util.WebUtils;
  * @since 06.12.2003
  */
 public abstract class OncePerRequestFilter extends GenericFilterBean {
+	/*
+	 * OncePerRequestFilter 是一种特殊的过滤器 -- 由于Spring、SpringMVC都管理Filter，而且由于CompositeFilter这种复合Filter中有额外需要指定的过滤器链
+	 * 就可能导致一个Filter执行多次，而 OncePerRequestFilter 通过Request的属性设置能力，解决了Filter的多次执行，保证only once
+	 */
 
 	/**
 	 * Suffix that gets appended to the filter name for the
 	 * "already filtered" request attribute.
 	 * @see #getAlreadyFilteredAttributeName
+	 */
+	/**
+	 * 如何判断一个Filter是否执行：
+	 * 例如AFilter第一次执行就通过在请求中设置属性 AFilter.FILTERED
+	 * AFilter在同一个请求第二次执行时，就首先判断是否有 AFilter.FILTERED 的属性即可
 	 */
 	public static final String ALREADY_FILTERED_SUFFIX = ".FILTERED";
 
@@ -88,18 +97,26 @@ public abstract class OncePerRequestFilter extends GenericFilterBean {
 	public final void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 
+		// 模板设计模式
+		// 另外特别注意一点，该方法使用final修饰，也就是子类是无法重写的，那么 Filter#doFilter 就是从这里开始执行
+		// 而子类过滤处理就需要实现 doFilterInternal 方法
+
+		// 只处理Http请求
 		if (!(request instanceof HttpServletRequest) || !(response instanceof HttpServletResponse)) {
 			throw new ServletException("OncePerRequestFilter just supports HTTP requests");
 		}
 		HttpServletRequest httpRequest = (HttpServletRequest) request;
 		HttpServletResponse httpResponse = (HttpServletResponse) response;
 
+		// 获取当前类是否执行的特有属性名
 		String alreadyFilteredAttributeName = getAlreadyFilteredAttributeName();
+		// 若从请求中查找到当前特有属性名，即hasAlreadyFilteredAttribute等于true，就表示当前Filter已经执行过一次
 		boolean hasAlreadyFilteredAttribute = request.getAttribute(alreadyFilteredAttributeName) != null;
 
 		if (skipDispatch(httpRequest) || shouldNotFilter(httpRequest)) {
 
 			// Proceed without invoking this filter...
+			// 当前req不满足执行条件，跳过当前过滤器的执行 -- 这就是 模板方法以及父类的优势
 			filterChain.doFilter(request, response);
 		}
 		else if (hasAlreadyFilteredAttribute) {
@@ -109,26 +126,29 @@ public abstract class OncePerRequestFilter extends GenericFilterBean {
 				return;
 			}
 
-			// Proceed without invoking this filter...
+			// 当前Filter已经执行过一次，跳过当前过滤器的执行 -- 这就是 模板方法以及父类的优势
 			filterChain.doFilter(request, response);
 		}
 		else {
-			// Do invoke this filter...
-			request.setAttribute(alreadyFilteredAttributeName, Boolean.TRUE);
+			// request满足执行条件，且Filter是第一次执行，就放行到此处，准备执行实际过滤操作
+			request.setAttribute(alreadyFilteredAttributeName, Boolean.TRUE); // 设置执行过的属性标记
 			try {
+				// 注意：这里才是过滤器的实际执行处 -- 而子类是否能执行，完全取决于
 				doFilterInternal(httpRequest, httpResponse, filterChain);
 			}
 			finally {
-				// Remove the "already filtered" request attribute for this request.
+				// 最终执行完毕后，需要删除这个标记 -- 这就是 try{}finally{}的魔力
 				request.removeAttribute(alreadyFilteredAttributeName);
 			}
 		}
 	}
 
 	private boolean skipDispatch(HttpServletRequest request) {
+		// 一般不使用mvc异步模式，即isAsyncDispatch总是返回false
 		if (isAsyncDispatch(request) && shouldNotFilterAsyncDispatch()) {
 			return true;
 		}
+		// shouldNotFilterErrorDispatch默认是返回true
 		if (request.getAttribute(WebUtils.ERROR_REQUEST_URI_ATTRIBUTE) != null && shouldNotFilterErrorDispatch()) {
 			return true;
 		}
@@ -169,6 +189,7 @@ public abstract class OncePerRequestFilter extends GenericFilterBean {
 	 * @see #ALREADY_FILTERED_SUFFIX
 	 */
 	protected String getAlreadyFilteredAttributeName() {
+		// filterName+后缀 或者 filter.getClass.getName()+后缀
 		String name = getFilterName();
 		if (name == null) {
 			name = getClass().getName();
@@ -185,6 +206,9 @@ public abstract class OncePerRequestFilter extends GenericFilterBean {
 	 * @throws ServletException in case of errors
 	 */
 	protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+		// 可以在自定义的OncePerRequestFilter的子类中重写，返回true以避免筛选给定的请求。
+		// 默认实现总是返回false
+		// 注意：返回true就表示当前请求request不满足这个Filter某些要求，从而被终止执行
 		return false;
 	}
 

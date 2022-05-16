@@ -31,6 +31,7 @@ import org.springframework.lang.Nullable;
  * @see ScheduledTaskRegistrar#scheduleFixedDelayTask(FixedDelayTask)
  */
 public final class ScheduledTask {
+	// 适配器：兼容所有的Task
 
 	private final Task task;
 

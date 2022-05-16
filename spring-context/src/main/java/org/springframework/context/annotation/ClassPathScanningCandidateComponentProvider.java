@@ -86,6 +86,8 @@ import org.springframework.util.ClassUtils;
  * @see CandidateComponentsIndex
  */
 public class ClassPathScanningCandidateComponentProvider implements EnvironmentCapable, ResourceLoaderAware {
+	// ClassPathBeanDefinitionScanner是一个扫描指定类路径中注解Bean定义的扫描器，在它初始化的时候，会初始化一些需要被扫描的注解，初始化用于加载包下的资源的Loader。
+
 
 	static final String DEFAULT_RESOURCE_PATTERN = "**/*.class";
 
@@ -94,8 +96,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 	private String resourcePattern = DEFAULT_RESOURCE_PATTERN;
 
+	// includeFilters中的就是满足过滤规则的
+	// 在解析ClassPath配置文件，哪些type/注解等可以注入到BEanDefinition
 	private final List<TypeFilter> includeFilters = new ArrayList<>();
 
+	//excludeFilters则是不满足过滤规则的
 	private final List<TypeFilter> excludeFilters = new ArrayList<>();
 
 	@Nullable
@@ -204,8 +209,14 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	@SuppressWarnings("unchecked")
 	protected void registerDefaultFilters() {
+		/*
+		 * 默认扫描过滤器 --
+		 * 注册@Component的默认过滤器。这将隐式注册包含@Component元注释的所有注释，包括@Repository、@Service和@Controller原型注释。
+		 * 需要说明的是：@Controller、@ControllerAdvice、@Service、@Repository都属于@Component范畴。当然还有@Configuration它也是
+		 */
 		this.includeFilters.add(new AnnotationTypeFilter(Component.class));
 		ClassLoader cl = ClassPathScanningCandidateComponentProvider.class.getClassLoader();
+		//下面两个 是兼容JSR-250的@ManagedBean和JSR-330的@Named注解
 		try {
 			this.includeFilters.add(new AnnotationTypeFilter(
 					((Class<? extends Annotation>) ClassUtils.forName("javax.annotation.ManagedBean", cl)), false));
@@ -213,6 +224,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		}
 		catch (ClassNotFoundException ex) {
 			// JSR-250 1.1 API (as included in Java EE 6) not available - simply skip.
+			// JSR-250 的 @ManagedBean 注解不存在，简单跳过
 		}
 		try {
 			this.includeFilters.add(new AnnotationTypeFilter(
@@ -221,7 +233,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		}
 		catch (ClassNotFoundException ex) {
 			// JSR-330 API not available - simply skip.
+			// JSR-330 的 @Named 注解不存在，简单跳过
 		}
+		// 所以，如果你想Spring连你自定义的注解都扫描，自己实现一个AnnotationTypeFilter就可以啦
 	}
 
 	/**
@@ -262,8 +276,13 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	@Override
 	public void setResourceLoader(@Nullable ResourceLoader resourceLoader) {
+		// ResourcePatternResolver是一个接口，继承了ResourceLoader，可以用来获取Resource 实例。返回的实例为PathMatchingResourcePatternResolver类型
+		// MetadataReaderFactory用于解析资源信息对应的元数据，这里返回的实例为：CachingMetadataReaderFactory，带有缓存的
+		// CandidateComponentsIndexLoader.loadIndex () 方法是spring5.0以后加入的新特性，Spring Framework 5 改进了扫描和识别组件的方法，使大型项目的性能得到提升。（具体是通过编译器完成扫描，并且往本地写索引，然后启动的时候再去扫描索引即可的思路）
+		// 为ResourcePatternResolver，MetadataReaderFactory和CandidateComponentsIndex设定初始值。
 		this.resourcePatternResolver = ResourcePatternUtils.getResourcePatternResolver(resourceLoader);
 		this.metadataReaderFactory = new CachingMetadataReaderFactory(resourceLoader);
+		// Spring5以后才有这句，优化了bean扫描
 		this.componentsIndex = CandidateComponentsIndexLoader.loadIndex(this.resourcePatternResolver.getClassLoader());
 	}
 
@@ -309,10 +328,13 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @return a corresponding Set of autodetected bean definitions
 	 */
 	public Set<BeanDefinition> findCandidateComponents(String basePackage) {
+		// 上面说过了 CandidateComponentsIndex 是Spring5提供的优化扫描的功能
+		// 显然这里编译器我们没有写META-INF/spring.components索引文件，所以此处不会执行Spring5 的扫描方式，所以我暂时不看了（超大型项目才会使用Spring5的方式）
 		if (this.componentsIndex != null && indexSupportsIncludeFilters()) {
 			return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
 		}
 		else {
+			// Spring 5之前的方式（绝大多数情况下，都是此方式）
 			return scanCandidateComponents(basePackage);
 		}
 	}
@@ -416,20 +438,39 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
-			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
-					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
+			// 1.根据指定包名 生成包搜索路径
+			// 通过观察resolveBasePackage()方法的实现, 我们可以在设置basePackage时, 使用形如${}的占位符, Spring会在这里进行替换 只要在Environment里面就行
+			// 本次值为：classpath*: + com/xylink/config/ + **/*.class
+			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + resolveBasePackage(basePackage) + '/' + this.resourcePattern;
+			// 2. 资源加载器 加载搜索路径下的 所有class 转换为 Resource[]
+			// 拿着上面的路径，就可以getResources获取出所有的.class类，这个很强大~~~
+			// 真正干事的为：PathMatchingResourcePatternResolver#getResources方法
+			// 能够扫描到basePackages下所有的.class文件
+
+			// 注意：这里会拿到类路径下（不包含jar包内的）的所有的.class文件 可能有上百个，然后后面再交给后面进行筛选~~~~~~~~~~~~~~~~（这个方法，其实我们也可以使用）
+			// 当然和getResourcePatternResolver和这个模版有关
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
+			// 接下来的这个for循环：就是把一个个的resource组装成
 			for (Resource resource : resources) {
 				if (traceEnabled) {
 					logger.trace("Scanning " + resource);
 				}
 				try {
+					// 读取resource即.class文件上的 注解信息 和 类信息 ，两大信息储存到  MetadataReader
 					MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+					// 根据TypeFilter过滤排除组件
+					// 注意：这里一般(默认处理的情况下)标注了默认注解的才会true，什么叫默认注解呢？就是@Component或者派生注解。还有javax....的，这里省略啦
 					if (isCandidateComponent(metadataReader)) {
+						// 把符合条件的 类转换成 BeanDefinition
 						ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
-						sbd.setSource(resource);
+						sbd.setSource(resource); // 设置Bean对象加载的.class文件的源，即resource文件
+						// 再次判断
+						// 如果是实体类 返回true,
+						// 如果是抽象类，返回false
+						// 但是抽象方法被 @Lookup 注解注释返回true
+						// 这和上面是个重载方法  个人觉得旨在处理循环引用以及@Lookup上
 						if (isCandidateComponent(sbd)) {
 							if (debugEnabled) {
 								logger.debug("Identified candidate component class: " + resource);
@@ -475,6 +516,8 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @return the pattern specification to be used for package searching
 	 */
 	protected String resolveBasePackage(String basePackage) {
+		// 将PackageName转为资源路径，然后加载起来
+		// 例如 com.xylink.com -> com/xylink/com
 		return ClassUtils.convertClassNameToResourcePath(getEnvironment().resolveRequiredPlaceholders(basePackage));
 	}
 
@@ -485,16 +528,24 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @return whether the class qualifies as a candidate component
 	 */
 	protected boolean isCandidateComponent(MetadataReader metadataReader) throws IOException {
+		// 默认情况下：只要有注解@Component、@Named、@ManagedBean就会返回true
+
+		// 处理排除过滤器以及包含过滤器
+		// excludeFilters 一般为空
 		for (TypeFilter tf : this.excludeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return false;
 			}
 		}
+		// includeFilters 默认情况是支持的，
+		// 会通过当前类构造时，调用 this.registerDefaultFilters ，注入到@Component、@Named、@ManagedBean的扫描
 		for (TypeFilter tf : this.includeFilters) {
+			//
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return isConditionMatch(metadataReader);
 			}
 		}
+		// 默认就是返回false
 		return false;
 	}
 
@@ -521,9 +572,12 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @return whether the bean definition qualifies as a candidate component
 	 */
 	protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
+		// BEanDefinition对应的Bean是顶级独立的bean
+		// 同时，是具体类，或者虽然是抽象类，但有@LookUp注解
+		// 就返回true
 		AnnotationMetadata metadata = beanDefinition.getMetadata();
-		return (metadata.isIndependent() && (metadata.isConcrete() ||
-				(metadata.isAbstract() && metadata.hasAnnotatedMethods(Lookup.class.getName()))));
+		return (metadata.isIndependent() &&
+				(metadata.isConcrete() || (metadata.isAbstract() && metadata.hasAnnotatedMethods(Lookup.class.getName()))));
 	}
 
 

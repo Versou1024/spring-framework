@@ -47,6 +47,11 @@ import java.beans.PropertyDescriptor;
  * @see org.springframework.validation.DataBinder#initBeanPropertyAccess()
  */
 public interface BeanWrapper extends ConfigurablePropertyAccessor {
+	/*
+	 * 实现 ConfigurablePropertyAccessor
+	 * Bean包装器扩展API
+	 * 1、获取包装的对象、包装对象的CLass、属性描述符
+	 */
 
 	/**
 	 * Specify a limit for array and collection auto-growing.

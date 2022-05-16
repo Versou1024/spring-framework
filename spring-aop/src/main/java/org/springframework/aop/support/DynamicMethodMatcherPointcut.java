@@ -29,6 +29,8 @@ import org.springframework.aop.Pointcut;
  * @author Rod Johnson
  */
 public abstract class DynamicMethodMatcherPointcut extends DynamicMethodMatcher implements Pointcut {
+	// 避免污染子类：将ClassFilter设置为true，只关注动态方法的匹配
+	// 是动态方法的抽象基类，默认情况下它匹配所有的类 它会考虑方法入参个数、类型匹配
 
 	@Override
 	public ClassFilter getClassFilter() {

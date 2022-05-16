@@ -26,6 +26,9 @@ import org.springframework.lang.Nullable;
  * @author Phillip Webb
  */
 interface ImportRegistry {
+	/**
+	 * 用于注册将@Import作为元注解的注解在@Configuration class的注解信息
+	 */
 
 	@Nullable
 	AnnotationMetadata getImportingClassFor(String importedClass);

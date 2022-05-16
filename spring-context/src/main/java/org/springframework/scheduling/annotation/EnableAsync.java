@@ -172,6 +172,8 @@ public @interface EnableAsync {
 	 * a given class) should be invoked asynchronously.
 	 */
 	Class<? extends Annotation> annotation() default Annotation.class;
+	// 默认情况下，要开启异步操作，要在相应的方法或者类上加上@Async注解或者EJB3.1规范下的@Asynchronous注解。
+	// 这个属性使得开发人员可以自己设置开启异步操作的注解(可谓非常的人性化了，但是大多情况下用Spring的就足够了)
 
 	/**
 	 * Indicate whether subclass-based (CGLIB) proxies are to be created as opposed
@@ -186,6 +188,7 @@ public @interface EnableAsync {
 	 * vs. another &mdash; for example, in tests.
 	 */
 	boolean proxyTargetClass() default false;
+	// true表示启用CGLIB代理
 
 	/**
 	 * Indicate how async advice should be applied.
@@ -198,6 +201,9 @@ public @interface EnableAsync {
 	 * {@link AdviceMode#ASPECTJ}.
 	 */
 	AdviceMode mode() default AdviceMode.PROXY;
+	// 代理方式：默认是PROXY  采用Spring的动态代理（含JDK动态代理和CGLIB动态代理）
+	// 若改为：AdviceMode.ASPECTJ表示使用AspectJ静态代理方式。
+	// 它能够解决同类内方法调用不走代理对象的问题，但是一般情况下都不建议这么去做，不要修改这个参数值
 
 	/**
 	 * Indicate the order in which the {@link AsyncAnnotationBeanPostProcessor}
@@ -207,5 +213,6 @@ public @interface EnableAsync {
 	 * existing proxies rather than double-proxy.
 	 */
 	int order() default Ordered.LOWEST_PRECEDENCE;
+	// 直接定义：它的执行顺序（因为可能有多个@EnableXXX）
 
 }

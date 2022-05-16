@@ -81,17 +81,27 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  * @see org.springframework.web.WebApplicationInitializer
  */
 public class DelegatingFilterProxy extends GenericFilterBean {
+	/**
+	 * DelegatingFilterProxy：
+	 * 1、标准Servlet过滤器的代理，用于委托管理Spring注册管理的Filter接口的实现类；
+	 * 2、DelegatingFilterProxy对于具有复杂设置需求的过滤器实现特别有用，允许使用完整的Spring BeanDefination 机制来完成Filter实例。
+	 * 3、或者，考虑将标准Filter与从Spring根应用程序上下文中查找服务bean的两种能力的相结合。
+	 *
+	 * 聚合：
+	 * 上下文属性contextAttribute、webApplicationContext、targetBeanName、targetFilterLifecycle、delegate
+	 *
+	 */
 
 	@Nullable
-	private String contextAttribute;
+	private String contextAttribute; // 该属性应用于检索要从WebApplicationContext筛选置顶name的Bean
 
 	@Nullable
-	private WebApplicationContext webApplicationContext;
+	private WebApplicationContext webApplicationContext; // spring ioc 容器
 
 	@Nullable
 	private String targetBeanName;
 
-	private boolean targetFilterLifecycle = false;
+	private boolean targetFilterLifecycle = false; // 目标代表的filter是否开生命周期，即init与destroy的实现
 
 	@Nullable
 	private volatile Filter delegate;
@@ -185,6 +195,7 @@ public class DelegatingFilterProxy extends GenericFilterBean {
 	 */
 	@Nullable
 	public String getContextAttribute() {
+		// 返回ServletContext属性的名称，该属性应用于检索要从中加载委托筛选器bean的WebApplicationContext。
 		return this.contextAttribute;
 	}
 
@@ -251,6 +262,7 @@ public class DelegatingFilterProxy extends GenericFilterBean {
 			throws ServletException, IOException {
 
 		// Lazily initialize the delegate if necessary.
+		// 懒加载，如果这个代理对象需要的话
 		Filter delegateToUse = this.delegate;
 		if (delegateToUse == null) {
 			synchronized (this.delegateMonitor) {
@@ -261,6 +273,7 @@ public class DelegatingFilterProxy extends GenericFilterBean {
 						throw new IllegalStateException("No WebApplicationContext found: " +
 								"no ContextLoaderListener or DispatcherServlet registered?");
 					}
+					// 双重检查 - 单例 - 初始化
 					delegateToUse = initDelegate(wac);
 				}
 				this.delegate = delegateToUse;
@@ -268,6 +281,7 @@ public class DelegatingFilterProxy extends GenericFilterBean {
 		}
 
 		// Let the delegate perform the actual doFilter operation.
+		// 让代理执行实际的doFilter操作。
 		invokeDelegate(delegateToUse, request, response, filterChain);
 	}
 
@@ -333,6 +347,7 @@ public class DelegatingFilterProxy extends GenericFilterBean {
 	 * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
 	 */
 	protected Filter initDelegate(WebApplicationContext wac) throws ServletException {
+		// 从Spring容器中获取需要被代理的Filter
 		String targetBeanName = getTargetBeanName();
 		Assert.state(targetBeanName != null, "No target bean name set");
 		Filter delegate = wac.getBean(targetBeanName, Filter.class);
@@ -366,6 +381,7 @@ public class DelegatingFilterProxy extends GenericFilterBean {
 	 * @see javax.servlet.Filter#destroy()
 	 */
 	protected void destroyDelegate(Filter delegate) {
+		// 代表的Filter是否被摧毁，取决于targetFilterLifecycle
 		if (isTargetFilterLifecycle()) {
 			delegate.destroy();
 		}

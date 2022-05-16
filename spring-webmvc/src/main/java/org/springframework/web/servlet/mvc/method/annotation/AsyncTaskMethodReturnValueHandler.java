@@ -32,6 +32,10 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * @since 3.2
  */
 public class AsyncTaskMethodReturnValueHandler implements HandlerMethodReturnValueHandler {
+	// AsyncTaskMethodReturnValueHandler
+	// 顾名思义，它是专门处理返回值类型为WebAsyncTask的异步请求形式。
+	//
+	// @since 3.2  因为WebAsyncTask这个时候才出来~~~
 
 	@Nullable
 	private final BeanFactory beanFactory;
@@ -44,6 +48,7 @@ public class AsyncTaskMethodReturnValueHandler implements HandlerMethodReturnVal
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
+		// 支持WebAsyncTask返回类型
 		return WebAsyncTask.class.isAssignableFrom(returnType.getParameterType());
 	}
 
@@ -51,15 +56,19 @@ public class AsyncTaskMethodReturnValueHandler implements HandlerMethodReturnVal
 	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
 
+		// 1. 设置为已经处理过
 		if (returnValue == null) {
 			mavContainer.setRequestHandled(true);
 			return;
 		}
 
+		// 2. 向returnValue中设置BeanFactory
 		WebAsyncTask<?> webAsyncTask = (WebAsyncTask<?>) returnValue;
 		if (this.beanFactory != null) {
 			webAsyncTask.setBeanFactory(this.beanFactory);
 		}
+
+		// 3. 现它使用的也是startCallableProcessing...
 		WebAsyncUtils.getAsyncManager(webRequest).startCallableProcessing(webAsyncTask, mavContainer);
 	}
 

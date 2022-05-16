@@ -39,6 +39,23 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.FrameworkServlet#createWebApplicationContext
  */
 public interface ConfigurableWebApplicationContext extends WebApplicationContext, ConfigurableApplicationContext {
+	/*
+	 * 将ApplicationContext的两个二级接口：web环境的WebApplicationContext、可配置的ConfigurableApplicationContext集成
+	 * 并没有定义太多的操作，主要和Servlet上下文及配置文件。它一次性都继承了上面的两个二级接口，可以说是他俩的结合体
+	 *
+	 * setServletContext、setServletConfig、setNamespace、setConfigLocation、
+	 *
+	 * 注意：这样方法应该在refresh()方法之前被执行设置
+	 *
+	 * 此处有个非常重要的实现：
+	 * AbstractRefreshableWebApplicationContext，它相当于在父类基础上，再实现了ConfigurableWebApplicationContext从而具有web的特性。
+	 * 它自己是抽象类，但是具体实现有如下：
+	 * 		XmlWebApplicationContext：这个可以说是web环境下Spring的默认容器。之前讲解过了ContextLoaderListener启动的时候，如果你没有指定web容器
+	 * 		（比如若是Tomcat注解驱动的话，就会外面创建一个AnnotationConfigWebApplicationContext传进来），
+	 * 		那么this.context = createWebApplicationContext(servletContext);
+	 * 		（它会去找contextConfigLocation，找到xml配置文件）就会创建一个XmlWebApplicationContext类型的容器。至于为何呢？
+	 * 		其实默认类型在配置文件：org\springframework\web\context\ContextLoader.properties这个文件里，里面写着：
+	 */
 
 	/**
 	 * Prefix for ApplicationContext ids that refer to context path and/or servlet name.

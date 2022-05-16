@@ -43,13 +43,19 @@ import org.springframework.web.util.WebUtils;
  * @see javax.servlet.http.HttpSession#getAttribute
  */
 public class ServletRequestAttributes extends AbstractRequestAttributes {
+	/*
+	RequestAttributes接口的基于Servlet的实现。
+	ServletRequestAttributes从servlet请求和HTTP会话范围访问对象，不区分“会话”和“全局会话”。
+
+	RequestAttributes该接口的定义了一些比如get/setAttribute()的便捷方法。它有很多子类，
+	比如我们最常用的ServletRequestAttributes有较大的扩展，里面代理了request和response很多方法：
+	 */
 
 	/**
 	 * Constant identifying the {@link String} prefixed to the name of a
 	 * destruction callback when it is stored in a {@link HttpSession}.
 	 */
-	public static final String DESTRUCTION_CALLBACK_NAME_PREFIX =
-			ServletRequestAttributes.class.getName() + ".DESTRUCTION_CALLBACK.";
+	public static final String DESTRUCTION_CALLBACK_NAME_PREFIX = ServletRequestAttributes.class.getName() + ".DESTRUCTION_CALLBACK.";
 
 	protected static final Set<Class<?>> immutableValueTypes = new HashSet<>(16);
 
@@ -60,6 +66,8 @@ public class ServletRequestAttributes extends AbstractRequestAttributes {
 		immutableValueTypes.add(String.class);
 	}
 
+
+	// 持有request、response、session
 
 	private final HttpServletRequest request;
 

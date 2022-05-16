@@ -38,6 +38,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  */
 @FunctionalInterface
 public interface SchedulingConfigurer {
+	// 提供给用户使用的，可以向ScheduledTaskRegistrar中做一些定制化操作
 
 	/**
 	 * Callback allowing a {@link org.springframework.scheduling.TaskScheduler

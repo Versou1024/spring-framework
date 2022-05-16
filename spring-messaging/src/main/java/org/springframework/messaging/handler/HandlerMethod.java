@@ -52,6 +52,12 @@ import org.springframework.util.StringUtils;
  * @since 4.0
  */
 public class HandlerMethod {
+	/**
+	 * 	封装类：向外界提供简便的HandlerMethod执行
+	 * 	1、聚合所在Handler的Bean、beanFactory、beanType、method、parameters、
+	 * 	2、并针对返回针对获取Method上信息的方法，比如形参、注解
+ 	 */
+
 
 	/** Public for wrapping with fallback logger. */
 	public static final Log defaultLogger = LogFactory.getLog(HandlerMethod.class);

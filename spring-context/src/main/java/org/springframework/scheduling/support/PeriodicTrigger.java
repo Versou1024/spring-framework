@@ -46,13 +46,13 @@ import org.springframework.util.Assert;
  */
 public class PeriodicTrigger implements Trigger {
 
-	private final long period;
+	private final long period; // long类型，表示间隔时长，注意在fixedRate与fixedDelay两种模式下的不同含义
 
-	private final TimeUnit timeUnit;
+	private final TimeUnit timeUnit; // TimeUnit类型，表示间隔时长的单位，如毫秒等；默认是毫秒
 
-	private volatile long initialDelay = 0;
+	private volatile long initialDelay = 0; // long类型，表示启动任务后间隔多长时间开始执行第一次任务
 
-	private volatile boolean fixedRate = false;
+	private volatile boolean fixedRate = false; //  boolean类型，表示是否是fixedRate，为True时是fixedRate，否则是fixedDelay，默认为False
 
 
 	/**
@@ -133,12 +133,16 @@ public class PeriodicTrigger implements Trigger {
 	public Date nextExecutionTime(TriggerContext triggerContext) {
 		Date lastExecution = triggerContext.lastScheduledExecutionTime();
 		Date lastCompletion = triggerContext.lastCompletionTime();
+		// task还未开始第一次执行，没有上一次执行记录
 		if (lastExecution == null || lastCompletion == null) {
+			// 初始化的执行时间：当前时间+initialDelay即可
 			return new Date(System.currentTimeMillis() + this.initialDelay);
 		}
 		if (this.fixedRate) {
+			// fixedRate是两次任务开始时间的间隔 -- 因此取预定执行时间
 			return new Date(lastExecution.getTime() + this.period);
 		}
+		// fixedRate是上一次任务结束时间到下一次任务的开始时间的间隔 -- 因此取预定执行时间
 		return new Date(lastCompletion.getTime() + this.period);
 	}
 

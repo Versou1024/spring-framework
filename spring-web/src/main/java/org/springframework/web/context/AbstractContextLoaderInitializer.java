@@ -40,6 +40,16 @@ import org.springframework.web.WebApplicationInitializer;
  * @since 3.2
  */
 public abstract class AbstractContextLoaderInitializer implements WebApplicationInitializer {
+	/*
+	 * AbstractContextLoaderInitializer 抽象 上下文加载器 初始化
+	 * 目的：负责根容器的创建
+	 *
+	 * ContextLoaderListener 继承了ContextLoader，而 ContextLoader -> 将负责根容器的创建
+	 * 因此该类间接负责根容器的创建
+	 *
+	 * WebApplicationInitializer实现的抽象基类负责：在servlet上下文中注册ContextLoaderListener。
+	 * 子类需要实现的唯一方法是createRootApplicationContext()，它可以从模板方法registerContextLoaderListener（ServletContext）调用。
+	 */
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -47,6 +57,7 @@ public abstract class AbstractContextLoaderInitializer implements WebApplication
 
 	@Override
 	public void onStartup(ServletContext servletContext) throws ServletException {
+		// 间接被Servlet容器触发
 		registerContextLoaderListener(servletContext);
 	}
 
@@ -57,10 +68,16 @@ public abstract class AbstractContextLoaderInitializer implements WebApplication
 	 * @param servletContext the servlet context to register the listener against
 	 */
 	protected void registerContextLoaderListener(ServletContext servletContext) {
+		//  1.【抽象方法】创建Root应用上下文, 被子类 AbstractAnnotationConfigDispatcherServletInitializer 实现 new 了一个 AnnotationConfigWebApplicationContext
+		// 并向 AnnotationConfigWebApplicationContext 中注册配置类用于后续refresh()后加载BeanDefinition
+		// 需要注意的:这里是没有调用 AnnotationConfigWebApplicationContext#refresh()刷新
 		WebApplicationContext rootAppContext = createRootApplicationContext();
 		if (rootAppContext != null) {
-			ContextLoaderListener listener = new ContextLoaderListener(rootAppContext);
+			// 2. 创建ContextLoaderListener监听ServletContext的加载和销毁
+			// 需要注意: 这个监听会在DispatcherServlet被初始化后调用钩子方法,间接触发传递进去的rootAppContext#refresh() -> 直至使得父容器有bean
+			ContextLoaderListener listener = new ContextLoaderListener(rootAppContext); // 核心点：注册ContextLoaderListener监听器，让它去初始化Spring父容器
 			listener.setContextInitializers(getRootApplicationContextInitializers());
+			// 4. 把监听器加入进来  这样该监听器就能监听ServletContext了，并且执行contextInitialized方法 --
 			servletContext.addListener(listener);
 		}
 		else {
@@ -78,7 +95,6 @@ public abstract class AbstractContextLoaderInitializer implements WebApplication
 	 * contexts. As such, it typically contains middle-tier services, data sources, etc.
 	 * @return the root application context, or {@code null} if a root context is not
 	 * desired
-	 * @see org.springframework.web.servlet.support.AbstractDispatcherServletInitializer
 	 */
 	@Nullable
 	protected abstract WebApplicationContext createRootApplicationContext();

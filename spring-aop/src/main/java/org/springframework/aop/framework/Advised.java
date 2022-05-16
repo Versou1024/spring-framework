@@ -36,6 +36,34 @@ import org.springframework.aop.TargetSource;
  * @see org.springframework.aop.framework.AdvisedSupport
  */
 public interface Advised extends TargetClassAware {
+	/*
+	 * 被增强的接口：Advised，主要是和AopConfig和Advisor有关
+	 * Advised: 包含所有的Advised 和 Advice
+	 * 该接口用于保存一个代理的相关配置。比如保存了这个代理相关的拦截器、通知、增强器等等。
+	 * 所有的代理对象都实现了该接口（我们就能够通过一个代理对象获取这个代理对象怎么被代理出来的相关信息）
+	 * addAdvice(Advice):void    		添加Advice
+	 * addAdvice(int,Advice):void 		插入到某个位置的Advice
+	 * addAdvisor(Advisor):void 		添加Advisor
+	 * addAdvisor(int,Advisor):void		插入到某个位置的Advisor
+	 * getAdvisors():Advisor[] 			拿到作用在当前proxy上得所有通知（和切面的适配器）
+	 * getProxiedInterfaces():Class<?>[] 获取被代理的接口
+	 * getTargetSource():TargetSource
+	 * indexOf(Advice):int				获取advice序号
+	 * indexOf(Advisor):int				获取advisor序号
+	 * isExposeProxy():boolean			是否暴露Proxy
+	 * isFrozen():boolean				是否冻结配置
+	 * isInterfaceProxied(Class<?>):boolean 是否代理指定接口
+	 * isPreFiltered():boolean
+	 * isProxyTargetClass():boolean
+	 * removeAdvice(Advice):boolean		移除Advice、Advisor、某个位置的Advice、
+	 * removeAdvisor(Advisor):boolean
+	 * removeAdvisor(int):void
+	 * replaceAdvisor(Advisor,Advisor):boolean
+	 * setExposeProxy(boolean):void
+	 * setPreFiltered(boolean):void
+	 * setTargetSource(TargetSource):void
+	 * toProxyConfigString():String
+	 */
 
 	/**
 	 * Return whether the Advised configuration is frozen,

@@ -61,6 +61,9 @@ import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolv
  * @since 3.1
  */
 public class RequestResponseBodyMethodProcessor extends AbstractMessageConverterMethodProcessor {
+	// 它继承自AbstractMessageConverterMethodProcessor。
+	// 从名字或许就能看出来，这个处理器及其重要，因为它处理着我们最为重要的一个注解@ResponseBody（其实它还处理@RequestBody，只是我们这部分不讲请求参数~~~）
+	// 并且它在读、写的时候和HttpMessageConverter还有深度结合~~
 
 	/**
 	 * Basic constructor with converters only. Suitable for resolving
@@ -108,11 +111,17 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
+		// ❗️核心支持：支持解析带有@RequestBody的形参
 		return parameter.hasParameterAnnotation(RequestBody.class);
 	}
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
+		// ❗️核心支持：支持解析的返回值带有ResponseBody的返回值
+		//  显然可以发现，方法上或者类上标注有@ResponseBody都是可以的~~~~
+		//	这也就是为什么现在@RestController可以代替我们的的@Controller + @ResponseBody生效了
+
+		// returnType.getContainingClass() 获取的就是HandlerMethod对应的声明的所在Class
 		return (AnnotatedElementUtils.hasAnnotation(returnType.getContainingClass(), ResponseBody.class) ||
 				returnType.hasMethodAnnotation(ResponseBody.class));
 	}
@@ -126,15 +135,24 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 	@Override
 	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
-
+		// ❗️解析@RequestBody形参的核心方法
+		// 入参是支持使用Optional包装一层的~~~
 		parameter = parameter.nestedIfOptional();
+		// 这个方法就特别重要了，实现就在下面，现在强烈要求吧目光先投入到下面这个方法实现上~~~~
 		Object arg = readWithMessageConverters(webRequest, parameter, parameter.getNestedGenericParameterType());
+		// 拿到入参的形参的名字
 		String name = Conventions.getVariableNameForParameter(parameter);
 
+		// 下面就是进行参数绑定、数据适配、转换的逻辑了  这个在Spring MVC处理请求参数这一章会详细讲解
+		// 数据校验@Validated也是在此处生效的
 		if (binderFactory != null) {
+			// 创建webDataBinder用于校验数据格式是否正确
 			WebDataBinder binder = binderFactory.createBinder(webRequest, arg, name);
 			if (arg != null) {
+				// 利用binder进行数据校验
 				validateIfApplicable(binder, parameter);
+				// 检查binder的数据绑定结果或者校验结果中是否有errors，
+				// 抛出异常
 				if (binder.getBindingResult().hasErrors() && isBindExceptionRequired(binder, parameter)) {
 					throw new MethodArgumentNotValidException(parameter, binder.getBindingResult());
 				}
@@ -143,19 +161,21 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 				mavContainer.addAttribute(BindingResult.MODEL_KEY_PREFIX + name, binder.getBindingResult());
 			}
 		}
-
+		//
 		return adaptArgumentIfNecessary(arg, parameter);
 	}
 
 	@Override
-	protected <T> Object readWithMessageConverters(NativeWebRequest webRequest, MethodParameter parameter,
-			Type paramType) throws IOException, HttpMediaTypeNotSupportedException, HttpMessageNotReadableException {
+	protected <T> Object readWithMessageConverters(NativeWebRequest webRequest, MethodParameter parameter, Type paramType)
+			throws IOException, HttpMediaTypeNotSupportedException, HttpMessageNotReadableException {
 
 		HttpServletRequest servletRequest = webRequest.getNativeRequest(HttpServletRequest.class);
 		Assert.state(servletRequest != null, "No HttpServletRequest");
 		ServletServerHttpRequest inputMessage = new ServletServerHttpRequest(servletRequest);
 
+		// 核心是这个方法，它的实现逻辑在父类AbstractMessageConverterMethodArgumentResolver上~~~继续转移目光吧~~
 		Object arg = readWithMessageConverters(inputMessage, parameter, paramType);
+		// body体为空，而且不是@RequestBody(required = false)，那就抛错呗  请求的body是必须的  这个很好理解
 		if (arg == null && checkRequired(parameter)) {
 			throw new HttpMessageNotReadableException("Required request body is missing: " +
 					parameter.getExecutable().toGenericString(), inputMessage);
@@ -172,13 +192,25 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest)
 			throws IOException, HttpMediaTypeNotAcceptableException, HttpMessageNotWritableException {
+		// ️处理返回值的核心方法
 
+		// 1. 直接标记request已经被处理了,不需要后续的视图渲染等操作
+		// 从方法注解可知，由于@RequestBody会被这里给解析掉，因此设置为true告知mavContainer请求已被处理
+		// 下面就会直接从outputMessage中写入需要返回的数据啦
 		mavContainer.setRequestHandled(true);
+		// 获取请求信息、获取响应信息与Content-Type
 		ServletServerHttpRequest inputMessage = createInputMessage(webRequest);
 		ServletServerHttpResponse outputMessage = createOutputMessage(webRequest);
 
+		// 利用HttpMessageConverter做消息转换的输出
 		// Try even with null return value. ResponseBodyAdvice could get involved.
+		// 这个方法是核心，也会处理null值~~~  这里面一些Advice会生效~~~~
+		// 会选择到合适的 HttpMessageConverter,然后进行消息转换~~~~（这里只指写~~~）
+		// 这个方法在父类上，是非常核心关键自然也是非常复杂的~~~
 		writeWithMessageConverters(returnValue, returnType, inputMessage, outputMessage);
+
+		// 你会发现其它的返回值处理器都是不会调用消息转换器的，而只有AbstractMessageConverterMethodProcessor它的两个子类才会这么做。
+		// 而刚巧，这种方式（@ResponseBody方式）是我们当下最为流行的处理方式，因此非常有必要进行深入的了解~~~
 	}
 
 }

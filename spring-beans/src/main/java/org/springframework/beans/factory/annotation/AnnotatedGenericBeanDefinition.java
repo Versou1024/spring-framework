@@ -42,6 +42,26 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implements AnnotatedBeanDefinition {
+	/**
+	 * 配置类的BeanDefinition用AnnotatedGenericBeanDefinition来表示:
+	 * 即
+	 * @Configuration
+	 * @ComponentScan
+	 * public class AppConfig {
+	 * 		@Bean
+	 * 		public User createUser(){}
+	 * }
+	 *
+	 * @Service
+	 * public class AuthorService {
+	 * }
+	 *
+	 * 代码中：
+	 * AppConfig是AnnotatedGenericBeanDefinition
+	 * AuthorService是通过@Component扫描到的，就是ScannedGenericBeanDefinition
+	 * User是配置类里面通过@Bean加入的，就是ConfigurationClassBeanDefinition
+	 *
+	 */
 
 	private final AnnotationMetadata metadata;
 

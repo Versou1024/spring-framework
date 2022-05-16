@@ -49,10 +49,21 @@ import org.springframework.util.Assert;
  * @param <T> the converted object type
  */
 public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConverter<T> {
+	/*
+	 * 大多数HttpMessageConverter实现的抽象基类。
+	 * 这个基类通过supportedMediaTypes bean 属性添加了对设置支持的MediaTypes的支持。在写入输出消息时，它还增加了对Content-Type和Content-Length的支持。
+	 * AbstractHttpMessageConverter
+	 * 一个基础抽象实现，它也还是个泛型类。对于泛型的控制，有如下特点：
+	 * 最广的可以选择Object，不过Object并不都是可以序列化的，但是子类可以在覆盖的supports方法中进一步控制，因此选择Object是可以的
+	 * 最符合的是Serializable，既完美满足泛型定义，本身也是个Java序列化/反序列化的充要条件
+	 * 自定义的基类Bean，有些技术规范要求自己代码中的所有bean都继承自同一个自定义的基类BaseBean，这样可以在Serializable的基础上再进一步控制，满足自己的业务要求
+	 * 若我们自己需要自定义一个消息转换器，大多数情况下也是继承抽象类再具体实现
+	 */
 
 	/** Logger available to subclasses. */
 	protected final Log logger = HttpLogging.forLogName(getClass());
 
+	// 它主要内部维护了这两个属性，可议构造器赋值，也可以set方法赋值~~
 	private List<MediaType> supportedMediaTypes = Collections.emptyList();
 
 	@Nullable
@@ -133,6 +144,9 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	@Override
 	public boolean canRead(Class<?> clazz, @Nullable MediaType mediaType) {
+		// 将canRead分为两部分，
+		// 一部分检查是是否支持Clazz
+		// 一部分检查是否支持mediaType
 		return supports(clazz) && canRead(mediaType);
 	}
 
@@ -146,9 +160,13 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 * or if the media type is {@code null}
 	 */
 	protected boolean canRead(@Nullable MediaType mediaType) {
+		// 默认的canRead:
+
+		// 1.如果请求体的mediaType为空,表示支持
 		if (mediaType == null) {
 			return true;
 		}
+		// 2. 否则检查supportedMediaType是否包含这个请求体的mediaType
 		for (MediaType supportedMediaType : getSupportedMediaTypes()) {
 			if (supportedMediaType.includes(mediaType)) {
 				return true;
@@ -165,6 +183,9 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	@Override
 	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
+		// 将canWrite分为两部分，
+		// 一部分检查是是否支持Clazz
+		// 一部分检查是否支持mediaType
 		return supports(clazz) && canWrite(mediaType);
 	}
 
@@ -177,9 +198,14 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 * or if the media type is {@code null}
 	 */
 	protected boolean canWrite(@Nullable MediaType mediaType) {
+		// 默认的canWrite()
+
+		// 1. mediaType为空，或者请求体的accept的content-type为*/* ,都表示支持读
 		if (mediaType == null || MediaType.ALL.equalsTypeAndSubtype(mediaType)) {
 			return true;
 		}
+		// 2. supportedMediaType 中的媒体类型是否兼容请求体的accept的mediaType
+		// 只要兼容,就返回true
 		for (MediaType supportedMediaType : getSupportedMediaTypes()) {
 			if (supportedMediaType.isCompatibleWith(mediaType)) {
 				return true;
@@ -195,7 +221,7 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	@Override
 	public final T read(Class<? extends T> clazz, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException {
-
+		// 1. 实际调用交给readInternal的抽象保护方法
 		return readInternal(clazz, inputMessage);
 	}
 
@@ -206,11 +232,17 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	@Override
 	public final void write(final T t, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
+		//
 
+		// 模板:
+		// 1.获取请求头,向其中加入contentType\contentLength
 		final HttpHeaders headers = outputMessage.getHeaders();
 		addDefaultHeaders(headers, t, contentType);
 
+		// 2. 调用writeInternal()由子类完成实际写入操作
+		// 由于已经设置了content-type,因此writeInternal()中没有传mediaType啦
 		if (outputMessage instanceof StreamingHttpOutputMessage) {
+			// 2.1 对于 StreamingHttpOutputMessage 需要包装统一一下
 			StreamingHttpOutputMessage streamingOutputMessage = (StreamingHttpOutputMessage) outputMessage;
 			streamingOutputMessage.setBody(outputStream -> writeInternal(t, new HttpOutputMessage() {
 				@Override
@@ -225,6 +257,8 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 		}
 		else {
 			writeInternal(t, outputMessage);
+
+			// 最后它执行了flush，这也就是为何我们自己一般不需要flush的原因
 			outputMessage.getBody().flush();
 		}
 	}
@@ -237,6 +271,8 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 * @since 4.2
 	 */
 	protected void addDefaultHeaders(HttpHeaders headers, T t, @Nullable MediaType contentType) throws IOException {
+		// 向headers中组装content-type和content-length
+
 		if (headers.getContentType() == null) {
 			MediaType contentTypeToUse = contentType;
 			if (contentType == null || !contentType.isConcrete()) {
@@ -275,6 +311,9 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	@Nullable
 	protected MediaType getDefaultContentType(T t) throws IOException {
+		// 获取默认的content-type:用于在输出响应体的时候,指定其content-type
+		// 子类可重写
+
 		List<MediaType> mediaTypes = getSupportedMediaTypes();
 		return (!mediaTypes.isEmpty() ? mediaTypes.get(0) : null);
 	}
@@ -288,6 +327,9 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	@Nullable
 	protected Long getContentLength(T t, @Nullable MediaType contentType) throws IOException {
+		// 扩展content-length
+		// 子类可重写
+
 		return null;
 	}
 
@@ -298,6 +340,7 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 * @return {@code true} if supported; {@code false} otherwise
 	 */
 	protected abstract boolean supports(Class<?> clazz);
+	// 指示此转换器是否支持给定的类。
 
 	/**
 	 * Abstract template method that reads the actual object. Invoked from {@link #read}.
@@ -309,6 +352,7 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	protected abstract T readInternal(Class<? extends T> clazz, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException;
+	// 实际读操作:提供给子类实现
 
 	/**
 	 * Abstract template method that writes the actual body. Invoked from {@link #write}.
@@ -319,5 +363,6 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	protected abstract void writeInternal(T t, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException;
+	// 实际写操作:留给子类
 
 }

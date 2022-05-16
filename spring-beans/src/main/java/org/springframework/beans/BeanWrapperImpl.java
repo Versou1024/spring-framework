@@ -61,6 +61,11 @@ import org.springframework.util.ReflectionUtils;
  * @see PropertyEditorRegistrySupport
  */
 public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements BeanWrapper {
+	/**
+	 * 实现BeanWrapper接口、继承AbstractNestablePropertyAccessor
+	 *
+	 * 默认的BeanWrapper接口的实现类
+	 */
 
 	/**
 	 * Cached introspections results for this object, to prevent encountering
@@ -170,7 +175,11 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * for the wrapped object.
 	 */
 	private CachedIntrospectionResults getCachedIntrospectionResults() {
+		/*
+		 * 获取包装对象的延迟初始化CachedIntrospectionResults实例。
+		 */
 		if (this.cachedIntrospectionResults == null) {
+			// 延迟初始化 -- 传入包装器的类型即可
 			this.cachedIntrospectionResults = CachedIntrospectionResults.forClass(getWrappedClass());
 		}
 		return this.cachedIntrospectionResults;
@@ -227,6 +236,11 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	@Override
 	@Nullable
 	protected BeanPropertyHandler getLocalPropertyHandler(String propertyName) {
+		/**
+		 * 获取局部数据处理器：仅仅传入属性名称如何获取处理器，因为BeanPropertyHandler是需要传入PropertyDescriptor的
+		 *
+		 * 答案：通过缓存的内省结果中获取指定的PD
+		 */
 		PropertyDescriptor pd = getCachedIntrospectionResults().getPropertyDescriptor(propertyName);
 		return (pd != null ? new BeanPropertyHandler(pd) : null);
 	}
@@ -262,10 +276,15 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 
 
 	private class BeanPropertyHandler extends PropertyHandler {
+		/**
+		 * 属性处理器的实现
+		 */
 
 		private final PropertyDescriptor pd;
 
 		public BeanPropertyHandler(PropertyDescriptor pd) {
+			// 只需要传入 PropertyHandler
+			// 只要有get方法就是可读、只要有set方法就是可写
 			super(pd.getPropertyType(), pd.getReadMethod() != null, pd.getWriteMethod() != null);
 			this.pd = pd;
 		}
@@ -289,6 +308,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 		@Override
 		@Nullable
 		public Object getValue() throws Exception {
+			// 获取get方法
 			Method readMethod = this.pd.getReadMethod();
 			if (System.getSecurityManager() != null) {
 				AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
@@ -304,13 +324,17 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 				}
 			}
 			else {
+				// 开放权限
 				ReflectionUtils.makeAccessible(readMethod);
+				// 调用获取对应的value值
 				return readMethod.invoke(getWrappedInstance(), (Object[]) null);
 			}
 		}
 
 		@Override
 		public void setValue(@Nullable Object value) throws Exception {
+			// 最终将转换后的value写到Bean的属性上
+			// pd 即 propertyDescriptor
 			Method writeMethod = (this.pd instanceof GenericTypeAwarePropertyDescriptor ?
 					((GenericTypeAwarePropertyDescriptor) this.pd).getWriteMethodForActualAccess() :
 					this.pd.getWriteMethod());
@@ -328,7 +352,9 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 				}
 			}
 			else {
+				// 设置accessible
 				ReflectionUtils.makeAccessible(writeMethod);
+				// 调用set方法设置value
 				writeMethod.invoke(getWrappedInstance(), value);
 			}
 		}

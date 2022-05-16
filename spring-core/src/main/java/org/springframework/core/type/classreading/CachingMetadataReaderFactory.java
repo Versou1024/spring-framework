@@ -36,9 +36,15 @@ import org.springframework.lang.Nullable;
  * @since 2.5
  */
 public class CachingMetadataReaderFactory extends SimpleMetadataReaderFactory {
+	/**
+	 * 在 SimpleMetadataReaderFactory 的基础上提供缓存功能
+	 * 能够缓存：
+	 * 每个文件，即每个.class文件加载为Resource后的对应的SimpleMetaReader
+	 * 因为MetaReader都是对某一个class文件做字节码分析，是有缓存的，不会随便替换调
+	 */
 
 	/** Default maximum number of entries for a local MetadataReader cache: 256. */
-	public static final int DEFAULT_CACHE_LIMIT = 256;
+	public static final int DEFAULT_CACHE_LIMIT = 256; // 缓存上去
 
 	/** MetadataReader cache: either local or shared at the ResourceLoader level. */
 	@Nullable
@@ -74,8 +80,7 @@ public class CachingMetadataReaderFactory extends SimpleMetadataReaderFactory {
 	public CachingMetadataReaderFactory(@Nullable ResourceLoader resourceLoader) {
 		super(resourceLoader);
 		if (resourceLoader instanceof DefaultResourceLoader) {
-			this.metadataReaderCache =
-					((DefaultResourceLoader) resourceLoader).getResourceCache(MetadataReader.class);
+			this.metadataReaderCache = ((DefaultResourceLoader) resourceLoader).getResourceCache(MetadataReader.class);
 		}
 		else {
 			setCacheLimit(DEFAULT_CACHE_LIMIT);

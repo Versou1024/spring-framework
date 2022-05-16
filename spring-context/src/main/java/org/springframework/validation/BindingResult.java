@@ -43,6 +43,11 @@ import org.springframework.lang.Nullable;
  * @see MapBindingResult
  */
 public interface BindingResult extends Errors {
+	/*
+	 * BindingResult表示绑定结果的通用接口。
+	 * BindingResult也是扩展了错误注册功能的接口，允许被Validator应用，并添加了特定于绑定的分析和模型构建。
+	 * 也可以作为DataBinder获取的DataBinder的结果持有者。getBindingResult（）方法。BindingResult实现也可以直接使用，例如在其上调用验证器（例如，作为单元测试的一部分）。
+	 */
 
 	/**
 	 * Prefix for the name of the BindingResult instance in a model,

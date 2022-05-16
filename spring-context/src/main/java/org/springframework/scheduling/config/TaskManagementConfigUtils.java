@@ -23,6 +23,7 @@ package org.springframework.scheduling.config;
  * @since 4.1
  */
 public abstract class TaskManagementConfigUtils {
+	// Task管理配置工具的三个常量BeanName -- 包括@Async、@Schedule
 
 	/**
 	 * The bean name of the internally managed Scheduled annotation processor.

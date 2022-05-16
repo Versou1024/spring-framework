@@ -37,6 +37,10 @@ import org.springframework.lang.Nullable;
  * @see org.aspectj.lang.reflect.AjTypeSystem
  */
 public interface AspectJAdvisorFactory {
+	/*
+	 * 工厂接口：可以创建 Spring AOP Advisors 其带有AspectJ注解语法
+	 * isAspect、valiadate、getAdvisors、getAdvisor、getAdvice
+	 */
 
 	/**
 	 * Determine whether or not the given class is an aspect, as reported
@@ -49,7 +53,7 @@ public interface AspectJAdvisorFactory {
 	 * @param clazz the supposed annotation-style AspectJ class
 	 * @return whether or not this class is recognized by AspectJ as an aspect class
 	 */
-	boolean isAspect(Class<?> clazz);
+	boolean isAspect(Class<?> clazz); // 是否有@Aspect注解
 
 	/**
 	 * Is the given class a valid AspectJ aspect class?

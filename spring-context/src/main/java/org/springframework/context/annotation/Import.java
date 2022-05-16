@@ -54,11 +54,21 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Import {
+	/*
+	 * Import注解用来导入指定Class到BeanFactory中管理；
+	 * 通常：可以导入Jar包里面的类（因为我们的@ComponentScan是不会扫描jar包的
+	 */
 
 	/**
 	 * {@link Configuration @Configuration}, {@link ImportSelector},
 	 * {@link ImportBeanDefinitionRegistrar}, or regular component classes to import.
 	 */
 	Class<?>[] value();
+	/*
+	 * value支持的包括：
+	 * 导入 @Configuration 注解的配置类或者普通的类
+	 * 导入 ImportSelector 返回一个String[]，即需要加载的全限定类名
+	 * 导入 ImportBeanDefinitionRegistrar  向registry中注册BeanDefinition
+	 */
 
 }

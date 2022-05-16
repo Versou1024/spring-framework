@@ -45,7 +45,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
  * @author Mark Paluch
  * @author Juergen Hoeller
  */
-public abstract class AbstractReactiveTransactionAspectTests {
+public abstract class  AbstractReactiveTransactionAspectTests {
 
 	protected Method getNameMethod;
 

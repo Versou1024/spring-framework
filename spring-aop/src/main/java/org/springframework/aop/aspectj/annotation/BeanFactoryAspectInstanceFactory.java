@@ -81,13 +81,13 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 			resolvedType = beanFactory.getType(name);
 			Assert.notNull(resolvedType, "Unresolvable bean type - explicitly specify the aspect class");
 		}
-		this.aspectMetadata = new AspectMetadata(resolvedType, name);
+		this.aspectMetadata = new AspectMetadata(resolvedType, name); // 直接创建aspectMetadata
 	}
 
 
 	@Override
 	public Object getAspectInstance() {
-		return this.beanFactory.getBean(this.name);
+		return this.beanFactory.getBean(this.name); // 获取切面实例对象
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 
 	@Override
 	public AspectMetadata getAspectMetadata() {
-		return this.aspectMetadata;
+		return this.aspectMetadata; // 获取切面元数据，aspectMetadadta
 	}
 
 	@Override

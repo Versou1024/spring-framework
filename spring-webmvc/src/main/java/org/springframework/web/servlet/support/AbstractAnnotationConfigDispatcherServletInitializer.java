@@ -41,8 +41,17 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
  * @author Chris Beams
  * @since 3.2
  */
-public abstract class AbstractAnnotationConfigDispatcherServletInitializer
-		extends AbstractDispatcherServletInitializer {
+public abstract class AbstractAnnotationConfigDispatcherServletInitializer extends AbstractDispatcherServletInitializer {
+	/*
+	 * AbstractAnnotationConfigDispatcherServletInitializer 抽象 注解配置以及DispatcherServlet的初始器
+	 * 目的：加载Root或者子容器的AnnotationConfig
+	 *
+	 * WebApplicationInitializer注册DispatcherServlet并使用基于Java的Spring配置。
+	 * 需要实现以下方法：
+	 * getRootConfigClasses（）-- 用于“根”应用程序上下文（非web基础设施）配置。
+	 * getServletConfigClasses（）-- 用于DispatcherServlet应用程序上下文（Spring MVC基础设施）配置。
+	 * 如果不需要应用程序上下文层次结构，应用程序可以通过getRootConfigClasses（）返回所有配置，并从getServletConfigClasses（）返回null。
+	 */
 
 	/**
 	 * {@inheritDoc}
@@ -51,11 +60,13 @@ public abstract class AbstractAnnotationConfigDispatcherServletInitializer
 	 * Returns {@code null} if {@link #getRootConfigClasses()} returns {@code null}.
 	 */
 	@Override
-	@Nullable
+	@Nullable //Spring告诉我们，这个是允许返回null的，也就是说是允许我们返回null的，后面会专门针对这里如果返回null，后面会是怎么样的流程的一个说明
 	protected WebApplicationContext createRootApplicationContext() {
-		Class<?>[] configClasses = getRootConfigClasses();
+		// 实现 AbstractContextLoaderInitializer#createRootApplicationContext
+		// 创建Spring根的ioc容器
+		Class<?>[] configClasses = getRootConfigClasses();// 【抽象】- 获取根Root容器中的配置类
 		if (!ObjectUtils.isEmpty(configClasses)) {
-			AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
+			AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();// 父容器 - spring - 基于注解的web上下文
 			context.register(configClasses);
 			return context;
 		}
@@ -71,13 +82,21 @@ public abstract class AbstractAnnotationConfigDispatcherServletInitializer
 	 */
 	@Override
 	protected WebApplicationContext createServletApplicationContext() {
-		AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
-		Class<?>[] configClasses = getServletConfigClasses();
+		// 实现：AbstractDispatcherServletInitializer#createServletApplicationContext
+
+		// 1. 创建web的ioc容器 -- 一个基于注解的Web容器,能够对@RequestController\@Controller等注解感知
+		AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext(); // 子容器 - web容器:一个基于注解的上下文
+		Class<?>[] configClasses = getServletConfigClasses(); // 【抽象】 - 获取Servlet的配置类
 		if (!ObjectUtils.isEmpty(configClasses)) {
+			// 2. @Configuration的配置类，可以有多个会以累加的形式添加进去到子Web容器中
 			context.register(configClasses);
 		}
 		return context;
 	}
+
+	/*
+	 * 容器完全隔离后的好处是非常明显的，比如我们的web组件，就放在AppConfig里，其它的放在Root里，不要什么都往RootConfig里面塞，
+	 */
 
 	/**
 	 * Specify {@code @Configuration} and/or {@code @Component} classes for the
@@ -86,7 +105,7 @@ public abstract class AbstractAnnotationConfigDispatcherServletInitializer
 	 * if creation and registration of a root context is not desired
 	 */
 	@Nullable
-	protected abstract Class<?>[] getRootConfigClasses();
+	protected abstract Class<?>[] getRootConfigClasses(); // 根容器的配置类；（Spring的配置文件）   提供给父容器；
 
 	/**
 	 * Specify {@code @Configuration} and/or {@code @Component} classes for the
@@ -95,6 +114,6 @@ public abstract class AbstractAnnotationConfigDispatcherServletInitializer
 	 * {@code null} if all configuration is specified through root config classes.
 	 */
 	@Nullable
-	protected abstract Class<?>[] getServletConfigClasses();
+	protected abstract Class<?>[] getServletConfigClasses(); // web容器的配置类（SpringMVC配置文件）  提供给子容器；
 
 }

@@ -36,20 +36,26 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public abstract class AbstractRequestAttributesScope implements Scope {
+	/*
+	从当前线程绑定的RequestAttributes对象中的特定Scope读取的抽象Scope实现。
+	子类只需要实现getScope()来指示这个类从哪个RequestAttributes读取属性scope。
+	子类可能希望重写get和remove方法，以便围绕调用向这个超类添加同步。
+	 */
 
 	@Override
 	public Object get(String name, ObjectFactory<?> objectFactory) {
+		// 一个通过@Scope("request")标注的Bean，在通过BeanFactory获取这个Bean时，会经过 AbstractBeanFactory#dogetBean 中的最后一个else
+		// 获取bean的scope的name是request，然后从scopes中获取对应的RequestScope，执行其get方法，即当前方法
+		// 如果RequestAttributes有对应的属性，直接返回给对方，如果没有就需要通过ObjectFactory#getObject()方法获取后存入到RequestAttribute中
+		// 通过以上这种方式：保证了RequestScope下的Bean在单次请求中是唯一的，即单次请求中，不管使用多少次BeanFactory#getBean方法，都是同一个请求
 		RequestAttributes attributes = RequestContextHolder.currentRequestAttributes();
 		Object scopedObject = attributes.getAttribute(name, getScope());
+		// 获取指定Scope范围下，请求属性中的name的属性值
 		if (scopedObject == null) {
 			scopedObject = objectFactory.getObject();
 			attributes.setAttribute(name, scopedObject, getScope());
-			// Retrieve object again, registering it for implicit session attribute updates.
-			// As a bonus, we also allow for potential decoration at the getAttribute level.
 			Object retrievedObject = attributes.getAttribute(name, getScope());
 			if (retrievedObject != null) {
-				// Only proceed with retrieved object if still present (the expected case).
-				// If it disappeared concurrently, we return our locally created instance.
 				scopedObject = retrievedObject;
 			}
 		}

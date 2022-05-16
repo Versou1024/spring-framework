@@ -86,8 +86,7 @@ import org.springframework.web.servlet.ViewResolver;
  * @see InternalResourceViewResolver
  * @see BeanNameViewResolver
  */
-public class ContentNegotiatingViewResolver extends WebApplicationObjectSupport
-		implements ViewResolver, Ordered, InitializingBean {
+public class ContentNegotiatingViewResolver extends WebApplicationObjectSupport implements ViewResolver, Ordered, InitializingBean {
 
 	@Nullable
 	private ContentNegotiationManager contentNegotiationManager;
@@ -221,6 +220,10 @@ public class ContentNegotiatingViewResolver extends WebApplicationObjectSupport
 	@Override
 	@Nullable
 	public View resolveViewName(String viewName, Locale locale) throws Exception {
+		/*
+		 * 核心方法
+		 */
+		// 返回当前绑定到thread的RequestAttributes
 		RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
 		Assert.state(attrs instanceof ServletRequestAttributes, "No current ServletRequestAttributes");
 		List<MediaType> requestedMediaTypes = getMediaTypes(((ServletRequestAttributes) attrs).getRequest());

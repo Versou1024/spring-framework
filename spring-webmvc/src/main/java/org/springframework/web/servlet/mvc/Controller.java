@@ -109,6 +109,8 @@ import org.springframework.web.servlet.ModelAndView;
  */
 @FunctionalInterface
 public interface Controller {
+	// 最普通的Controller接口
+	// 提供一个handlerRequest方法
 
 	/**
 	 * Process the request and return a ModelAndView object which the DispatcherServlet

@@ -83,8 +83,7 @@ import org.springframework.web.context.ContextLoader;
  * @since 3.0
  * @see org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
-public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWebApplicationContext
-		implements AnnotationConfigRegistry {
+public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWebApplicationContext implements AnnotationConfigRegistry {
 
 	@Nullable
 	private BeanNameGenerator beanNameGenerator;
@@ -196,38 +195,56 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 	 */
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) {
-		AnnotatedBeanDefinitionReader reader = getAnnotatedBeanDefinitionReader(beanFactory);
-		ClassPathBeanDefinitionScanner scanner = getClassPathBeanDefinitionScanner(beanFactory);
+		// 加载注解情况下的：BeanDefinition
 
+		// 接下来就是初始化这个脚手架,new出来，然后设置beanNameGenerator、ScopeMetadataResolver等等
+
+		// 两大BEanDefinition的解析器
+		AnnotatedBeanDefinitionReader reader = getAnnotatedBeanDefinitionReader(beanFactory); // 基于注解的BeanDefinition阅读器
+		ClassPathBeanDefinitionScanner scanner = getClassPathBeanDefinitionScanner(beanFactory); // 基于ClassPath扫描的BeanDefinition扫描器
+
+		// 生成Bean的名称的生成器，如果自己没有setBeanNameGenerator（可以自定义）,这里目前为null
 		BeanNameGenerator beanNameGenerator = getBeanNameGenerator();
 		if (beanNameGenerator != null) {
+			// 向reader、scanner中注入beanName生成器
 			reader.setBeanNameGenerator(beanNameGenerator);
 			scanner.setBeanNameGenerator(beanNameGenerator);
+			// 同时还注入到BeanFactory中
 			beanFactory.registerSingleton(AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR, beanNameGenerator);
 		}
 
+		//这是给reader和scanner注册scope的解析器
 		ScopeMetadataResolver scopeMetadataResolver = getScopeMetadataResolver();
 		if (scopeMetadataResolver != null) {
 			reader.setScopeMetadataResolver(scopeMetadataResolver);
 			scanner.setScopeMetadataResolver(scopeMetadataResolver);
 		}
 
+		// 脚手架初始化完毕，开始调用其方法进行解析BeanDefinition，分别是reader的register、scanner的scan两个方法
+		// reader 注重根配置类、scanner 注重扫描路径
+
+		// 此处注意了：annotatedClasses和basePackages一般是选其一（当然看到此处，他们是可以并存的）
+		// 我们可以自己指定annotatedClasses 配置文件,同时也可以交给下面扫描
 		if (!this.componentClasses.isEmpty()) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Registering component classes: [" +
 						StringUtils.collectionToCommaDelimitedString(this.componentClasses) + "]");
 			}
+			// 若是指明的Bean，就交给reader去处理，至于怎么处理，见上篇博文的doRegisterBean去怎么解析每一个Config Bean的
 			reader.register(ClassUtils.toClassArray(this.componentClasses));
 		}
 
+		// 也可以是包扫描的方式，扫描配置文件的Bean
 		if (!this.basePackages.isEmpty()) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Scanning base packages: [" +
 						StringUtils.collectionToCommaDelimitedString(this.basePackages) + "]");
 			}
+			// 这里重要了，scan方法具体做了什么事，上篇博文也有详细的介绍，请参阅
 			scanner.scan(StringUtils.toStringArray(this.basePackages));
 		}
 
+		// 此处的意思是，也可以以全类名的形式注册。比如可以调用setConfigLocations设置（这在xml配置中使用较多）  可以是全类名，也可以是包路径
 		String[] configLocations = getConfigLocations();
 		if (configLocations != null) {
 			for (String configLocation : configLocations) {
@@ -243,6 +260,7 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 						logger.trace("Could not load class for config location [" + configLocation +
 								"] - trying package scan. " + ex);
 					}
+					// 发现不是全类名，那就当作包扫描吧
 					int count = scanner.scan(configLocation);
 					if (count == 0 && logger.isDebugEnabled()) {
 						logger.debug("No component classes found for specified class/package [" + configLocation + "]");
@@ -250,6 +268,8 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 				}
 			}
 		}
+		//现在BeanFactory已经创建了，并且Config配置文件的Bean定义已经注册完成了**（备注：其它单例Bean是还没有解析的~~~~）**
+		//显然，下面的步骤大都把BeanFactory传进去了，都是基于此Bean工厂的了~~~
 	}
 
 

@@ -92,6 +92,22 @@ import org.springframework.util.Assert;
  * @see org.springframework.beans.factory.support.PropertiesBeanDefinitionReader
  */
 public class GenericApplicationContext extends AbstractApplicationContext implements BeanDefinitionRegistry {
+	/*
+	 * GenericApplicationContext是AbstractApplicationContext直接子类;
+	 * 通用的应用上下文（请注意：它已经不是抽象类，可以直接使用了）
+	 *
+	 * 使用：
+	 * GenericApplicationContext ctx = new GenericApplicationContext();
+	 * XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(ctx); //使用XmlBeanDefinitionReader
+	 * xmlReader.loadBeanDefinitions(new ClassPathResource("applicationContext.xml")); //加载ClassPathResource
+	 * PropertiesBeanDefinitionReader propReader = new PropertiesBeanDefinitionReader(ctx);
+	 * propReader.loadBeanDefinitions(new ClassPathResource("otherBeans.properties"));
+	 * ctx.refresh(); //调用Refresh方法
+	 * MyBean myBean = (MyBean) ctx.getBean("myBean");//和其他ApplicationContext方法一样的使用方式
+	 *
+	 * 一般情况下使用ClassPathXmlApplicationContext或者FileSystemXmlApplicationContext会比这个GenericApplicationContext更方便，
+	 * 但是但是相应地缺少灵活性，因为只能使用特定Bean definition 格式和加载路径。
+	 */
 
 	private final DefaultListableBeanFactory beanFactory;
 
@@ -100,7 +116,11 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 
 	private boolean customClassLoader = false;
 
+	// 保证只会被刷新一次
 	private final AtomicBoolean refreshed = new AtomicBoolean();
+
+	// 和其他在每次refresh时都创建一个新的内部BeanFactory实例的ApplicationContext实例不同
+	// 本类中的BeanFactory从一开始就创建好并可在其中注册bean definitions，refresh方法可能在其中只调用一次（并不会每次刷新的时候都会去调用的
 
 
 	/**
@@ -109,7 +129,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 * @see #refresh
 	 */
 	public GenericApplicationContext() {
-		this.beanFactory = new DefaultListableBeanFactory();
+		this.beanFactory = new DefaultListableBeanFactory(); // BeanFactory默认就是使用的DefaultListableBeanFactory
 	}
 
 	/**
@@ -262,10 +282,12 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws IllegalStateException {
+		// 将标志位refreshed设为true，表示BeanFactory已被刷新出来
 		if (!this.refreshed.compareAndSet(false, true)) {
 			throw new IllegalStateException(
 					"GenericApplicationContext does not support multiple refresh attempts: just call 'refresh' once");
 		}
+		// 设置BeanFactory唯一的序列化好
 		this.beanFactory.setSerializationId(getId());
 	}
 
@@ -290,6 +312,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 */
 	@Override
 	public final ConfigurableListableBeanFactory getBeanFactory() {
+		// 一般就是默认的DefaultListableBeanFactory
 		return this.beanFactory;
 	}
 

@@ -34,6 +34,7 @@ import org.springframework.util.Assert;
  * @param <A> annotation containing {@linkplain #getAdviceModeAttributeName() AdviceMode attribute}
  */
 public abstract class AdviceModeImportSelector<A extends Annotation> implements ImportSelector {
+	// Import选择器 -- 扩展从@Enable*注解中的mode的属性类型为AdviceMode值
 
 	/**
 	 * The default advice mode attribute name.
@@ -47,6 +48,7 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 	 * but subclasses may override in order to customize.
 	 */
 	protected String getAdviceModeAttributeName() {
+		// 属性名：mode
 		return DEFAULT_ADVICE_MODE_ATTRIBUTE_NAME;
 	}
 
@@ -64,18 +66,21 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 	 */
 	@Override
 	public final String[] selectImports(AnnotationMetadata importingClassMetadata) {
+		// 泛型解析器：解析泛型
+		// 例如：public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableAsync> 就实现了当前类，其泛型就是EnableAsync
 		Class<?> annType = GenericTypeResolver.resolveTypeArgument(getClass(), AdviceModeImportSelector.class);
 		Assert.state(annType != null, "Unresolvable type argument for AdviceModeImportSelector");
-
+		// importingClassMetadata 是配置类ConfigClass上的配置元数据
+		// annType 注解类型比如是：@EnableAsync、@EnableTransactionManagement
 		AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(importingClassMetadata, annType);
 		if (attributes == null) {
 			throw new IllegalArgumentException(String.format(
 					"@%s is not present on importing class '%s' as expected",
 					annType.getSimpleName(), importingClassMetadata.getClassName()));
 		}
-
+		// 拿到AdviceMode，最终交给子类，让她自己去实现  决定导入哪个Bean吧
 		AdviceMode adviceMode = attributes.getEnum(getAdviceModeAttributeName());
-		String[] imports = selectImports(adviceMode);
+		String[] imports = selectImports(adviceMode); // 交给子类实现
 		if (imports == null) {
 			throw new IllegalArgumentException("Unknown AdviceMode: " + adviceMode);
 		}

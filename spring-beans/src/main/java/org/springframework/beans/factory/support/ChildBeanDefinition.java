@@ -45,6 +45,10 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class ChildBeanDefinition extends AbstractBeanDefinition {
+	/**
+	 * 额外扩展一个ParentName，用来指向父RootBeanDefinition
+	 * 一般是共同特征放在RootBeanDefinition中，不同的特征就放在ChildBeanDefinition中
+	 */
 
 	@Nullable
 	private String parentName;

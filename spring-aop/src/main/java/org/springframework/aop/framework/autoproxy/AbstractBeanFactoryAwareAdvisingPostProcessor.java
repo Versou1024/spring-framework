@@ -37,25 +37,29 @@ import org.springframework.lang.Nullable;
  * @see AutoProxyUtils#determineTargetClass
  */
 @SuppressWarnings("serial")
-public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends AbstractAdvisingBeanPostProcessor
-		implements BeanFactoryAware {
+public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends AbstractAdvisingBeanPostProcessor implements BeanFactoryAware {
+	// 从名字可以看出，它相较于父类，就和BeanFactory有关了，也就是和Bean容器相关了~~~
+	// 因此封装一个BeanFactory
 
 	@Nullable
 	private ConfigurableListableBeanFactory beanFactory;
 
-
+	// 如果这个Bean工厂不是ConfigurableListableBeanFactory ，那就set一个null
+	// 我们的`DefaultListableBeanFactory`显然就是它的子类~~~~~
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
-		this.beanFactory = (beanFactory instanceof ConfigurableListableBeanFactory ?
-				(ConfigurableListableBeanFactory) beanFactory : null);
+		this.beanFactory = (beanFactory instanceof ConfigurableListableBeanFactory ? (ConfigurableListableBeanFactory) beanFactory : null);
 	}
 
 	@Override
 	protected ProxyFactory prepareProxyFactory(Object bean, String beanName) {
+		// 重写 prepareProxyFactory()
+
 		if (this.beanFactory != null) {
+			// 暴露 bean
 			AutoProxyUtils.exposeTargetClass(this.beanFactory, beanName, bean.getClass());
 		}
-
+		// 父类的super.prepareProxyFactory(bean, beanName)重调用
 		ProxyFactory proxyFactory = super.prepareProxyFactory(bean, beanName);
 		if (!proxyFactory.isProxyTargetClass() && this.beanFactory != null &&
 				AutoProxyUtils.shouldProxyTargetClass(this.beanFactory, beanName)) {
@@ -66,8 +70,9 @@ public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends Abst
 
 	@Override
 	protected boolean isEligible(Object bean, String beanName) {
-		return (!AutoProxyUtils.isOriginalInstance(beanName, bean.getClass()) &&
-				super.isEligible(bean, beanName));
+		// 重写 isEligible
+		// 额外扩展；!AutoProxyUtils.isOriginalInstance(beanName, bean.getClass()) 不能是原始实例，同时满足切面的要求
+		return (!AutoProxyUtils.isOriginalInstance(beanName, bean.getClass()) && super.isEligible(bean, beanName));
 	}
 
 }

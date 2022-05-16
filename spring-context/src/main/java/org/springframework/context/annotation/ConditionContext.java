@@ -30,6 +30,8 @@ import org.springframework.lang.Nullable;
  * @since 4.0
  */
 public interface ConditionContext {
+	// 对于 Condition 实现的上下文
+	// 上下文中封装有：BeanDefinitionRegister、BeanFactory、environment、resourceLoader、classLoader
 
 	/**
 	 * Return the {@link BeanDefinitionRegistry} that will hold the bean definition

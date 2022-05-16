@@ -108,12 +108,19 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.context.MessageSource
  */
 public class DataBinder implements PropertyEditorRegistry, TypeConverter {
+	/*
+	 * 数据绑定器 实现 数据编辑器[支持String转为Object]和类型转换器接口
+	 * 1、作用：实现类型转换器的convertIfNecessary方法，其实质是通过注册的属性编辑器PropertyEditor属性转换
+	 * 2、该类允许在目标对象上设置属性值，支持数据验证和绑定，
+	 *
+	 * 这里需要注意一点：实际上最底层的BeanWrapperImpl所实现的BeanWrapper就已经完成了PropertyEditorRegistry、TypeConverter的能力
+	 */
 
 	/** Default object name used for binding: "target". */
 	public static final String DEFAULT_OBJECT_NAME = "target";
 
 	/** Default limit for array and collection growing: 256. */
-	public static final int DEFAULT_AUTO_GROW_COLLECTION_LIMIT = 256;
+	public static final int DEFAULT_AUTO_GROW_COLLECTION_LIMIT = 256; // 集合属性的长度不够时，且在256以下时，就允许扩容
 
 
 	/**
@@ -122,42 +129,42 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	protected static final Log logger = LogFactory.getLog(DataBinder.class);
 
 	@Nullable
-	private final Object target;
+	private final Object target; // 待设置属性的目标对象
 
-	private final String objectName;
-
-	@Nullable
-	private AbstractPropertyBindingResult bindingResult;
+	private final String objectName; // 目标对线的名字name
 
 	@Nullable
-	private SimpleTypeConverter typeConverter;
+	private AbstractPropertyBindingResult bindingResult;// BindingResult：绑定错误、失败的时候会放进这里来~
 
-	private boolean ignoreUnknownFields = true;
+	@Nullable
+	private SimpleTypeConverter typeConverter; // 简单的类型转换器 - 注意SimpleTypeConverter底层就是和BeanWrapperImpl一样使用的TypeConverterDelegate，并且同时开启注册默认属性编辑器的功能
 
-	private boolean ignoreInvalidFields = false;
+	private boolean ignoreUnknownFields = true; // 是否忽略位置字段
 
-	private boolean autoGrowNestedPaths = true;
+	private boolean ignoreInvalidFields = false; // 不能忽略非法的字段（比如我要Integer，你给传aaa，那肯定就不让绑定了，抛错）
+
+	private boolean autoGrowNestedPaths = true; // 默认是支持级联的~~~
 
 	private int autoGrowCollectionLimit = DEFAULT_AUTO_GROW_COLLECTION_LIMIT;
 
 	@Nullable
-	private String[] allowedFields;
+	private String[] allowedFields; // 允许的字段
 
 	@Nullable
-	private String[] disallowedFields;
+	private String[] disallowedFields; // 不允许的字段
 
 	@Nullable
-	private String[] requiredFields;
+	private String[] requiredFields; // 必须的字段
 
 	@Nullable
-	private ConversionService conversionService;
+	private ConversionService conversionService; // 转换服务
 
 	@Nullable
-	private MessageCodesResolver messageCodesResolver;
+	private MessageCodesResolver messageCodesResolver; 	// 状态码处理器~
 
-	private BindingErrorProcessor bindingErrorProcessor = new DefaultBindingErrorProcessor();
+	private BindingErrorProcessor bindingErrorProcessor = new DefaultBindingErrorProcessor();// 绑定出现错误的处理器~
 
-	private final List<Validator> validators = new ArrayList<>();
+	private final List<Validator> validators = new ArrayList<>(); 	// 校验器（这个非常重要)
 
 
 	/**
@@ -177,6 +184,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @param objectName the name of the target object
 	 */
 	public DataBinder(@Nullable Object target, String objectName) {
+		// target需要绑定的对象，objectName绑定对象的名字
 		this.target = ObjectUtils.unwrapOptional(target);
 		this.objectName = objectName;
 	}
@@ -208,6 +216,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see org.springframework.beans.BeanWrapper#setAutoGrowNestedPaths
 	 */
 	public void setAutoGrowNestedPaths(boolean autoGrowNestedPaths) {
+		// 是否自动增长路径，即忽略空路径
 		Assert.state(this.bindingResult == null,
 				"DataBinder is already initialized - call setAutoGrowNestedPaths before other configuration methods");
 		this.autoGrowNestedPaths = autoGrowNestedPaths;
@@ -228,6 +237,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see org.springframework.beans.BeanWrapper#setAutoGrowCollectionLimit
 	 */
 	public void setAutoGrowCollectionLimit(int autoGrowCollectionLimit) {
+		// 集合/数组集合属性扩容的上限
 		Assert.state(this.bindingResult == null,
 				"DataBinder is already initialized - call setAutoGrowCollectionLimit before other configuration methods");
 		this.autoGrowCollectionLimit = autoGrowCollectionLimit;
@@ -247,6 +257,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see #createBeanPropertyBindingResult()
 	 */
 	public void initBeanPropertyAccess() {
+		// 初始化 Bean属性访问器  -- 要去BindingResult已经为null
 		Assert.state(this.bindingResult == null,
 				"DataBinder is already initialized - call initBeanPropertyAccess before other configuration methods");
 		this.bindingResult = createBeanPropertyBindingResult();
@@ -324,6 +335,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * Return this binder's underlying SimpleTypeConverter.
 	 */
 	protected SimpleTypeConverter getSimpleTypeConverter() {
+		// 懒加载S impleTypeConverter
 		if (this.typeConverter == null) {
 			this.typeConverter = new SimpleTypeConverter();
 			if (this.conversionService != null) {
@@ -350,9 +362,11 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 */
 	protected TypeConverter getTypeConverter() {
 		if (getTarget() != null) {
+			// target 不为 null，就获取内部的绑定结果
 			return getInternalBindingResult().getPropertyAccessor();
 		}
 		else {
+			// 简单类型转换器
 			return getSimpleTypeConverter();
 		}
 	}
@@ -862,6 +876,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see #getBindingResult()
 	 */
 	public void validate() {
+		// 校验 -  对target遍历校验器
 		Object target = getTarget();
 		Assert.state(target != null, "No target to validate");
 		BindingResult bindingResult = getBindingResult();
@@ -880,6 +895,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see SmartValidator#validate(Object, Errors, Object...)
 	 */
 	public void validate(Object... validationHints) {
+		// 校验 -- 对target遍历多个校验器
 		Object target = getTarget();
 		Assert.state(target != null, "No target to validate");
 		BindingResult bindingResult = getBindingResult();

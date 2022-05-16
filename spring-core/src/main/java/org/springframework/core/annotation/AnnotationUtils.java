@@ -103,6 +103,12 @@ import org.springframework.util.StringUtils;
  * @see java.lang.reflect.AnnotatedElement#getDeclaredAnnotations()
  */
 public abstract class AnnotationUtils {
+	/*
+	 * 注解工具
+	 * AnnotationUtils是针对注解的
+	 * AnnotationElementUtils是针对可携带注解的元素
+	 *
+	 */
 
 	/**
 	 * The attribute name for annotations with a single element.
@@ -129,6 +135,9 @@ public abstract class AnnotationUtils {
 	 * @see #isCandidateClass(Class, String)
 	 */
 	public static boolean isCandidateClass(Class<?> clazz, Collection<Class<? extends Annotation>> annotationTypes) {
+		/*
+		 * 确定给定类是否是承载指定注释的候选类（在类型、方法或字段级别）。
+		 */
 		for (Class<? extends Annotation> annotationType : annotationTypes) {
 			if (isCandidateClass(clazz, annotationType)) {
 				return true;
@@ -149,6 +158,9 @@ public abstract class AnnotationUtils {
 	 * @see #isCandidateClass(Class, String)
 	 */
 	public static boolean isCandidateClass(Class<?> clazz, Class<? extends Annotation> annotationType) {
+		/*
+		 * 确定给定类是否是承载指定注释的候选类（在类型、方法或字段级别）。
+		 */
 		return isCandidateClass(clazz, annotationType.getName());
 	}
 
@@ -164,6 +176,9 @@ public abstract class AnnotationUtils {
 	 * @see #isCandidateClass(Class, Class)
 	 */
 	public static boolean isCandidateClass(Class<?> clazz, String annotationName) {
+		/*
+		 * 确定给定类是否是承载指定注释的候选类（在类型、方法或字段级别）。
+		 */
 		if (annotationName.startsWith("java.")) {
 			return true;
 		}
@@ -189,6 +204,7 @@ public abstract class AnnotationUtils {
 	@Nullable
 	public static <A extends Annotation> A getAnnotation(Annotation annotation, Class<A> annotationType) {
 		// Shortcut: directly present on the element, with no merging needed?
+		// 同下
 		if (annotationType.isInstance(annotation)) {
 			return synthesizeAnnotation((A) annotation, annotationType);
 		}
@@ -216,6 +232,7 @@ public abstract class AnnotationUtils {
 	 */
 	@Nullable
 	public static <A extends Annotation> A getAnnotation(AnnotatedElement annotatedElement, Class<A> annotationType) {
+		// 同下
 		// Shortcut: directly present on the element, with no merging needed?
 		if (AnnotationFilter.PLAIN.matches(annotationType) ||
 				AnnotationsScanner.hasPlainJavaAnnotationsOnly(annotatedElement)) {
@@ -248,6 +265,11 @@ public abstract class AnnotationUtils {
 	 */
 	@Nullable
 	public static <A extends Annotation> A getAnnotation(Method method, Class<A> annotationType) {
+		/*
+		 * 从提供的方法中获取annotationType的单个注解，其中注解在方法上存在或元注解上存在。
+		 * 也会正确处理编译器生成的桥接方法。
+		 * 请注意，此方法仅支持单一级别的元注解，不支持多级别递归查找。为了支持任意级别的元注解，请改用findAnnotation（方法、类）。
+		 */
 		Method resolvedMethod = BridgeMethodResolver.findBridgedMethod(method);
 		return getAnnotation((AnnotatedElement) resolvedMethod, annotationType);
 	}
@@ -267,6 +289,9 @@ public abstract class AnnotationUtils {
 	@Deprecated
 	@Nullable
 	public static Annotation[] getAnnotations(AnnotatedElement annotatedElement) {
+		/*
+		 * 获取AnnotatedElement上指定的注解数组，不包括元注解
+		 */
 		try {
 			return synthesizeAnnotationArray(annotatedElement.getAnnotations(), annotatedElement);
 		}
@@ -292,6 +317,10 @@ public abstract class AnnotationUtils {
 	@Deprecated
 	@Nullable
 	public static Annotation[] getAnnotations(Method method) {
+		/*
+		 * 获取制定方法上的所有注解数组，不包括元注解
+		 * 支持桥接方法
+		 */
 		try {
 			return synthesizeAnnotationArray(BridgeMethodResolver.findBridgedMethod(method).getAnnotations(), method);
 		}
@@ -332,7 +361,10 @@ public abstract class AnnotationUtils {
 	@Deprecated
 	public static <A extends Annotation> Set<A> getRepeatableAnnotations(AnnotatedElement annotatedElement,
 			Class<A> annotationType) {
-
+		/*
+		 * 获取重复的注解：
+		 * 搜搜范围包括：直接存在、间接存在、或者元注解上的重复指定注解
+		 */
 		return getRepeatableAnnotations(annotatedElement, annotationType, null);
 	}
 
@@ -414,7 +446,9 @@ public abstract class AnnotationUtils {
 	@Deprecated
 	public static <A extends Annotation> Set<A> getDeclaredRepeatableAnnotations(AnnotatedElement annotatedElement,
 			Class<A> annotationType) {
-
+		/*
+		 *
+		 */
 		return getDeclaredRepeatableAnnotations(annotatedElement, annotationType, null);
 	}
 
@@ -482,6 +516,14 @@ public abstract class AnnotationUtils {
 	@Nullable
 	public static <A extends Annotation> A findAnnotation(
 			AnnotatedElement annotatedElement, @Nullable Class<A> annotationType) {
+		/*
+		 * 在提供的AnnotationElement上查找annotationType的单个注解。
+		 * 如果注解没有直接出现在提供的元素上，将搜索元注解。
+		 *
+		 * 警告：此方法通常对带注解的元素annotatedElement进行操作。
+		 * 换句话说，该方法不会对类或方法执行专门的搜索算法。即对当前类的父类或接口上的注解进行搜索
+		 * 如果需要更具体的findAnnotation（Class，Class）或findAnnotation（Method，Class）语义，请调用其中一个方法。
+		 */
 
 		if (annotationType == null) {
 			return null;
@@ -516,6 +558,12 @@ public abstract class AnnotationUtils {
 	 */
 	@Nullable
 	public static <A extends Annotation> A findAnnotation(Method method, @Nullable Class<A> annotationType) {
+		/*
+		 * 在提供的方法Method上查找annotationType的单个注解，
+		 * 如果注解没有直接出现在给定方法本身上，则遍历其super method（即从超类和接口搜索）。
+		 * 同时如果注解没有直接出现在提供的元素上，将搜索元注解。
+		 * 默认情况下，方法上的注解不会被继承，所以我们需要显式地处理这个问题。
+		 */
 		if (annotationType == null) {
 			return null;
 		}
@@ -556,6 +604,16 @@ public abstract class AnnotationUtils {
 	 */
 	@Nullable
 	public static <A extends Annotation> A findAnnotation(Class<?> clazz, @Nullable Class<A> annotationType) {
+		/*
+		 * 在提供的类clazz上查找annotationType的单个注解，如果注解没有直接出现在给定的类本身上，则遍历其接口、注解的元注解和超类。
+		 * 此方法显式处理未声明为继承的类级注解以及元注解和接口上的注解。
+		 * 该算法的操作如下：
+		 * 		搜索给定类上的注解，如果找到，则返回它。
+		 * 		递归地搜索给定类声明的所有注解。
+		 * 		递归地搜索给定类声明的所有接口。
+		 * 		递归搜索给定类的超类层次结构。
+		 * 注意：在这种情况下，该术语递归地表示搜索过程继续，返回到步骤#1，将当前接口、注解或超类作为查找注解的类。
+		 */
 		if (annotationType == null) {
 			return null;
 		}

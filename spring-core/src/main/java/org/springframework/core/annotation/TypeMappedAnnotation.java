@@ -69,6 +69,9 @@ import org.springframework.util.ReflectionUtils;
  * @see TypeMappedAnnotations
  */
 final class TypeMappedAnnotation<A extends Annotation> extends AbstractMergedAnnotation<A> {
+	/**
+	 * AbstractMergedAnnotation 的实现类
+	 */
 
 	private static final Map<Class<?>, Object> EMPTY_ARRAYS;
 	static {

@@ -38,6 +38,10 @@ import org.springframework.core.io.Resource;
  * @see org.springframework.web.filter.GenericFilterBean
  */
 public class ServletContextResourceLoader extends DefaultResourceLoader {
+	/**
+	 * ServletContextResourceLoader
+	 * 显然它位于web包，和web相关。重写了getResourceByPath()
+	 */
 
 	private final ServletContext servletContext;
 
@@ -56,6 +60,7 @@ public class ServletContextResourceLoader extends DefaultResourceLoader {
 	 */
 	@Override
 	protected Resource getResourceByPath(String path) {
+		// 重写DefaultResourceLoader的钩子方法，用ServletContextResource去加载资源~~~~
 		return new ServletContextResource(this.servletContext, path);
 	}
 

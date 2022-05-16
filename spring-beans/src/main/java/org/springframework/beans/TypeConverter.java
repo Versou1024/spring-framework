@@ -36,6 +36,13 @@ import org.springframework.lang.Nullable;
  * @see BeanWrapperImpl
  */
 public interface TypeConverter {
+	/*
+	 * 定义类型转换方法的接口。
+	 * 通常与PropertyEditorRegistry接口一起实现。
+	 * 1、如果必须就进行转换 convertIfNecessary -- 将value转换为所需类型requiredType
+	 * 2、从字符串到任何类型的转换通常使用PropertyEditor类的setAsText方法，或ConversionService中的Spring转换器。
+	 * 3、转换后的值可以赋予到MethodParameter、Field
+	 */
 
 	/**
 	 * Convert the value to the required type (if necessary from a String).
@@ -71,8 +78,7 @@ public interface TypeConverter {
 	 * @see org.springframework.core.convert.converter.Converter
 	 */
 	@Nullable
-	<T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType,
-			@Nullable MethodParameter methodParam) throws TypeMismatchException;
+	<T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType, @Nullable MethodParameter methodParam) throws TypeMismatchException;
 
 	/**
 	 * Convert the value to the required type (if necessary from a String).
@@ -111,8 +117,7 @@ public interface TypeConverter {
 	 * @see org.springframework.core.convert.converter.Converter
 	 */
 	@Nullable
-	default <T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType,
-			@Nullable TypeDescriptor typeDescriptor) throws TypeMismatchException {
+	default <T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType, @Nullable TypeDescriptor typeDescriptor) throws TypeMismatchException {
 
 		throw new UnsupportedOperationException("TypeDescriptor resolution not supported");
 	}

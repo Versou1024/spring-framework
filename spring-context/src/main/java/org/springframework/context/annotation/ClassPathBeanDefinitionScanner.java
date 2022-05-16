@@ -158,14 +158,19 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	public ClassPathBeanDefinitionScanner(BeanDefinitionRegistry registry, boolean useDefaultFilters,
 			Environment environment, @Nullable ResourceLoader resourceLoader) {
+		// 实际初始化位置
 
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		this.registry = registry;
 
+		// 当然我们也可以设置为false，比如@ComponentScan里就可以设置为false，只扫描指定的注解/类等等
 		if (useDefaultFilters) {
+			// 没有指定的情况下，默认就是true
 			registerDefaultFilters();
 		}
+		// 设置environment -- 因为这里是ClassPath下的BEanDefinition的解析，因此需要environment配合
 		setEnvironment(environment);
+		// 设置资源Loader，可以帮助加载xml配置文件、加载.class文件
 		setResourceLoader(resourceLoader);
 	}
 
@@ -183,8 +188,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @see BeanDefinitionDefaults
 	 */
 	public void setBeanDefinitionDefaults(@Nullable BeanDefinitionDefaults beanDefinitionDefaults) {
-		this.beanDefinitionDefaults =
-				(beanDefinitionDefaults != null ? beanDefinitionDefaults : new BeanDefinitionDefaults());
+		this.beanDefinitionDefaults = (beanDefinitionDefaults != null ? beanDefinitionDefaults : new BeanDefinitionDefaults());
 	}
 
 	/**
@@ -271,24 +275,38 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
+		// beanDefinitions 用于装载扫描到的Bean
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
+			// 这个是重点，会把该包下面所有有资格的Bean都扫描进去。Spring5的处理方式不一样哦~
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 			for (BeanDefinition candidate : candidates) {
+				// 扫描到所有的Bean之后就是开始解析Bean里面的一些基本信息，或配置一些基本信息
+				// 解析@Scope、@Lazy、@Role、@DependsOn等、设置BeanName、
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
-				candidate.setScope(scopeMetadata.getScopeName());
+				candidate.setScope(scopeMetadata.getScopeName()); // 解析生效的范围，并将scope name设置进去
+				// 生成Bean的名称，默认为首字母小写
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
+				// 此处为扫描的Bean，为ScannedGenericBeanDefinition，所以肯定为true
+				// 因此进来if代码块，执行postProcessBeanDefinition（对Bean定义信息做）如下详解
+				// 注意：只是添加些默认的Bean定义信息，并不是执行后置处理器~~~
 				if (candidate instanceof AbstractBeanDefinition) {
+					// 进行BeanDefinition的处理，添加一些默认信息，从beanDefinitionDefaults复制一些默认信息到解析出的BEanDefinition中
+					// 可以忽略，因为乜有设置 BeanDefinitionDefault 值
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
+				// 显然，此处也是true，也是完善比如Bean上的一些注解信息：
+				// 比如@Lazy、@Primary、@DependsOn、@Role、@Description 、@Role注解用于Bean的分类分组，没有太大的作用
 				if (candidate instanceof AnnotatedBeanDefinition) {
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
+				// 检查bean
+				// 例如dao包（一般配置的basePakage是这个）下的类是符合mybaits要求的则向spring IOC容器中注册它的BeanDefinition  所以这步检查第三方Bean的时候有必要检查一下
 				if (checkCandidate(beanName, candidate)) {
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
-					definitionHolder =
-							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+					definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
+					// 注意 注意 注意：这里已经把Bean注册进去工厂了，所以 doScan()方法不接收返回值，也是没有任何问题的。
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}
@@ -303,7 +321,11 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @param beanName the generated bean name for the given bean
 	 */
 	protected void postProcessBeanDefinition(AbstractBeanDefinition beanDefinition, String beanName) {
+		// 对BeanDefinition执行些默认的信息
+		// BeanDefinitionDefaults是个标准的javaBean，有一些默认值
+		// 需要通过  setBeanDefinitionDefaults 注入进来
 		beanDefinition.applyDefaults(this.beanDefinitionDefaults);
+		// 自动依赖注入 匹配路径（此处为null，不进来）
 		if (this.autowireCandidatePatterns != null) {
 			beanDefinition.setAutowireCandidate(PatternMatchUtils.simpleMatch(this.autowireCandidatePatterns, beanName));
 		}

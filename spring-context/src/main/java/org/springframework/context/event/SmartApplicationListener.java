@@ -34,6 +34,11 @@ import org.springframework.lang.Nullable;
  * @see GenericApplicationListenerAdapter
  */
 public interface SmartApplicationListener extends ApplicationListener<ApplicationEvent>, Ordered {
+	/*
+	 *  扩展 ApplicationListener
+	 *  supportsEventType   自定义支持的事件类型
+	 *  supportsSourceType  自定义支持的源类型
+	 */
 
 	/**
 	 * Determine whether this listener actually supports the given event type.

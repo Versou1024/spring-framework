@@ -36,6 +36,24 @@ import org.springframework.lang.Nullable;
  * @see InstantiationAwareBeanPostProcessorAdapter
  */
 public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationAwareBeanPostProcessor {
+	/*
+	智能实例化Bean（继承InstantiationAwareBeanPostProcessor）
+
+	predictBeanType：
+		预测Bean的类型，返回第一个预测成功的Class类型，如果不能预测返回null；
+		当你调用BeanFactory.getType(name)时当通过BeanDefinition，无法得到Bean类型信息时就调用该回调方法来决定类型信息。
+
+	determineCandidateConstructors：
+		检测Bean的构造器，可以检测出多个候选构造器，再有相应的策略决定使用哪一个。
+		在AbstractAutowireCapableBeanFactory#createBeanInstance的时候，会通过此方法尝试去找到一个合适的构造函数。
+		若返回null，可能就直接使用空构造函数去实例化了
+
+	getEarlyBeanReference：
+		和循环引用相关了。当正在创建A时，A依赖B。
+		此时会：将A作为ObjectFactory放入单例工厂中进行early expose提早暴露，放入三级缓存中，
+		此处又需要引用A，但A正在创建，从单例工厂拿到ObjectFactory（其通过getEarlyBeanReference获取及早暴露Bean)
+		从而允许循环依赖
+	 */
 
 	/**
 	 * Predict the type of the bean to be eventually returned from this

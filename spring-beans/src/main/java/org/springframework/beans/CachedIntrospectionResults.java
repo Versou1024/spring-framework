@@ -72,6 +72,15 @@ import org.springframework.util.StringUtils;
  * @see #forClass(Class)
  */
 public final class CachedIntrospectionResults {
+	/*
+	 * 内部类：缓存Java类的PropertyDescriptor信息。不应该由客户端应用程序代码直接使用。
+	 * 由于Spring在自己框架的应用程序类加载器中缓存bean描述符所必需的，而不是依赖JDK的系统范围的BeanInfo缓存（以避免在共享JVM中关闭单个应用程序时发生泄漏）。
+	 * 信息是静态缓存的，因此我们不需要为我们操作的每个JavaBean创建此类的新对象。
+	 * 因此，这个类实现了工厂设计模式，使用私有构造函数和静态forClass（class）工厂方法来获取实例。
+	 * 请注意，为了使缓存有效地工作，需要满足一些先决条件：
+	 * 1、首选Spring JAR与应用程序类位于同一类加载器中的安排，这在任何情况下都允许在应用程序的生命周期中进行干净的缓存。
+	 * 2、对于Web应用程序，请考虑声明本地org.springframework.web.util.IntrospectorCleanupListener在web.xml中。
+	 */
 
 	/**
 	 * System property that instructs Spring to use the {@link Introspector#IGNORE_ALL_BEANINFO}
@@ -92,7 +101,7 @@ public final class CachedIntrospectionResults {
 	 */
 	public static final String IGNORE_BEANINFO_PROPERTY_NAME = "spring.beaninfo.ignore";
 
-	private static final PropertyDescriptor[] EMPTY_PROPERTY_DESCRIPTOR_ARRAY = {};
+	private static final PropertyDescriptor[] EMPTY_PROPERTY_DESCRIPTOR_ARRAY = {}; // 缓存的PropertyDescriptor信息类
 
 
 	private static final boolean shouldIntrospectorIgnoreBeaninfoClasses =
@@ -116,14 +125,14 @@ public final class CachedIntrospectionResults {
 	 * This variant is being used for cache-safe bean classes.
 	 */
 	static final ConcurrentMap<Class<?>, CachedIntrospectionResults> strongClassCache =
-			new ConcurrentHashMap<>(64);
+			new ConcurrentHashMap<>(64);// 弱引用
 
 	/**
 	 * Map keyed by Class containing CachedIntrospectionResults, softly held.
 	 * This variant is being used for non-cache-safe bean classes.
 	 */
 	static final ConcurrentMap<Class<?>, CachedIntrospectionResults> softClassCache =
-			new ConcurrentReferenceHashMap<>(64);
+			new ConcurrentReferenceHashMap<>(64); // 弱引用
 
 
 	/**
@@ -166,6 +175,9 @@ public final class CachedIntrospectionResults {
 	 * @throws BeansException in case of introspection failure
 	 */
 	static CachedIntrospectionResults forClass(Class<?> beanClass) throws BeansException {
+		/**
+		 * 为给定的bean类创建CachedIntrospectionResults。
+		 */
 		CachedIntrospectionResults results = strongClassCache.get(beanClass);
 		if (results != null) {
 			return results;
@@ -174,7 +186,7 @@ public final class CachedIntrospectionResults {
 		if (results != null) {
 			return results;
 		}
-
+		// 缓存失效
 		results = new CachedIntrospectionResults(beanClass);
 		ConcurrentMap<Class<?>, CachedIntrospectionResults> classCacheToUse;
 
@@ -271,15 +283,15 @@ public final class CachedIntrospectionResults {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Getting BeanInfo for class [" + beanClass.getName() + "]");
 			}
-			this.beanInfo = getBeanInfo(beanClass);
+			this.beanInfo = getBeanInfo(beanClass); // 获取BeanInfo
 
 			if (logger.isTraceEnabled()) {
 				logger.trace("Caching PropertyDescriptors for class [" + beanClass.getName() + "]");
 			}
-			this.propertyDescriptors = new LinkedHashMap<>();
+			this.propertyDescriptors = new LinkedHashMap<>(); // 初始化propertyDescriptors容器
 
 			// This call is slow so we do it once.
-			PropertyDescriptor[] pds = this.beanInfo.getPropertyDescriptors();
+			PropertyDescriptor[] pds = this.beanInfo.getPropertyDescriptors(); // 从BeanInfo中获取所有的PropertyDescriptor
 			for (PropertyDescriptor pd : pds) {
 				if (Class.class == beanClass &&
 						("classLoader".equals(pd.getName()) ||  "protectionDomain".equals(pd.getName()))) {
@@ -293,6 +305,7 @@ public final class CachedIntrospectionResults {
 									"; editor [" + pd.getPropertyEditorClass().getName() + "]" : ""));
 				}
 				pd = buildGenericTypeAwarePropertyDescriptor(beanClass, pd);
+				// 存入propertyDescriptors容器中，以name为key
 				this.propertyDescriptors.put(pd.getName(), pd);
 			}
 

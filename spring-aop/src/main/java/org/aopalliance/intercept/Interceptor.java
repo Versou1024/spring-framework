@@ -55,5 +55,5 @@ import org.aopalliance.aop.Advice;
  * @see Joinpoint
  */
 public interface Interceptor extends Advice {
-
+	// 拦截器直接使用
 }

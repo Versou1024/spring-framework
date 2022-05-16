@@ -44,11 +44,9 @@ import org.springframework.lang.Nullable;
  */
 public final class LocaleContextHolder {
 
-	private static final ThreadLocal<LocaleContext> localeContextHolder =
-			new NamedThreadLocal<>("LocaleContext");
+	private static final ThreadLocal<LocaleContext> localeContextHolder = new NamedThreadLocal<>("LocaleContext");
 
-	private static final ThreadLocal<LocaleContext> inheritableLocaleContextHolder =
-			new NamedInheritableThreadLocal<>("LocaleContext");
+	private static final ThreadLocal<LocaleContext> inheritableLocaleContextHolder = new NamedInheritableThreadLocal<>("LocaleContext");
 
 	// Shared default locale at the framework level
 	@Nullable
@@ -67,6 +65,7 @@ public final class LocaleContextHolder {
 	 * Reset the LocaleContext for the current thread.
 	 */
 	public static void resetLocaleContext() {
+		// 清空ThreadLocal的value值
 		localeContextHolder.remove();
 		inheritableLocaleContextHolder.remove();
 	}

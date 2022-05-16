@@ -31,6 +31,7 @@ import org.springframework.web.servlet.HandlerMapping;
  * @see HandlerMappingIntrospector
  */
 public interface MatchableHandlerMapping extends HandlerMapping {
+	// 通过request和pattern进行匹配,查找结果
 
 	/**
 	 * Determine whether the request matches the given pattern.

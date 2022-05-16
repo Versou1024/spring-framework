@@ -65,6 +65,7 @@ import org.springframework.web.context.support.WebApplicationObjectSupport;
  * @see #setRequireSession
  */
 public abstract class WebContentGenerator extends WebApplicationObjectSupport {
+	//
 
 	/** HTTP method "GET". */
 	public static final String METHOD_GET = "GET";
@@ -129,7 +130,9 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * or {@code false} if it should be unrestricted
 	 */
 	public WebContentGenerator(boolean restrictDefaultSupportedMethods) {
+		// 创建一个新的 WebContentGenerator
 		if (restrictDefaultSupportedMethods) {
+			// 此生成器默认支持 HTTP 方法 GET、HEAD 和 POST，则为 true；如果应不受限制，则为false
 			this.supportedMethods = new LinkedHashSet<>(4);
 			this.supportedMethods.add(METHOD_GET);
 			this.supportedMethods.add(METHOD_HEAD);
@@ -375,8 +378,9 @@ public abstract class WebContentGenerator extends WebApplicationObjectSupport {
 	 * @since 4.2
 	 */
 	protected final void checkRequest(HttpServletRequest request) throws ServletException {
-		// Check whether we should support the request method.
+		// 检查我们是否应该支持请求方法。
 		String method = request.getMethod();
+		//
 		if (this.supportedMethods != null && !this.supportedMethods.contains(method)) {
 			throw new HttpRequestMethodNotSupportedException(method, this.supportedMethods);
 		}

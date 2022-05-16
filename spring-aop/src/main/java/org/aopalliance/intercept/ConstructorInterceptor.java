@@ -42,6 +42,7 @@ package org.aopalliance.intercept;
  * @author Rod Johnson
  */
 public interface ConstructorInterceptor extends Interceptor  {
+	// 构造器增强器，Spring到目前为止都没用使用过
 
 	/**
 	 * Implement this method to perform extra treatments before and

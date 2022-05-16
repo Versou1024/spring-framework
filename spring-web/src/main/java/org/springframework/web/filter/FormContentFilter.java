@@ -99,10 +99,12 @@ public class FormContentFilter extends OncePerRequestFilter {
 		if (!shouldParse(request)) {
 			return null;
 		}
-
+		//
 		HttpInputMessage inputMessage = new ServletServerHttpRequest(request) {
 			@Override
 			public InputStream getBody() throws IOException {
+				// 从FormContentFilter的效果也能想到，它肯定会调用request.getInputStream();
+				// 所以后续我们不能再使用getInputStream()了。另外它要想getParameter系列方法有效果，所以必须包装一下request。它用的是自己的静态内部类：
 				return request.getInputStream();
 			}
 		};
@@ -110,6 +112,7 @@ public class FormContentFilter extends OncePerRequestFilter {
 	}
 
 	private boolean shouldParse(HttpServletRequest request) {
+		// 解析条件：contentType非空、属于put、delete、patch的请求方式、application/x-www-form-urlencoded的content-type
 		String contentType = request.getContentType();
 		String method = request.getMethod();
 		if (StringUtils.hasLength(contentType) && HTTP_METHODS.contains(method)) {

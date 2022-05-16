@@ -41,6 +41,9 @@ package org.aopalliance.intercept;
  */
 @FunctionalInterface
 public interface MethodInterceptor extends Interceptor {
+	/*
+	 *  AspectJ提供的增强接口，定义增强方法：Object invoke(MethodInvocation var1) throws Throwable;
+	 */
 
 	/**
 	 * Implement this method to perform extra treatments before and

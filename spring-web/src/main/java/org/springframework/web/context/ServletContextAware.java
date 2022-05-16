@@ -31,7 +31,9 @@ import org.springframework.beans.factory.Aware;
  * @see ServletConfigAware
  */
 public interface ServletContextAware extends Aware {
-
+	/*
+	 * ServletContext -- 上下文路径、添加/创建过滤器、添加/创建Servlet、添加/创建监听器、添加和移除Servlet属性、
+	 */
 	/**
 	 * Set the {@link ServletContext} that this object runs in.
 	 * <p>Invoked after population of normal bean properties but before an init

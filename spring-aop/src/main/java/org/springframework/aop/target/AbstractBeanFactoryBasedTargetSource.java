@@ -48,6 +48,7 @@ import org.springframework.util.ObjectUtils;
  * @see CommonsPool2TargetSource
  */
 public abstract class AbstractBeanFactoryBasedTargetSource implements TargetSource, BeanFactoryAware, Serializable {
+	// 基于BeanFactory工厂的targetSource
 
 	/** use serialVersionUID from Spring 1.2.7 for interoperability. */
 	private static final long serialVersionUID = -4721607536018568393L;
@@ -106,6 +107,7 @@ public abstract class AbstractBeanFactoryBasedTargetSource implements TargetSour
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		if (this.targetBeanName == null) {
+			// targetNameweinull就error
 			throw new IllegalStateException("Property 'targetBeanName' is required");
 		}
 		this.beanFactory = beanFactory;
@@ -146,12 +148,13 @@ public abstract class AbstractBeanFactoryBasedTargetSource implements TargetSour
 
 	@Override
 	public boolean isStatic() {
-		return false;
+		return false; // 非静态的，是原型的target
 	}
 
 	@Override
 	public void releaseTarget(Object target) throws Exception {
 		// Nothing to do here.
+		// 实际上不会不是释放target
 	}
 
 

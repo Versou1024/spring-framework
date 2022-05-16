@@ -31,7 +31,9 @@ import org.springframework.lang.Nullable;
  */
 @FunctionalInterface
 public interface ProtocolResolver {
-
+	// Spring提供给用户使用的资源协议处理器
+	// 就一个核心方法：根据给定的location判断使用哪一个resource的实现类
+	// 比如 ByteArrayResource、URLResource、FileUrlResource、FileSystemResource、ClassPathResource等等
 	/**
 	 * Resolve the given location against the given resource loader
 	 * if this implementation's protocol matches.

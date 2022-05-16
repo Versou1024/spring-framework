@@ -35,6 +35,12 @@ import org.springframework.util.Assert;
  */
 public abstract class TypeConverterSupport extends PropertyEditorRegistrySupport implements TypeConverter {
 
+	/**
+	 * TypeConverter接口的接不了实现
+	 *
+	 * 统一 convertIfNecessary 将 Class、methodParameter、Filed转为TypeDescriptor
+	 */
+
 	@Nullable
 	TypeConverterDelegate typeConverterDelegate;
 
@@ -70,6 +76,7 @@ public abstract class TypeConverterSupport extends PropertyEditorRegistrySupport
 
 		Assert.state(this.typeConverterDelegate != null, "No TypeConverterDelegate");
 		try {
+			// 核心：委托给typeConverterDelegate进行转换操作
 			return this.typeConverterDelegate.convertIfNecessary(null, null, value, requiredType, typeDescriptor);
 		}
 		catch (ConverterNotFoundException | IllegalStateException ex) {

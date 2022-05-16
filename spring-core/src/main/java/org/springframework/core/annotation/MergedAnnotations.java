@@ -136,15 +136,37 @@ import org.springframework.util.Assert;
  * @see MergedAnnotationSelectors
  */
 public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>> {
-
-	/**
-	 * Determine if the specified annotation is either directly present or
-	 * meta-present.
-	 * <p>Equivalent to calling {@code get(annotationType).isPresent()}.
-	 * @param annotationType the annotation type to check
-	 * @return {@code true} if the annotation is present
-	 */
-	<A extends Annotation> boolean isPresent(Class<A> annotationType);
+	/*
+	 * 5.2对MergeAnnotation提供的一个注解操作类：
+	 *
+	 * 提供对merge annotation集合的访问，这些注解通常从类class或方法method等源获取。
+	 * 每个合并注解表示一个视图，其中视图的属性值可以从不同的源值“合并”，通常：
+	 * 		显式和隐式@AliasFor注解作为一个注解中的一个或多个属性声明的
+	 * 		显式@AliasFor作为注解的元注解声明
+	 * 		元注解基于约定的属性别名
+	 * 		来自元注解声明
+	 * 例如，@PostMapping注解可以定义如下：
+	 * @Retention(RetentionPolicy.RUNTIME)
+	 * @RequestMapping(method = RequestMethod.POST)
+	 * public @interface PostMapping{
+	 *     @AliasFor(attribute = "path")
+	 *     String[] value() default {};
+	 *     @AliasFor(attribute = "value")
+	 *     String[] path() default {};
+	 * }
+	* 如果一个方法用@PostMapping（“/home”）注解，它将包含@PostMapping和元注解@RequestMapping的合并注解。@RequestMapping注解的合并视图将包含以下属性：
+	* Name 		Value 					Source
+	* value 	"/home" 				Declared in @PostMapping
+	* path 		"/home" 				Explicit @AliasFor
+	* method 	RequestMethod.POST 	 v	@RequestMapping
+	* merged annotation可以从任何Java AnnotationElement中获得。它们也可以不使用反射（例如直接解析字节码ASM）。
+	* 可以使用不同的搜索策略来定位要聚合的注解的相关source元素。例如，MergedAnnotations.SearchStrategy.TYPE_HIERARCHY 将搜索超类和实现的接口。
+	* 从MergedAnnotations实例中，您可以获取单个注解，也可以stream传输所有注解，或者只传输与特定类型匹配的注解。您还可以快速判断是否存在注释。
+	*  mergedAnnotations.isPresent(ExampleAnnotation.class);
+	*  mergedAnnotations.get(ExampleAnnotation.class).getString("value");
+	*  mergedAnnotations.stream().filter(MergedAnnotation::isMetaPresent);
+	*  mergedAnnotations.stream(ExampleAnnotation.class).map(mergedAnnotation -> mergedAnnotation.getString("value"))  .forEach(System.out::println);
+	*/
 
 	/**
 	 * Determine if the specified annotation is either directly present or
@@ -271,7 +293,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * to match
 	 * @return a stream of matching annotations
 	 */
-	<A extends Annotation> Stream<MergedAnnotation<A>> stream(String annotationType);
+	<A extends Annotation> Stream<MergedAnnotation<A>> stream(String annotationType); // 匹配指定的annotationType
 
 	/**
 	 * Stream all annotations and meta-annotations contained in this collection.
@@ -282,7 +304,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * earliest in the stream.
 	 * @return a stream of annotations
 	 */
-	Stream<MergedAnnotation<Annotation>> stream();
+	Stream<MergedAnnotation<Annotation>> stream(); // 所有的注解遍历
 
 
 	/**
@@ -297,6 +319,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * annotations
 	 */
 	static MergedAnnotations from(AnnotatedElement element) {
+		// 从类上直接查找所有的注解合并
 		return from(element, SearchStrategy.DIRECT);
 	}
 
@@ -310,6 +333,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * element annotations
 	 */
 	static MergedAnnotations from(AnnotatedElement element, SearchStrategy searchStrategy) {
+		// 从类上根据搜索策略查找所有的注解合并
 		return from(element, searchStrategy, RepeatableContainers.standardRepeatables());
 	}
 
@@ -324,9 +348,8 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * @return a {@link MergedAnnotations} instance containing the merged
 	 * element annotations
 	 */
-	static MergedAnnotations from(AnnotatedElement element, SearchStrategy searchStrategy,
-			RepeatableContainers repeatableContainers) {
-
+	static MergedAnnotations from(AnnotatedElement element, SearchStrategy searchStrategy, RepeatableContainers repeatableContainers) {
+		// 从类上根据搜索策略查找所有的注解合并，重复容器
 		return from(element, searchStrategy, repeatableContainers, AnnotationFilter.PLAIN);
 	}
 
@@ -429,6 +452,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * @see MergedAnnotation#of(ClassLoader, Object, Class, java.util.Map)
 	 */
 	static MergedAnnotations of(Collection<MergedAnnotation<?>> annotations) {
+		// 将一组annotations合并为MergedAnnotations
 		return MergedAnnotationsCollection.of(annotations);
 	}
 
@@ -441,6 +465,18 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * combined to create the final {@link MergedAnnotations}.
 	 */
 	enum SearchStrategy {
+		// 注解搜索策略
+		// 直接搜索、搜索可继承的注解、搜索超类的注解
+		//  		//仅查找直接注解，不考虑@Inherited，超类或者接口。
+		//		DIRECT,
+		//         //查找所有直接注解，或者superclass上使用@Inherited的注解。仅适用于Class。该搜索策略不搜索接口
+		//		INHERITED_ANNOTATIONS,
+		//        //查找所有直接注解，或者超类的注解，与INHERITED_ANNOTATIONS相似，但超类的注解上不需要应用@Inherited，就可以获取。该搜索策略不搜索接口
+		//		SUPERCLASS,
+		//        // 搜索整个继承体系，包括class、superClass、继承interface三者上所有的注解只和
+		//		TYPE_HIERARCHY,
+		//        // 在TYPE_HIERARCHY上，同时又查找内部类的注解
+		//		TYPE_HIERARCHY_AND_ENCLOSING_CLASSES
 
 		/**
 		 * Find only directly declared annotations, without considering

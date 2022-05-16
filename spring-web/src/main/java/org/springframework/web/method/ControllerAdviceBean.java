@@ -47,6 +47,11 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
  * @since 3.2
  */
 public class ControllerAdviceBean implements Ordered {
+	/*
+	 * 封装有关@ControllerAdvice Spring 管理的 bean 的信息，而不必对其进行实例化。
+	 * findAnnotatedBeans(ApplicationContext)方法可用于发现此类 bean。
+	 * 但是，可以从任何对象创建ControllerAdviceBean ，包括没有@ControllerAdvice注释的对象。
+	 */
 
 	/**
 	 * Reference to the actual bean instance or a {@code String} representing
@@ -222,6 +227,7 @@ public class ControllerAdviceBean implements Ordered {
 	 * @see ControllerAdvice
 	 */
 	public boolean isApplicableToBeanType(@Nullable Class<?> beanType) {
+		// 调用test方法
 		return this.beanTypePredicate.test(beanType);
 	}
 
@@ -260,7 +266,14 @@ public class ControllerAdviceBean implements Ordered {
 	 * @see Ordered
 	 */
 	public static List<ControllerAdviceBean> findAnnotatedBeans(ApplicationContext context) {
+		/*
+		 * 静态方法：
+		 * 利用BeanFactoryUtils找出所有的Bean，并以此检查是否有注解@ControllerAdvice的bean
+		 * 组合为ControllerAdviceBean
+		 * 将所有查询到的adviceBeans进行排序
+		 */
 		List<ControllerAdviceBean> adviceBeans = new ArrayList<>();
+		// 1. 遍历Spring容器,查找带有ControllerAdvice的bean,并创建ControllerAdviceBean
 		for (String name : BeanFactoryUtils.beanNamesForTypeIncludingAncestors(context, Object.class)) {
 			if (!ScopedProxyUtils.isScopedTarget(name)) {
 				ControllerAdvice controllerAdvice = context.findAnnotationOnBean(name, ControllerAdvice.class);
@@ -271,6 +284,7 @@ public class ControllerAdviceBean implements Ordered {
 				}
 			}
 		}
+		// 2. 排序
 		OrderComparator.sort(adviceBeans);
 		return adviceBeans;
 	}
@@ -282,12 +296,17 @@ public class ControllerAdviceBean implements Ordered {
 	}
 
 	private static HandlerTypePredicate createBeanTypePredicate(@Nullable Class<?> beanType) {
-		ControllerAdvice controllerAdvice = (beanType != null ?
-				AnnotatedElementUtils.findMergedAnnotation(beanType, ControllerAdvice.class) : null);
+		// 创建Bean类型的谓词方法
+
+		ControllerAdvice controllerAdvice = (beanType != null ? AnnotatedElementUtils.findMergedAnnotation(beanType, ControllerAdvice.class) : null);
 		return createBeanTypePredicate(controllerAdvice);
 	}
 
 	private static HandlerTypePredicate createBeanTypePredicate(@Nullable ControllerAdvice controllerAdvice) {
+		// 创建Bean类型的谓词方法
+
+		// @ControllerAdvice 注解中带有属性用来判断 --
+		// 包括basePackages、annotation、
 		if (controllerAdvice != null) {
 			return HandlerTypePredicate.builder()
 					.basePackage(controllerAdvice.basePackages())

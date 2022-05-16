@@ -36,6 +36,10 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public abstract class AttributeAccessorSupport implements AttributeAccessor, Serializable {
+	/*
+	 * 分析: 由上面的定义可以看到, AttributeAccessorSupport实现了AttributeAccessor接口, 并对其方法进行
+	 * 了实现, 可以清晰的看到, 其就是通过一个map来存储我们所说的额外的属性的
+	 */
 
 	/** Map with String keys and Object values. */
 	private final Map<String, Object> attributes = new LinkedHashMap<>();

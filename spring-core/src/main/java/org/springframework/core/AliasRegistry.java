@@ -24,6 +24,11 @@ package org.springframework.core;
  * @since 2.5.2
  */
 public interface AliasRegistry {
+	/*
+	表名Alias注册表接口
+	一个Bean可以有只有一个BeanName，但可以有多个别名
+	常用API：注册、移除、判断name是否有别名、获取name所有的别名
+	 */
 
 	/**
 	 * Given a name, register an alias for it.
@@ -47,13 +52,13 @@ public interface AliasRegistry {
 	 * @param name the name to check
 	 * @return whether the given name is an alias
 	 */
-	boolean isAlias(String name);
+	boolean isAlias(String name); // 判断是否拥有别名
 
 	/**
 	 * Return the aliases for the given name, if defined.
 	 * @param name the name to check for aliases
 	 * @return the aliases, or an empty array if none
 	 */
-	String[] getAliases(String name);
+	String[] getAliases(String name); // 获取对应name的所有别名
 
 }

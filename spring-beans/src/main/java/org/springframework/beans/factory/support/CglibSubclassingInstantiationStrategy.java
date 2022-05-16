@@ -143,12 +143,16 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 		 */
 		private Class<?> createEnhancedSubclass(RootBeanDefinition beanDefinition) {
 			Enhancer enhancer = new Enhancer();
+			// 设置超类
 			enhancer.setSuperclass(beanDefinition.getBeanClass());
+			// 命名策略家后加上&&
 			enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
 			if (this.owner instanceof ConfigurableBeanFactory) {
 				ClassLoader cl = ((ConfigurableBeanFactory) this.owner).getBeanClassLoader();
+				// 设置策略
 				enhancer.setStrategy(new ClassLoaderAwareGeneratorStrategy(cl));
 			}
+			// 设置CallbackFilter
 			enhancer.setCallbackFilter(new MethodOverrideCallbackFilter(beanDefinition));
 			enhancer.setCallbackTypes(CALLBACK_TYPES);
 			return enhancer.createClass();
@@ -204,6 +208,8 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 				logger.trace("MethodOverride for " + method + ": " + methodOverride);
 			}
 			if (methodOverride == null) {
+				// 现在很少使用@Lookup注解，以及replace-method的xml方式
+				// 因此返回PASSTHROUGH即0
 				return PASSTHROUGH;
 			}
 			else if (methodOverride instanceof LookupOverride) {

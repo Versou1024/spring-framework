@@ -45,8 +45,13 @@ import org.springframework.transaction.TransactionUsageException;
  * @see DefaultTransactionStatus
  */
 public abstract class AbstractTransactionStatus implements TransactionStatus {
+	/**
+	 * TransactionStatus接口的抽象基本实现。
+	 * 预先实现对本地回滚和已完成标志的处理，以及对底层SavepointManager的委派。还提供了在事务中保存保存点的选项。
+	 * 不假设任何特定的内部事务处理，例如底层事务对象，也没有事务同步机制。
+	 */
 
-	private boolean rollbackOnly = false;
+	private boolean rollbackOnly = false; // local rollback only 标志位
 
 	private boolean completed = false;
 
@@ -55,7 +60,7 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 
 
 	//---------------------------------------------------------------------
-	// Implementation of TransactionExecution
+	// 实现 TransactionExecution 接口的方法
 	//---------------------------------------------------------------------
 
 	@Override
@@ -107,7 +112,7 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 
 
 	//---------------------------------------------------------------------
-	// Handling of current savepoint state
+	// 处理当前保存点的状态
 	//---------------------------------------------------------------------
 
 	@Override
@@ -170,7 +175,7 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 
 
 	//---------------------------------------------------------------------
-	// Implementation of SavepointManager
+	// 实现 SavepointManager 接口
 	//---------------------------------------------------------------------
 
 	/**
@@ -218,7 +223,7 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 
 
 	//---------------------------------------------------------------------
-	// Flushing support
+	// 支持 flushing
 	//---------------------------------------------------------------------
 
 	/**

@@ -38,6 +38,10 @@ import org.springframework.util.CollectionUtils;
  * @since 3.0
  */
 public class ServletServerHttpResponse implements ServerHttpResponse {
+	/*
+	 * 实现  ServerHttpResponse 接口的方法，同时聚合一个 HttpServletResponse 对象
+	 * 包括响应头HttpHeaders
+	 */
 
 	private final HttpServletResponse servletResponse;
 

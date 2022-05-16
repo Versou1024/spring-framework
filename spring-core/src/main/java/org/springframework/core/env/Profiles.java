@@ -31,6 +31,10 @@ import java.util.function.Predicate;
  */
 @FunctionalInterface
 public interface Profiles {
+	/*
+	 * 1、profile匹配match方法
+	 * 2、创建方法：可以直接实现，也可以使用使用of（…）创建工厂法，通过ProfilesPares直接解析Profiles
+	 */
 
 	/**
 	 * Test if this {@code Profiles} instance <em>matches</em> against the given

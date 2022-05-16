@@ -48,24 +48,29 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
 			URL url = getURL();
 			if (ResourceUtils.isFileURL(url)) {
 				// Proceed with file system resolution
+				// 作为文件系统的资源处理
 				return getFile().exists();
 			}
 			else {
 				// Try a URL connection content-length header
+				// 尝试获取URL连接的content-length的请求头
 				URLConnection con = url.openConnection();
 				customizeConnection(con);
-				HttpURLConnection httpCon =
-						(con instanceof HttpURLConnection ? (HttpURLConnection) con : null);
+				HttpURLConnection httpCon = (con instanceof HttpURLConnection ? (HttpURLConnection) con : null);
 				if (httpCon != null) {
+					// 一般都是http请求
 					int code = httpCon.getResponseCode();
 					if (code == HttpURLConnection.HTTP_OK) {
+						// 200 OK
 						return true;
 					}
 					else if (code == HttpURLConnection.HTTP_NOT_FOUND) {
+						// 404 资源不存在
 						return false;
 					}
 				}
 				if (con.getContentLengthLong() > 0) {
+					// 有content-length
 					return true;
 				}
 				if (httpCon != null) {
@@ -99,11 +104,13 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
 		try {
 			if (ResourceUtils.isFileURL(url)) {
 				// Proceed with file system resolution
+				// 作为文件系统资源处理
 				File file = getFile();
 				return (file.canRead() && !file.isDirectory());
 			}
 			else {
 				// Try InputStream resolution for jar resources
+				// 作为jar资源进行处理
 				URLConnection con = url.openConnection();
 				customizeConnection(con);
 				if (con instanceof HttpURLConnection) {
@@ -138,6 +145,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
 	public boolean isFile() {
 		try {
 			URL url = getURL();
+			// URL的协议是file、vfs、
 			if (url.getProtocol().startsWith(ResourceUtils.URL_PROTOCOL_VFS)) {
 				return VfsResourceDelegate.getResource(url).isFile();
 			}

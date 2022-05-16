@@ -34,6 +34,9 @@ package org.springframework.aop;
  */
 @FunctionalInterface
 public interface ClassFilter {
+	/*
+	 * 高层接口：用于过滤类是否需要被代理
+	 */
 
 	/**
 	 * Should the pointcut apply to the given interface or target class?

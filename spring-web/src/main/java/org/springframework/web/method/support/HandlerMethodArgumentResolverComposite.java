@@ -37,6 +37,14 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @since 3.1
  */
 public class HandlerMethodArgumentResolverComposite implements HandlerMethodArgumentResolver {
+	/**
+	 * 中间类 - 解耦 RequestMappingHandlerAdapter 不需要持有所有的参数解析器，只需要持有该复合解析器
+	 *
+	 * 作用
+	 * 1、组合所有注册的参数解析器argumentResolvers
+	 * 2、对外提供统一的supportsParameter与resolveArgument
+	 *
+	 */
 
 	private final List<HandlerMethodArgumentResolver> argumentResolvers = new ArrayList<>();
 
@@ -127,6 +135,7 @@ public class HandlerMethodArgumentResolverComposite implements HandlerMethodArgu
 	 */
 	@Nullable
 	private HandlerMethodArgumentResolver getArgumentResolver(MethodParameter parameter) {
+		// 遍历查找直到有合适的参数解析器
 		HandlerMethodArgumentResolver result = this.argumentResolverCache.get(parameter);
 		if (result == null) {
 			for (HandlerMethodArgumentResolver resolver : this.argumentResolvers) {

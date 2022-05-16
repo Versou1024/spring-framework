@@ -43,15 +43,23 @@ import org.springframework.web.servlet.ModelAndView;
  * @since 3.0
  */
 public final class MappedInterceptor implements HandlerInterceptor {
+	/**
+	 * 具有映射能力的拦截器：
+	 * 1、能够拦截指定范围的Url -- 装饰的额外能力
+	 * 2、聚合HandlerInterceptor
+	 */
 
+	// 可以看到它哥俩都是可以不用指定，可以为null的
 	@Nullable
 	private final String[] includePatterns;
-
 	@Nullable
 	private final String[] excludePatterns;
 
+	// 持有一个interceptor的引用，类似于目标类~
 	private final HandlerInterceptor interceptor;
 
+	// 注意：该类允许你自己指定路径的匹配规则。但是Spring里，不管哪个上层服务，默认使用的都是Ant风格的匹配
+	// 并不是正则的匹配  所以效率上还是蛮高的~
 	@Nullable
 	private PathMatcher pathMatcher;
 
@@ -62,6 +70,7 @@ public final class MappedInterceptor implements HandlerInterceptor {
 	 * @param interceptor the HandlerInterceptor instance to map to the given patterns
 	 */
 	public MappedInterceptor(@Nullable String[] includePatterns, HandlerInterceptor interceptor) {
+		//======构造函数：发现它不仅仅兼容HandlerInterceptor,还可以把WebRequestInterceptor转换成此~
 		this(includePatterns, null, interceptor);
 	}
 
@@ -144,6 +153,13 @@ public final class MappedInterceptor implements HandlerInterceptor {
 	 * @return {@code true} if the interceptor applies to the given request path
 	 */
 	public boolean matches(String lookupPath, PathMatcher pathMatcher) {
+		// 原则：excludePatterns先执行，includePatterns后执行
+		// 如果excludePatterns执行完都木有匹配的，并且includePatterns是空的，那就返回true（这是个处理方式技巧~  对这种互斥的情况  这一步判断很关键~~~）
+		// 核心：是否匹配当前的拦截器
+		// 1. 在excludePatterns中，返回false
+		// 2. 不在excludePatterns，且includePatterns为空，直接返回true，
+		// 3. 不在excludePatterns，但在includePatterns，返回true
+		// 4. 不属于上述情况返回null
 		PathMatcher pathMatcherToUse = (this.pathMatcher != null ? this.pathMatcher : pathMatcher);
 		if (!ObjectUtils.isEmpty(this.excludePatterns)) {
 			for (String pattern : this.excludePatterns) {

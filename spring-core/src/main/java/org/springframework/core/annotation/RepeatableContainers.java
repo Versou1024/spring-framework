@@ -42,6 +42,12 @@ import org.springframework.util.ReflectionUtils;
  * @since 5.2
  */
 public abstract class RepeatableContainers {
+	/**
+	 * 用于确定充当其他注解容器的注解策略。
+	 * standardRepeatables() 方法提供了一个默认策略，该策略尊重Java的@Repeatable支持，应该适合大多数情况。
+	 * of() 方法可用于注册不希望使用@Repeatable的注释的关系。
+	 * none() 完全禁用可重复支持。
+	 */
 
 	@Nullable
 	private final RepeatableContainers parent;
@@ -59,8 +65,7 @@ public abstract class RepeatableContainers {
 	 * @param repeatable the contained repeatable type
 	 * @return a new {@link RepeatableContainers} instance
 	 */
-	public RepeatableContainers and(Class<? extends Annotation> container,
-			Class<? extends Annotation> repeatable) {
+	public RepeatableContainers and(Class<? extends Annotation> container, Class<? extends Annotation> repeatable) {
 
 		return new ExplicitRepeatableContainer(this, repeatable, container);
 	}
@@ -111,8 +116,7 @@ public abstract class RepeatableContainers {
 	 * {@code repeatable}.
 	 * @return a {@link RepeatableContainers} instance
 	 */
-	public static RepeatableContainers of(
-			Class<? extends Annotation> repeatable, @Nullable Class<? extends Annotation> container) {
+	public static RepeatableContainers of(Class<? extends Annotation> repeatable, @Nullable Class<? extends Annotation> container) {
 
 		return new ExplicitRepeatableContainer(null, repeatable, container);
 	}
@@ -132,7 +136,7 @@ public abstract class RepeatableContainers {
 	 * Java's {@link Repeatable @Repeatable} annotation.
 	 */
 	private static class StandardRepeatableContainers extends RepeatableContainers {
-
+		// 标准的，用于解释@Repeatable注解的容器
 		private static final Map<Class<? extends Annotation>, Object> cache = new ConcurrentReferenceHashMap<>();
 
 		private static final Object NONE = new Object();
@@ -182,6 +186,10 @@ public abstract class RepeatableContainers {
 	 * A single explicit mapping.
 	 */
 	private static class ExplicitRepeatableContainer extends RepeatableContainers {
+		/**
+		 * 重复注解的容器 -- 不同于支持@Repeatable的StandardRepeatableContainers
+		 * ExplicitRepeatableContainer 是一个仅仅容纳一个重复注解repeatable的容器即container
+		 */
 
 		private final Class<? extends Annotation> repeatable;
 
@@ -189,8 +197,7 @@ public abstract class RepeatableContainers {
 
 		private final Method valueMethod;
 
-		ExplicitRepeatableContainer(@Nullable RepeatableContainers parent,
-				Class<? extends Annotation> repeatable, @Nullable Class<? extends Annotation> container) {
+		ExplicitRepeatableContainer(@Nullable RepeatableContainers parent, Class<? extends Annotation> repeatable, @Nullable Class<? extends Annotation> container) {
 
 			super(parent);
 			Assert.notNull(repeatable, "Repeatable must not be null");
@@ -263,7 +270,7 @@ public abstract class RepeatableContainers {
 	 * No repeatable containers.
 	 */
 	private static class NoRepeatableContainers extends RepeatableContainers {
-
+		// 完全禁止可重复支持 -- 因此没有容器
 		private static NoRepeatableContainers INSTANCE = new NoRepeatableContainers();
 
 		NoRepeatableContainers() {

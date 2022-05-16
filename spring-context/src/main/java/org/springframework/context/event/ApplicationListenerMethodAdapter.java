@@ -66,6 +66,9 @@ import org.springframework.util.concurrent.ListenableFuture;
  * @since 4.2
  */
 public class ApplicationListenerMethodAdapter implements GenericApplicationListener {
+	/**
+	 * 适配器：通常用来适配@EventListener标注的Method
+	 */
 
 	private static final boolean reactiveStreamsPresent = ClassUtils.isPresent(
 			"org.reactivestreams.Publisher", ApplicationListenerMethodAdapter.class.getClassLoader());
@@ -73,11 +76,11 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private final String beanName;
+	private final String beanName; // 方法所在bean名字
 
-	private final Method method;
+	private final Method method; // 方法
 
-	private final Method targetMethod;
+	private final Method targetMethod; // 目标方法
 
 	private final AnnotatedElementKey methodKey;
 
@@ -96,36 +99,48 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 
 
 	public ApplicationListenerMethodAdapter(String beanName, Class<?> targetClass, Method method) {
+		// beanName 是@EventListener标注方法的所在类的bean
 		this.beanName = beanName;
+		// 代理的桥接方法
 		this.method = BridgeMethodResolver.findBridgedMethod(method);
-		this.targetMethod = (!Proxy.isProxyClass(targetClass) ?
-				AopUtils.getMostSpecificMethod(method, targetClass) : this.method);
+		// targetClass 不是代理类，就需要为method生成代理方法
+		this.targetMethod = (!Proxy.isProxyClass(targetClass) ? AopUtils.getMostSpecificMethod(method, targetClass) : this.method);
 		this.methodKey = new AnnotatedElementKey(this.targetMethod, targetClass);
-
+		// 查找 @EventListener 注解
 		EventListener ann = AnnotatedElementUtils.findMergedAnnotation(this.targetMethod, EventListener.class);
+		// 查找 @EventListener 注解声明支持的事件类型
 		this.declaredEventTypes = resolveDeclaredEventTypes(method, ann);
+		// 是否有condition属性
 		this.condition = (ann != null ? ann.condition() : null);
+		// 解析原始目标方法的@Order
 		this.order = resolveOrder(this.targetMethod);
 	}
 
 	private static List<ResolvableType> resolveDeclaredEventTypes(Method method, @Nullable EventListener ann) {
+		// 获取@EventListener方法上的形参个数
 		int count = method.getParameterCount();
+		// 不允许超过1
 		if (count > 1) {
 			throw new IllegalStateException(
 					"Maximum one parameter is allowed for event listener method: " + method);
 		}
 
+		// @EventListener 注解不可为空
 		if (ann != null) {
+			// @EventListener 注解的classes属性，即接受event类型是什么
 			Class<?>[] classes = ann.classes();
 			if (classes.length > 0) {
+				// classes至少大于0
 				List<ResolvableType> types = new ArrayList<>(classes.length);
 				for (Class<?> eventType : classes) {
+					// 添加到监听的事件中
 					types.add(ResolvableType.forClass(eventType));
 				}
 				return types;
 			}
 		}
 
+		// 不允许等于0
 		if (count == 0) {
 			throw new IllegalStateException(
 					"Event parameter is mandatory for event listener method: " + method);
@@ -134,6 +149,7 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 	}
 
 	private static int resolveOrder(Method method) {
+		// 解析method上的@Order注解
 		Order ann = AnnotatedElementUtils.findMergedAnnotation(method, Order.class);
 		return (ann != null ? ann.value() : 0);
 	}
@@ -150,15 +166,19 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
+		// 接受 ApplicationEvent 进行处理的核心方法
 		processEvent(event);
 	}
 
 	@Override
 	public boolean supportsEventType(ResolvableType eventType) {
+		// 当前适配器支持的事件类型
 		for (ResolvableType declaredEventType : this.declaredEventTypes) {
+			// 广播器发送的事件eventType是当前监听器declaredEventType的子类，就返回ture
 			if (declaredEventType.isAssignableFrom(eventType)) {
 				return true;
 			}
+			// 如果是PayloadApplicationEvent
 			if (PayloadApplicationEvent.class.isAssignableFrom(eventType.toClass())) {
 				ResolvableType payloadType = eventType.as(PayloadApplicationEvent.class).getGeneric();
 				if (declaredEventType.isAssignableFrom(payloadType)) {
@@ -171,6 +191,7 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 
 	@Override
 	public boolean supportsSourceType(@Nullable Class<?> sourceType) {
+		// 对sourceType都是直支持的
 		return true;
 	}
 
@@ -185,10 +206,23 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 	 * matches and handling a non-null result, if any.
 	 */
 	public void processEvent(ApplicationEvent event) {
+		// 解析参数，很简单  主要是兼容PayloadApplicationEvent 把事件拿出来
+		// 返回的数组要么为[]，总之最多只有一个参数  就是事件本身
+		// 获取参数，最终会交给回调的方法的。事件类型是PayloadApplicationEvent,那就把.getPayload()，否则就是event本身喽
 		Object[] args = resolveArguments(event);
+		// 解析condition表达式（注意，此处把args传进去了） 因此我们表达式里是可以用这个参数的哦
 		if (shouldHandle(event, args)) {
-			Object result = doInvoke(args);
+			// 调用 @EventListener 注解的方法
+			// 就是执行目标方法，我们一般返回值都是void，所以就是null
+			// 但是，但是，但是注意了，此处若返回的不是null，还有处理~~~~非常给力：
+			Object result = doInvoke(args); // 这一句非常的简单  就是调用此方法Method~
+			// 这一步就是@EventListener最大的优势。如果它的返回值不为null，那么它可以行使事件链，可以继续发布事件
+			// 把返回值当作事件继续publish（返回值可以是个Object，最终被包装成payload事件~~~~）
 			if (result != null) {
+				// @EventListener方法返回result不为null时，可以返回以下情况
+				// 如果返回值是数组或者Collection，会把里面内容当作事件循环publishEvent
+				// 如果就是个POJO，那就直接publish
+				// 事件的传递性 就这么的来了，强大啊
 				handleResult(result);
 			}
 			else {
@@ -209,17 +243,19 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 		if (declaredEventType == null) {
 			return null;
 		}
+		// 方法参数为0，那么就返回空集合 -- 一般不会的
 		if (this.method.getParameterCount() == 0) {
 			return new Object[0];
 		}
 		Class<?> declaredEventClass = declaredEventType.toClass();
-		if (!ApplicationEvent.class.isAssignableFrom(declaredEventClass) &&
-				event instanceof PayloadApplicationEvent) {
+		// 事件类型是PayloadApplicationEvent,那就把.getPayload()，
+		if (!ApplicationEvent.class.isAssignableFrom(declaredEventClass) && event instanceof PayloadApplicationEvent) {
 			Object payload = ((PayloadApplicationEvent<?>) event).getPayload();
 			if (declaredEventClass.isInstance(payload)) {
 				return new Object[] {payload};
 			}
 		}
+		// 事件类型是ApplicationEvent，那么就是event本身喽
 		return new Object[] {event};
 	}
 
@@ -230,6 +266,8 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 			}
 		}
 		else if (result instanceof CompletionStage) {
+			// 异步处理
+			// 完成时，如果有异常ex就直接处理异常，否则就是有event继续广播出去
 			((CompletionStage<?>) result).whenComplete((event, ex) -> {
 				if (ex != null) {
 					handleAsyncError(ex);
@@ -248,6 +286,7 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 	}
 
 	private void publishEvents(Object result) {
+		// 遍历发布event
 		if (result.getClass().isArray()) {
 			Object[] events = ObjectUtils.toObjectArray(result);
 			for (Object event : events) {
@@ -268,6 +307,7 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 	private void publishEvent(@Nullable Object event) {
 		if (event != null) {
 			Assert.notNull(this.applicationContext, "ApplicationContext must not be null");
+			// 借用applicationContext发布事件的能力
 			this.applicationContext.publishEvent(event);
 		}
 	}
@@ -282,9 +322,11 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 		}
 		String condition = getCondition();
 		if (StringUtils.hasText(condition)) {
+			// 首先是必须保证 @EventListener 上有condition属性才可以
 			Assert.notNull(this.evaluator, "EventExpressionEvaluator must not be null");
-			return this.evaluator.condition(
-					condition, event, this.targetMethod, this.methodKey, args, this.applicationContext);
+			// 最终委托给EventExpressionEvaluator去解析
+			// 备注EventExpressionEvaluator是个内部使用的类，只有此处解析用到了~~~
+			return this.evaluator.condition(condition, event, this.targetMethod, this.methodKey, args, this.applicationContext);
 		}
 		return true;
 	}
@@ -294,6 +336,7 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 	 */
 	@Nullable
 	protected Object doInvoke(Object... args) {
+		// 获取@EventListener标注方法的外围Bean
 		Object bean = getTargetBean();
 		// Detect package-protected NullBean instance through equals(null) check
 		if (bean.equals(null)) {
@@ -302,6 +345,7 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 
 		ReflectionUtils.makeAccessible(this.method);
 		try {
+			// 开始调用
 			return this.method.invoke(bean, args);
 		}
 		catch (IllegalArgumentException ex) {
@@ -328,6 +372,7 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 	 * Return the target bean instance to use.
 	 */
 	protected Object getTargetBean() {
+		// 获取@EventListener标注方法的外围Bean
 		Assert.notNull(this.applicationContext, "ApplicationContext must no be null");
 		return this.applicationContext.getBean(this.beanName);
 	}
@@ -398,6 +443,7 @@ public class ApplicationListenerMethodAdapter implements GenericApplicationListe
 			PayloadApplicationEvent<?> payloadEvent = (PayloadApplicationEvent<?>) event;
 			ResolvableType eventType = payloadEvent.getResolvableType();
 			if (eventType != null) {
+				// 将 eventType 转为 PayloadApplicationEvent 类型的ResolvableType，然后获取泛型
 				payloadType = eventType.as(PayloadApplicationEvent.class).getGeneric();
 			}
 		}

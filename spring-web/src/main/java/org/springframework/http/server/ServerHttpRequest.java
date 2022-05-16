@@ -31,7 +31,7 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public interface ServerHttpRequest extends HttpRequest, HttpInputMessage {
-
+	// 继承HttpRequest、HttpInputMessage向ServletHttpReuqest的扩展： 额外获取Server服务器下特有概念，例如远程地址RemoteAddress、本地地址LocalAddress等等
 	/**
 	 * Return a {@link java.security.Principal} instance containing the name of the
 	 * authenticated user.

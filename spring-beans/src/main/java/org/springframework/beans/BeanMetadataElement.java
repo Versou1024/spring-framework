@@ -26,6 +26,11 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public interface BeanMetadataElement {
+	/*
+	 * 分析: 该接口仅仅定义了一个getSource方法, 该方法用于返回一个source源,
+	 * 其实就是返回一个Class文件在磁盘中的绝对路径而已, 在Spring中, BeanDefinition是间接的实现了这个接口的,
+	 * 从而返回的是在BeanDefinition中定义的类的绝对路径，用来加载BeanDefinition的.class文件
+	 */
 
 	/**
 	 * Return the configuration source {@code Object} for this metadata element

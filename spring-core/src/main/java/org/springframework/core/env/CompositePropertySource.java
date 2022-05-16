@@ -41,6 +41,9 @@ import org.springframework.util.StringUtils;
  * @since 3.1.1
  */
 public class CompositePropertySource extends EnumerablePropertySource<Object> {
+	/**
+	 * 组合模式 - 属性源的组合模式
+	 */
 
 	private final Set<PropertySource<?>> propertySources = new LinkedHashSet<>();
 
@@ -57,6 +60,7 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 	@Override
 	@Nullable
 	public Object getProperty(String name) {
+		// 依次遍历查找属性源
 		for (PropertySource<?> propertySource : this.propertySources) {
 			Object candidate = propertySource.getProperty(name);
 			if (candidate != null) {
@@ -68,6 +72,7 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 
 	@Override
 	public boolean containsProperty(String name) {
+		// 依次遍历查找属性源
 		for (PropertySource<?> propertySource : this.propertySources) {
 			if (propertySource.containsProperty(name)) {
 				return true;
@@ -78,6 +83,7 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 
 	@Override
 	public String[] getPropertyNames() {
+		// 依次遍历查找属性名
 		Set<String> names = new LinkedHashSet<>();
 		for (PropertySource<?> propertySource : this.propertySources) {
 			if (!(propertySource instanceof EnumerablePropertySource)) {
@@ -104,6 +110,7 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 	 * @since 4.1
 	 */
 	public void addFirstPropertySource(PropertySource<?> propertySource) {
+		// 注册下一级属性源
 		List<PropertySource<?>> existing = new ArrayList<>(this.propertySources);
 		this.propertySources.clear();
 		this.propertySources.add(propertySource);

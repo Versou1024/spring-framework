@@ -50,6 +50,25 @@ import org.springframework.lang.Nullable;
  * @see InputStreamResource
  */
 public interface Resource extends InputStreamSource {
+	/*
+	Resource具体资源访问策略的抽象，也是所有资源访问类所实现的接口。
+		getInputStream()： 定位并打开资源，返回资源对应的输入流。每次调用都返回新的输入流。调用者必须负责关闭输入流。
+		exists()： 返回 Resource 所指向的资源是否存在。
+		isOpen()： 返回资源文件是否打开，如果资源文件不能多次读取，每次读取结束应该显式close，以防止资源泄漏。
+		getDescription()： 返回资源的描述信息，通常用于资源处理出错时输出该信息，通常是全限定文件名或实际 URL。
+		getFile： 返回资源对应的 File 对象。
+		getURL： 返回资源对应的 URL 对象。
+	Resource 接口本身没有提供访问任何底层资源的实现逻辑，针对不同的底层资源，
+	Spring 将会提供不同的 Resource 实现类，不同的实现类负责不同的资源访问逻辑。
+
+	Spring 为 Resource 接口提供了如下实现类：
+		UrlResource： 访问网络资源的实现类。
+		ClassPathResource： 访问类加载路径里资源的实现类。即Resources目录下的
+		FileSystemResource： 访问文件系统里资源的实现类。
+		ServletContextResource： 访问相对于 ServletContext 路径里的资源的实现类.
+		InputStreamResource： 访问输入流资源的实现类。
+		ByteArrayResource： 访问字节数组资源的实现类。
+	*/
 
 	/**
 	 * Determine whether this resource actually exists in physical form.

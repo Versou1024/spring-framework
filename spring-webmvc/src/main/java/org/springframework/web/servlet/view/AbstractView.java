@@ -62,6 +62,14 @@ import org.springframework.web.servlet.support.RequestContext;
  * @see #renderMergedOutputModel
  */
 public abstract class AbstractView extends WebApplicationObjectSupport implements View, BeanNameAware {
+	/*
+	 * 1、View接口实现的抽象基类。
+	 * 2、子类应该是JavaBeans，且被Spring所管理
+	 * 3、提供对视图可用的静态属性的支持，并提供多种指定方法。对于每个渲染操作，静态属性将与给定的动态属性（控制器返回的模型）合并。
+	 * 4、扩展WebApplicationObject支持，这将有助于某些Views类渲染。-- 避免污染子类 -- 子类只需要实现实际的渲染，不用操心静态属性支持和Application的支持
+	 *
+	 * 注意：WebApplicationObject的抽象方法
+	 */
 
 	/** Default content type. Overridable as bean property. */
 	public static final String DEFAULT_CONTENT_TYPE = "text/html;charset=ISO-8859-1";
@@ -71,17 +79,25 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 
 
 	@Nullable
-	private String contentType = DEFAULT_CONTENT_TYPE;
+	private String contentType = DEFAULT_CONTENT_TYPE; // 默认contentType是html格式
 
+	// 设置此视图的RequestContext属性的名称
 	@Nullable
 	private String requestContextAttribute;
 
 	private final Map<String, Object> staticAttributes = new LinkedHashMap<>();
 
+	//指定是否向模型Model中添加路径变量PathVariables。
+	//路径变量通常通过@PathVariable注释绑定到URI模板变量。它们实际上是URI模板变量，并应用类型转换来派生类型化对象值。视图中经常需要这样的值来构建指向相同URL和其他URL的链接。
 	private boolean exposePathVariables = true;
 
+	//设置是否让ApplicationContext中的所有 Spring bean 都可以作为请求属性访问，一旦属性被访问，就通过延迟检查。
+	//这将使所有这些bean都可以在普通${…}中访问jsp2.0页面中的表达式，以及JSTL的c:out值表达式中的表达式。
+	//默认值为“false”。打开此标志以透明地公开请求属性名称空间中的所有Spring bean。
 	private boolean exposeContextBeansAsAttributes = false;
 
+	//指定上下文中应该公开的bean的名称。如果该值不为null，则只有指定的bean有资格作为属性公开。
+	//如果您想公开应用程序上下文中的所有Spring bean，请打开“ExposeContextBeanSastatributes”标志，但不要列出此属性的特定bean名称。
 	@Nullable
 	private Set<String> exposedContextBeanNames;
 
@@ -304,7 +320,7 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	@Override
 	public void render(@Nullable Map<String, ?> model, HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
-
+		// 模板方法
 		if (logger.isDebugEnabled()) {
 			logger.debug("View " + formatViewName() +
 					", model " + (model != null ? model : Collections.emptyMap()) +
@@ -322,17 +338,20 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 */
 	protected Map<String, Object> createMergedOutputModel(@Nullable Map<String, ?> model,
 			HttpServletRequest request, HttpServletResponse response) {
-
+		/**
+		 * 创建一个包含动态值和静态属性的组合输出Map（从不为null）。
+		 * 动态值优先于静态属性。
+		 */
 		@SuppressWarnings("unchecked")
-		Map<String, Object> pathVars = (this.exposePathVariables ?
-				(Map<String, Object>) request.getAttribute(View.PATH_VARIABLES) : null);
+		Map<String, Object> pathVars = (this.exposePathVariables ? (Map<String, Object>) request.getAttribute(View.PATH_VARIABLES) : null);
 
 		// Consolidate static and dynamic model attributes.
-		int size = this.staticAttributes.size();
+		int size = this.staticAttributes.size(); // 静态属性
 		size += (model != null ? model.size() : 0);
 		size += (pathVars != null ? pathVars.size() : 0);
 
 		Map<String, Object> mergedModel = new LinkedHashMap<>(size);
+		// 将静态属性、路径参数、已有动态model合并
 		mergedModel.putAll(this.staticAttributes);
 		if (pathVars != null) {
 			mergedModel.putAll(pathVars);
@@ -341,7 +360,7 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 			mergedModel.putAll(model);
 		}
 
-		// Expose RequestContext?
+		// 是否暴露 Context
 		if (this.requestContextAttribute != null) {
 			mergedModel.put(this.requestContextAttribute, createRequestContext(request, response, mergedModel));
 		}
@@ -360,8 +379,7 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 * @see #setRequestContextAttribute
 	 * @see org.springframework.web.servlet.support.RequestContext
 	 */
-	protected RequestContext createRequestContext(
-			HttpServletRequest request, HttpServletResponse response, Map<String, Object> model) {
+	protected RequestContext createRequestContext(HttpServletRequest request, HttpServletResponse response, Map<String, Object> model) {
 
 		return new RequestContext(request, response, getServletContext(), model);
 	}
@@ -374,6 +392,9 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 * @param response current HTTP response
 	 */
 	protected void prepareResponse(HttpServletRequest request, HttpServletResponse response) {
+		/**
+		 * 为渲染rendering准备给定的响应。
+		 */
 		if (generatesDownloadContent()) {
 			response.setHeader("Pragma", "private");
 			response.setHeader("Cache-Control", "private, must-revalidate");
@@ -425,8 +446,11 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 * @param response current HTTP response
 	 * @throws Exception if rendering failed
 	 */
-	protected abstract void renderMergedOutputModel(
-			Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception;
+	protected abstract void renderMergedOutputModel(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception;
+	//子类必须实现此方法才能实际呈现视图。
+	//
+	//第一步是准备请求：在JSP中，这意味着将模型对象 model objects 设置为请求属性  request attributes 。 以方便JSP中获取
+	//第二步是视图的实际呈现，例如通过RequestDispatcher包含JSP。
 
 
 	/**
@@ -438,7 +462,8 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 */
 	protected void exposeModelAsRequestAttributes(Map<String, Object> model,
 			HttpServletRequest request) throws Exception {
-
+		// 将model作为请求属性公开。名称将取自modelMap。
+		// 这种方法适用于javax可以访问的所有资源。如：servlet、RequestDispatcher。
 		model.forEach((name, value) -> {
 			if (value != null) {
 				request.setAttribute(name, value);

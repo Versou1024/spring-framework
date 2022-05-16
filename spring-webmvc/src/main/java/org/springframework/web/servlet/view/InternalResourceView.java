@@ -64,8 +64,19 @@ import org.springframework.web.util.WebUtils;
  * @see JstlView
  */
 public class InternalResourceView extends AbstractUrlBasedView {
+	/**
+	 * 1、同一web应用程序中JSP或其他资源的包装器。将Model Object公开为 Request Attribute，并使用RequestDispatcher将请求转发到指定的资源URL。
+	 * 2、此视图的URL应该指定web应用程序中的资源，适合RequestDispatcher的forward转发到请求控制器或include包含资源方法。
+	 * 如果在已包含的请求或已提交的响应中操作，此视图将退回到include而不是forward。这可以通过调用response来实现。在呈现视图之前，flushBuffer（）（将提交响应）。
+	 * 从DispatcherServlet上下文定义的角度来看，InternalResourceViewResolver的典型用法如下：
+	 * <bean id=“viewResolver”class=“org.springframework.web.servlet.view.InternalResourceViewResolver”>
+	 * <property name=“prefix” value=“/WEB-INF/jsp/”/>
+	 * <property name=“suffix” value=“.jsp”/>
+	 * </bean>
+	 * 默认情况下，从处理程序返回的每个视图名称都将使用此视图类转换为JSP资源（例如：“myView”->“/WEB-INF/JSP/myView.JSP”）。
+	 */
 
-	private boolean alwaysInclude = false;
+	private boolean alwaysInclude = false; // 是否总是include视图而不是forward视图
 
 	private boolean preventDispatchLoop = false;
 
@@ -139,12 +150,15 @@ public class InternalResourceView extends AbstractUrlBasedView {
 			Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		// Expose the model object as request attributes.
+		// 将模型对象作为请求属性公开。
 		exposeModelAsRequestAttributes(model, request);
 
 		// Expose helpers as request attributes, if any.
+		// 将helpers作为请求属性公开（如果有）。
 		exposeHelpers(request);
 
 		// Determine the path for the request dispatcher.
+		// 确定request dispatcher的路径。
 		String dispatcherPath = prepareForRendering(request, response);
 
 		// Obtain a RequestDispatcher for the target resource (typically a JSP).
@@ -155,6 +169,7 @@ public class InternalResourceView extends AbstractUrlBasedView {
 		}
 
 		// If already included or response already committed, perform include, else forward.
+		// 如果已经included或response已经提交，请执行include，否则forward。
 		if (useInclude(request, response)) {
 			response.setContentType(getContentType());
 			if (logger.isDebugEnabled()) {

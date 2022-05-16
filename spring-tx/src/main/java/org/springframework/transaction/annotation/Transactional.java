@@ -79,7 +79,7 @@ public @interface Transactional {
 	 * @see #transactionManager
 	 */
 	@AliasFor("transactionManager")
-	String value() default "";
+	String value() default ""; //  指定事务管理器的beanName
 
 	/**
 	 * A <em>qualifier</em> value for the specified transaction.
@@ -93,14 +93,14 @@ public @interface Transactional {
 	 * @see org.springframework.transaction.ReactiveTransactionManager
 	 */
 	@AliasFor("value")
-	String transactionManager() default "";
+	String transactionManager() default ""; // 别名
 
 	/**
 	 * The transaction propagation type.
 	 * <p>Defaults to {@link Propagation#REQUIRED}.
 	 * @see org.springframework.transaction.interceptor.TransactionAttribute#getPropagationBehavior()
 	 */
-	Propagation propagation() default Propagation.REQUIRED;
+	Propagation propagation() default Propagation.REQUIRED; // 传播特性
 
 	/**
 	 * The transaction isolation level.
@@ -114,7 +114,7 @@ public @interface Transactional {
 	 * @see org.springframework.transaction.interceptor.TransactionAttribute#getIsolationLevel()
 	 * @see org.springframework.transaction.support.AbstractPlatformTransactionManager#setValidateExistingTransaction
 	 */
-	Isolation isolation() default Isolation.DEFAULT;
+	Isolation isolation() default Isolation.DEFAULT; // 隔离特性
 
 	/**
 	 * The timeout for this transaction (in seconds).
@@ -124,7 +124,7 @@ public @interface Transactional {
 	 * transactions.
 	 * @see org.springframework.transaction.interceptor.TransactionAttribute#getTimeout()
 	 */
-	int timeout() default TransactionDefinition.TIMEOUT_DEFAULT;
+	int timeout() default TransactionDefinition.TIMEOUT_DEFAULT; // 事务超时时间
 
 	/**
 	 * A boolean flag that can be set to {@code true} if the transaction is
@@ -138,7 +138,7 @@ public @interface Transactional {
 	 * @see org.springframework.transaction.interceptor.TransactionAttribute#isReadOnly()
 	 * @see org.springframework.transaction.support.TransactionSynchronizationManager#isCurrentTransactionReadOnly()
 	 */
-	boolean readOnly() default false;
+	boolean readOnly() default false; //
 
 	/**
 	 * Defines zero (0) or more exception {@link Class classes}, which must be

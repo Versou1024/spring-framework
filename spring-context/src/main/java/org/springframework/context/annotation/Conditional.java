@@ -61,6 +61,11 @@ import java.lang.annotation.Target;
 @Documented
 public @interface Conditional {
 
+	// @Conditional注解的结构比较简单，只需要定义一个做一个Condition子类即可，并且说明只有满足了当前Condition的matches方法时才会将当前@Component注册成Bean
+	// 例如：创建一个注解 - @ConditionalOnBean
+	// @Conditional(OnBeanCondition.class)
+	// public @interface ConditionalOnBean {
+
 	/**
 	 * All {@link Condition} classes that must {@linkplain Condition#matches match}
 	 * in order for the component to be registered.

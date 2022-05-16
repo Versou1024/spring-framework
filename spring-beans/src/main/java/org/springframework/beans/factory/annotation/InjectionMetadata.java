@@ -66,12 +66,12 @@ public class InjectionMetadata {
 	};
 
 
-	private final Class<?> targetClass;
+	private final Class<?> targetClass; // 需要注入元数据的目标class
 
-	private final Collection<InjectedElement> injectedElements;
+	private final Collection<InjectedElement> injectedElements; // 待注入元素的集合 InjectedElement 可以是字段或方法上的形参
 
 	@Nullable
-	private volatile Set<InjectedElement> checkedElements;
+	private volatile Set<InjectedElement> checkedElements; // 需要被检查的 注入元素
 
 
 	/**
@@ -111,10 +111,11 @@ public class InjectionMetadata {
 	}
 
 	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+		// target 被注入属性的目标对象,以AutowritedAnnotationBeanPostProcessor为例，这里的beanName为null，pvs为null
 		Collection<InjectedElement> checkedElements = this.checkedElements;
-		Collection<InjectedElement> elementsToIterate =
-				(checkedElements != null ? checkedElements : this.injectedElements);
+		Collection<InjectedElement> elementsToIterate = (checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
+			// 对每个元素执行inject操作
 			for (InjectedElement element : elementsToIterate) {
 				element.inject(target, beanName, pvs);
 			}
@@ -145,8 +146,7 @@ public class InjectionMetadata {
 	 * @since 5.2
 	 */
 	public static InjectionMetadata forElements(Collection<InjectedElement> elements, Class<?> clazz) {
-		return (elements.isEmpty() ? new InjectionMetadata(clazz, Collections.emptyList()) :
-				new InjectionMetadata(clazz, elements));
+		return (elements.isEmpty() ? new InjectionMetadata(clazz, Collections.emptyList()) : new InjectionMetadata(clazz, elements));
 	}
 
 	/**
@@ -165,6 +165,8 @@ public class InjectionMetadata {
 	 * A single injected element.
 	 */
 	public abstract static class InjectedElement {
+
+		// 封装 - 待注入的Member、是否为字段isField、是否跳过skip、
 
 		protected final Member member;
 
@@ -219,10 +221,10 @@ public class InjectionMetadata {
 		/**
 		 * Either this or {@link #getResourceToInject} needs to be overridden.
 		 */
-		protected void inject(Object target, @Nullable String requestingBeanName, @Nullable PropertyValues pvs)
-				throws Throwable {
+		protected void inject(Object target, @Nullable String requestingBeanName, @Nullable PropertyValues pvs) throws Throwable {
 
 			if (this.isField) {
+				// 如果是字段的话，直接通过反射注入即可
 				Field field = (Field) this.member;
 				ReflectionUtils.makeAccessible(field);
 				field.set(target, getResourceToInject(target, requestingBeanName));
@@ -232,8 +234,10 @@ public class InjectionMetadata {
 					return;
 				}
 				try {
+					// 否则说明是方法
 					Method method = (Method) this.member;
 					ReflectionUtils.makeAccessible(method);
+					// 通过调用方法即可，
 					method.invoke(target, getResourceToInject(target, requestingBeanName));
 				}
 				catch (InvocationTargetException ex) {

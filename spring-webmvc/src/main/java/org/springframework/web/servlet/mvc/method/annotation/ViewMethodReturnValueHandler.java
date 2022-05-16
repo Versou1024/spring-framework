@@ -40,15 +40,24 @@ import org.springframework.web.servlet.View;
  * @since 3.1
  */
 public class ViewMethodReturnValueHandler implements HandlerMethodReturnValueHandler {
+	// 处理View类型的返回值。
+	// null返回值保持原样，将其留给配置的RequestToViewNameTranslator以按照约定选择视图名称。
+	// View返回类型有一个固定的用途。
+	// 因此，应在支持任何返回值类型的处理程序之前配置此处理程序，并@ModelAttribute或@ResponseBody进行注释，以确保它们不会接管。
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
+		// 处理View类型的返回值
+
 		return View.class.isAssignableFrom(returnType.getParameterType());
 	}
 
 	@Override
-	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
-			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType, ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+		// 这个处理逻辑几乎完全同上
+		// 最终也是为了mavContainer.setView(view);
+		// 也会对重定向视图进行特殊的处理~~~~~~
+
 
 		if (returnValue instanceof View) {
 			View view = (View) returnValue;

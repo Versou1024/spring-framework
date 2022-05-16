@@ -32,6 +32,9 @@ import org.springframework.util.ReflectionUtils;
  * @since 2.0.4
  */
 public class SimpleAspectInstanceFactory implements AspectInstanceFactory {
+	/**
+	 * AspectInstanceFactory的简单实现，通过AspectClass转为AspectInstance
+	 */
 
 	private final Class<?> aspectClass;
 
@@ -56,6 +59,7 @@ public class SimpleAspectInstanceFactory implements AspectInstanceFactory {
 	@Override
 	public final Object getAspectInstance() {
 		try {
+			// SimpleAspectInstanceFactory，就是通过反射调用构造器完成切面AspectJ的创建 -- 注意必须是空构造函数
 			return ReflectionUtils.accessibleConstructor(this.aspectClass).newInstance();
 		}
 		catch (NoSuchMethodException ex) {
@@ -92,6 +96,7 @@ public class SimpleAspectInstanceFactory implements AspectInstanceFactory {
 	 */
 	@Override
 	public int getOrder() {
+		// 默认是优先级最低
 		return getOrderForAspectClass(this.aspectClass);
 	}
 

@@ -78,6 +78,11 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  */
 public class ModelAttributeMethodProcessor implements HandlerMethodArgumentResolver, HandlerMethodReturnValueHandler {
 
+	/*
+	 * 它是一个Processor，既处理入参封装，也处理返回值.
+	 * @ModelAttribute能标注在入参处来处理入参，能标在方法处来处理方法返回值。源码部分也只展示处理返回值部分：
+	 */
+
 	private static final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -124,21 +129,25 @@ public class ModelAttributeMethodProcessor implements HandlerMethodArgumentResol
 		Assert.state(mavContainer != null, "ModelAttributeMethodProcessor requires ModelAndViewContainer");
 		Assert.state(binderFactory != null, "ModelAttributeMethodProcessor requires WebDataBinderFactory");
 
+		// 获取形参别名
 		String name = ModelFactory.getNameForParameter(parameter);
 		ModelAttribute ann = parameter.getParameterAnnotation(ModelAttribute.class);
 		if (ann != null) {
+			// 形参上的@ModelAttribute不为空
 			mavContainer.setBinding(name, ann.binding());
 		}
 
 		Object attribute = null;
 		BindingResult bindingResult = null;
 
+		// mac容器中modelMap包含指定name的属性
 		if (mavContainer.containsAttribute(name)) {
 			attribute = mavContainer.getModel().get(name);
 		}
 		else {
-			// Create attribute instance
+			// 不存在形参名指定属性，就需要创建
 			try {
+				// 通过调用形参类型的构造器创建对应的实例
 				attribute = createAttribute(name, parameter, binderFactory, webRequest);
 			}
 			catch (BindException ex) {
@@ -153,10 +162,9 @@ public class ModelAttributeMethodProcessor implements HandlerMethodArgumentResol
 				bindingResult = ex.getBindingResult();
 			}
 		}
-
+		// 没有任何异常
 		if (bindingResult == null) {
-			// Bean property binding and validation;
-			// skipped in case of binding failure on construction.
+			//Bean属性绑定和验证，如果binding时绑定失败，则跳过。
 			WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);
 			if (binder.getTarget() != null) {
 				if (!mavContainer.isBindingDisabled(name)) {
@@ -174,7 +182,7 @@ public class ModelAttributeMethodProcessor implements HandlerMethodArgumentResol
 			bindingResult = binder.getBindingResult();
 		}
 
-		// Add resolved attribute and BindingResult at the end of the model
+		// 在Model末尾添加已解析的attribute和BindingResult
 		Map<String, Object> bindingResultModel = bindingResult.getModel();
 		mavContainer.removeAttributes(bindingResultModel);
 		mavContainer.addAllAttributes(bindingResultModel);
@@ -207,14 +215,14 @@ public class ModelAttributeMethodProcessor implements HandlerMethodArgumentResol
 
 		MethodParameter nestedParameter = parameter.nestedIfOptional();
 		Class<?> clazz = nestedParameter.getNestedParameterType();
-
+		// 查找Kotlin下被解析形参的指定构造器
 		Constructor<?> ctor = BeanUtils.findPrimaryConstructor(clazz);
 		if (ctor == null) {
+			// 非Kotlin时，即为Java类型，通过getConstructors获取构造器
 			Constructor<?>[] ctors = clazz.getConstructors();
 			if (ctors.length == 1) {
 				ctor = ctors[0];
-			}
-			else {
+			}else {
 				try {
 					ctor = clazz.getDeclaredConstructor();
 				}
@@ -223,7 +231,7 @@ public class ModelAttributeMethodProcessor implements HandlerMethodArgumentResol
 				}
 			}
 		}
-
+		// 利用crot构造器，为parameter构造实例
 		Object attribute = constructAttribute(ctor, attributeName, parameter, binderFactory, webRequest);
 		if (parameter != nestedParameter) {
 			attribute = Optional.of(attribute);
@@ -463,6 +471,10 @@ public class ModelAttributeMethodProcessor implements HandlerMethodArgumentResol
 	 */
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
+		// 方法上标注有@ModelAttribute这个注解
+		// 或者annotationNotRequired为true并且是简单类型isSimpleProperty() = true
+		// 简单类型释义：8大基本类型+包装类型+Enum+CharSequence+Number+Date+URI+Local+Class
+		// 数组类型并且是简单的数组(上面那些类型的数组类型)类型  也算作简单类型
 		return (returnType.hasMethodAnnotation(ModelAttribute.class) ||
 				(this.annotationNotRequired && !BeanUtils.isSimpleProperty(returnType.getParameterType())));
 	}
@@ -473,8 +485,11 @@ public class ModelAttributeMethodProcessor implements HandlerMethodArgumentResol
 	@Override
 	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+		// 做法相当简单，就是吧返回值放在model里面~~~~
 
 		if (returnValue != null) {
+			// 这个方法：@ModelAttribute指明了name，那就以它的为准
+			// 否则就是一个复杂的获取过程：string...
 			String name = ModelFactory.getNameForReturnValue(returnValue, returnType);
 			mavContainer.addAttribute(name, returnValue);
 		}

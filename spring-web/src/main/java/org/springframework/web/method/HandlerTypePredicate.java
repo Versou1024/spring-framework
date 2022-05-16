@@ -49,12 +49,16 @@ import org.springframework.util.StringUtils;
  * @since 5.1
  */
 public final class HandlerTypePredicate implements Predicate<Class<?>> {
+	/*
+	 * 实现函数式接口：Predicate 用于谓词判断
+	 * HandlerTypePredicate 用于：handlerType判断
+	 */
 
-	private final Set<String> basePackages;
+	private final Set<String> basePackages; // 支持的扫描package
 
-	private final List<Class<?>> assignableTypes;
+	private final List<Class<?>> assignableTypes; //
 
-	private final List<Class<? extends Annotation>> annotations;
+	private final List<Class<? extends Annotation>> annotations; // 注解
 
 
 	/**
@@ -71,21 +75,28 @@ public final class HandlerTypePredicate implements Predicate<Class<?>> {
 
 	@Override
 	public boolean test(@Nullable Class<?> controllerType) {
+		// 核心：谓词检查方法
+
+		// 没有Selectors，就直接返回true
 		if (!hasSelectors()) {
 			return true;
 		}
 		else if (controllerType != null) {
+			// 依次检查 basePackages -> assignableTypes -> annotations
 			for (String basePackage : this.basePackages) {
+				// Controller的权限名是以指定的basePackages开头的
 				if (controllerType.getName().startsWith(basePackage)) {
 					return true;
 				}
 			}
 			for (Class<?> clazz : this.assignableTypes) {
+				// Controller是clazz的子类或者同类
 				if (ClassUtils.isAssignable(clazz, controllerType)) {
 					return true;
 				}
 			}
 			for (Class<? extends Annotation> annotationClass : this.annotations) {
+				// Controller上有指定的annotationClass的注解
 				if (AnnotationUtils.findAnnotation(controllerType, annotationClass) != null) {
 					return true;
 				}
@@ -95,6 +106,7 @@ public final class HandlerTypePredicate implements Predicate<Class<?>> {
 	}
 
 	private boolean hasSelectors() {
+		// 如果三个判断条件都是空，直接返回true，表示不需要筛选
 		return (!this.basePackages.isEmpty() || !this.assignableTypes.isEmpty() || !this.annotations.isEmpty());
 	}
 

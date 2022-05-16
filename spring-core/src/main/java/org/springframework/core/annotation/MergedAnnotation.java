@@ -60,6 +60,30 @@ import org.springframework.lang.Nullable;
  * @see MergedAnnotationPredicates
  */
 public interface MergedAnnotation<A extends Annotation> {
+	/*
+	 * MergedAnnotation 代表一个注解的视图，其中包含很多属性，并且包括从其他source中合并来的属性，例如@AliasFor、元注解上的属性
+	 * 关于注解的属性访问由多种get的变体方式支持，例如去访问int类型的属性，调用getInt()方法即可
+	 * 注意：当访问属性的时候，属性值是不会被转换的，例如对于调用getString但是属性为int，就只能抛出异常
+	 *
+	 * API:
+	 * asAnnotationAttributes(Adapt...):AnnotationAttributes
+	 * asMap(Adapt...):Map<String,Object>
+	 * asMap(Function<MergedAnnotation<?>,T>,Adapt...):T
+	 * filterAttributes(Predicate<String>):MergedAnnotation<A> 创建一个注解属性的新视图，即新的MergedAnnotation，其中通过形参filter过滤新视图中的属性
+	 * filterDefaultValues():MergedAnnotation<A> 创建一个注解属性的新视图，即新的MergedAnnotation，仅仅包含默认值Value属性，其余属性忽略掉
+	 * from(A):MergedAnnotation<A> 从给定注解A创建一个新的MergeAnnotation，
+	 * from(Object,A):MergedAnnotation<A>
+	 * getAnnotation(String,Class<T>):MergedAnnotation<T> 获取属性，其中属性类型为注解的
+	 * getAnnotationArray(String,Class<T>):MergedAnnotation<T>[]
+	 * getDefaultValue(String):Optional<Object>  获取属性value的默认值
+	 * getDefaultValue(String,Class<T>):Optional<T> 从指定注解获取属性value的默认值
+	 * getDistance():int 返回一个注解的距离，直接注解为0，元注解就是1，元元注解就是2，不存在的注解，就是返回-1
+	 * hasDefaultValue(String): boolean 是否包含默认的value属性值
+	 * isDirectlyPresent():boolean  是否为直接的注解，即不是继承注解、元注解
+	 * isMetaPresent():boolean 是否为元注解
+	 * isPresent():boolean 注解是否存在，元注解、继承注解、元注解
+	 * missing():MergedAnnotation<A>
+	 */
 
 	/**
 	 * The attribute name for annotations with a single element.
@@ -532,6 +556,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return a {@link MergedAnnotation} instance containing the annotation
 	 */
 	static <A extends Annotation> MergedAnnotation<A> from(A annotation) {
+		// 给当前注解创建一个合成注解，合成注解是包括其直接注解、源注解
 		return from(null, annotation);
 	}
 
@@ -545,6 +570,12 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return a {@link MergedAnnotation} instance for the annotation
 	 */
 	static <A extends Annotation> MergedAnnotation<A> from(@Nullable Object source, A annotation) {
+		// 指定注解的同时，指定注解标注的source
+		// source 不一定和 Annotation 有关联关系
+		// 如果创建的MergedAnnotation想source和注解有关系，请使用
+		// static <A extends Annotation> MergedAnnotation<A> of(@Nullable ClassLoader classLoader, @Nullable Object source, Class<A> annotationType, @Nullable Map<String, ?> attributes)
+		// static <A extends Annotation> MergedAnnotation<A> of(@Nullable AnnotatedElement source, Class<A> annotationType, @Nullable Map<String, ?> attributes) {
+		//
 		return TypeMappedAnnotation.from(source, annotation);
 	}
 
@@ -556,6 +587,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return a {@link MergedAnnotation} instance for the annotation
 	 */
 	static <A extends Annotation> MergedAnnotation<A> of(Class<A> annotationType) {
+		// 为指定注解创建，注意这种创建方式的注解，只有默认值，因为传入的是Class而不是Annotation对象
 		return of(null, annotationType, null);
 	}
 
@@ -568,9 +600,10 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return a {@link MergedAnnotation} instance for the annotation and attributes
 	 * @see #of(AnnotatedElement, Class, Map)
 	 */
-	static <A extends Annotation> MergedAnnotation<A> of(
-			Class<A> annotationType, @Nullable Map<String, ?> attributes) {
-
+	static <A extends Annotation> MergedAnnotation<A> of(Class<A> annotationType, @Nullable Map<String, ?> attributes) {
+		// 弥补上一种方法：
+		// <A extends Annotation> MergedAnnotation<A> of(Class<A> annotationType)
+		// 为指定注解创建MergedAnnotation，同时会去考虑添加属性
 		return of(null, annotationType, attributes);
 	}
 
@@ -585,9 +618,8 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * values should be used
 	 * @return a {@link MergedAnnotation} instance for the annotation and attributes
 	 */
-	static <A extends Annotation> MergedAnnotation<A> of(
-			@Nullable AnnotatedElement source, Class<A> annotationType, @Nullable Map<String, ?> attributes) {
-
+	static <A extends Annotation> MergedAnnotation<A> of(@Nullable AnnotatedElement source, Class<A> annotationType, @Nullable Map<String, ?> attributes) {
+		// 为指定源头source上的指定annotationType创建MergedAnnotation
 		return of(null, source, annotationType, attributes);
 	}
 
@@ -603,8 +635,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * values should be used
 	 * @return a {@link MergedAnnotation} instance for the annotation and attributes
 	 */
-	static <A extends Annotation> MergedAnnotation<A> of(
-			@Nullable ClassLoader classLoader, @Nullable Object source,
+	static <A extends Annotation> MergedAnnotation<A> of(@Nullable ClassLoader classLoader, @Nullable Object source,
 			Class<A> annotationType, @Nullable Map<String, ?> attributes) {
 
 		return TypeMappedAnnotation.of(classLoader, source, annotationType, attributes);
@@ -617,17 +648,18 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * {@link MergedAnnotation#asAnnotationAttributes(Adapt...) AnnotationAttributes}.
 	 */
 	enum Adapt {
+		// 创建Maps或者AnnotationAttribute时，可应用于属性值的自适应
 
 		/**
 		 * Adapt class or class array attributes to strings.
 		 */
-		CLASS_TO_STRING,
+		CLASS_TO_STRING, // Class对象转为其String值
 
 		/**
 		 * Adapt nested annotation or annotation arrays to maps rather
 		 * than synthesizing the values.
 		 */
-		ANNOTATION_TO_MAP;
+		ANNOTATION_TO_MAP; // 将注解或者注解属性转为map结构
 
 		protected final boolean isIn(Adapt... adaptations) {
 			for (Adapt candidate : adaptations) {

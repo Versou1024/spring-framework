@@ -38,6 +38,7 @@ import org.springframework.web.util.WebUtils;
  * @since 3.1
  */
 public final class ParamsRequestCondition extends AbstractRequestCondition<ParamsRequestCondition> {
+	// 参数条件匹配器
 
 	private final Set<ParamExpression> expressions;
 
@@ -48,6 +49,7 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 	 * 	if 0, the condition will match to every request.
 	 */
 	public ParamsRequestCondition(String... params) {
+		// 解析Params表达式
 		this.expressions = parseExpressions(params);
 	}
 
@@ -57,6 +59,7 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 		}
 		Set<ParamExpression> expressions = new LinkedHashSet<>(params.length);
 		for (String param : params) {
+			// 重点: new ParamExpression(param)
 			expressions.add(new ParamExpression(param));
 		}
 		return expressions;
@@ -159,25 +162,32 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 
 
 		ParamExpression(String expression) {
+			// 1. 重点: 里面会解析name\value
 			super(expression);
+			// 2. 添加需要匹配的name
 			this.namesToMatch.add(getName());
 			for (String suffix : WebUtils.SUBMIT_IMAGE_SUFFIXES) {
+				// 3. 图像后缀 .x 或 .y
 				this.namesToMatch.add(getName() + suffix);
 			}
 		}
 
 		@Override
 		protected boolean isCaseSensitiveName() {
+			// 忽略大小写
 			return true;
 		}
 
 		@Override
 		protected String parseValue(String valueExpression) {
+			// 解析处value
 			return valueExpression;
 		}
 
 		@Override
 		protected boolean matchName(HttpServletRequest request) {
+			// name值是否匹配
+
 			for (String current : this.namesToMatch) {
 				if (request.getParameterMap().get(current) != null) {
 					return true;
@@ -188,6 +198,7 @@ public final class ParamsRequestCondition extends AbstractRequestCondition<Param
 
 		@Override
 		protected boolean matchValue(HttpServletRequest request) {
+			// 检查 value 是否匹配 -- request中获取请求
 			return ObjectUtils.nullSafeEquals(this.value, request.getParameter(this.name));
 		}
 	}

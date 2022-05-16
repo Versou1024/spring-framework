@@ -56,23 +56,33 @@ import org.springframework.web.util.UrlPathHelper;
  * @see org.springframework.web.servlet.ViewResolver
  */
 public class DefaultRequestToViewNameTranslator implements RequestToViewNameTranslator {
+	// RequestToViewNameTranslator 的唯一实现
+	// 在下面找到一些请求查看名称翻译的示例。
+	// http://localhost:8080/gamecast/display.html » display
+	// http://localhost:8080/gamecast/displayShoppingCart.html » displayShoppingCart
+	// http://localhost:8080/gamecast/admin/index.html » admin/index
+
+	// RequestToViewNameTranslator简单地将传入请求的 URI 转换为视图名称。
+	// 可以在DispatcherServlet上下文中显式定义为 viewNameTranslator bean。否则，将使用普通的默认实例。
+	// 默认转换只是去掉前导和尾随斜杠以及 URI 的文件扩展名，并将结果作为视图名称返回，并根据需要添加配置的prefix和suffix 。
+	// 可以分别使用stripLeadingSlash和stripExtension属性来禁用前导斜杠和文件扩展名的剥离。
 
 	private static final String SLASH = "/";
 
 
-	private String prefix = "";
+	private String prefix = ""; // 定制前缀
 
-	private String suffix = "";
+	private String suffix = ""; // 定制后缀
 
 	private String separator = SLASH;
 
-	private boolean stripLeadingSlash = true;
+	private boolean stripLeadingSlash = true; // 是否去掉前导
 
-	private boolean stripTrailingSlash = true;
+	private boolean stripTrailingSlash = true; // 是否去掉后缀斜线
 
-	private boolean stripExtension = true;
+	private boolean stripExtension = true; // 是否去掉文件后缀
 
-	private UrlPathHelper urlPathHelper = new UrlPathHelper();
+	private UrlPathHelper urlPathHelper = new UrlPathHelper(); // 解析器
 
 
 	/**
@@ -168,7 +178,9 @@ public class DefaultRequestToViewNameTranslator implements RequestToViewNameTran
 	 */
 	@Override
 	public String getViewName(HttpServletRequest request) {
+		// 1. 获取lookupPath
 		String lookupPath = this.urlPathHelper.getLookupPathForRequest(request, HandlerMapping.LOOKUP_PATH);
+		// 2. 转换并添加前缀/后缀
 		return (this.prefix + transformPath(lookupPath) + this.suffix);
 	}
 
@@ -183,12 +195,15 @@ public class DefaultRequestToViewNameTranslator implements RequestToViewNameTran
 	@Nullable
 	protected String transformPath(String lookupPath) {
 		String path = lookupPath;
+		// 1. 去掉前导
 		if (this.stripLeadingSlash && path.startsWith(SLASH)) {
 			path = path.substring(1);
 		}
+		// 2. 去掉后缀斜线
 		if (this.stripTrailingSlash && path.endsWith(SLASH)) {
 			path = path.substring(0, path.length() - 1);
 		}
+		// 3. 去掉文件后缀
 		if (this.stripExtension) {
 			path = StringUtils.stripFilenameExtension(path);
 		}

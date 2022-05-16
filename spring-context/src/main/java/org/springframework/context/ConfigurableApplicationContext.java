@@ -42,6 +42,25 @@ import org.springframework.lang.Nullable;
  * @since 03.11.2003
  */
 public interface ConfigurableApplicationContext extends ApplicationContext, Lifecycle, Closeable {
+	/*
+	 * 可配置的应用上下文
+	 * ApplicationContext接口本身是 read-only 的【只有get方法】，
+	 * 所以子接口 ConfigurableApplicationContext就提供了如setID()、setParent()、setEnvironment()等方法，用来配置ApplicationContext
+	 *
+	 * 扩展：
+	 * getEnvironment、
+	 * setEnvironment、
+	 * getBeanFactory 备注：父类方法为获得AutowireCapableBeanFactory接口，而此处的ConfigurableListableBeanFactory可配置、可列出Bean的工厂是它的子类
+	 * setId、
+	 * setParent、
+	 * setClassLoader、
+	 * isActive 标识上下文是否激活 refresh()后就会激活
+	 * refresh 加载或刷新配置的持久表示  最最最重要的一个方法 -- 这个方法执行完成后，所有的单例Bean都已经被实例化，Bean工厂肯定也就被创建好了
+	 * registerShutdownHook JVM运行时注册一个关闭挂钩，在关闭JVM时关闭此上下文，除非此时已经关闭
+	 * close 关闭此应用程序上下文，释放实现可能持有的所有资源和锁  包括一些销毁、释放资源操作
+	 * addProtocolResolver  注册协议处理器  允许处理额外的资源协议
+	 * addApplicationListener、
+	 */
 
 	/**
 	 * Any number of these characters are considered delimiters between

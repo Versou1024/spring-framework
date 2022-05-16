@@ -36,11 +36,13 @@ class MethodBeforeAdviceAdapter implements AdvisorAdapter, Serializable {
 
 	@Override
 	public boolean supportsAdvice(Advice advice) {
+		// 支持MethodBeforeAdvice
 		return (advice instanceof MethodBeforeAdvice);
 	}
 
 	@Override
 	public MethodInterceptor getInterceptor(Advisor advisor) {
+		// 转为MethodBeforeAdviceInterceptor拦截器
 		MethodBeforeAdvice advice = (MethodBeforeAdvice) advisor.getAdvice();
 		return new MethodBeforeAdviceInterceptor(advice);
 	}

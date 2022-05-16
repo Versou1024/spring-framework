@@ -34,7 +34,7 @@ public enum Isolation {
 	 * All other levels correspond to the JDBC isolation levels.
 	 * @see java.sql.Connection
 	 */
-	DEFAULT(TransactionDefinition.ISOLATION_DEFAULT),
+	DEFAULT(TransactionDefinition.ISOLATION_DEFAULT), // 读未提交
 
 	/**
 	 * A constant indicating that dirty reads, non-repeatable reads and phantom reads
@@ -44,7 +44,7 @@ public enum Isolation {
 	 * transaction will have retrieved an invalid row.
 	 * @see java.sql.Connection#TRANSACTION_READ_UNCOMMITTED
 	 */
-	READ_UNCOMMITTED(TransactionDefinition.ISOLATION_READ_UNCOMMITTED),
+	READ_UNCOMMITTED(TransactionDefinition.ISOLATION_READ_UNCOMMITTED), // 读未提交
 
 	/**
 	 * A constant indicating that dirty reads are prevented; non-repeatable reads
@@ -52,7 +52,7 @@ public enum Isolation {
 	 * from reading a row with uncommitted changes in it.
 	 * @see java.sql.Connection#TRANSACTION_READ_COMMITTED
 	 */
-	READ_COMMITTED(TransactionDefinition.ISOLATION_READ_COMMITTED),
+	READ_COMMITTED(TransactionDefinition.ISOLATION_READ_COMMITTED), // 读并提交
 
 	/**
 	 * A constant indicating that dirty reads and non-repeatable reads are
@@ -63,7 +63,7 @@ public enum Isolation {
 	 * different values the second time (a "non-repeatable read").
 	 * @see java.sql.Connection#TRANSACTION_REPEATABLE_READ
 	 */
-	REPEATABLE_READ(TransactionDefinition.ISOLATION_REPEATABLE_READ),
+	REPEATABLE_READ(TransactionDefinition.ISOLATION_REPEATABLE_READ), // 可重复读
 
 	/**
 	 * A constant indicating that dirty reads, non-repeatable reads and phantom
@@ -75,7 +75,7 @@ public enum Isolation {
 	 * same condition, retrieving the additional "phantom" row in the second read.
 	 * @see java.sql.Connection#TRANSACTION_SERIALIZABLE
 	 */
-	SERIALIZABLE(TransactionDefinition.ISOLATION_SERIALIZABLE);
+	SERIALIZABLE(TransactionDefinition.ISOLATION_SERIALIZABLE); // 序列化
 
 
 	private final int value;

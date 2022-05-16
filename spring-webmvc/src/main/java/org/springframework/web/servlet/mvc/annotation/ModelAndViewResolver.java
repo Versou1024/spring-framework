@@ -46,6 +46,18 @@ import org.springframework.web.servlet.ModelAndView;
  * @since 3.0
  */
 public interface ModelAndViewResolver {
+	// 用于解析来自特定HandlerMethod的自定义返回值的 SPI。通常用于检测特殊返回类型，为它们解析众所周知的结果值。
+	// 一个典型的实现可能如下所示：
+	//   public class MyModelAndViewResolver implements ModelAndViewResolver {
+	//
+	//       public ModelAndView resolveModelAndView(Method handlerMethod, Class handlerType,
+	//               Object returnValue, ExtendedModelMap implicitModel, NativeWebRequest webRequest) {
+	//           if (returnValue instanceof MySpecialRetVal.class)) {
+	//               return new MySpecialRetVal(returnValue);
+	//           }
+	//           return UNRESOLVED;
+	//       }
+	//   }
 
 	/**
 	 * Marker to be returned when the resolver does not know how to handle the given method parameter.

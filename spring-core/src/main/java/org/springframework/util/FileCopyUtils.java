@@ -44,6 +44,10 @@ import org.springframework.lang.Nullable;
  * @see FileSystemUtils
  */
 public abstract class FileCopyUtils {
+	/*
+	加入abstract，使得当前类无法被实例化
+	提供方法：copy、copyToByteArray
+	 */
 
 	/**
 	 * The default buffer size used when copying bytes.

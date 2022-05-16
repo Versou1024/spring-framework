@@ -53,16 +53,15 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.aop.target.AbstractBeanFactoryBasedTargetSource
  * @see org.springframework.beans.factory.support.AbstractBeanFactory
  */
-public abstract class AbstractBeanFactoryBasedTargetSourceCreator
-		implements TargetSourceCreator, BeanFactoryAware, DisposableBean {
+public abstract class AbstractBeanFactoryBasedTargetSourceCreator implements TargetSourceCreator, BeanFactoryAware, DisposableBean {
+	// 基于BeanFactory的TargetSourceCreator创建器
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private ConfigurableBeanFactory beanFactory;
 
 	/** Internally used DefaultListableBeanFactory instances, keyed by bean name. */
-	private final Map<String, DefaultListableBeanFactory> internalBeanFactories =
-			new HashMap<>();
+	private final Map<String, DefaultListableBeanFactory> internalBeanFactories = new HashMap<>();
 
 
 	@Override
@@ -89,8 +88,8 @@ public abstract class AbstractBeanFactoryBasedTargetSourceCreator
 	@Override
 	@Nullable
 	public final TargetSource getTargetSource(Class<?> beanClass, String beanName) {
-		AbstractBeanFactoryBasedTargetSource targetSource =
-				createBeanFactoryBasedTargetSource(beanClass, beanName);
+		// 交给子类完成
+		AbstractBeanFactoryBasedTargetSource targetSource = createBeanFactoryBasedTargetSource(beanClass, beanName);
 		if (targetSource == null) {
 			return null;
 		}
@@ -106,12 +105,15 @@ public abstract class AbstractBeanFactoryBasedTargetSourceCreator
 		// Always use prototype scope if demanded.
 		BeanDefinition bd = this.beanFactory.getMergedBeanDefinition(beanName);
 		GenericBeanDefinition bdCopy = new GenericBeanDefinition(bd);
-		if (isPrototypeBased()) {
+		if (isPrototypeBased()) { // 默认为true，子类可重写
+			// 如果是原型Bean，就设置bdCopy的scope为原型
 			bdCopy.setScope(BeanDefinition.SCOPE_PROTOTYPE);
 		}
+		// 注册行的BeanDefinition
 		internalBeanFactory.registerBeanDefinition(beanName, bdCopy);
 
 		// Complete configuring the PrototypeTargetSource.
+		// 完成对targetSource的杯子 -- 比如 beanName、beanFactory、
 		targetSource.setTargetBeanName(beanName);
 		targetSource.setBeanFactory(internalBeanFactory);
 
@@ -127,6 +129,7 @@ public abstract class AbstractBeanFactoryBasedTargetSourceCreator
 		synchronized (this.internalBeanFactories) {
 			DefaultListableBeanFactory internalBeanFactory = this.internalBeanFactories.get(beanName);
 			if (internalBeanFactory == null) {
+				// 缓存未命中，构建internalBeanFactory，存入缓存中
 				internalBeanFactory = buildInternalBeanFactory(this.beanFactory);
 				this.internalBeanFactories.put(beanName, internalBeanFactory);
 			}

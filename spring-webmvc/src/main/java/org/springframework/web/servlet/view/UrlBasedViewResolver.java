@@ -87,6 +87,28 @@ import org.springframework.web.servlet.View;
  */
 public class UrlBasedViewResolver extends AbstractCachingViewResolver implements Ordered {
 
+	/*
+	 * ViewResolver 的简单实现。允许将字符串视图名称直接解析为URL，无需显式映射定义。
+	 * 如果您的符号名与视图资源的名称以简单的方式匹配（即符号名是资源文件名的唯一部分），而不需要为每个视图定义专用映射，这将非常有用。
+	 * 支持AbstractUrlBasedView子类，如InternalResourceView和FreeMarkerView。
+	 * 可以通过“viewClass”属性指定此解析器生成的所有视图的view类。
+	 *
+	 * 视图名称可以是resource url本身，也可以通过指定的前缀和后缀进行扩展。明确支持导出将RequestContext保存到所有视图的属性。
+	 * 示例：prefix=“/WEB-INF/jsp/”，suffix=“.jsp”，viewname=“test”->“/WEB-INF/jsp/test.jsp”
+	 *
+	 * 作为一项特殊功能，重定向URL可以通过“redirect:”前缀指定。
+	 * 例如：“redirect:myAction”将触发对给定URL的重定向，而不是作为标准视图名称进行解析。
+	 * 这通常用于在完成表单工作流后重定向到控制器URL。
+	 *
+	 * 此外，转发URL可以通过“转发：”前缀指定。例如：“forward:myAction”将触发对给定URL的转发，而不是作为标准视图名称的解析。
+	 * 这通常用于控制器URL；它不应该用于JSP URL——在那里使用逻辑视图名称。
+	 *
+	 * 注意：
+	 * 链接ViewResolver时，UrlBasedViewResolver将检查指定的资源是否实际存在。
+	 * 然而，使用InternalResourceView，通常不可能预先确定目标资源的存在。在这种情况下，
+	 * UrlBasedViewResolver将始终返回任何给定视图名称的视图；因此，应将其配置为链中的最后一个ViewResolver。
+	 */
+
 	/**
 	 * Prefix for special view names that specify a redirect URL (usually
 	 * to a controller after a form has been submitted and processed).

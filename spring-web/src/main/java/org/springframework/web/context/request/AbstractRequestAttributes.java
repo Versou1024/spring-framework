@@ -31,6 +31,7 @@ import org.springframework.util.Assert;
  * @see #requestCompleted()
  */
 public abstract class AbstractRequestAttributes implements RequestAttributes {
+	// RequestAttributes的抽象支持类，为特定于request的销毁回调和更新访问的session属性提供request completion机制。
 
 	/** Map from attribute name String to destruction callback Runnable. */
 	protected final Map<String, Runnable> requestDestructionCallbacks = new LinkedHashMap<>(8);
@@ -44,7 +45,9 @@ public abstract class AbstractRequestAttributes implements RequestAttributes {
 	 * session attributes that have been accessed during request processing.
 	 */
 	public void requestCompleted() {
+		// 请求结束：执行所有销毁回调方法
 		executeRequestDestructionCallbacks();
+		// 请求结束：更新所有可供下次使用的session级别的属性
 		updateAccessedSessionAttributes();
 		this.requestActive = false;
 	}
@@ -63,6 +66,8 @@ public abstract class AbstractRequestAttributes implements RequestAttributes {
 	 * @param callback the callback to be executed for destruction
 	 */
 	protected final void registerRequestDestructionCallback(String name, Runnable callback) {
+		// name就是指定需要回调销毁的属性名字
+		// 注册销毁回调方法
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(callback, "Callback must not be null");
 		synchronized (this.requestDestructionCallbacks) {
@@ -86,6 +91,7 @@ public abstract class AbstractRequestAttributes implements RequestAttributes {
 	 * after request completion.
 	 */
 	private void executeRequestDestructionCallbacks() {
+		// 遍历执行注册了的属性回调销毁方法
 		synchronized (this.requestDestructionCallbacks) {
 			for (Runnable runnable : this.requestDestructionCallbacks.values()) {
 				runnable.run();

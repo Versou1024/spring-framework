@@ -106,15 +106,17 @@ public class NameMatchTransactionAttributeSource implements TransactionAttribute
 		}
 
 		// Look for direct name match.
+		// 根据方法名直接精准匹配查找
 		String methodName = method.getName();
 		TransactionAttribute attr = this.nameMap.get(methodName);
 
 		if (attr == null) {
 			// Look for most specific name match.
+			// 精准匹配查找失败，就需要按照模式pattern进行匹配
 			String bestNameMatch = null;
 			for (String mappedName : this.nameMap.keySet()) {
-				if (isMatch(methodName, mappedName) &&
-						(bestNameMatch == null || bestNameMatch.length() <= mappedName.length())) {
+				//
+				if (isMatch(methodName, mappedName) && (bestNameMatch == null || bestNameMatch.length() <= mappedName.length())) {
 					attr = this.nameMap.get(mappedName);
 					bestNameMatch = mappedName;
 				}
@@ -134,6 +136,8 @@ public class NameMatchTransactionAttributeSource implements TransactionAttribute
 	 * @see org.springframework.util.PatternMatchUtils#simpleMatch(String, String)
 	 */
 	protected boolean isMatch(String methodName, String mappedName) {
+		// 如果给定的方法名称与映射的名称匹配，则返回。
+		// 默认实现检查“xxx*”、“*xxx”和“*xxx*”匹配，以及直接相等。可以在子类中覆盖。
 		return PatternMatchUtils.simpleMatch(mappedName, methodName);
 	}
 

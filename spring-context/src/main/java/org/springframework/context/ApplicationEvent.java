@@ -28,6 +28,8 @@ import java.util.EventObject;
  * @see org.springframework.context.event.EventListener
  */
 public abstract class ApplicationEvent extends EventObject {
+	// ApplicationEvent继承自EventObject。 Spring这么做我觉得完全是为了兼容Java规范~
+	// publishEvent：发布事件。因为ApplicationContext继承了ApplicationEventMulticaster，因此我们一般发布事件建议用它就成了
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 7099057708183571937L;

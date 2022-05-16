@@ -28,9 +28,17 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @since 3.1
  */
 public class DefaultDataBinderFactory implements WebDataBinderFactory {
+	/**
+	 * 实现 WebDataBinderFactory 作为默认的web数据绑定工厂
+	 *
+	 * 作用：
+	 * 1、聚合用来初始化的WebDataBinder的WebBindingInitializer
+	 * 2、
+	 * 3、
+	 */
 
 	@Nullable
-	private final WebBindingInitializer initializer;
+	private final WebBindingInitializer initializer; // 用来初始化加载DataBinder的初始化器
 
 
 	/**
@@ -50,9 +58,8 @@ public class DefaultDataBinderFactory implements WebDataBinderFactory {
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
-	public final WebDataBinder createBinder(
-			NativeWebRequest webRequest, @Nullable Object target, String objectName) throws Exception {
-
+	public final WebDataBinder createBinder(NativeWebRequest webRequest, @Nullable Object target, String objectName) throws Exception {
+		// 创建一个WebDataBinder
 		WebDataBinder dataBinder = createBinderInstance(target, objectName, webRequest);
 		if (this.initializer != null) {
 			this.initializer.initBinder(dataBinder, webRequest);

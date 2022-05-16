@@ -39,6 +39,12 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher, Serializable {
+	// 流程切点:
+	// ControlFlowPointcut实现类表示控制流程切点。
+	// ControlFlowPointcut是一种特殊的切点，它根据程序执行堆栈的信息查看目标方法是否由某一个方法直接或间接调用，
+	// 以此判断是否为匹配的连接点。
+
+	// ControlFlowPointcut 主要是关注动态方法
 
 	private final Class<?> clazz;
 
@@ -75,6 +81,7 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	 */
 	@Override
 	public boolean matches(Class<?> clazz) {
+		// ClassFilter 直接返回true
 		return true;
 	}
 
@@ -83,19 +90,25 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	 */
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
+		// 静态匹配：直接返回true
 		return true;
 	}
 
 	@Override
 	public boolean isRuntime() {
+		// 动态方法匹配
 		return true;
 	}
 
 	@Override
 	public boolean matches(Method method, Class<?> targetClass, Object... args) {
+		// ControlFlowPointcut流程切点主要时候负责动态匹配
+
 		this.evaluations.incrementAndGet();
 
 		for (StackTraceElement element : new Throwable().getStackTrace()) {
+			// 获取堆栈信息中所有的StackTraceElement
+			// 只要堆栈信息中：被直接或间接调用的方法所属class是clazz.getName，同时方法名相同时，就返回true，允许拦截通知
 			if (element.getClassName().equals(this.clazz.getName()) &&
 					(this.methodName == null || element.getMethodName().equals(this.methodName))) {
 				return true;

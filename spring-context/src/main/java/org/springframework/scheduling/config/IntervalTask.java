@@ -27,6 +27,7 @@ package org.springframework.scheduling.config;
  * @see ScheduledTaskRegistrar#addFixedDelayTask(IntervalTask)
  */
 public class IntervalTask extends Task {
+	// 继承Task，扩展执行间隔和延迟
 
 	private final long interval;
 

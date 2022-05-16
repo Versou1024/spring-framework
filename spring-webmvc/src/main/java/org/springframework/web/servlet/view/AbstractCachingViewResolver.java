@@ -44,12 +44,19 @@ import org.springframework.web.servlet.ViewResolver;
  * @see #loadView
  */
 public abstract class AbstractCachingViewResolver extends WebApplicationObjectSupport implements ViewResolver {
+	/**
+	 * ViewResolver的基本抽象类
+	 * 主要作用：
+	 * 1、在解析后缓存视图对象：这意味着视图解析不会成为性能问题，无论初始视图检索的成本有多高。
+	 * 2、子类需要实现loadView模板方法，为特定的视图名称和区域设置构建视图对象。
+	 */
 
 	/** Default maximum number of entries for the view cache: 1024. */
+	// 最大缓存view的数量
 	public static final int DEFAULT_CACHE_LIMIT = 1024;
 
 	/** Dummy marker object for unresolved views in the cache Maps. */
-	private static final View UNRESOLVED_VIEW = new View() {
+	private static final View UNRESOLVED_VIEW = new View() {// 用于标记未解析的View
 		@Override
 		@Nullable
 		public String getContentType() {
@@ -61,11 +68,17 @@ public abstract class AbstractCachingViewResolver extends WebApplicationObjectSu
 	};
 
 	/** Default cache filter that always caches. */
-	private static final CacheFilter DEFAULT_CACHE_FILTER = (view, viewName, locale) -> true;
+	private static final CacheFilter DEFAULT_CACHE_FILTER = (view, viewName, locale) -> true; // 解析完后是否需要缓存，取决于该过滤器，默认是返回true
 
 
 	/** The maximum number of entries in the cache. */
 	private volatile int cacheLimit = DEFAULT_CACHE_LIMIT;
+	// 经典的： 一个static final变量作为默认值，同时允许用户修改，应该另起一个非static final的，初始化等于static final变量
+	// 适合场景：
+	// 1、初始化时有默认值，后续允许用户修改，因此具备拆分为一个static final和一个非static final的变量
+	// 2、为什么不直接 private CacheFilter cacheFilter = (view, viewName, locale) -> true;
+	//   原因：由于cacheFilter不是共享的，因此如果当前类不是单例模式的，那么每次创建都会创建一个(view, viewName, locale) -> true的lambda表达式；
+	// 		创建一百个该对象，就有一百个lambda表达式，而采用默认方式能够帮助减少创建的数量的
 
 	/** Whether we should refrain from resolving views again if unresolved once. */
 	private boolean cacheUnresolved = true;
@@ -170,7 +183,9 @@ public abstract class AbstractCachingViewResolver extends WebApplicationObjectSu
 	@Override
 	@Nullable
 	public View resolveViewName(String viewName, Locale locale) throws Exception {
+		// 核心方法
 		if (!isCache()) {
+			// 不开启缓存，直接创建view
 			return createView(viewName, locale);
 		}
 		else {
@@ -272,6 +287,9 @@ public abstract class AbstractCachingViewResolver extends WebApplicationObjectSu
 	 */
 	@Nullable
 	protected View createView(String viewName, Locale locale) throws Exception {
+		// 为什么多此一举，将职责委托为loadView
+		// 创建实际的视图对象。
+		// 默认实现将委托给loadView。在委托给子类提供的实际loadView实现之前，可以重写它以特殊方式解析某些视图名称。
 		return loadView(viewName, locale);
 	}
 
@@ -301,7 +319,7 @@ public abstract class AbstractCachingViewResolver extends WebApplicationObjectSu
 	 */
 	@FunctionalInterface
 	public interface CacheFilter {
-
+		// 函数式接口，可以写成内部接口
 		/**
 		 * Indicates whether the given view should be cached.
 		 * The name and locale used to resolve the view are also provided.

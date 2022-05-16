@@ -28,6 +28,10 @@ import org.springframework.lang.Nullable;
  * @see PropertySourcesPropertyResolver
  */
 public interface PropertyResolver {
+	/*
+	 * 根据任何基础源解析属性。
+	 * API：获取属性getProperty、解析占位符resolvePlaceholders、是否包含containsProperty
+	 */
 
 	/**
 	 * Return whether the given property key is available for resolution,

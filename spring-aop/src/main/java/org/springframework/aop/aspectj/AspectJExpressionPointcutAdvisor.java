@@ -30,6 +30,9 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class AspectJExpressionPointcutAdvisor extends AbstractGenericPointcutAdvisor implements BeanFactoryAware {
+	/**
+	 * AspectJExpressionPointcutAdvisor 主要是：AspectJExpressionPointcut
+	 */
 
 	private final AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
 

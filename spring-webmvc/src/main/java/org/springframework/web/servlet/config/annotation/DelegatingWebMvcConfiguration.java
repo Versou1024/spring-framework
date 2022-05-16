@@ -41,14 +41,22 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  */
 @Configuration(proxyBeanMethods = false)
 public class DelegatingWebMvcConfiguration extends WebMvcConfigurationSupport {
+	// WebMvcConfigurationSupport的子类，它检测并委托给所有类型为WebMvcConfigurer的 bean，允许它们自定义WebMvcConfigurationSupport提供的配置。这是@EnableWebMvc实际导入的类。
+	// 配置 proxyBeanMethods 属性后，配置类不会被代理了。主要是为了提高性能，
+	// 如果你的 @Bean 方法之间没有调用关系的话可以把 proxyBeanMethods 设置为 false。否则，方法内部引用的类生产的类和 Spring 容器中类是两个类。
 
-	private final WebMvcConfigurerComposite configurers = new WebMvcConfigurerComposite();
+	// 同时需要注意到: DelegatingWebMvcConfiguration 是继承了 WebMvcConfigurationSupport 的
+	// 重写了 WebMvcConfigurationSupport 留给用户的扩展接口 -- 比如重写在WebMvcConfigurationSupport默认的拦截器上添加拦截的方法addInterceptors()
+
+	private final WebMvcConfigurerComposite configurers = new WebMvcConfigurerComposite(); // WebMvc的配置组合模式
 
 
 	@Autowired(required = false)
 	public void setConfigurers(List<WebMvcConfigurer> configurers) {
+		// DelegatingWebMvcConfiguration是一个@Configuration配置类，
+		// 自动注入 WebMvcConfigurer 的用户自定义的配置实现类
 		if (!CollectionUtils.isEmpty(configurers)) {
-			this.configurers.addWebMvcConfigurers(configurers);
+			this.configurers.addWebMvcConfigurers(configurers); // 将所有监测到的configurers注册到复合的WebMvcConfigurer中
 		}
 	}
 

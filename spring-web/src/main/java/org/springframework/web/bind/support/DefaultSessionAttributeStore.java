@@ -32,6 +32,13 @@ import org.springframework.web.context.request.WebRequest;
  * @see org.springframework.web.context.request.WebRequest#removeAttribute
  */
 public class DefaultSessionAttributeStore implements SessionAttributeStore {
+	/*
+	 * 默认的会话属性容器 -- 实现容器接口SessionAttributeStore定义的方法
+	 *
+	 * 需要知道 -- session的属性其实也需要挂载在request上
+	 *
+	 * 更多的像是一个工具类
+	 */
 
 	private String attributeNamePrefix = "";
 
@@ -48,6 +55,8 @@ public class DefaultSessionAttributeStore implements SessionAttributeStore {
 
 	@Override
 	public void storeAttribute(WebRequest request, String attributeName, Object attributeValue) {
+		// 将session属性前缀名和指定属性名attributeName联合作为新的属性名
+		// 向request总共存入属性即可
 		Assert.notNull(request, "WebRequest must not be null");
 		Assert.notNull(attributeName, "Attribute name must not be null");
 		Assert.notNull(attributeValue, "Attribute value must not be null");
@@ -58,6 +67,7 @@ public class DefaultSessionAttributeStore implements SessionAttributeStore {
 	@Override
 	@Nullable
 	public Object retrieveAttribute(WebRequest request, String attributeName) {
+		// 检索属性 -- 即使 getAttribute
 		Assert.notNull(request, "WebRequest must not be null");
 		Assert.notNull(attributeName, "Attribute name must not be null");
 		String storeAttributeName = getAttributeNameInSession(request, attributeName);
@@ -66,6 +76,7 @@ public class DefaultSessionAttributeStore implements SessionAttributeStore {
 
 	@Override
 	public void cleanupAttribute(WebRequest request, String attributeName) {
+		// 清理属性 -- removeAttribute
 		Assert.notNull(request, "WebRequest must not be null");
 		Assert.notNull(attributeName, "Attribute name must not be null");
 		String storeAttributeName = getAttributeNameInSession(request, attributeName);
@@ -82,6 +93,7 @@ public class DefaultSessionAttributeStore implements SessionAttributeStore {
 	 * @return the attribute name in the backend session
 	 */
 	protected String getAttributeNameInSession(WebRequest request, String attributeName) {
+		// session属性前缀 + 指定传入的属性名即可
 		return this.attributeNamePrefix + attributeName;
 	}
 

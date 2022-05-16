@@ -41,6 +41,13 @@ import org.springframework.web.cors.CorsUtils;
  * @since 3.1
  */
 public final class HeadersRequestCondition extends AbstractRequestCondition<HeadersRequestCondition> {
+	/**
+	 * 实现：AbstractRequestCondition
+	 *
+	 * 作用：
+	 * 1、聚合所有待检查的请求头集合， Set<HeaderExpression>
+	 * 2、
+	 */
 
 	private static final HeadersRequestCondition PRE_FLIGHT_MATCH = new HeadersRequestCondition();
 
@@ -56,10 +63,12 @@ public final class HeadersRequestCondition extends AbstractRequestCondition<Head
 	 * if 0, the condition will match to every request
 	 */
 	public HeadersRequestCondition(String... headers) {
+		// 核心方法
 		this.expressions = parseExpressions(headers);
 	}
 
 	private static Set<HeaderExpression> parseExpressions(String... headers) {
+		// 解析所有String的Headers
 		Set<HeaderExpression> result = null;
 		if (!ObjectUtils.isEmpty(headers)) {
 			for (String header : headers) {
@@ -102,6 +111,7 @@ public final class HeadersRequestCondition extends AbstractRequestCondition<Head
 	 */
 	@Override
 	public HeadersRequestCondition combine(HeadersRequestCondition other) {
+		// 合并两个HeadersRequestCondition的请求头表达式expressions
 		if (isEmpty() && other.isEmpty()) {
 			return this;
 		}
@@ -123,9 +133,12 @@ public final class HeadersRequestCondition extends AbstractRequestCondition<Head
 	@Override
 	@Nullable
 	public HeadersRequestCondition getMatchingCondition(HttpServletRequest request) {
+		// 核心
+		// 预检请求直接返回PRE_FLIGHT_MATCH
 		if (CorsUtils.isPreFlightRequest(request)) {
 			return PRE_FLIGHT_MATCH;
 		}
+		// 否则检查是否匹配所有的HeaderExpression，只要不满足就返回null
 		for (HeaderExpression expression : this.expressions) {
 			if (!expression.match(request)) {
 				return null;
@@ -169,13 +182,24 @@ public final class HeadersRequestCondition extends AbstractRequestCondition<Head
 	 * Parses and matches a single header expression to a request.
 	 */
 	static class HeaderExpression extends AbstractNameValueExpression<String> {
+		/**
+		 * 请求头表达式 HeaderExpression
+		 *
+		 * 实现以下方法：
+		 * 1、matchName：检查request中是否存在指定的headerName即可
+		 * 2、matchValue：request获取指定name的value进行比较即可
+		 * 3、parseValue 返回原始值
+		 * 4、isCaseSensitiveName 不能忽略大小写Name
+		 */
 
 		HeaderExpression(String expression) {
+			// 和ParamsExpression一样,都是通过超类AbstractNameValueExpression来解析表达式,分割出nam和value的
 			super(expression);
 		}
 
 		@Override
 		protected boolean isCaseSensitiveName() {
+			// 不支持大小写
 			return false;
 		}
 
@@ -186,11 +210,13 @@ public final class HeadersRequestCondition extends AbstractRequestCondition<Head
 
 		@Override
 		protected boolean matchName(HttpServletRequest request) {
+			// 匹配name
 			return (request.getHeader(this.name) != null);
 		}
 
 		@Override
 		protected boolean matchValue(HttpServletRequest request) {
+			// 匹配value
 			return ObjectUtils.nullSafeEquals(this.value, request.getHeader(this.name));
 		}
 	}

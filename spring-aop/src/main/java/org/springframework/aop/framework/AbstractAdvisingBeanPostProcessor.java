@@ -33,12 +33,14 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSupport implements BeanPostProcessor {
+	// 在 ProxyProcessorSupport 基础上，接受一个Spring aop
 
 	@Nullable
-	protected Advisor advisor;
+	protected Advisor advisor;  // 留给子类去设置，然后加载到bean中做代理
 
 	protected boolean beforeExistingAdvisors = false;
 
+	// 缓存合格的Bean们
 	private final Map<Class<?>, Boolean> eligibleBeans = new ConcurrentHashMap<>(256);
 
 
@@ -52,43 +54,65 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * changes this flag by default, depending on the nature of its advisor.
 	 */
 	public void setBeforeExistingAdvisors(boolean beforeExistingAdvisors) {
+		// 当遇到一个pre-object的时候，是否把该processor所持有得advisor放在现有的增强器们之前执行
+		// 默认是false，会放在最后一个位置上的
 		this.beforeExistingAdvisors = beforeExistingAdvisors;
 	}
 
 
+	// 不处理
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) {
 		return bean;
 	}
 
+	// Bean已经实例化、初始化完成之后执行。
+	// 核心模板 -- 关注：advisor的来源、advisor的存放位置、bean是否满足advisor
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
+		// 忽略AopInfrastructureBean的Bean，并且如果没有advisor也会忽略不处理~~~~~
+		// 需要知道：advisor是当前类留给子类实现的，因此该类的子类应该提供advisor，然后再后续的proxyFactory.addAdvisor添加进去，然后生成一个代理对象Proxy
 		if (this.advisor == null || bean instanceof AopInfrastructureBean) {
 			// Ignore AOP infrastructure such as scoped proxies.
 			return bean;
 		}
 
+		// 如果这个Bean已经被代理过了（比如已经被AOP切中了），那本处就无需再重复创建代理了嘛
+		// 直接向里面添加advisor就成了
+		// 虽然项目中使用@Aspect的类没有直接继承Advised，但是为其生成代理类的时候，会为其实现两个标记性接口：Advised、SpringProxy
 		if (bean instanceof Advised) {
 			Advised advised = (Advised) bean;
+			// 注意此advised不能是已经被冻结了的。且源对象必须是Eligible合格的 --- 合格的标准：满足子类的advisor的切面中的pointcut的要求，同时不是一个原始类
+			// 因为冻结了配置就无须重新更新advisors
 			if (!advised.isFrozen() && isEligible(AopUtils.getTargetClass(bean))) {
 				// Add our local Advisor to the existing proxy's Advisor chain...
+				// 把自己持有的局部advisor放在首位（如果beforeExistingAdvisors=true）
 				if (this.beforeExistingAdvisors) {
+					// 例如：@Async导入的异步interceptor就需要放在第一个位置，提前做异步处理
 					advised.addAdvisor(0, this.advisor);
 				}
+				// 否则就是尾部位置
 				else {
 					advised.addAdvisor(this.advisor);
 				}
+				// 最终直接返回即可，因为已经没有必要再创建一次代理对象了
 				return bean;
 			}
 		}
-
+		// 如果这个Bean事合格的（此方法下面有解释）   这个时候是没有被代理过的
 		if (isEligible(bean, beanName)) {
+			// 以当前的配置，创建一个ProxyFactory
 			ProxyFactory proxyFactory = prepareProxyFactory(bean, beanName);
+			// 如果不是使用CGLIB常见代理，那就去分析出它所实现的接口们  然后放进ProxyFactory 里去
 			if (!proxyFactory.isProxyTargetClass()) {
 				evaluateProxyInterfaces(bean.getClass(), proxyFactory);
 			}
+			// 切面就是当前持有得advisor
 			proxyFactory.addAdvisor(this.advisor);
+			// 留给子类，自己还可以对proxyFactory进行自定义~~~~~
+
 			customizeProxyFactory(proxyFactory);
+			// 最终返回这个代理对象~~~~~
 			return proxyFactory.getProxy(getProxyClassLoader());
 		}
 
@@ -123,14 +147,22 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * @see AopUtils#canApply(Advisor, Class)
 	 */
 	protected boolean isEligible(Class<?> targetClass) {
+		// 是否合格：主要依据就是判断targetClass是否满足advisor切面类的定义
+
 		Boolean eligible = this.eligibleBeans.get(targetClass);
+		// 缓存命中
 		if (eligible != null) {
+			// eligible 为true，就表示合格的bean
+			// eligible 为false，就表示不合格的bean -- 既不符合切面的定义
 			return eligible;
 		}
+		// 如果没有切面（就相当于没有给配置增强器，那铁定是不合格的）
 		if (this.advisor == null) {
 			return false;
 		}
+		// 检查targetClass是否被advisor接受
 		eligible = AopUtils.canApply(this.advisor, targetClass);
+		// 存入缓存
 		this.eligibleBeans.put(targetClass, eligible);
 		return eligible;
 	}
@@ -150,6 +182,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * @see #customizeProxyFactory
 	 */
 	protected ProxyFactory prepareProxyFactory(Object bean, String beanName) {
+		// 子类可以复写。比如`AbstractBeanFactoryAwareAdvisingPostProcessor`就复写了这个方法~~~
 		ProxyFactory proxyFactory = new ProxyFactory();
 		proxyFactory.copyFrom(this);
 		proxyFactory.setTarget(bean);

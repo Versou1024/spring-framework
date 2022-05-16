@@ -38,13 +38,27 @@ import org.springframework.util.ObjectUtils;
  * @see org.springframework.beans.factory.config.DependencyDescriptor
  */
 public class InjectionPoint {
+	/*
+	 * 注入点的简单描述符，
+	 * 指向方法/构造函数参数或字段，对请求的注入点做出反应，以构建定制的bean实例。
+	 *
+	 * 持有：方法参数MethodParameter、字段Field、字段注解fieldAnnotations
+	 *
+	 * 首先需要说明的一点，DependencyDescriptor继承自InjectionPoint,而InjectionPoint用于描述一个注入点，这个注入点是以下两种情况之一 :
+	 * 一个实例方法(构造函数或者成员方法)的某个参数(参数类型，参数索引)及该参数上的注解信息;
+	 * 实例成员属性以及该属性上的注解信息；
+	 */
 
+
+	// 包装函数参数时用于保存所包装的函数参数，内含该参数的注解信息
 	@Nullable
 	protected MethodParameter methodParameter;
 
+	// 包装成员属性时用于保存所包装的成员属性
 	@Nullable
 	protected Field field;
 
+	// 包装成员属性时用于保存所包装的成员属性的注解信息
 	@Nullable
 	private volatile Annotation[] fieldAnnotations;
 
@@ -72,8 +86,7 @@ public class InjectionPoint {
 	 * @param original the original descriptor to create a copy from
 	 */
 	protected InjectionPoint(InjectionPoint original) {
-		this.methodParameter = (original.methodParameter != null ?
-				new MethodParameter(original.methodParameter) : null);
+		this.methodParameter = (original.methodParameter != null ? new MethodParameter(original.methodParameter) : null);
 		this.field = original.field;
 		this.fieldAnnotations = original.fieldAnnotations;
 	}
@@ -120,14 +133,19 @@ public class InjectionPoint {
 	 * Obtain the annotations associated with the wrapped field or method/constructor parameter.
 	 */
 	public Annotation[] getAnnotations() {
+		// 获取所包装的依赖(方法参数或者成员属性)上的注解信息
+		// 字段上的注解，是懒加载可缓存的
 		if (this.field != null) {
 			Annotation[] fieldAnnotations = this.fieldAnnotations;
+			// 懒加载
 			if (fieldAnnotations == null) {
+				// 缓存起来
 				fieldAnnotations = this.field.getAnnotations();
 				this.fieldAnnotations = fieldAnnotations;
 			}
 			return fieldAnnotations;
 		}
+		// 方法上的注解，是实时获取的，不可缓存
 		else {
 			return obtainMethodParameter().getParameterAnnotations();
 		}
@@ -158,6 +176,10 @@ public class InjectionPoint {
 	 * @return the Field / Method / Constructor as Member
 	 */
 	public Member getMember() {
+		/*
+		 * 1.如果所包装的依赖是成员属性则返回该成员属性，
+		 * 2.如果所包装的依赖是成员方法参数,则返回对应的成员方法
+		 */
 		return (this.field != null ? this.field : obtainMethodParameter().getMember());
 	}
 

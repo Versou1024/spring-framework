@@ -37,6 +37,10 @@ import org.springframework.core.type.AnnotationMetadata;
  * @see org.springframework.transaction.annotation.EnableTransactionManagement
  */
 public class AutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
+	/**
+	 * 为当前BeanDefinitionRegistry注册一个自动代理创建者
+	 * 其基于@Enable*注释的mode和proxyTargetClass属性
+	 */
 
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -57,6 +61,20 @@ public class AutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
 	 */
 	@Override
 	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+		// 属于Import的一种方式：ImportBeanDefinitionRegistrar，还有一种就是ImportSelector，以及最普通的直接导入@Configuration的配置类或非配置类
+		// 针对给定注册表注册、升级和配置标准自动代理创建者 (auto proxy creator)。
+		// 通过查找在导入的@Configuration类上具有mode和proxyTargetClass属性的声明的注解来工作。
+		// 		如果注解的mode设置为PROXY ，则注册 APC；
+		// 		如果注解的proxyTargetClass设置为true ，则 APC 被迫使用子类 (CGLIB) 代理。
+
+		// 几个@Enable*注释公开了mode和proxyTargetClass属性： @EnableAsync @EnableTransactionManagement
+		// 值得注意的是，这些功能中的大多数最终都共享一个自动代理创建器(auto proxy creator) 。
+		// 出于这个原因，这个实现并不“关心”它找到了哪个注解——只要它公开了正确的mode和proxyTargetClass属性，APC 就可以注册和配置。
+
+		// 这里面需要特别注意的是：这里是拿到所有的注解类型~~~而不是只拿@EnableAspectJAutoProxy这个类型的
+		// 原因：因为mode、proxyTargetClass等属性会直接影响到代理得方式，而拥有这些属性的注解至少有：
+		// @EnableTransactionManagement、@EnableAsync、@EnableCaching等~~~~
+		// 甚至还有启用AOP的注解：@EnableAspectJAutoProxy它也能设置`proxyTargetClass`这个属性的值，因此也会产生关联影响~
 		boolean candidateFound = false;
 		Set<String> annTypes = importingClassMetadata.getAnnotationTypes();
 		for (String annType : annTypes) {
@@ -64,14 +82,21 @@ public class AutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
 			if (candidate == null) {
 				continue;
 			}
+			// 拿到注解里的这两个属性
+			// 说明：如果你是比如@Configuration或者别的注解的话  他们就是null了
 			Object mode = candidate.get("mode");
 			Object proxyTargetClass = candidate.get("proxyTargetClass");
-			if (mode != null && proxyTargetClass != null && AdviceMode.class == mode.getClass() &&
-					Boolean.class == proxyTargetClass.getClass()) {
-				candidateFound = true;
-				if (mode == AdviceMode.PROXY) {
+			// 找到@Configuration类上的注解带有model和proxyTargetClass属性的注解对象
+
+			// 如果存在mode且存在proxyTargetClass 属性
+			// 且 mode 是AdviceMode枚举类型，proxyTargetClass是boolean类型
+			// 并且两个属性的class类型也是对的，才会进来此处（因此其余注解相当于都挡外面了~）
+			if (mode != null && proxyTargetClass != null && AdviceMode.class == mode.getClass() && Boolean.class == proxyTargetClass.getClass()) {
+				candidateFound = true; // 标记候选者被找到
+				if (mode == AdviceMode.PROXY) { // 动态代理
 					AopConfigUtils.registerAutoProxyCreatorIfNecessary(registry);
 					if ((Boolean) proxyTargetClass) {
+							// 强制使用Cglib代理
 						AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
 						return;
 					}

@@ -49,14 +49,20 @@ import org.springframework.util.Assert;
  * @see SimpleTransactionStatus
  */
 public class DefaultTransactionStatus extends AbstractTransactionStatus {
+	// 它有很多的标志位，成员变量
+	// 它实现了TransactionStatus接口。这个是整个事务框架最重要的状态对象，它贯穿于事务拦截器，spring抽象框架和底层具体事务实现框架之间。
+	// 它的重要任务是在新建,挂起,提交,回滚事务的过程中保存对应事务的属性。在AbstractPlatformTransactionManager中，每个事物流程都会new创建这个对象
 
 	@Nullable
-	private final Object transaction;
+	private final Object transaction; // 事务对象 -- 可以认为每new Object()传进来就是一个新的事务
 
+	// 是否是新事务
 	private final boolean newTransaction;
 
+	// 如果为给定事务打开了新的事务同步  该值为true
 	private final boolean newSynchronization;
 
+	// 该事务是否标记为了只读
 	private final boolean readOnly;
 
 	private final boolean debug;
@@ -149,7 +155,7 @@ public class DefaultTransactionStatus extends AbstractTransactionStatus {
 
 
 	//---------------------------------------------------------------------
-	// Enable functionality through underlying transaction object
+	// 通过底层事务对象启用功能
 	//---------------------------------------------------------------------
 
 	/**

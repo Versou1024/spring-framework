@@ -56,6 +56,11 @@ import org.springframework.lang.Nullable;
  * @see BeanFactoryPostProcessor
  */
 public interface BeanPostProcessor {
+	/*
+	 * 处理器：对于初始化前后处理
+	 * postProcessBeforeInitialization、postProcessAfterInitialization
+	 * 返回null的话，就会导致后续的BeanPostProcess不会被执行，请注意
+	 */
 
 	/**
 	 * Apply this {@code BeanPostProcessor} to the given new bean instance <i>before</i> any bean

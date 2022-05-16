@@ -44,6 +44,8 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.transaction.ReactiveTransactionManager
  */
 public interface PlatformTransactionManager extends TransactionManager {
+	// 传统平台式的事务管理器
+	// 还有一种响应式的事务管理器
 
 	/**
 	 * Return a currently active transaction or create a new one, according to
@@ -68,7 +70,7 @@ public interface PlatformTransactionManager extends TransactionManager {
 	 * @see TransactionDefinition#getTimeout
 	 * @see TransactionDefinition#isReadOnly
 	 */
-	TransactionStatus getTransaction(@Nullable TransactionDefinition definition)
+	TransactionStatus getTransaction(@Nullable TransactionDefinition definition) // 获取事务
 			throws TransactionException;
 
 	/**
@@ -98,7 +100,7 @@ public interface PlatformTransactionManager extends TransactionManager {
 	 * is already completed (that is, committed or rolled back)
 	 * @see TransactionStatus#setRollbackOnly
 	 */
-	void commit(TransactionStatus status) throws TransactionException;
+	void commit(TransactionStatus status) throws TransactionException; // 提交事务
 
 	/**
 	 * Perform a rollback of the given transaction.
@@ -116,6 +118,6 @@ public interface PlatformTransactionManager extends TransactionManager {
 	 * @throws IllegalTransactionStateException if the given transaction
 	 * is already completed (that is, committed or rolled back)
 	 */
-	void rollback(TransactionStatus status) throws TransactionException;
+	void rollback(TransactionStatus status) throws TransactionException; // 回滚事务
 
 }

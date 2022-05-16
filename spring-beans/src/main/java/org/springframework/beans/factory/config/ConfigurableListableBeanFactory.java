@@ -41,7 +41,10 @@ import org.springframework.lang.Nullable;
  */
 public interface ConfigurableListableBeanFactory
 		extends ListableBeanFactory, AutowireCapableBeanFactory, ConfigurableBeanFactory {
-
+	/*
+	ConfigurableListableBeanFactory–>
+	1、扩展了ListableBeanFactory, AutowireCapableBeanFactory, ConfigurableBeanFactory接口,并提供了忽略依赖,自动装配判断,冻结bean的定义,枚举所有bean名称的功能
+	 */
 	/**
 	 * Ignore the given dependency type for autowiring:
 	 * for example, String. Default is none.
@@ -61,6 +64,10 @@ public interface ConfigurableListableBeanFactory
 	 * @see org.springframework.context.ApplicationContextAware
 	 */
 	void ignoreDependencyInterface(Class<?> ifc);
+	// 忽略需要Autowrite的给定依赖接口。
+	// 这通常会被应用程序上下文用来注册以其他方式解析的依赖项，
+	// 比如BeanFactory应该通过BeanFactoryAware，ApplicationContext通过ApplicationContextAware。而不是通过Autowrited组出入
+	// 默认情况下，仅忽略BeanFactoryAware接口。对于要忽略的其他类型，请为每个类型调用此方法。
 
 	/**
 	 * Register a special dependency type with corresponding autowired value.
@@ -79,6 +86,9 @@ public interface ConfigurableListableBeanFactory
 	 * interface, which allows for lazy resolution of the actual target value.
 	 */
 	void registerResolvableDependency(Class<?> dependencyType, @Nullable Object autowiredValue);
+	// 在Spring自动装配的时候如果一个接口有多个实现类，并且都已经放到IOC中去了，
+	// 那么自动装配的时候就会出异常，因为spring不知道把哪个实现类注入进去，
+	// 类似@Primary的效果
 
 	/**
 	 * Determine whether the specified bean qualifies as an autowire candidate,

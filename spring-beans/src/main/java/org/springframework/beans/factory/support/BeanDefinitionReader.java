@@ -38,6 +38,22 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.core.io.Resource
  */
 public interface BeanDefinitionReader {
+	/**
+	 * API：
+	 *
+	 * 	BeanDefinitionRegistry getRegistry(); 	// 得到Bean定义的register
+	 *  ResourceLoader getResourceLoader(); // 返回用于加载资源的 ResourceLoader（可以为null）
+	 *  ClassLoader getBeanClassLoader(); // 加载Bean的类加载器
+	 * 	BeanNameGenerator getBeanNameGenerator(); // 生成Bean名称的名字生成器（若没有指定名称的话，会调用它生成）
+	 * 	// 核心方法，loadBeanDefinitions进来，然后注册到上面的register 里面去
+	 * 	int loadBeanDefinitions(Resource resource) throws BeanDefinitionStoreException;
+	 * 	int loadBeanDefinitions(Resource... resources) throws BeanDefinitionStoreException;
+	 * 	int loadBeanDefinitions(String location) throws BeanDefinitionStoreException;
+	 * 	int loadBeanDefinitions(String... locations) throws BeanDefinitionStoreException;
+	 * ————————————————
+	 * 版权声明：本文为CSDN博主「方向盘(YourBatman)」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+	 * 原文链接：https://blog.csdn.net/f641385712/article/details/88683596
+	 */
 
 	/**
 	 * Return the bean factory to register the bean definitions with.

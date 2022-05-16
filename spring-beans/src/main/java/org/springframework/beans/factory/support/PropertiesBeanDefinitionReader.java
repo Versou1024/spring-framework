@@ -76,6 +76,10 @@ import org.springframework.util.StringUtils;
  * @see DefaultListableBeanFactory
  */
 public class PropertiesBeanDefinitionReader extends AbstractBeanDefinitionReader {
+	/**
+	 * PropertiesBeanDefinitionReader：直接从properties文件或者Map里加载Bean
+	 * 由于它语法怪异，因此基本不适用了
+	 */
 
 	/**
 	 * Value of a T/F attribute that represents true.

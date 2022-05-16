@@ -30,6 +30,10 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.aop.support.AopUtils#getTargetClass(Object)
  */
 public interface TargetClassAware {
+	/**
+	 * 用于在代理后公开目标类的最小接口。
+	 * 由AOP代理对象和代理工厂（通过org.springframework.AOP.framework.Advised）以及TargetSources实现。
+	 */
 
 	/**
 	 * Return the target class behind the implementing object

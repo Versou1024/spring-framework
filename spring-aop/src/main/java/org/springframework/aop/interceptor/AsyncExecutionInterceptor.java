@@ -67,6 +67,8 @@ import org.springframework.util.ClassUtils;
  * @see org.springframework.scheduling.annotation.AnnotationAsyncExecutionInterceptor
  */
 public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport implements MethodInterceptor, Ordered {
+	// 在AsyncExecutionAspectSupport的基础上，扩展增强通知即MethodInterceptor
+	// 因为AsyncExecutionAspectSupport主要是完成异步、线程池的处理
 
 	/**
 	 * Create a new instance with a default {@link AsyncUncaughtExceptionHandler}.
@@ -100,23 +102,33 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 	@Override
 	@Nullable
 	public Object invoke(final MethodInvocation invocation) throws Throwable {
+		// 切面增强的方法执行
+		// 最重要的当然是这个invoke方法
+
 		Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
+		// 注意：此处是getMostSpecificMethod  拿到最终要执行的那个方法
 		Method specificMethod = ClassUtils.getMostSpecificMethod(invocation.getMethod(), targetClass);
+		// 桥接方法~~~~~~~~~~~~~~
 		final Method userDeclaredMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);
 
+		// determine一个用于执行此方法的异步执行器
 		AsyncTaskExecutor executor = determineAsyncExecutor(userDeclaredMethod);
 		if (executor == null) {
 			throw new IllegalStateException(
 					"No executor specified and no default executor set on AsyncExecutionInterceptor either");
 		}
 
+		// 构造一个任务，Callable(此处不采用Runable，因为需要返回值)
 		Callable<Object> task = () -> {
 			try {
+				// result就是返回值
 				Object result = invocation.proceed();
+				// 注意此处的处理~~~~  相当于如果不是Future类型，就返回null了
 				if (result instanceof Future) {
 					return ((Future<?>) result).get();
 				}
 			}
+			// 处理执行时可能产生的异常~~~~~~
 			catch (ExecutionException ex) {
 				handleError(ex.getCause(), userDeclaredMethod, invocation.getArguments());
 			}
@@ -126,6 +138,7 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 			return null;
 		};
 
+		// 提交任务~~~~invocation.getMethod().getReturnType()为返回值类型
 		return doSubmit(task, executor, invocation.getMethod().getReturnType());
 	}
 
@@ -154,13 +167,16 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 	@Override
 	@Nullable
 	protected Executor getDefaultExecutor(@Nullable BeanFactory beanFactory) {
+		// 重写：getDefaultExecutor
+		// 如果super.getDefaultExecutor从BeanFactory尝试获取TaskExecutor失败
+		// 就提供SimpleAsyncTaskExecutor给用户使用吧
 		Executor defaultExecutor = super.getDefaultExecutor(beanFactory);
 		return (defaultExecutor != null ? defaultExecutor : new SimpleAsyncTaskExecutor());
 	}
 
 	@Override
 	public int getOrder() {
-		return Ordered.HIGHEST_PRECEDENCE;
+		return Ordered.HIGHEST_PRECEDENCE; // 这个advisor的执行优先级最高
 	}
 
 }

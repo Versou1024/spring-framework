@@ -34,6 +34,17 @@ import org.springframework.web.servlet.support.WebContentGenerator;
  * @since 3.1
  */
 public abstract class AbstractHandlerMethodAdapter extends WebContentGenerator implements HandlerAdapter, Ordered {
+	/**
+	 * 重点：目前大部分的执行目标Object都是HandlerMethod类型的
+	 *
+	 * 1、AbstractHandlerMethodAdapter 用来适配 handler 类型时HandlerMethod的
+	 * 		为什么是HandlerMethod -- 需要深究一下,前面的创建
+	 *
+	 * 2、优先级最低 -- 兼容之前
+	 *
+	 * 规律：
+	 * 注意：这种带有handleInternal就是protected的抽象方法，用来交给实现者具体完成 -- 由于是Protected因此是Internal的
+	 */
 
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
@@ -66,6 +77,8 @@ public abstract class AbstractHandlerMethodAdapter extends WebContentGenerator i
 	 */
 	@Override
 	public final boolean supports(Object handler) {
+		// 核心 -- 适配 HandlerMethod 类型的
+		// supportsInternal 提供给子类实现
 		return (handler instanceof HandlerMethod && supportsInternal((HandlerMethod) handler));
 	}
 
@@ -83,7 +96,7 @@ public abstract class AbstractHandlerMethodAdapter extends WebContentGenerator i
 	@Nullable
 	public final ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
-
+		// 注意：这种带有handleInternal就是protected的抽象方法，用来交给实现者具体完成 -- 由于是Protected因此是Internal的
 		return handleInternal(request, response, (HandlerMethod) handler);
 	}
 

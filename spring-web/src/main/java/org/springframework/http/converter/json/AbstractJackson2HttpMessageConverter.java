@@ -75,6 +75,9 @@ import org.springframework.util.TypeUtils;
  */
 public abstract class AbstractJackson2HttpMessageConverter extends AbstractGenericHttpMessageConverter<Object> {
 
+	// 基于 Jackson 和内容类型独立的HttpMessageConverter实现的抽象基类。
+	// 自 Spring 5.0 起，与 Jackson 2.9 及更高版本兼容。
+
 	private static final Map<String, JsonEncoding> ENCODINGS;
 
 	static {
@@ -94,14 +97,15 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 	public static final Charset DEFAULT_CHARSET = null;
 
 
-	protected ObjectMapper objectMapper;
+	protected ObjectMapper objectMapper; // objectMapper做序列化的工具
 
 	@Nullable
-	private Boolean prettyPrint;
+	private Boolean prettyPrint; // 是否开启完整打印 -- 帮助objectMapper做好格式输出
 
 	@Nullable
-	private PrettyPrinter ssePrettyPrinter;
+	private PrettyPrinter ssePrettyPrinter; // 格式化打印器
 
+	// 构造器中设置objectMapper以及supportedMediaType
 
 	protected AbstractJackson2HttpMessageConverter(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
@@ -168,28 +172,38 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 
 	@Override
 	public boolean canRead(Class<?> clazz, @Nullable MediaType mediaType) {
+		// 重写 AbstractHttpMessageConverter的canRead(Class<?> clazz, @Nullable MediaType mediaType)
+		// 调用 AbstractGenericHttpMessageConverter的canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType)
 		return canRead(clazz, null, mediaType);
 	}
 
 	@Override
 	public boolean canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType) {
+		// 1. 检查mediaType是否被支持
 		if (!canRead(mediaType)) {
 			return false;
 		}
+		// 2. 获取JavaType
 		JavaType javaType = getJavaType(type, contextClass);
 		AtomicReference<Throwable> causeRef = new AtomicReference<>();
+		// 3. 检查是否可以反序列化 this.objectMapper.canDeserialize(javaType, causeRef)
 		if (this.objectMapper.canDeserialize(javaType, causeRef)) {
 			return true;
 		}
+		// 4. 无法序列化,进行警告
 		logWarningIfNecessary(javaType, causeRef.get());
 		return false;
 	}
 
 	@Override
 	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
+		// 是否可以读
+
+		// 1. 检查请求头的accept的mediaType是否对当前消息转换器支持的supportMediaType进行支持
 		if (!canWrite(mediaType)) {
 			return false;
 		}
+		// 2. 检查字符集Charset是否被支持
 		if (mediaType != null && mediaType.getCharset() != null) {
 			Charset charset = mediaType.getCharset();
 			if (!ENCODINGS.containsKey(charset.name())) {
@@ -197,6 +211,7 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 			}
 		}
 		AtomicReference<Throwable> causeRef = new AtomicReference<>();
+		// 3. 检查是否可以序列化
 		if (this.objectMapper.canSerialize(clazz, causeRef)) {
 			return true;
 		}
@@ -306,7 +321,9 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 	@Override
 	protected void writeInternal(Object object, @Nullable Type type, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
-
+		// 利用Jackson完成序列化
+		// 包括 JsonEncoding、JsonGenerator、JsonWriter
+		// 将从object中解析写回Object
 		MediaType contentType = outputMessage.getHeaders().getContentType();
 		JsonEncoding encoding = getJsonEncoding(contentType);
 
@@ -333,17 +350,17 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 			ObjectWriter objectWriter = (serializationView != null ?
 					this.objectMapper.writerWithView(serializationView) : this.objectMapper.writer());
 			if (filters != null) {
-				objectWriter = objectWriter.with(filters);
+				objectWriter = objectWriter.with(filters); //
 			}
 			if (javaType != null && javaType.isContainerType()) {
-				objectWriter = objectWriter.forType(javaType);
+				objectWriter = objectWriter.forType(javaType); // 生成的类型
 			}
 			SerializationConfig config = objectWriter.getConfig();
 			if (contentType != null && contentType.isCompatibleWith(MediaType.TEXT_EVENT_STREAM) &&
 					config.isEnabled(SerializationFeature.INDENT_OUTPUT)) {
-				objectWriter = objectWriter.with(this.ssePrettyPrinter);
+				objectWriter = objectWriter.with(this.ssePrettyPrinter); // 优美的打印器
 			}
-			objectWriter.writeValue(generator, value);
+			objectWriter.writeValue(generator, value); // 将值写到value
 
 			writeSuffix(generator, object);
 			generator.flush();

@@ -65,6 +65,9 @@ public abstract class PropertyAccessorUtils {
 	 * @return the index of the nested property separator, or -1 if none
 	 */
 	public static int getFirstNestedPropertySeparatorIndex(String propertyPath) {
+		/**
+		 * 为properPath获取第一个嵌套的属性
+		 */
 		return getNestedPropertySeparatorIndex(propertyPath, false);
 	}
 
@@ -86,17 +89,23 @@ public abstract class PropertyAccessorUtils {
 	 * @return the index of the nested property separator, or -1 if none
 	 */
 	private static int getNestedPropertySeparatorIndex(String propertyPath, boolean last) {
+		/**
+		 * 为propertyPath获取第一个嵌套路径的分隔符路径
+		 */
 		boolean inKey = false;
 		int length = propertyPath.length();
 		int i = (last ? length - 1 : 0);
+		// 要去：propertyPath中含有 . 才认为是嵌套属性
 		while (last ? i >= 0 : i < length) {
 			switch (propertyPath.charAt(i)) {
+				// 连续匹配 [ 和 ]，这样inkey就会从false从而变为false
 				case PropertyAccessor.PROPERTY_KEY_PREFIX_CHAR:
 				case PropertyAccessor.PROPERTY_KEY_SUFFIX_CHAR:
 					inKey = !inKey;
 					break;
 				case PropertyAccessor.NESTED_PROPERTY_SEPARATOR_CHAR:
 					if (!inKey) {
+						// 在 [] 之间的 . 不会认为是嵌套属性哦
 						return i;
 					}
 			}
@@ -107,6 +116,7 @@ public abstract class PropertyAccessorUtils {
 				i++;
 			}
 		}
+		// 没有嵌套属性，返回-1
 		return -1;
 	}
 

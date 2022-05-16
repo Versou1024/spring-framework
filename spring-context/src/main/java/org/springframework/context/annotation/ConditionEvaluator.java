@@ -47,15 +47,26 @@ import org.springframework.util.MultiValueMap;
  */
 class ConditionEvaluator {
 
+	/**
+	 * ConditionEvaluator 会在
+	 * ConfigurationClassParser
+	 * AnnotationBeanDefinitionReader
+	 * 中创建出来
+	 *
+	 * 这表示：
+	 * Configuration配置类在解析的时候，会去判断Condition，即 PARSE_CONFIGURATION
+	 * 加载BeanDefinition时会判断Condition，即 REGISTER_BEAN
+	 */
+
 	private final ConditionContextImpl context;
 
 
 	/**
 	 * Create a new {@link ConditionEvaluator} instance.
 	 */
-	public ConditionEvaluator(@Nullable BeanDefinitionRegistry registry,
-			@Nullable Environment environment, @Nullable ResourceLoader resourceLoader) {
-
+	public ConditionEvaluator(@Nullable BeanDefinitionRegistry registry, @Nullable Environment environment, @Nullable ResourceLoader resourceLoader) {
+		// Condition核心一 ：如何创建ConditionContext
+		// 创建 ConditionEvaluator 的同时创建 ConditionContext
 		this.context = new ConditionContextImpl(registry, environment, resourceLoader);
 	}
 
@@ -78,33 +89,47 @@ class ConditionEvaluator {
 	 * @return if the item should be skipped
 	 */
 	public boolean shouldSkip(@Nullable AnnotatedTypeMetadata metadata, @Nullable ConfigurationPhase phase) {
+		//  Condition核心二：如何检查是否匹配条件的
+		// 返回true表示需要匹配失败，需要跳过
+
+		// 1、不包含注解Conditional返回false
 		if (metadata == null || !metadata.isAnnotated(Conditional.class.getName())) {
 			return false;
 		}
 
+		// 2、检查阶段处理
 		if (phase == null) {
-			if (metadata instanceof AnnotationMetadata &&
-					ConfigurationClassUtils.isConfigurationCandidate((AnnotationMetadata) metadata)) {
+			if (metadata instanceof AnnotationMetadata && ConfigurationClassUtils.isConfigurationCandidate((AnnotationMetadata) metadata)) {
+				// 如果是配置类，是的话，就在解析阶段处理
 				return shouldSkip(metadata, ConfigurationPhase.PARSE_CONFIGURATION);
 			}
+			// 如果不是配置类，就在注册Bean的时候监测
 			return shouldSkip(metadata, ConfigurationPhase.REGISTER_BEAN);
 		}
 
+		// 3、获取所有@Condition的value值 [注意：conditionClasses]
 		List<Condition> conditions = new ArrayList<>();
 		for (String[] conditionClasses : getConditionClasses(metadata)) {
 			for (String conditionClass : conditionClasses) {
+				// 使用类加载器，加载Condition的实现类
 				Condition condition = getCondition(conditionClass, this.context.getClassLoader());
 				conditions.add(condition);
 			}
 		}
 
+		// 4、支持排序
 		AnnotationAwareOrderComparator.sort(conditions);
 
+		// 5、开始检查
 		for (Condition condition : conditions) {
 			ConfigurationPhase requiredPhase = null;
 			if (condition instanceof ConfigurationCondition) {
+				// 获取 Condition 要求
 				requiredPhase = ((ConfigurationCondition) condition).getConfigurationPhase();
 			}
+			// 没有指定Condition执行阶段，或者，就是当前执行阶段
+			// 这里说明了： ConfigurationCondition 如果有阶段数，就会在指定的阶段处执行
+			// 就可以调用condition
 			if ((requiredPhase == null || requiredPhase == phase) && !condition.matches(this.context, metadata)) {
 				return true;
 			}
@@ -130,6 +155,9 @@ class ConditionEvaluator {
 	 * Implementation of a {@link ConditionContext}.
 	 */
 	private static class ConditionContextImpl implements ConditionContext {
+		/**
+		 *  ConditionContext 的唯一实现类
+		 */
 
 		@Nullable
 		private final BeanDefinitionRegistry registry;
@@ -144,8 +172,7 @@ class ConditionEvaluator {
 		@Nullable
 		private final ClassLoader classLoader;
 
-		public ConditionContextImpl(@Nullable BeanDefinitionRegistry registry,
-				@Nullable Environment environment, @Nullable ResourceLoader resourceLoader) {
+		public ConditionContextImpl(@Nullable BeanDefinitionRegistry registry, @Nullable Environment environment, @Nullable ResourceLoader resourceLoader) {
 
 			this.registry = registry;
 			this.beanFactory = deduceBeanFactory(registry);
@@ -154,8 +181,11 @@ class ConditionEvaluator {
 			this.classLoader = deduceClassLoader(resourceLoader, this.beanFactory);
 		}
 
+		// 只有 ApplicationContext 能够作为source时，推断出BeanFactory、environment、resourceLoader、
+
 		@Nullable
 		private ConfigurableListableBeanFactory deduceBeanFactory(@Nullable BeanDefinitionRegistry source) {
+			// 从source推断BeanFactory
 			if (source instanceof ConfigurableListableBeanFactory) {
 				return (ConfigurableListableBeanFactory) source;
 			}
@@ -166,6 +196,7 @@ class ConditionEvaluator {
 		}
 
 		private Environment deduceEnvironment(@Nullable BeanDefinitionRegistry source) {
+			// 从source中推断environment
 			if (source instanceof EnvironmentCapable) {
 				return ((EnvironmentCapable) source).getEnvironment();
 			}
@@ -173,6 +204,7 @@ class ConditionEvaluator {
 		}
 
 		private ResourceLoader deduceResourceLoader(@Nullable BeanDefinitionRegistry source) {
+			// 从source中推断environment
 			if (source instanceof ResourceLoader) {
 				return (ResourceLoader) source;
 			}

@@ -49,8 +49,9 @@ import org.springframework.util.StringUtils;
  * @see JdkRegexpMethodPointcut
  */
 @SuppressWarnings("serial")
-public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPointcut
-		implements Serializable {
+public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPointcut implements Serializable {
+	// 静态方法匹配切入点：只关注方法匹配、而classFilter配置为TRUE
+	// AbstractRegexpMethodPointcut 是根据正则表达式进行匹配代理method名的，同时支持ant风格的路径匹配
 
 	/**
 	 * Regular expressions to match.

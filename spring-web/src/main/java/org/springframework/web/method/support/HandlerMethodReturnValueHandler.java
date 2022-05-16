@@ -29,6 +29,9 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @see HandlerMethodArgumentResolver
  */
 public interface HandlerMethodReturnValueHandler {
+	// 就是一个处理Controller返回值的接口
+	// supportReturnType 	检查返回值类型是否可以被处理
+	// handleReturnValue	处理返回值
 
 	/**
 	 * Whether the given {@linkplain MethodParameter method return type} is

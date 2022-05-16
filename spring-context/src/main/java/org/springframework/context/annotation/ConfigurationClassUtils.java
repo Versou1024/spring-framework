@@ -67,6 +67,7 @@ abstract class ConfigurationClassUtils {
 	private static final Set<String> candidateIndicators = new HashSet<>(8);
 
 	static {
+		// 通常认为：类上带有 - Component且proxyModelMethod为false、ComponentScan、Import、ImportResource，都是LITE模式
 		candidateIndicators.add(Component.class.getName());
 		candidateIndicators.add(ComponentScan.class.getName());
 		candidateIndicators.add(Import.class.getName());
@@ -82,20 +83,21 @@ abstract class ConfigurationClassUtils {
 	 * @param metadataReaderFactory the current factory in use by the caller
 	 * @return whether the candidate qualifies as (any kind of) configuration class
 	 */
-	public static boolean checkConfigurationClassCandidate(
-			BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
-
+	public static boolean checkConfigurationClassCandidate(BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
+		// 获取Bean的ClassName
 		String className = beanDef.getBeanClassName();
 		if (className == null || beanDef.getFactoryMethodName() != null) {
 			return false;
 		}
 
 		AnnotationMetadata metadata;
+		// 如果已经属于AnnotatedBeanDefinition，就直接获取注解Metadata
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
 			// Can reuse the pre-parsed metadata from the given BeanDefinition...
 			metadata = ((AnnotatedBeanDefinition) beanDef).getMetadata();
 		}
+		// 如果属于 AbstractBeanDefinition 分支的BeanDefinition，就可能需要
 		else if (beanDef instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) beanDef).hasBeanClass()) {
 			// Check already loaded Class if present...
 			// since we possibly can't even load the class file for this Class.
@@ -110,7 +112,9 @@ abstract class ConfigurationClassUtils {
 		}
 		else {
 			try {
+				// 为当前className元数据的Reader
 				MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(className);
+				// 获取注解元数据
 				metadata = metadataReader.getAnnotationMetadata();
 			}
 			catch (IOException ex) {
@@ -122,18 +126,25 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
+		// 以上步骤的最终目的：就是获取 AnnotationMetadata
+
+		// 从注解元数据上获取Configuration注解的属性
 		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
+			// proxyBeanMethods 属性为true，就是FULL模式
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
 		else if (config != null || isConfigurationCandidate(metadata)) {
+			// 否则，即有Configuration注解同时proxyBeanMethods为false，否则不是配置类，但是里面有@Bean标注的方法，都可以就认为是LITE模式
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
 		else {
+			// 不符合配置类直接返回false
 			return false;
 		}
 
 		// It's a full or lite configuration candidate... Let's determine the order value, if any.
+		// 这是一个full或者lite配置候选class，接下来决定其order属性，前提有的话
 		Integer order = getOrder(metadata);
 		if (order != null) {
 			beanDef.setAttribute(ORDER_ATTRIBUTE, order);
@@ -150,24 +161,37 @@ abstract class ConfigurationClassUtils {
 	 * configuration class processing; {@code false} otherwise
 	 */
 	public static boolean isConfigurationCandidate(AnnotationMetadata metadata) {
+		// 结论：
+		// 1、带有：@Component @ComponentScan @Import @ImportResource，或者类中方法有@Bean、或者@Configuration的proxyDemo属性为false，都是lite模式，也认为是配置类，返回true
+		// 2、直接带有 @Configuration 注解，就是fully模式，直接返回true
+
+
+		// 判断是Lite模式：（首先肯定没有@Configuration注解）
+		// 1、不能是接口
+		// 2、但凡只有标注了一个下面注解，都算lite模式：@Component @ComponentScan @Import @ImportResource
+		// 3、只有存在有一个方法标注了@Bean注解，那就是lite模式
 		// Do not consider an interface or an annotation...
+		// 不考虑接口或者注解
 		if (metadata.isInterface()) {
 			return false;
 		}
 
 		// Any of the typical annotations found?
+		// 但凡只有标注了一个下面注解，都算lite模式：@Component @ComponentScan @Import @ImportResource
 		for (String indicator : candidateIndicators) {
 			if (metadata.isAnnotated(indicator)) {
 				return true;
 			}
 		}
 
-		// Finally, let's look for @Bean methods...
+		// Finally, let's look for @Bean methods..
+		// 最后查找一下@Bean标注的方法 -- 因此如果类里面有@Bean标注的方法，也认为是Lite模式的
 		return hasBeanMethods(metadata);
 	}
 
 	static boolean hasBeanMethods(AnnotationMetadata metadata) {
 		try {
+			// 是否有@Bean标注的方法
 			return metadata.hasAnnotatedMethods(Bean.class.getName());
 		}
 		catch (Throwable ex) {
@@ -200,6 +224,7 @@ abstract class ConfigurationClassUtils {
 	 * @since 4.2
 	 */
 	public static int getOrder(BeanDefinition beanDef) {
+		// 获取Order值，在前面的checkConfigurationClassCandidate方法中完成了Order的解析注入
 		Integer order = (Integer) beanDef.getAttribute(ORDER_ATTRIBUTE);
 		return (order != null ? order : Ordered.LOWEST_PRECEDENCE);
 	}

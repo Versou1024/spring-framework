@@ -39,6 +39,7 @@ import org.springframework.web.servlet.ModelAndView;
  * @see SimpleControllerHandlerAdapter
  */
 public class HttpRequestHandlerAdapter implements HandlerAdapter {
+	// Handler适配器: 适配handler是通过实现HttpRequestHandler
 
 	@Override
 	public boolean supports(Object handler) {
@@ -49,7 +50,7 @@ public class HttpRequestHandlerAdapter implements HandlerAdapter {
 	@Nullable
 	public ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
-
+		// 调用其handlerRequest
 		((HttpRequestHandler) handler).handleRequest(request, response);
 		return null;
 	}

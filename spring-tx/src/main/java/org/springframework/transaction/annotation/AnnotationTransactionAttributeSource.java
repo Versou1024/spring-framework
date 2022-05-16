@@ -53,12 +53,15 @@ import org.springframework.util.ClassUtils;
  * @see org.springframework.transaction.interceptor.TransactionProxyFactoryBean#setTransactionAttributeSource
  */
 @SuppressWarnings("serial")
-public class AnnotationTransactionAttributeSource extends AbstractFallbackTransactionAttributeSource
-		implements Serializable {
+public class AnnotationTransactionAttributeSource extends AbstractFallbackTransactionAttributeSource implements Serializable {
+	// AnnotationTransactionAttributeSource
+	//这个就是重点了，它是基于注解驱动的事务管理的事务属性源，和@Transaction相关，也是现在使用得最最多的方式。
+	//
+	//它的基本作用为：它遇上比如@Transaction标注的方法时，此类会分析此事务注解，最终组织形成一个TransactionAttribute供随后的调用。
 
-	private static final boolean jta12Present;
-
-	private static final boolean ejb3Present;
+	// 这个是“向下兼容”，JavaEE提供的其余两种注解~~
+	private static final boolean jta12Present;  //JTA 1.2事务注解
+	private static final boolean ejb3Present; //EJB 3 事务注解是
 
 	static {
 		ClassLoader classLoader = AnnotationTransactionAttributeSource.class.getClassLoader();
@@ -66,8 +69,12 @@ public class AnnotationTransactionAttributeSource extends AbstractFallbackTransa
 		ejb3Present = ClassUtils.isPresent("javax.ejb.TransactionAttribute", classLoader);
 	}
 
+	// true：只处理public方法（基于JDK的代理  显然就只会处理这种方法）
+	// false：private/protected等方法都会处理。   基于AspectJ代理得方式可议设置为false
+	// 默认情况下：会被赋值为true，表示只处理public的方法
 	private final boolean publicMethodsOnly;
 
+	// 保存用于分析事务注解的事务注解分析器   这个注解分析的解析器是重点
 	private final Set<TransactionAnnotationParser> annotationParsers;
 
 
@@ -101,6 +108,7 @@ public class AnnotationTransactionAttributeSource extends AbstractFallbackTransa
 				this.annotationParsers.add(new Ejb3TransactionAnnotationParser());
 			}
 		}
+		// 默认情况下，只添加Spring自己的注解解析器（绝大部分情况都实这里）
 		else {
 			this.annotationParsers = Collections.singleton(new SpringTransactionAnnotationParser());
 		}
@@ -140,6 +148,7 @@ public class AnnotationTransactionAttributeSource extends AbstractFallbackTransa
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {
 		for (TransactionAnnotationParser parser : this.annotationParsers) {
+			// 轮流尝试解析，判断是否为候选类
 			if (parser.isCandidateClass(targetClass)) {
 				return true;
 			}
@@ -150,6 +159,8 @@ public class AnnotationTransactionAttributeSource extends AbstractFallbackTransa
 	@Override
 	@Nullable
 	protected TransactionAttribute findTransactionAttribute(Class<?> clazz) {
+		// 从源码中可议知道，真正提供给调用的getTransactionAttribute在父类中实现的：
+		// findTransactionAttribute 是父类提供给子类实现的
 		return determineTransactionAttribute(clazz);
 	}
 
@@ -171,6 +182,9 @@ public class AnnotationTransactionAttributeSource extends AbstractFallbackTransa
 	 */
 	@Nullable
 	protected TransactionAttribute determineTransactionAttribute(AnnotatedElement element) {
+		// 具体实现如下：
+		// 分析获取某个被注解的元素（AnnotatedElement ），具体的来讲，指的是一个类或者一个方法上的事务注解属性。
+		// 实现会遍历自己属性annotationParsers中所包含的事务注解属性分析器试图获取事务注解属性  所以主要还是依赖于TransactionAnnotationParser 去解析的
 		for (TransactionAnnotationParser parser : this.annotationParsers) {
 			TransactionAttribute attr = parser.parseTransactionAnnotation(element);
 			if (attr != null) {

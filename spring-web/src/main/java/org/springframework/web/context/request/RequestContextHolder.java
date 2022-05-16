@@ -43,15 +43,21 @@ import org.springframework.util.ClassUtils;
  * @see org.springframework.web.servlet.DispatcherServlet
  */
 public abstract class RequestContextHolder  {
+	/*
+	RequestContextHolder类用线程绑定的RequestAttributes对象形式公开 web request。
+	如果可继承标志设置为true，则当前线程生成的任何子线程都将继承该request属性。
+	使用RequestContextListener或RequestContextFilter以公暴露当前的web请求。
+	请注意，DispatcherServlet默认已经暴露当前请求。
 
-	private static final boolean jsfPresent =
-			ClassUtils.isPresent("javax.faces.context.FacesContext", RequestContextHolder.class.getClassLoader());
+	解耦 - 将ThreadLocal集中在Holder类中处理，使得其余类不需要关注ThreadLocal，需要从Holder类中获取RequestAttribute即可
+	解耦、避免污染、封装、
+	 */
 
-	private static final ThreadLocal<RequestAttributes> requestAttributesHolder =
-			new NamedThreadLocal<>("Request attributes");
+	private static final boolean jsfPresent = ClassUtils.isPresent("javax.faces.context.FacesContext", RequestContextHolder.class.getClassLoader());
 
-	private static final ThreadLocal<RequestAttributes> inheritableRequestAttributesHolder =
-			new NamedInheritableThreadLocal<>("Request context");
+	private static final ThreadLocal<RequestAttributes> requestAttributesHolder = new NamedThreadLocal<>("Request attributes");
+
+	private static final ThreadLocal<RequestAttributes> inheritableRequestAttributesHolder = new NamedInheritableThreadLocal<>("Request context");
 
 
 	/**

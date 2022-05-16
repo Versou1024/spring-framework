@@ -69,6 +69,22 @@ package org.springframework.core.env;
  * @see org.springframework.context.support.AbstractApplicationContext#createEnvironment
  */
 public interface Environment extends PropertyResolver {
+	/*
+	 * 1、该接口表示当前应用程序运行的环境。
+	 * 应用程序环境的两个关键方面：profiles和properties。与属性访问相关的方法通过 PropertyResolver super interface 公开。
+	 * 2、profiles配置文件是一个命名的、逻辑的bean，只有在给定的配置文件处于活动状态时，才会向容器注册。
+	 * bean可以被分配给一个profiles文件，无论是用XML定义的还是通过注释定义的；
+	 * 3、与profiles文件相关的环境对象的作用是确定哪些profiles文件（如果有）当前处于活动状态，以及默认情况下哪些概要文件（如果有）应处于活动状态。
+	 * 4、属性在几乎所有的应用程序中都扮演着重要的角色，可能来自各种来源：属性文件、JVM系统属性、系统环境变量、JNDI、servlet上下文参数、特殊属性对象、映射等等。
+	 * 与属性相关的环境对象的作用是为用户提供一个方便的服务，用于配置属性源并从中解析属性。
+	 * ApplicationContext中管理的bean可以注册为环境感知，或者@Inject环境，以便直接查询配置文件状态或解析属性。
+	 * 5、在大多数情况下，应用程序级bean不需要直接与环境交互，而是可能必须具有${…}使用<context:property placeholder/>时，默认情况下会注册由属性占位符配置器（如PropertySourcesplacePlaceholderConfigurer）替换的属性值，该配置器本身是环境感知的，从Spring 3.1开始。
+	 * 6、环境对象的配置必须通过ConfigurableEnvironment接口完成，该接口由所有AbstractApplicationContext子类getEnvironment（）方法返回
+	 *
+	 * 可以发现
+	 * Environment 注重 profiles 的获取
+	 * PropertyResolver 注重 environment 的获取
+	 */
 
 	/**
 	 * Return the set of profiles explicitly made active for this environment. Profiles
@@ -84,6 +100,9 @@ public interface Environment extends PropertyResolver {
 	 * @see AbstractEnvironment#ACTIVE_PROFILES_PROPERTY_NAME
 	 */
 	String[] getActiveProfiles();
+	//返回为此环境显式激活的profiles。profiles用于创建有条件注册的bean definitions的逻辑分组，
+	//例如基于部署环境,通过将“spring.Profiles.active”设置为系统属性或调用 ConfigurableEnvironment.setActiveProfiles(String...).来激活配置文件
+	//如果没有明确指定为活动的配置文件，则任何默认配置文件都将自动激活。
 
 	/**
 	 * Return the set of profiles to be active by default when no active profiles have
@@ -110,6 +129,10 @@ public interface Environment extends PropertyResolver {
 	 */
 	@Deprecated
 	boolean acceptsProfiles(String... profiles);
+	//返回一个或多给定profiles是否处于active状态，
+	//或者当如果没有明确的profiles文件，则返回一个或多个给定形参profiles是否包含在默认配置profiles集中。
+	//如果形参的profile以“！”开头逻辑是反向的，即如果给定的profile未激活，该方法将返回true。
+	// 例如，env.acceptsProfiles("p1", "!p2") 会返回true，如果配置文件“p1”处于活动状态或“p2”未处于活动状态
 
 	/**
 	 * Return whether the {@linkplain #getActiveProfiles() active profiles}

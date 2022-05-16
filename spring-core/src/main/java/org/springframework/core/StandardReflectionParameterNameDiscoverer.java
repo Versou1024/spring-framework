@@ -32,6 +32,11 @@ import org.springframework.lang.Nullable;
  * @see java.lang.reflect.Parameter#getName()
  */
 public class StandardReflectionParameterNameDiscoverer implements ParameterNameDiscoverer {
+	/**
+	 * ParameterNameDiscoverer具体实现者：
+	 *
+	 * 实现方式：通过标准的反射实现形参名的获取
+	 */
 
 	@Override
 	@Nullable
@@ -47,6 +52,7 @@ public class StandardReflectionParameterNameDiscoverer implements ParameterNameD
 
 	@Nullable
 	private String[] getParameterNames(Parameter[] parameters) {
+		// 反射实现
 		String[] parameterNames = new String[parameters.length];
 		for (int i = 0; i < parameters.length; i++) {
 			Parameter param = parameters[i];

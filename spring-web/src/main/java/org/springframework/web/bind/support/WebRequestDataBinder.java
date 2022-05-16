@@ -67,6 +67,9 @@ import org.springframework.web.multipart.MultipartRequest;
  * @see #setFieldMarkerPrefix
  */
 public class WebRequestDataBinder extends WebDataBinder {
+	/**
+	 * 继承WebDataBinder
+	 */
 
 	/**
 	 * Create a new WebRequestDataBinder instance, with default object name.

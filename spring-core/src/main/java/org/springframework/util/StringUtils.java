@@ -60,6 +60,55 @@ import org.springframework.lang.Nullable;
  * @since 16 April 2001
  */
 public abstract class StringUtils {
+	/*
+	平时code过程中，绝对禁止程序员再自定义StringUtils工具类
+	API：
+		判断
+			containsWhitespace 是否包含空白符
+			endsWithIgnoreCase 判断str是否以给定的prefix作为后缀，忽略大小写
+			startsWithIgnoreCase 判断str是否以给定的prefix作为前缀，忽略大小写
+			hasLength 是否字符串为不为null，且有一定长度
+			hasText 是否字符串不为null，且一定存在非空白字符
+			matchesCharacter  是否匹配某个字符
+		截取
+			trimAllWhitespace 截取所有的空白符号
+			trimArrayElements
+			trimLeadingCharacter 截取字符串str开头指定的char
+			trimLeadingWhitespace 截取字符串str开头所有的空白符号
+			trimTrailingCharacter 截取字符串str结尾的指定的char
+			trimTrailingWhitespace 截取字符串str结尾的是所有空白符号
+			trimWhitespace 截取字符串str中前后的空白符号
+		uri
+			uriDecode 进行uri解码
+		文件路径名称
+			unqualify
+			capitalize 首字母大写
+			uncapitalize 取消首字母大写
+			getFilename 获取文件名,就不需要再使用FilenameUtils
+			getFilenameExtension 获取文件后缀名
+			stripFilenameExtension 截取掉文件路径后缀
+			applyRelativePath 找到给定的文件，和另一个相对路径的文件，返回第二个文件的全路径，但是不支持重新定位绝对路径和上级目录等复杂一些的相对路径写法：
+			pathEquals  判断两个文件路径是否相同，会先执行cleanPath之后再比较
+		子串
+			substringMatch 判断从指定索引开始，是否匹配子字符串
+			countOccurrencesOf 判断子字符串在字符串中出现的次数
+			replace 在字符串中使用子字符串替换
+			delete 删除所有匹配的子字符串
+			deleteAny 删除子字符串中任意出现的字符
+			quote 在字符串前后增加单引号,比较适合在日志时候使用；
+		Properties
+			splitArrayElementsIntoProperties 把字符串数组中的每一个字符串按照给定的分隔符装配到一个Properties中
+		字符串和数组之间
+			addStringToArray(String[] array, String str):把一个字符串添加到一个字符串数组中
+			concatenateStringArrays(String[] array1, String[]array2):连接两个字符串数组
+			mergeStringArrays(String[] array1, String[] array2)：连接两个字符串数组，去掉重复元素
+			sortStringArray(String[] array):字符串数组排序
+			toStringArray(Collection<String> collection):把字符串集合变成字符串数组
+			toStringArray(Enumeration<String> enumeration):把字符串枚举类型变成字符串数组
+			trimArrayElements(String[] array):把字符串数组中所有字符串执行trim功能；
+			removeDuplicateStrings(String[] array):去掉给定字符串数组中重复的元素，能保持原顺序；
+
+	 */
 
 	private static final String[] EMPTY_STRING_ARRAY = {};
 

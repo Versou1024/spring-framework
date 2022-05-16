@@ -58,7 +58,28 @@ import org.springframework.web.util.WebUtils;
  * @since 3.1
  */
 public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMethodMapping<RequestMappingInfo> {
+	/**
+	 * 作用：
+	 * RequestMappingInfoHandlerMapping : 提供匹配条件RequestMappingInfo的解析处理
+	 * 它主要做的事就是确定了泛型类型为：RequestMappingInfo，然后很多方法都依托它来完成判定逻辑，
+	 * 比如下面实现的抽象方法就是对父类抽象方法的实现。委托给RequestMappingInfo去实现的~
+	 * 而RequestMappingInfo的构建工作，Spring MVC理论上是可以允许有多种方案。鉴于Spring MVC给出的唯一实现类为RequestMappingHandlerMapping
+	 *
+	 *
+	 * 实现了抽象方法:
+	 * 		getHandlerInternal			-- 可忽略
+	 * 		getMappingComparator		-- 多个匹配结果Match,需要做最佳匹配,提取比较器
+	 * 		getMappingPathPatterns		-- 提取并返回包含在提供的映射中的 URL 路径, 用于 AbstractHandlerMethodMapping注册urlLookup时提取url
+	 * 		getMatchingMapping			-- 根据校验信息mapping对request做校验,检查是否匹配
+	 * 		handleMatch					-- 完成匹配,如何处理mapping\request\lookupPath
+	 * 未实现的抽象方法
+	 * 		isHandler			-- 检查class是否属于Handler
+	 * 		getMappingForMethod -- 检查Handler中某个method是否为HandlerMethod,是的话就需要返回这个HandlerMethod的RequestMappingInfo
+	 *
+	 *
+	 */
 
+	// 专门处理Http的Options方法的HandlerMethod
 	private static final Method HTTP_OPTIONS_HANDLE_METHOD;
 
 	static {
@@ -73,6 +94,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 
 
 	protected RequestMappingInfoHandlerMapping() {
+		// 加载默认的：RequestMappingInfoHandlerMethodMappingNamingStrateg 命名策略
 		setHandlerMethodMappingNamingStrategy(new RequestMappingInfoHandlerMethodMappingNamingStrategy());
 	}
 
@@ -82,6 +104,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	 */
 	@Override
 	protected Set<String> getMappingPathPatterns(RequestMappingInfo info) {
+		// 获取路径url
 		return info.getPatternsCondition().getPatterns();
 	}
 
@@ -93,6 +116,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	 */
 	@Override
 	protected RequestMappingInfo getMatchingMapping(RequestMappingInfo info, HttpServletRequest request) {
+		// 将request是否复合当前handlerMethod的info -- 匹配
 		return info.getMatchingCondition(request);
 	}
 
@@ -101,6 +125,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	 */
 	@Override
 	protected Comparator<RequestMappingInfo> getMappingComparator(final HttpServletRequest request) {
+		// 提供info比较器 -- 谁更匹配
 		return (info1, info2) -> info1.compareTo(info2, request);
 	}
 
@@ -109,6 +134,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
 		request.removeAttribute(PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE);
 		try {
+			// 当前类的主要作用：就是提供RequestMappingInfo的功能
 			return super.getHandlerInternal(request);
 		}
 		finally {
@@ -124,11 +150,14 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	 */
 	@Override
 	protected void handleMatch(RequestMappingInfo info, String lookupPath, HttpServletRequest request) {
+		// 作用:在请求中公开 URI模板变量、矩阵变量和可生产的media types。
+
 		super.handleMatch(info, lookupPath, request);
 
 		String bestPattern;
 		Map<String, String> uriVariables;
 
+		// 1. 从 info.getPatternsCondition().getPatterns() 存入最佳匹配模式BEST_MATCHING_PATTERN_ATTRIBUTE
 		Set<String> patterns = info.getPatternsCondition().getPatterns();
 		if (patterns.isEmpty()) {
 			bestPattern = lookupPath;
@@ -141,14 +170,17 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 
 		request.setAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE, bestPattern);
 
+		// 2. 忽略
 		if (isMatrixVariableContentAvailable()) {
 			Map<String, MultiValueMap<String, String>> matrixVars = extractMatrixVariables(request, uriVariables);
 			request.setAttribute(HandlerMapping.MATRIX_VARIABLES_ATTRIBUTE, matrixVars);
 		}
 
+		// 3. 从getUrlPathHelper().decodePathVariables(request, uriVariables)提取并存入模板变量URI_TEMPLATE_VARIABLES_ATTRIBUTE
 		Map<String, String> decodedUriVariables = getUrlPathHelper().decodePathVariables(request, uriVariables);
 		request.setAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, decodedUriVariables);
 
+		// 4. 存入生产类型,从info.getProducesCondition().getProducibleMediaTypes()中获取
 		if (!info.getProducesCondition().getProducibleMediaTypes().isEmpty()) {
 			Set<MediaType> mediaTypes = info.getProducesCondition().getProducibleMediaTypes();
 			request.setAttribute(PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE, mediaTypes);

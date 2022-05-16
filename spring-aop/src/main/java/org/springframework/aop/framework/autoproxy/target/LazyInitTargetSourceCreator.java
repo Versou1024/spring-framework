@@ -56,6 +56,7 @@ public class LazyInitTargetSourceCreator extends AbstractBeanFactoryBasedTargetS
 
 	@Override
 	protected boolean isPrototypeBased() {
+		// 非原型的TargetSource
 		return false;
 	}
 
@@ -65,13 +66,13 @@ public class LazyInitTargetSourceCreator extends AbstractBeanFactoryBasedTargetS
 			Class<?> beanClass, String beanName) {
 
 		if (getBeanFactory() instanceof ConfigurableListableBeanFactory) {
-			BeanDefinition definition =
-					((ConfigurableListableBeanFactory) getBeanFactory()).getBeanDefinition(beanName);
+			BeanDefinition definition = ((ConfigurableListableBeanFactory) getBeanFactory()).getBeanDefinition(beanName);
+			// 如果是懒加载的，就创建 LazyInitTargetSource 的targetSource
 			if (definition.isLazyInit()) {
 				return new LazyInitTargetSource();
 			}
 		}
-		return null;
+		return null; // 返回null，表示不对这个TargetSource做人任何处理，交给别的TargetSourceCreator处理吧
 	}
 
 }

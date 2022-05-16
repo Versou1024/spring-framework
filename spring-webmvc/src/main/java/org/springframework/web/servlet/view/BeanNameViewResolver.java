@@ -53,6 +53,13 @@ import org.springframework.web.servlet.ViewResolver;
  * @see UrlBasedViewResolver
  */
 public class BeanNameViewResolver extends WebApplicationObjectSupport implements ViewResolver, Ordered {
+	/*
+	 * 实现order接口，以及ViewResolver视图解析器接口
+	 *
+	 * 参数解析 -- 依据试讲viewName作为BeanName解析
+	 *
+	 * 关注：ViewResolver#resolveViewName 方法
+	 */
 
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
 
@@ -75,19 +82,21 @@ public class BeanNameViewResolver extends WebApplicationObjectSupport implements
 	@Override
 	@Nullable
 	public View resolveViewName(String viewName, Locale locale) throws BeansException {
+		// 根据viewName和locale进行转换为viewName
 		ApplicationContext context = obtainApplicationContext();
 		if (!context.containsBean(viewName)) {
-			// Allow for ViewResolver chaining...
+			// 上下文中是否存在指定的Bean，有的话，就不需要创建view了，这是属于转发
 			return null;
 		}
+		// context中是否存在bean类型为View类型的
 		if (!context.isTypeMatch(viewName, View.class)) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Found bean named '" + viewName + "' but it does not implement View");
 			}
-			// Since we're looking into the general ApplicationContext here,
-			// let's accept this as a non-match and allow for chaining as well...
+			// context中不存在，就直接返回null
 			return null;
 		}
+		// 获取指定viewName的View类型的Bean
 		return context.getBean(viewName, View.class);
 	}
 

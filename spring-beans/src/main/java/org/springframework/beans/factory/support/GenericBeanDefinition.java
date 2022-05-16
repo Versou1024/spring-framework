@@ -39,6 +39,9 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class GenericBeanDefinition extends AbstractBeanDefinition {
+	/**
+	 * 通用BeanDefinition实现，避免RootBeanDefinition中的setParentName无效，直接抛出异常
+	 */
 
 	@Nullable
 	private String parentName;

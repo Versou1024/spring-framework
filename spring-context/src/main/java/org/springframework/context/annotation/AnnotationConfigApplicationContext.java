@@ -63,8 +63,12 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * through {@link #register} calls and then manually {@linkplain #refresh refreshed}.
 	 */
 	public AnnotationConfigApplicationContext() {
+		// AnnotatedBeanDefinitionReader是一个读取注解的Bean读取器，这里将this传了进去。
+		// 重点之一：调用this()，就会创建 注解阅读器和类路径扫描器，并注册 BeanDefinitionRegistry 即当前Context本身
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
+		// 从上面这个构造函数可以顺便提一句：如果你仅仅是这样ApplicationContext applicationContext = new AnnotationConfigApplicationContext()
+		// 容器是不会启动的（也就是不会执行refresh()的），这时候需要自己之后再手动启动容器
 	}
 
 	/**
@@ -84,8 +88,12 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * {@link Configuration @Configuration} classes
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
+		// AnnotationConfigApplicationContext 通常不会调用其new
+		// 在SpringMVC与SpringBoot中，实际上是先调用的 ServletWebServerApplicationContext.refresh() 来触发refresh的
 		this();
+		// 把该配置类（们）注册进来
 		register(componentClasses);
+		// 容器启动核心方法
 		refresh();
 	}
 
@@ -96,6 +104,8 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @param basePackages the packages to scan for component classes
 	 */
 	public AnnotationConfigApplicationContext(String... basePackages) {
+		// 注意将：AnnotationConfigApplicationContext(Class<?>... componentClasses) 区分开来
+		// 因为这里使用scan然后refresh()，而上面的构造器是使用register然后refresh，注意区分开来哦
 		this();
 		scan(basePackages);
 		refresh();
@@ -159,6 +169,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	@Override
 	public void register(Class<?>... componentClasses) {
 		Assert.notEmpty(componentClasses, "At least one component class must be specified");
+		// 向reader中注册一个或多个@Configuration的配置类
 		this.reader.register(componentClasses);
 	}
 

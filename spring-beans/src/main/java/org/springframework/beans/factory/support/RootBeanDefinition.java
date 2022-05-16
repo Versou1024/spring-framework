@@ -53,6 +53,23 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class RootBeanDefinition extends AbstractBeanDefinition {
+	/**
+	 * 由上述定义可以看到, 假设我们需要同时定义很多个BeanDefinition, 可能会出现这些定义都会有相同的设置,
+	 * 从而造成冗余, 于是Spring就开发出了一种伪继承模式, 通过parent属性来实现父子定义, 子类可以拥有父类
+	 * 的定义从而不用再重复定义相同的属性了, 这就是ChildBeanDefinition和RootBeanDefinition的由来, 由此
+	 * 可见, 我们可以将多个bean的公共部分放置在一个RootBeanDefinition中, 然后创建多个ChildBeanDefinition,
+	 * 并且指定parent为RootBeanDefinition即可, 如下:
+	 *
+	 * 链接：https://juejin.cn/post/6844904167933231117
+	 *
+	 * 总结一下，RootBeanDefiniiton保存了以下信息：
+	 *
+	 * 定义了id、别名与Bean的对应关系（BeanDefinitionHolder）
+	 * Bean的注解（AnnotatedElement）
+	 * 具体的工厂方法（Class类型），包括工厂方法的返回类型，工厂方法的Method对象
+	 * 构造函数、构造函数形参类型
+	 * Bean的class对象
+	 */
 
 	@Nullable
 	private BeanDefinitionHolder decoratedDefinition;
@@ -67,12 +84,14 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	boolean isFactoryMethodUnique;
 
+	// 拥有很多包级别的字段，用于同一个Package下，通常是在abstractBeanFactory中使用
+
 	@Nullable
-	volatile ResolvableType targetType;
+	volatile ResolvableType targetType; //缓存ResolvableType，表明RootBeanDefinition存储哪个类的信息
 
 	/** Package-visible field for caching the determined Class of a given bean definition. */
 	@Nullable
-	volatile Class<?> resolvedTargetType;
+	volatile Class<?> resolvedTargetType; //缓存class，表明RootBeanDefinition存储哪个类的信息
 
 	/** Package-visible field for caching if the bean is a factory bean. */
 	@Nullable
@@ -80,7 +99,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/** Package-visible field for caching the return type of a generically typed factory method. */
 	@Nullable
-	volatile ResolvableType factoryMethodReturnType;
+	volatile ResolvableType factoryMethodReturnType; //缓存工厂方法的返回类型
 
 	/** Package-visible field for caching a unique factory method candidate for introspection. */
 	@Nullable
@@ -95,28 +114,28 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	/** Package-visible field for caching the resolved constructor or factory method. */
 	@Nullable
-	Executable resolvedConstructorOrFactoryMethod;
+	Executable resolvedConstructorOrFactoryMethod; //缓存已经解析的构造函数或是工厂方法，Executable是Method、Constructor类型的父类
 
 	/** Package-visible field that marks the constructor arguments as resolved. */
-	boolean constructorArgumentsResolved = false;
+	boolean constructorArgumentsResolved = false; //表明构造函数参数是否解析完毕
 
 	/** Package-visible field for caching fully resolved constructor arguments. */
 	@Nullable
-	Object[] resolvedConstructorArguments;
+	Object[] resolvedConstructorArguments; // 缓存完全解析的构造函数参数，已经是注入依赖的形参
 
 	/** Package-visible field for caching partly prepared constructor arguments. */
 	@Nullable
-	Object[] preparedConstructorArguments;
+	Object[] preparedConstructorArguments; // 缓存待解析的构造函数参数，即还没有找到对应的实例，可以理解为还没有注入依赖的形参
 
 	/** Common lock for the two post-processing fields below. */
 	final Object postProcessingLock = new Object();
 
 	/** Package-visible field that indicates MergedBeanDefinitionPostProcessor having been applied. */
-	boolean postProcessed = false;
+	boolean postProcessed = false; //表明是否被MergedBeanDefinitionPostProcessor处理过
 
 	/** Package-visible field that indicates a before-instantiation post-processor having kicked in. */
 	@Nullable
-	volatile Boolean beforeInstantiationResolved;
+	volatile Boolean beforeInstantiationResolved; //在生成代理的时候会使用，表明是否已经生成代理
 
 	@Nullable
 	private Set<Member> externallyManagedConfigMembers;
@@ -242,6 +261,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	 * @param original the original bean definition to copy from
 	 */
 	public RootBeanDefinition(RootBeanDefinition original) {
+		// 深度拷贝另一个RootBeanDefinition
 		super(original);
 		this.decoratedDefinition = original.decoratedDefinition;
 		this.qualifiedElement = original.qualifiedElement;
