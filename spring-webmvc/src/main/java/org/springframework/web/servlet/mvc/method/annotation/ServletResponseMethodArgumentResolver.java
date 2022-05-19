@@ -48,9 +48,9 @@ public class ServletResponseMethodArgumentResolver implements HandlerMethodArgum
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
 		Class<?> paramType = parameter.getParameterType();
-		return (ServletResponse.class.isAssignableFrom(paramType) ||
-				OutputStream.class.isAssignableFrom(paramType) ||
-				Writer.class.isAssignableFrom(paramType));
+		return (ServletResponse.class.isAssignableFrom(paramType) ||  // webRequest.getNativeResponse(requiredType)
+				OutputStream.class.isAssignableFrom(paramType) ||  //response.getOutputStream()
+				Writer.class.isAssignableFrom(paramType)); //response.getWriter()
 	}
 
 	/**
@@ -63,18 +63,20 @@ public class ServletResponseMethodArgumentResolver implements HandlerMethodArgum
 	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 
+		// 1. 一旦请求体中有使用这个参数 -- 就会导致 mavContainer 将 request 设置为已经处理过
 		if (mavContainer != null) {
 			mavContainer.setRequestHandled(true);
 		}
 
+		// 2. 获取参数类型
 		Class<?> paramType = parameter.getParameterType();
 
-		// ServletResponse, HttpServletResponse
+		// 3. 支持 ServletResponse, HttpServletResponse
 		if (ServletResponse.class.isAssignableFrom(paramType)) {
 			return resolveNativeResponse(webRequest, paramType);
 		}
 
-		// ServletResponse required for all further argument types
+		// 4. 支持 OutputStream \ Writer
 		return resolveArgument(paramType, resolveNativeResponse(webRequest, ServletResponse.class));
 	}
 

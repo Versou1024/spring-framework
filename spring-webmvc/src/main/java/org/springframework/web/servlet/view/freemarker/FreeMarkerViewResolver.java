@@ -39,6 +39,7 @@ import org.springframework.web.servlet.view.AbstractTemplateViewResolver;
  * @see FreeMarkerView
  */
 public class FreeMarkerViewResolver extends AbstractTemplateViewResolver {
+	// FreeMarker是个老牌的模版引擎，整体性能也还不错，所以一直以来口碑还不错。但在新时代的发展下，显然还是有点乏力了的~~~
 
 	/**
 	 * Sets the default {@link #setViewClass view class} to {@link #requiredViewClass}:

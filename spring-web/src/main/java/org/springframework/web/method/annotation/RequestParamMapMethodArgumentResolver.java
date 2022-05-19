@@ -62,6 +62,9 @@ public class RequestParamMapMethodArgumentResolver implements HandlerMethodArgum
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
+		// 类似RequestHeaderMapMethodArgumentResolver
+		// 支持一个 @RequestParam 注解 修饰的Map类型.同时不允许指定RequestParam的name值
+
 		RequestParam requestParam = parameter.getParameterAnnotation(RequestParam.class);
 		return (requestParam != null && Map.class.isAssignableFrom(parameter.getParameterType()) &&
 				!StringUtils.hasText(requestParam.name()));

@@ -36,6 +36,8 @@ import org.springframework.web.util.WebUtils;
  * @since 3.1
  */
 public class ServletCookieValueMethodArgumentResolver extends AbstractCookieValueMethodArgumentResolver {
+	// 主要就是完成 @CookieValue 的解析工作
+	// resolveName(String cookieName, MethodParameter parameter, NativeWebRequest webRequest)
 
 	private UrlPathHelper urlPathHelper = UrlPathHelper.defaultInstance;
 
@@ -55,13 +57,17 @@ public class ServletCookieValueMethodArgumentResolver extends AbstractCookieValu
 	protected Object resolveName(String cookieName, MethodParameter parameter,
 			NativeWebRequest webRequest) throws Exception {
 
+
 		HttpServletRequest servletRequest = webRequest.getNativeRequest(HttpServletRequest.class);
 		Assert.state(servletRequest != null, "No HttpServletRequest");
 
+		// 工具方法，底层是：request.getCookies()
 		Cookie cookieValue = WebUtils.getCookie(servletRequest, cookieName);
+		// 如果用javax.servlet.http.Cookie接受值，就直接返回了
 		if (Cookie.class.isAssignableFrom(parameter.getNestedParameterType())) {
 			return cookieValue;
 		}
+		// 否则返回cookieValue
 		else if (cookieValue != null) {
 			return this.urlPathHelper.decodeRequestString(servletRequest, cookieValue.getValue());
 		}

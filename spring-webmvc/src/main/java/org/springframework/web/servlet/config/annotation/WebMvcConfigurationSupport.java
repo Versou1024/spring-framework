@@ -464,13 +464,15 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 		if (this.contentNegotiationManager == null) {
 			ContentNegotiationConfigurer configurer = new ContentNegotiationConfigurer(this.servletContext);
 			configurer.mediaTypes(getDefaultMediaTypes()); // 内容协商管理器 - 需要指定支持的MediaType
-			configureContentNegotiation(configurer);
+			configureContentNegotiation(configurer); // 抽象方法
 			this.contentNegotiationManager = configurer.buildContentNegotiationManager();
 		}
 		return this.contentNegotiationManager;
 	}
 
 	protected Map<String, MediaType> getDefaultMediaTypes() {
+		// 默认的MediaType
+
 		Map<String, MediaType> map = new HashMap<>(4);
 		if (romePresent) {
 			map.put("atom", MediaType.APPLICATION_ATOM_XML);
@@ -479,6 +481,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 		if (jaxb2Present || jackson2XmlPresent) {
 			map.put("xml", MediaType.APPLICATION_XML);
 		}
+		// 最少也有一个json -- application/json
 		if (jackson2Present || gsonPresent || jsonbPresent) {
 			map.put("json", MediaType.APPLICATION_JSON);
 		}
@@ -1118,19 +1121,25 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public ViewResolver mvcViewResolver(@Qualifier("mvcContentNegotiationManager") ContentNegotiationManager contentNegotiationManager) {
+		// 1. ViewResolverRegistry -- 传入内容协商管理器/上下文
 		ViewResolverRegistry registry = new ViewResolverRegistry(contentNegotiationManager, this.applicationContext);
+		// 2. 配置ViewResolver -- 供用户实现
 		configureViewResolvers(registry);
 
+		// 3. 从BeanFactory中加载ViewResolver的names
 		if (registry.getViewResolvers().isEmpty() && this.applicationContext != null) {
 			String[] names = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.applicationContext, ViewResolver.class, true, false);
+			// 3.1 BeanFactory中有ViewResolver,注册到registry
 			if (names.length == 1) {
 				registry.getViewResolvers().add(new InternalResourceViewResolver());
 			}
 		}
 
+		// 4. ViewResolver的组合模式
 		ViewResolverComposite composite = new ViewResolverComposite();
 		composite.setOrder(registry.getOrder());
+		// 4.1 将 registry.getViewResolvers() 传递给 composite
 		composite.setViewResolvers(registry.getViewResolvers());
 		if (this.applicationContext != null) {
 			composite.setApplicationContext(this.applicationContext);

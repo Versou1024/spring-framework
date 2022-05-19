@@ -70,6 +70,8 @@ public final class MultipartResolutionDelegate {
 	}
 
 	private static boolean isMultipartContent(HttpServletRequest request) {
+		// 检查request的content-type是否其父类型时MultiPart的
+
 		String contentType = request.getContentType();
 		return (contentType != null && contentType.toLowerCase().startsWith("multipart/"));
 	}
@@ -84,6 +86,10 @@ public final class MultipartResolutionDelegate {
 
 
 	public static boolean isMultipartArgument(MethodParameter parameter) {
+		// 是否为Multipart参数
+		// 要求: 1. 参数类型时Multipart 2. 或者: 为Part类型
+		// 或者为以上两种的List\Array
+
 		Class<?> paramType = parameter.getNestedParameterType();
 		return (MultipartFile.class == paramType ||
 				isMultipartFileCollection(parameter) || isMultipartFileArray(parameter) ||
@@ -94,22 +100,29 @@ public final class MultipartResolutionDelegate {
 	public static Object resolveMultipartArgument(String name, MethodParameter parameter, HttpServletRequest request)
 			throws Exception {
 
-		MultipartHttpServletRequest multipartRequest =
-				WebUtils.getNativeRequest(request, MultipartHttpServletRequest.class);
+		// WebUtils.getNativeRequest: 返回指定类型class的适当请求对象（如果可用），尽可能展开给定请求。
+		MultipartHttpServletRequest multipartRequest = WebUtils.getNativeRequest(request, MultipartHttpServletRequest.class);
+		// 是否为MultiPart请求: multipartRequest 不为空,同时request的content-type暗示为MultiPart类型的
 		boolean isMultipart = (multipartRequest != null || isMultipartContent(request));
 
+		// 1. 形参类型为 MultipartFile
 		if (MultipartFile.class == parameter.getNestedParameterType()) {
 			if (multipartRequest == null && isMultipart) {
+				// 1.1 转为标准的 StandardMultipartHttpServletRequest
 				multipartRequest = new StandardMultipartHttpServletRequest(request);
 			}
+			// 1.2 multipartRequest.getFile(name) 获取file
 			return (multipartRequest != null ? multipartRequest.getFile(name) : null);
 		}
+		// 2. 形参为 MultiPart 的 Collection
 		else if (isMultipartFileCollection(parameter)) {
 			if (multipartRequest == null && isMultipart) {
 				multipartRequest = new StandardMultipartHttpServletRequest(request);
 			}
+			// 2.1 getFiles
 			return (multipartRequest != null ? multipartRequest.getFiles(name) : null);
 		}
+		// 3. 形参为 MultiPart 的 Array
 		else if (isMultipartFileArray(parameter)) {
 			if (multipartRequest == null && isMultipart) {
 				multipartRequest = new StandardMultipartHttpServletRequest(request);
@@ -122,6 +135,7 @@ public final class MultipartResolutionDelegate {
 				return null;
 			}
 		}
+		// 4. part
 		else if (Part.class == parameter.getNestedParameterType()) {
 			return (isMultipart ? request.getPart(name): null);
 		}
@@ -132,6 +146,7 @@ public final class MultipartResolutionDelegate {
 			return (isMultipart ? resolvePartList(request, name).toArray(new Part[0]) : null);
 		}
 		else {
+			// 7.  未知的MultiPart
 			return UNRESOLVABLE;
 		}
 	}

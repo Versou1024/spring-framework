@@ -43,21 +43,25 @@ import org.springframework.web.method.HandlerMethod;
  */
 public class InvocableHandlerMethod extends HandlerMethod {
 
-	/*
-	 * 继承 HandlerMethod
-	 * 1、聚合 复合参数解析器HandlerMethodArgumentResolverComposite、形参名字解析器ParameterNameDiscoverer
-	 * 2、聚合 数据绑定工厂dataBinderFactory
-	 */
+	// 是对HandlerMethod的扩展，增加了调用能力。
+	// 这个能力在Spring MVC可是非常非常重要的，
+	// 它能够在调用的时候，把方法入参的参数都封装进来（从HTTP request\header等，当然借助的必然是HandlerMethodArgumentResolver）
+
+	// 这个子类主要提供的能力就是提供了invoke调用目标Bean的目标方法的能力，在这个调用过程中可大有文章可为，
+	// 当然最为核心的逻辑可是各种各样的HandlerMethodArgumentResolver来完成的
+	// InvocableHandlerMethod 这个子类虽然它提供了调用能力，但是它却依旧还没有和Servlet的API绑定起来，毕
+	// 竟使用的是Spring自己通用的的NativeWebRequest，so很容易想到它还有一个子类就是干这事的~
+	// 那就是 ServletInvocableHandlerMethod
 
 	private static final Object[] EMPTY_ARGS = new Object[0];
 
 
-	private HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite();
+	private HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite(); // 参数解析器 -- 需要外部传递进来
 
-	private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
+	private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer(); // 参数名发现
 
 	@Nullable
-	private WebDataBinderFactory dataBinderFactory;
+	private WebDataBinderFactory dataBinderFactory; // 数据绑定工厂
 
 
 	/**
@@ -93,6 +97,9 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	 * to use for resolving method argument values.
 	 */
 	public void setHandlerMethodArgumentResolvers(HandlerMethodArgumentResolverComposite argumentResolvers) {
+		// 在 RequestMappingHandlerAdapter#invokeHandlerMethod() 中会对 创建的ServletInvocableHandlerMethod#setHandlerMethodArgumentResolvers
+		// 将参数解析器传递进来
+
 		this.resolvers = argumentResolvers;
 	}
 
@@ -102,6 +109,9 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	 * <p>Default is a {@link org.springframework.core.DefaultParameterNameDiscoverer}.
 	 */
 	public void setParameterNameDiscoverer(ParameterNameDiscoverer parameterNameDiscoverer) {
+		// 在 RequestMappingHandlerAdapter#invokeHandlerMethod() 中会对 创建的ServletInvocableHandlerMethod#setParameterNameDiscoverer() 调用
+		// 将参数名字发现器传递进来
+
 		this.parameterNameDiscoverer = parameterNameDiscoverer;
 	}
 
@@ -110,6 +120,10 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	 * to create a {@link WebDataBinder} for data binding and type conversion purposes.
 	 */
 	public void setDataBinderFactory(WebDataBinderFactory dataBinderFactory) {
+		// 在 RequestMappingHandlerAdapter#invokeHandlerMethod() 中会对 创建的ServletInvocableHandlerMethod#setDataBinderFactory() 调用
+		// 将数据绑定工厂传递进来
+
+
 		this.dataBinderFactory = dataBinderFactory;
 	}
 
@@ -135,12 +149,24 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	 */
 	@Nullable
 	public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer, Object... providedArgs) throws Exception {
-		// 获取方法请求值
+		// 在给定请求的上下文中解析其参数值后调用该方法。
+		// 参数值通常通过HandlerMethodArgumentResolvers解析。
+		// 然而 -- providedArgs参数可以提供要直接使用的参数值，即没有参数解析。
+		// 提供的参数值的示例包括 WebDataBinder 、 SessionStatus或抛出的异常实例。在参数解析器之前检查提供的参数值。
+
+		// 1.获取方法请求值
+		// 虽然它是最重要的方法，但是此处不讲，因为核心原来还是`HandlerMethodArgumentResolver`
+		// 它只是把解析好的放到对应位置里去~~~
+		// 说明：这里传入了ParameterNameDiscoverer，它是能够获取到形参名的。
+		// 这就是为何注解里我们不写value值，通过形参名字来匹配也是ok的核心原因~
 		Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
 		if (logger.isTraceEnabled()) {
 			logger.trace("Arguments: " + Arrays.toString(args));
 		}
-		// 执行Controller方法
+		// 2. 执行Controller方法 --
+		// doInvoke()方法就不说了，就是个普通的方法调用
+		// ReflectionUtils.makeAccessible(getBridgedMethod());
+		// return getBridgedMethod().invoke(getBean(), args);
 		return doInvoke(args);
 	}
 
@@ -154,7 +180,7 @@ public class InvocableHandlerMethod extends HandlerMethod {
 			Object... providedArgs) throws Exception {
 		// 核心 -- > 参数解析 -- 完整过程
 
-		// 获取方法请求参数
+		// 1. 获取方法请求参数
 		MethodParameter[] parameters = getMethodParameters();
 		if (ObjectUtils.isEmpty(parameters)) {
 			return EMPTY_ARGS;
@@ -171,6 +197,7 @@ public class InvocableHandlerMethod extends HandlerMethod {
 				continue;
 			}
 			// 通过合成参数解析器查看是否支持支持当前请求参数
+			// 注意这里的resolvers是组合模式的HandlerMethodArgumentResolverComposite类
 			if (!this.resolvers.supportsParameter(parameter)) {
 				// 不支持就报错
 				throw new IllegalStateException(formatArgumentError(parameter, "No suitable resolver"));

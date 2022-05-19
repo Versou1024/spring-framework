@@ -168,11 +168,14 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 	@Nullable
 	protected <T> Object readWithMessageConverters(HttpInputMessage inputMessage, MethodParameter parameter,
 			Type targetType) throws IOException, HttpMediaTypeNotSupportedException, HttpMessageNotReadableException {
+		// 提供给子类使用的
+		// 主要使用使用HttpMEssageConverter做请求体写入操作的
 
 		MediaType contentType;
 		boolean noContentType = false;
 		try {
 			// 1. 从headers中获取content-type, 即如果已经制定了contentType，那就没什么好说的  以你的为准
+			// 目前大多数请求体都是application/json类型的哦
 			contentType = inputMessage.getHeaders().getContentType();
 		}
 		catch (InvalidMediaTypeException ex) {

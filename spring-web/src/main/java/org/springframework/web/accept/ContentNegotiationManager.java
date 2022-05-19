@@ -48,10 +48,13 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @since 3.2
  */
 public class ContentNegotiationManager implements ContentNegotiationStrategy, MediaTypeFileExtensionResolver {
+	// ContentNegotiationManager 内容协商"容器"。
+	// 这个管理器它的作用特别像之前讲述的xxxComposite这种“容器”管理类，
+	// 总体思想是管理、委托，有了之前的基础了解起他还是非常简单的了。
 
-	private final List<ContentNegotiationStrategy> strategies = new ArrayList<>();
+	private final List<ContentNegotiationStrategy> strategies = new ArrayList<>(); // 封装策略 内容协商策略 ContentNegotiationStrategy
 
-	private final Set<MediaTypeFileExtensionResolver> resolvers = new LinkedHashSet<>();
+	private final Set<MediaTypeFileExtensionResolver> resolvers = new LinkedHashSet<>(); // 封装 MediaType到FileExtension 的解析器
 
 
 	/**
@@ -84,6 +87,7 @@ public class ContentNegotiationManager implements ContentNegotiationStrategy, Me
 	 * Create a default instance with a {@link HeaderContentNegotiationStrategy}.
 	 */
 	public ContentNegotiationManager() {
+		// 空构造:默认至少有一个HeaderContentNegotiationStrategy
 		this(new HeaderContentNegotiationStrategy());
 	}
 
@@ -124,6 +128,7 @@ public class ContentNegotiationManager implements ContentNegotiationStrategy, Me
 
 	@Override
 	public List<MediaType> resolveMediaTypes(NativeWebRequest request) throws HttpMediaTypeNotAcceptableException {
+		// 遍历所有的内容协商策略,直到有一个返回非 */* 的mediaType进行处理即可
 		for (ContentNegotiationStrategy strategy : this.strategies) {
 			List<MediaType> mediaTypes = strategy.resolveMediaTypes(request);
 			if (mediaTypes.equals(MEDIA_TYPE_ALL_LIST)) {

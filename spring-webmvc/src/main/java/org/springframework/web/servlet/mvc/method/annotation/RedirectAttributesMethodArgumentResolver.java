@@ -46,8 +46,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
  */
 public class RedirectAttributesMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
+	// 重定向属性RedirectAttributes相关
+
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
+		// 1. 仅仅支持 RedirectAttributes 类型的
+
 		return RedirectAttributes.class.isAssignableFrom(parameter.getParameterType());
 	}
 
@@ -57,6 +61,7 @@ public class RedirectAttributesMethodArgumentResolver implements HandlerMethodAr
 
 		Assert.state(mavContainer != null, "RedirectAttributes argument only supported on regular handler methods");
 
+		// 1. 返回值 redirectAttributes
 		ModelMap redirectAttributes;
 		if (binderFactory != null) {
 			DataBinder dataBinder = binderFactory.createBinder(webRequest, null, DataBinder.DEFAULT_OBJECT_NAME);
@@ -65,6 +70,7 @@ public class RedirectAttributesMethodArgumentResolver implements HandlerMethodAr
 		else {
 			redirectAttributes  = new RedirectAttributesModelMap();
 		}
+		// 2. 设置重定向的model即redirectAttributes
 		mavContainer.setRedirectModel(redirectAttributes);
 		return redirectAttributes;
 	}

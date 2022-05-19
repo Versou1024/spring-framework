@@ -79,6 +79,9 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	 */
 	@Override
 	protected RequestMappingInfo getMatchingMapping(RequestMappingInfo info, ServerWebExchange exchange) {
+		// 判断请求exchange是否满足当前遍历的HandlerMethod的mappingInfo
+		// 不符合的话,返回null即可
+
 		return info.getMatchingCondition(exchange);
 	}
 
@@ -104,11 +107,13 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	 * @see HandlerMapping#PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE
 	 */
 	@Override
-	protected void handleMatch(RequestMappingInfo info, HandlerMethod handlerMethod,
-			ServerWebExchange exchange) {
+	protected void handleMatch(RequestMappingInfo info, HandlerMethod handlerMethod, ServerWebExchange exchange) {
+		// 匹配成功后的处理
 
+		// 1. 忽略
 		super.handleMatch(info, handlerMethod, exchange);
 
+		// 2. 获取lookupPath,根据lookupPath做一些uriVariables\matrixVariables\bestPattern的提取工作
 		PathContainer lookupPath = exchange.getRequest().getPath().pathWithinApplication();
 
 		PathPattern bestPattern;
@@ -130,6 +135,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 			matrixVariables = result.getMatrixVariables();
 		}
 
+		// 3. 属性设置
 		exchange.getAttributes().put(BEST_MATCHING_HANDLER_ATTRIBUTE, handlerMethod);
 		exchange.getAttributes().put(BEST_MATCHING_PATTERN_ATTRIBUTE, bestPattern);
 		exchange.getAttributes().put(URI_TEMPLATE_VARIABLES_ATTRIBUTE, uriVariables);
@@ -155,6 +161,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	@Override
 	protected HandlerMethod handleNoMatch(Set<RequestMappingInfo> infos,
 			ServerWebExchange exchange) throws Exception {
+		// 匹配失败的处理
 
 		PartialMatchHelper helper = new PartialMatchHelper(infos, exchange);
 
@@ -164,6 +171,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 
 		ServerHttpRequest request = exchange.getRequest();
 
+		// 1.1 没有对应的方法匹配
 		if (helper.hasMethodsMismatch()) {
 			String httpMethod = request.getMethodValue();
 			Set<HttpMethod> methods = helper.getAllowedMethods();
@@ -174,6 +182,7 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 			throw new MethodNotAllowedException(httpMethod, methods);
 		}
 
+		// 1.2 consumes不匹配
 		if (helper.hasConsumesMismatch()) {
 			Set<MediaType> mediaTypes = helper.getConsumableMediaTypes();
 			MediaType contentType;
@@ -186,11 +195,13 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 			throw new UnsupportedMediaTypeStatusException(contentType, new ArrayList<>(mediaTypes));
 		}
 
+		// 1.3 produces 不匹配
 		if (helper.hasProducesMismatch()) {
 			Set<MediaType> mediaTypes = helper.getProducibleMediaTypes();
 			throw new NotAcceptableStatusException(new ArrayList<>(mediaTypes));
 		}
 
+		// 1.4 params 参数不匹配
 		if (helper.hasParamsMismatch()) {
 			throw new ServerWebInputException(
 					"Unsatisfied query parameter conditions: " + helper.getParamConditions() +

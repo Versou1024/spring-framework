@@ -36,6 +36,7 @@ public class SessionStatusMethodArgumentResolver implements HandlerMethodArgumen
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
+		// 仅仅支持SessionStatus
 		return SessionStatus.class == parameter.getParameterType();
 	}
 
@@ -44,6 +45,7 @@ public class SessionStatusMethodArgumentResolver implements HandlerMethodArgumen
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 
 		Assert.state(mavContainer != null, "ModelAndViewContainer is required for session status exposure");
+		// 值为：mavContainer.getSessionStatus();
 		return mavContainer.getSessionStatus();
 	}
 

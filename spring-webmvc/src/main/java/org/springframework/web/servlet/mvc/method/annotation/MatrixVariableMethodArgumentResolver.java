@@ -48,6 +48,7 @@ import org.springframework.web.servlet.HandlerMapping;
  * @since 3.2
  */
 public class MatrixVariableMethodArgumentResolver extends AbstractNamedValueMethodArgumentResolver {
+	// 支持 @MatrixVariable 注解的形参
 
 	public MatrixVariableMethodArgumentResolver() {
 		super(null);
@@ -56,9 +57,11 @@ public class MatrixVariableMethodArgumentResolver extends AbstractNamedValueMeth
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
+		// 1. 支持形参上有@MatrixVariable
 		if (!parameter.hasParameterAnnotation(MatrixVariable.class)) {
 			return false;
 		}
+		// 2. 同时形参类型为Map时,@MatrixVariable注解必须有name否则不会支持
 		if (Map.class.isAssignableFrom(parameter.nestedIfOptional().getNestedParameterType())) {
 			MatrixVariable matrixVariable = parameter.getParameterAnnotation(MatrixVariable.class);
 			return (matrixVariable != null && StringUtils.hasText(matrixVariable.name()));
@@ -68,6 +71,7 @@ public class MatrixVariableMethodArgumentResolver extends AbstractNamedValueMeth
 
 	@Override
 	protected NamedValueInfo createNamedValueInfo(MethodParameter parameter) {
+		// 创建NamedValueInfo
 		MatrixVariable ann = parameter.getParameterAnnotation(MatrixVariable.class);
 		Assert.state(ann != null, "No MatrixVariable annotation");
 		return new MatrixVariableNamedValueInfo(ann);
@@ -77,18 +81,24 @@ public class MatrixVariableMethodArgumentResolver extends AbstractNamedValueMeth
 	@SuppressWarnings("unchecked")
 	@Nullable
 	protected Object resolveName(String name, MethodParameter parameter, NativeWebRequest request) throws Exception {
+		// 1. 获取请求中的matrixVariables
+		// 该属性包含: 一个带有 URI 变量名称的映射以及每个对应的 URI 矩阵变量的 MultiValueMap。
 		Map<String, MultiValueMap<String, String>> pathParameters = (Map<String, MultiValueMap<String, String>>)
 				request.getAttribute(HandlerMapping.MATRIX_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
 		if (CollectionUtils.isEmpty(pathParameters)) {
 			return null;
 		}
 
+		// 2. 获取@MatrixVariable注解
 		MatrixVariable ann = parameter.getParameterAnnotation(MatrixVariable.class);
 		Assert.state(ann != null, "No MatrixVariable annotation");
+		// 3. 获取 MatrixVariable.pathVar()
 		String pathVar = ann.pathVar();
 		List<String> paramValues = null;
 
+		// 4. pathVar 非默认值
 		if (!pathVar.equals(ValueConstants.DEFAULT_NONE)) {
+			// 4.1 是否包含在pathParameters映射中,有的话直接返回
 			if (pathParameters.containsKey(pathVar)) {
 				paramValues = pathParameters.get(pathVar).get(name);
 			}
@@ -96,9 +106,11 @@ public class MatrixVariableMethodArgumentResolver extends AbstractNamedValueMeth
 		else {
 			boolean found = false;
 			paramValues = new ArrayList<>();
+			// 4.2 根据name来做提取吧
 			for (MultiValueMap<String, String> params : pathParameters.values()) {
 				if (params.containsKey(name)) {
 					if (found) {
+						// 4.3 找到两个一样的,就报错吧
 						String paramType = parameter.getNestedParameterType().getName();
 						throw new ServletRequestBindingException(
 								"Found more than one match for URI path parameter '" + name +

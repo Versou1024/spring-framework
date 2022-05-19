@@ -97,17 +97,21 @@ import org.springframework.web.context.ServletContextAware;
  * @author Brian Clozel
  * @since 3.2
  */
-public class ContentNegotiationManagerFactoryBean
-		implements FactoryBean<ContentNegotiationManager>, ServletContextAware, InitializingBean {
+public class ContentNegotiationManagerFactoryBean implements FactoryBean<ContentNegotiationManager>, ServletContextAware, InitializingBean {
+	// ContentNegotiationManagerFactoryBean
+	// 顾名思义，它是专门用于来创建一个ContentNegotiationManager的FactoryBean
 
 	@Nullable
-	private List<ContentNegotiationStrategy> strategies;
+	private List<ContentNegotiationStrategy> strategies; //供外部设置设置
 
 
+	// 默认就是开启了对后缀的支持的
 	private boolean favorPathExtension = true;
 
+	// 默认没有开启对param的支持
 	private boolean favorParameter = false;
 
+	// 默认也是开启了对Accept的支持的
 	private boolean ignoreAcceptHeader = false;
 
 	private Map<String, MediaType> mediaTypes = new HashMap<>();
@@ -186,6 +190,9 @@ public class ContentNegotiationManagerFactoryBean
 	 * @see #addMediaTypes(Map)
 	 */
 	public void setMediaTypes(Properties mediaTypes) {
+		// 注意这里传入的是：Properties
+		// 表示后缀和MediaType的对应关系
+
 		if (!CollectionUtils.isEmpty(mediaTypes)) {
 			mediaTypes.forEach((key, value) ->
 					addMediaType((String) key, MediaType.valueOf((String) value)));
@@ -281,6 +288,7 @@ public class ContentNegotiationManagerFactoryBean
 	 * @see #setDefaultContentTypeStrategy
 	 */
 	public void setDefaultContentType(MediaType contentType) {
+		// 默认支持的contentTypes
 		this.defaultNegotiationStrategy = new FixedContentNegotiationStrategy(contentType);
 	}
 
@@ -291,6 +299,7 @@ public class ContentNegotiationManagerFactoryBean
 	 * @see #setDefaultContentTypeStrategy
 	 */
 	public void setDefaultContentTypes(List<MediaType> contentTypes) {
+		// 默认支持的contentTypes
 		this.defaultNegotiationStrategy = new FixedContentNegotiationStrategy(contentTypes);
 	}
 
@@ -302,6 +311,7 @@ public class ContentNegotiationManagerFactoryBean
 	 * @see #setDefaultContentType
 	 */
 	public void setDefaultContentTypeStrategy(ContentNegotiationStrategy strategy) {
+		// 默认支持的策略
 		this.defaultNegotiationStrategy = strategy;
 	}
 
@@ -325,26 +335,38 @@ public class ContentNegotiationManagerFactoryBean
 	 */
 	@SuppressWarnings("deprecation")
 	public ContentNegotiationManager build() {
+		// 这里面处理了很多默认逻辑
 		List<ContentNegotiationStrategy> strategies = new ArrayList<>();
 
+		// 1. 用户注册过strategies,就使用注册的
 		if (this.strategies != null) {
 			strategies.addAll(this.strategies);
 		}
+		// 2. 否则使用默认的策略
 		else {
+			// 2.1. 默认favorPathExtension=true，所以是支持path后缀模式的
 			if (this.favorPathExtension) {
+				// servlet环境使用的是ServletPathExtensionContentNegotiationStrategy，否则使用的是PathExtensionContentNegotiationStrategy
 				PathExtensionContentNegotiationStrategy strategy;
 				if (this.servletContext != null && !useRegisteredExtensionsOnly()) {
+					// 2.1.1 servlet环境,使用 ServletPathExtensionContentNegotiationStrategy
 					strategy = new ServletPathExtensionContentNegotiationStrategy(this.servletContext, this.mediaTypes);
 				}
 				else {
+					// 2.1.2 非servlet环境,使用PathExtensionContentNegotiationStrategy
 					strategy = new PathExtensionContentNegotiationStrategy(this.mediaTypes);
 				}
-				strategy.setIgnoreUnknownExtensions(this.ignoreUnknownPathExtensions);
+				// 2.2. 设置策略是否忽略未知的Extension
+				strategy.setIgnoreUnknownExtensions(this.ignoreUnknownPathExtensions); // 默认true
 				if (this.useRegisteredExtensionsOnly != null) {
+					// 2.2.1 设置是否仅仅根据注册的extension判断
+					// 默认是的
 					strategy.setUseRegisteredExtensionsOnly(this.useRegisteredExtensionsOnly);
 				}
+				//
 				strategies.add(strategy);
 			}
+			// 2.2 favorParameter默认为false,不支持请求参数的内容协商
 			if (this.favorParameter) {
 				ParameterContentNegotiationStrategy strategy = new ParameterContentNegotiationStrategy(this.mediaTypes);
 				strategy.setParameterName(this.parameterName);
@@ -356,9 +378,11 @@ public class ContentNegotiationManagerFactoryBean
 				}
 				strategies.add(strategy);
 			}
+			// 2.3 是否忽略请求头accept做内容协商,默认不忽略
 			if (!this.ignoreAcceptHeader) {
 				strategies.add(new HeaderContentNegotiationStrategy());
 			}
+			// 2.4 是否有默认的策略
 			if (this.defaultNegotiationStrategy != null) {
 				strategies.add(this.defaultNegotiationStrategy);
 			}

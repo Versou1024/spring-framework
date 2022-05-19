@@ -30,6 +30,8 @@ import org.springframework.lang.Nullable;
  * @param <V> the value element type
  */
 public interface MultiValueMap<K, V> extends Map<K, List<V>> {
+	// 存储多个值的Map接口的扩展。
+	// 即value是用List存储的,称为多值value的map
 
 	/**
 	 * Return the first value for the given key.
@@ -38,6 +40,7 @@ public interface MultiValueMap<K, V> extends Map<K, List<V>> {
 	 */
 	@Nullable
 	V getFirst(K key);
+	// 返回 key 对应的list集合中第一个value值
 
 	/**
 	 * Add the given single value to the current list of values for the given key.
@@ -92,5 +95,6 @@ public interface MultiValueMap<K, V> extends Map<K, List<V>> {
 	 * @return a single value representation of this map
 	 */
 	Map<K, V> toSingleValueMap();
+	// 返回一个Map ，其中包含此MultiValueMap中的第一个值。
 
 }

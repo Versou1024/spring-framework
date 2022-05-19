@@ -120,6 +120,8 @@ public class ContentNegotiationConfigurer {
 	 * @since 5.0
 	 */
 	public void strategies(@Nullable List<ContentNegotiationStrategy> strategies) {
+		// 向 factory 中 ContentNegotiationStrategy
+		// 该行为将导致默认的加载策略失效
 		this.factory.setStrategies(strategies);
 	}
 
@@ -138,6 +140,7 @@ public class ContentNegotiationConfigurer {
 	 */
 	@Deprecated
 	public ContentNegotiationConfigurer favorPathExtension(boolean favorPathExtension) {
+		// 设置 factory 是否支持路径扩展的内容协商
 		this.factory.setFavorPathExtension(favorPathExtension);
 		return this;
 	}
@@ -158,6 +161,7 @@ public class ContentNegotiationConfigurer {
 	 * @see #replaceMediaTypes(Map)
 	 */
 	public ContentNegotiationConfigurer mediaType(String extension, MediaType mediaType) {
+		// 添加 extension 以及 mediaType
 		this.mediaTypes.put(extension, mediaType);
 		return this;
 	}
@@ -220,6 +224,7 @@ public class ContentNegotiationConfigurer {
 	 * {@code PathExtensionContentNegotiationStrategy} will use defaults if available.
 	 */
 	public ContentNegotiationConfigurer useRegisteredExtensionsOnly(boolean useRegisteredExtensionsOnly) {
+		// 设置 factory 是否仅仅使用注册的extension
 		this.factory.setUseRegisteredExtensionsOnly(useRegisteredExtensionsOnly);
 		return this;
 	}
@@ -232,6 +237,7 @@ public class ContentNegotiationConfigurer {
 	 * @see #parameterName(String)
 	 */
 	public ContentNegotiationConfigurer favorParameter(boolean favorParameter) {
+		// 设置 factory 是否使用请求形参做内容协商的策略
 		this.factory.setFavorParameter(favorParameter);
 		return this;
 	}
@@ -286,6 +292,7 @@ public class ContentNegotiationConfigurer {
 	 * @see ContentNegotiationManagerFactoryBean#getObject()
 	 */
 	protected ContentNegotiationManager buildContentNegotiationManager() {
+		// 向ContentNegotiationManagerFactoryBean中添加mediaType
 		this.factory.addMediaTypes(this.mediaTypes);
 		return this.factory.build();
 	}

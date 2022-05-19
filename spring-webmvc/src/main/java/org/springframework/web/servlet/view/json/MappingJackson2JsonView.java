@@ -53,18 +53,24 @@ import org.springframework.web.servlet.View;
  * @since 3.1.2
  */
 public class MappingJackson2JsonView extends AbstractJackson2View {
+	// MappingJackson2JsonView
+	// 它是用于返回Json视图的（下面会介绍Spring MVC返回json的三种方式）
 
 	/**
 	 * Default content type: "application/json".
 	 * Overridable through {@link #setContentType}.
 	 */
 	public static final String DEFAULT_CONTENT_TYPE = "application/json";
+	// 默认内容类型：“application/json”。可通过setContentType 。
 
 	@Nullable
 	private String jsonPrefix;
+	// json前缀可以有,有的话,就会在writePrefix()中使用
 
 	@Nullable
 	private Set<String> modelKeys;
+	// 在模型model中应由该视图呈现的属性集合即为modelKeys。设置后，所有其他模型属性将被忽略。
+	// 注意有@Nullable,即如果没有modelKeys时,会将model中所有的属性展示到该视图中哦
 
 	private boolean extractValueFromSingleKeyModel = false;
 
@@ -106,6 +112,8 @@ public class MappingJackson2JsonView extends AbstractJackson2View {
 	 * @see #setJsonPrefix
 	 */
 	public void setPrefixJson(boolean prefixJson) {
+		// 指示此视图的 JSON 输出是否应以")]}'、"为前缀。默认为false 。
+		// 以这种方式为 JSON 字符串添加前缀有助于防止 JSON 劫持。前缀使字符串作为脚本在语法上无效，因此它不能被劫持。在将字符串解析为 JSON 之前，应去除此前缀。
 		this.jsonPrefix = (prefixJson ? ")]}', " : null);
 	}
 
@@ -114,6 +122,7 @@ public class MappingJackson2JsonView extends AbstractJackson2View {
 	 */
 	@Override
 	public void setModelKey(String modelKey) {
+		// 在模型中设置该视图应呈现的属性。设置后，所有其他模型属性将被忽略。
 		this.modelKeys = Collections.singleton(modelKey);
 	}
 
@@ -122,6 +131,7 @@ public class MappingJackson2JsonView extends AbstractJackson2View {
 	 * When set, all other model attributes will be ignored.
 	 */
 	public void setModelKeys(@Nullable Set<String> modelKeys) {
+		// 在模型中设置应由该视图呈现的属性。设置后，所有其他模型属性将被忽略。
 		this.modelKeys = modelKeys;
 	}
 
@@ -157,18 +167,25 @@ public class MappingJackson2JsonView extends AbstractJackson2View {
 	protected Object filterModel(Map<String, Object> model) {
 		Map<String, Object> result = new HashMap<>(model.size());
 		Set<String> modelKeys = (!CollectionUtils.isEmpty(this.modelKeys) ? this.modelKeys : model.keySet());
+		// 遍历model所有内容~
 		model.forEach((clazz, value) -> {
+			// 符合下列条件的会给排除掉~~~
+			// 不是BindingResult类型 并且  modelKeys包含此key 并且此key不是JsonView和FilterProvider  这种key就排除掉~~~
 			if (!(value instanceof BindingResult) && modelKeys.contains(clazz) &&
 					!clazz.equals(JsonView.class.getName()) &&
 					!clazz.equals(FilterProvider.class.getName())) {
 				result.put(clazz, value);
 			}
 		});
+		// 符合下列条件的会给排除掉~~~
+		// 不是BindingResult类型 并且  modelKeys包含此key 并且此key不是JsonView和FilterProvider  这种key就排除掉~~~
+
 		return (this.extractValueFromSingleKeyModel && result.size() == 1 ? result.values().iterator().next() : result);
 	}
 
 	@Override
 	protected void writePrefix(JsonGenerator generator, Object object) throws IOException {
+		// 如果配置了前缀，把前缀写进去~~~
 		if (this.jsonPrefix != null) {
 			generator.writeRaw(this.jsonPrefix);
 		}

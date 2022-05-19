@@ -84,9 +84,11 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 			new HandlerMethod(new PreFlightAmbiguousMatchHandler(),
 					ClassUtils.getMethod(PreFlightAmbiguousMatchHandler.class, "handle"));
 
+	// 跨域配置
 	private static final CorsConfiguration ALLOW_CORS_CONFIG = new CorsConfiguration();
 
 	static {
+		// cros 跨域配置
 		ALLOW_CORS_CONFIG.addAllowedOrigin("*");
 		ALLOW_CORS_CONFIG.addAllowedMethod("*");
 		ALLOW_CORS_CONFIG.addAllowedHeader("*");
@@ -153,10 +155,12 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 */
 	@Override
 	public void afterPropertiesSet() {
+		// 核心
 
 		initHandlerMethods();
 
 		// Total includes detected mappings + explicit registrations via registerMapping..
+		// 记录总数
 		int total = this.getHandlerMethods().size();
 
 		if ((logger.isTraceEnabled() && total == 0) || (logger.isDebugEnabled() && total > 0) ) {
@@ -185,6 +189,9 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 						logger.trace("Could not resolve type for bean '" + beanName + "'", ex);
 					}
 				}
+				// 核心
+				// isHandler() 是否为handler类
+				// detectHandlerMethods(beanName)
 				if (beanType != null && isHandler(beanType)) {
 					detectHandlerMethods(beanName);
 				}
@@ -198,17 +205,19 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 * @param handler the bean name of a handler or a handler instance
 	 */
 	protected void detectHandlerMethods(final Object handler) {
-		Class<?> handlerType = (handler instanceof String ?
-				obtainApplicationContext().getType((String) handler) : handler.getClass());
+		Class<?> handlerType = (handler instanceof String ? obtainApplicationContext().getType((String) handler) : handler.getClass());
 
 		if (handlerType != null) {
 			final Class<?> userType = ClassUtils.getUserClass(handlerType);
+			// 核心: getMappingForMethod(method,userType)检查当前当前方法method是否为HandlerMethod
+			// 是的话,返回其MappingInfo信息,方便对请求做校验
 			Map<Method, T> methods = MethodIntrospector.selectMethods(userType,
 					(MethodIntrospector.MetadataLookup<T>) method -> getMappingForMethod(method, userType));
 			if (logger.isTraceEnabled()) {
 				logger.trace(formatMappings(userType, methods));
 			}
 			methods.forEach((method, mapping) -> {
+				// 核心: registerHandlerMethod(handler, invocableMethod, mapping)
 				Method invocableMethod = AopUtils.selectInvocableMethod(method, userType);
 				registerHandlerMethod(handler, invocableMethod, mapping);
 			});
@@ -285,6 +294,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 		try {
 			HandlerMethod handlerMethod;
 			try {
+				// 核心:  lookupHandlerMethod(exchange)
 				handlerMethod = lookupHandlerMethod(exchange);
 			}
 			catch (Exception ex) {
@@ -310,22 +320,34 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 */
 	@Nullable
 	protected HandlerMethod lookupHandlerMethod(ServerWebExchange exchange) throws Exception {
+		// 查找当前请求的最佳匹配HandlerMethod方法。
+		// 如果找到多个匹配项，则选择最佳HandlerMethod
+
+		// 1. 结果集
 		List<Match> matches = new ArrayList<>();
+		// 2. 根据所有的mappingInfos以及请求exchange,判断符合的mache并加入到结合matches中
 		addMatchingMappings(this.mappingRegistry.getMappings().keySet(), matches, exchange);
 
+		// 3. 匹配的结果集不为空
 		if (!matches.isEmpty()) {
+			// 4. 获取match比较器
 			Comparator<Match> comparator = new MatchComparator(getMappingComparator(exchange));
+			// 5. 进行排序
 			matches.sort(comparator);
-			Match bestMatch = matches.get(0);
+			Match bestMatch = matches.get(0); // 最佳匹配结果
 			if (matches.size() > 1) {
+				// 6. 排序后的结果超过2个
 				if (logger.isTraceEnabled()) {
 					logger.trace(exchange.getLogPrefix() + matches.size() + " matching mappings: " + matches);
 				}
+				// 7. 是否预检请求
 				if (CorsUtils.isPreFlightRequest(exchange.getRequest())) {
 					return PREFLIGHT_AMBIGUOUS_MATCH;
 				}
-				Match secondBestMatch = matches.get(1);
+				Match secondBestMatch = matches.get(1); // 次佳的匹配结果
+				// 8. 比较最佳和次佳的匹配结果
 				if (comparator.compare(bestMatch, secondBestMatch) == 0) {
+					// 8.1 次佳和最佳都是一样最佳匹配度,那就报错吧
 					Method m1 = bestMatch.handlerMethod.getMethod();
 					Method m2 = secondBestMatch.handlerMethod.getMethod();
 					RequestPath path = exchange.getRequest().getPath();
@@ -333,18 +355,23 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 							"Ambiguous handler methods mapped for '" + path + "': {" + m1 + ", " + m2 + "}");
 				}
 			}
+			// 9. 匹配成功的处理
 			handleMatch(bestMatch.mapping, bestMatch.handlerMethod, exchange);
 			return bestMatch.handlerMethod;
 		}
 		else {
+			// 10.  匹配失败的处理
 			return handleNoMatch(this.mappingRegistry.getMappings().keySet(), exchange);
 		}
 	}
 
 	private void addMatchingMappings(Collection<T> mappings, List<Match> matches, ServerWebExchange exchange) {
+		// 1. 遍历所有的mappings
 		for (T mapping : mappings) {
+			// 2. 返回的mapping不为空,就表示当前exchange是符合当前的mapping的
 			T match = getMatchingMapping(mapping, exchange);
 			if (match != null) {
+				// 3. 组装为Match并添加到marches
 				matches.add(new Match(match, this.mappingRegistry.getMappings().get(mapping)));
 			}
 		}
@@ -555,6 +582,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 * comparing the best match with a comparator in the context of the current request.
 	 */
 	private class Match {
+		// 将匹配的 mapping 与 HandlerMethod 封装起来
 
 		private final T mapping;
 

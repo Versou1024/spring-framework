@@ -58,6 +58,10 @@ import org.springframework.ui.Model;
 @Documented
 public @interface ModelAttribute {
 
+	// 1. 可以用在非HandlerMethod的返回值上
+	// 2. 用在HandlerMethod的返回值上
+	// 3. 用在HandlerMethod的形参上
+
 	/**
 	 * Alias for {@link #name}.
 	 */

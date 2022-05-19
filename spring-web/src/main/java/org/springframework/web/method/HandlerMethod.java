@@ -70,30 +70,30 @@ public class HandlerMethod {
 	/** Logger that is available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private final Object bean;
+	private final Object bean; // handlerMethod的所属的bean --  Object类型，既可以是个Bean，也可以是个BeanName
 
 	@Nullable
-	private final BeanFactory beanFactory;
+	private final BeanFactory beanFactory; // 当前BeanFactory
 
-	private final Class<?> beanType;
+	private final Class<?> beanType; // 归属的Handler的type
 
-	private final Method method;
+	private final Method method; // 实际Handler的method
 
-	private final Method bridgedMethod;
+	private final Method bridgedMethod; // 桥接method
 
-	private final MethodParameter[] parameters;
-
-	@Nullable
-	private HttpStatus responseStatus;
+	private final MethodParameter[] parameters; // 方法参数集合
 
 	@Nullable
-	private String responseStatusReason;
+	private HttpStatus responseStatus; // 响应状态码 -- 从@ResponseStatus注解中获取的  没有就是null
 
 	@Nullable
-	private HandlerMethod resolvedFromHandlerMethod;
+	private String responseStatusReason; // 响应状态原因 -- 从@ResponseStatus注解中获取的 没有就是null
 
 	@Nullable
-	private volatile List<Annotation[][]> interfaceParameterAnnotations;
+	private HandlerMethod resolvedFromHandlerMethod; // 已解决的HandlerMethod
+
+	@Nullable
+	private volatile List<Annotation[][]> interfaceParameterAnnotations; // 接口参数注解
 
 	private final String description;
 
@@ -158,6 +158,7 @@ public class HandlerMethod {
 	 * Copy constructor for use in subclasses.
 	 */
 	protected HandlerMethod(HandlerMethod handlerMethod) {
+		// 常用的 -- 会被 RequestMappingHandlerAdapter#createInvocableHandlerMethod 间接使用
 		// 仅仅需要传递HandlerMethod，就可以获取 bean、beanFactory、beanType、method、parameters、responseStatus、description等等
 		Assert.notNull(handlerMethod, "HandlerMethod is required");
 		this.bean = handlerMethod.bean;
@@ -190,7 +191,12 @@ public class HandlerMethod {
 		this.description = handlerMethod.description;
 	}
 
+	// 所有构造都执行了两个方法：initMethodParameters和evaluateResponseStatus
+
 	private MethodParameter[] initMethodParameters() {
+		// 构造器所调用
+		// 用来初始化HandlerMethod的MethodParameter[]
+
 		int count = this.bridgedMethod.getParameterCount();
 		MethodParameter[] result = new MethodParameter[count];
 		for (int i = 0; i < count; i++) {
@@ -200,16 +206,16 @@ public class HandlerMethod {
 	}
 
 	private void evaluateResponseStatus() {
-		/*
-		 * 该方法将在 HandlerMethod 的构造器中完成解析
-		 */
-		// 直接获取HandlerMethod上的@ResponseStatus注解
+		// 该方法将在 HandlerMethod 的构造器中完成解析
+		// 主要目的:根据@ResponseStatus注解,对responseStatus\responseReason进行赋值
+
+		// 1. 直接获取HandlerMethod上的@ResponseStatus注解
 		ResponseStatus annotation = getMethodAnnotation(ResponseStatus.class);
 		if (annotation == null) {
-			// 直接获取不到，就对HandlerMethod做递归的注解扫描@ResponseStatus
+			// 2. 直接获取不到，就对HandlerMethod做递归的注解扫描@ResponseStatus
 			annotation = AnnotatedElementUtils.findMergedAnnotation(getBeanType(), ResponseStatus.class);
 		}
-		// 注解不为空，就设置responseStatus、以及responseStatusReason
+		// 3. 注解不为空，就设置responseStatus、以及responseStatusReason
 		if (annotation != null) {
 			this.responseStatus = annotation.code();
 			this.responseStatusReason = annotation.reason();

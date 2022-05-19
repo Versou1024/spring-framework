@@ -395,6 +395,10 @@ public abstract class UriUtils {
 	 */
 	@Nullable
 	public static String extractFileExtension(String path) {
+		// 从给定的 URI 路径中提取文件扩展名。
+		//	参数：path – URI 路径（例如“/products/index.html”）
+		//	return：提取的文件扩展名（例如“html”）
+
 		int end = path.indexOf('?');
 		int fragmentIndex = path.indexOf('#');
 		if (fragmentIndex != -1 && (end == -1 || fragmentIndex < end)) {

@@ -48,6 +48,8 @@ import org.springframework.core.annotation.AliasFor;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface SessionAttribute {
+	// 该注解顾名思义，作用是将Model中的属性同步到session会话当中，方便在下一次请求中使用(比如重定向场景~)。
+	// 虽然说Session的概念在当下前后端完全分离的场景中已经变得越来越弱化了，但是若为web开发者来说，我仍旧强烈不建议各位扔掉这个知识点，so我自然就建议大家能够熟练使用@SessionAttributes来简化平时的开发，本文带你入坑~
 
 	/**
 	 * Alias for {@link #name}.

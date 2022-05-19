@@ -278,6 +278,14 @@ public class WebDataBinder extends DataBinder {
 	 */
 	@Nullable
 	public Object getEmptyValue(Class<?> fieldType) {
+		// 确定指定字段的空值。
+		//	默认实现返回：
+		//		Boolean.FALSE用于布尔字段
+		//		array类型的空数组
+		//		collection类型的集合实现
+		//		map类型的Map实现
+		//		否则，默认使用null
+
 		try {
 			if (boolean.class == fieldType || Boolean.class == fieldType) {
 				// Special handling of boolean property.

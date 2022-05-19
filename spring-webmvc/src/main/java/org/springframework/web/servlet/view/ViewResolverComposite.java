@@ -43,8 +43,9 @@ import org.springframework.web.servlet.ViewResolver;
  */
 public class ViewResolverComposite implements ViewResolver, Ordered, InitializingBean,
 		ApplicationContextAware, ServletContextAware {
+	// 依旧熟悉的组合模式 -- 视图解析器
 
-	private final List<ViewResolver> viewResolvers = new ArrayList<>();
+	private final List<ViewResolver> viewResolvers = new ArrayList<>(); // list集合模式
 
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
@@ -53,6 +54,7 @@ public class ViewResolverComposite implements ViewResolver, Ordered, Initializin
 	 * Set the list of view viewResolvers to delegate to.
 	 */
 	public void setViewResolvers(List<ViewResolver> viewResolvers) {
+		// set 方法一般都会导致先清空
 		this.viewResolvers.clear();
 		if (!CollectionUtils.isEmpty(viewResolvers)) {
 			this.viewResolvers.addAll(viewResolvers);
@@ -77,6 +79,8 @@ public class ViewResolverComposite implements ViewResolver, Ordered, Initializin
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		// 对 ViewResolver#setApplicationContext()
+
 		for (ViewResolver viewResolver : this.viewResolvers) {
 			if (viewResolver instanceof ApplicationContextAware) {
 				((ApplicationContextAware)viewResolver).setApplicationContext(applicationContext);
@@ -86,6 +90,9 @@ public class ViewResolverComposite implements ViewResolver, Ordered, Initializin
 
 	@Override
 	public void setServletContext(ServletContext servletContext) {
+		// 对 ViewResolver#setServletContext()
+
+
 		for (ViewResolver viewResolver : this.viewResolvers) {
 			if (viewResolver instanceof ServletContextAware) {
 				((ServletContextAware)viewResolver).setServletContext(servletContext);
@@ -95,6 +102,8 @@ public class ViewResolverComposite implements ViewResolver, Ordered, Initializin
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+		// 对 ViewResolver#afterPropertiesSet()
+
 		for (ViewResolver viewResolver : this.viewResolvers) {
 			if (viewResolver instanceof InitializingBean) {
 				((InitializingBean) viewResolver).afterPropertiesSet();

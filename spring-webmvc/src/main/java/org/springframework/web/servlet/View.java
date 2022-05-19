@@ -104,5 +104,8 @@ public interface View {
 	void render(@Nullable Map<String, ?> model, HttpServletRequest request, HttpServletResponse response)
 			throws Exception;
 	// 实际渲染操作
+	// 这是最重要的 根据model里面的数据，request等  把渲染好的数据写进response里~
+	// model\request : 数据来源
+	// response: 写入的地方
 
 }

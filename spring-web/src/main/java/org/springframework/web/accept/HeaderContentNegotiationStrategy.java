@@ -43,11 +43,15 @@ public class HeaderContentNegotiationStrategy implements ContentNegotiationStrat
 	public List<MediaType> resolveMediaTypes(NativeWebRequest request)
 			throws HttpMediaTypeNotAcceptableException {
 
+		// 1. 获取请求头中的accept的值,没有就返回 则默认使用MediaType.ALL 也就是*/*
 		String[] headerValueArray = request.getHeaderValues(HttpHeaders.ACCEPT);
 		if (headerValueArray == null) {
 			return MEDIA_TYPE_ALL_LIST;
 		}
 
+		// 2. 有的话,就从String类型解析为MediaType
+		// 使用  MediaType.parseMediaTypes(headerValues)
+		// 解析完之后按照q值进行排序返回
 		List<String> headerValues = Arrays.asList(headerValueArray);
 		try {
 			List<MediaType> mediaTypes = MediaType.parseMediaTypes(headerValues);
@@ -58,6 +62,17 @@ public class HeaderContentNegotiationStrategy implements ContentNegotiationStrat
 			throw new HttpMediaTypeNotAcceptableException(
 					"Could not parse 'Accept' header " + headerValues + ": " + ex.getMessage());
 		}
+
+		// 以Chrome浏览器为例
+		// 传值为: [text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3]
+		// 最后Chrome浏览器的List如下：
+		// 0 = {MediaType@6205} "text/html"
+		// 1 = {MediaType@6206} "application/xhtml+xml"
+		// 2 = {MediaType@6207} "image/webp"
+		// 3 = {MediaType@6208} "image/apng"
+		// 4 = {MediaType@6209} "application/signed-exchange;v=b3"
+		// 5 = {MediaType@6210} "application/xml;q=0.9"
+		// 6 = {MediaType@6211} "*/*;q=0.8"
 	}
 
 }

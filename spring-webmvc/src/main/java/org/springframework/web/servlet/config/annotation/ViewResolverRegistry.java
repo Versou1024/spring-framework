@@ -55,15 +55,15 @@ import org.springframework.web.servlet.view.tiles3.TilesViewResolver;
 public class ViewResolverRegistry {
 
 	@Nullable
-	private ContentNegotiationManager contentNegotiationManager;
+	private ContentNegotiationManager contentNegotiationManager; // 内容协商处理器
 
 	@Nullable
-	private ApplicationContext applicationContext;
+	private ApplicationContext applicationContext; // 上下文
 
 	@Nullable
-	private ContentNegotiatingViewResolver contentNegotiatingResolver;
+	private ContentNegotiatingViewResolver contentNegotiatingResolver; // 内容协商ViewResolver
 
-	private final List<ViewResolver> viewResolvers = new ArrayList<>(4);
+	private final List<ViewResolver> viewResolvers = new ArrayList<>(4); // ViewResolvers
 
 	@Nullable
 	private Integer order;

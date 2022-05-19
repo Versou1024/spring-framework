@@ -35,6 +35,7 @@ import org.springframework.web.method.annotation.AbstractNamedValueMethodArgumen
  * @since 4.3
  */
 public class RequestAttributeMethodArgumentResolver extends AbstractNamedValueMethodArgumentResolver {
+	// 支持 @RequestAttribute 参数的解析
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
@@ -51,6 +52,7 @@ public class RequestAttributeMethodArgumentResolver extends AbstractNamedValueMe
 	@Override
 	@Nullable
 	protected Object resolveName(String name, MethodParameter parameter, NativeWebRequest request){
+		// 直接调用 request.getAttribute()
 		return request.getAttribute(name, RequestAttributes.SCOPE_REQUEST);
 	}
 

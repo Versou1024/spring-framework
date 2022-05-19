@@ -36,6 +36,10 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @since 3.2
  */
 public class ParameterContentNegotiationStrategy extends AbstractMappingContentNegotiationStrategy {
+	// ParameterContentNegotiationStrategy 支持通过请求参数做内容协商
+	// 根据一个查询参数(query parameter)判断请求的MediaType,该查询参数缺省使用format。
+	//
+	// 需要注意的是：基于param的此策略Spring MVC虽然支持，但默认是木有开启的，若想使用需要手动显示开启
 
 	private String parameterName = "format";
 
@@ -65,6 +69,10 @@ public class ParameterContentNegotiationStrategy extends AbstractMappingContentN
 	@Override
 	@Nullable
 	protected String getMediaTypeKey(NativeWebRequest request) {
+		// 核心: 从 request 从提取MediaType的key
+		// ParameterContentNegotiationStrategy 是支持请求参数来做内容协商的
+
+		// 获取format请求参数的值
 		return request.getParameter(getParameterName());
 	}
 

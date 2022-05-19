@@ -43,16 +43,15 @@ import org.springframework.web.servlet.HandlerMapping;
  */
 public class PathVariableMapMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
-	/**
-	 * PathVariableMapMethodArgumentResolver 支持
-	 * @PathVariable 不带任何value时，且形参类型时map的，就将所有的路径参数传给map形参
-	 */
+	// 参数类型是Map的解析器我认为是对第一类的有些处理器的一种补充，它依赖上面的相关注解。
+	// 你是否想过通过@RequestParam一次性全给封装进一个Map里，然后再自己分析？
+	// 同样的本类处理器给@RequestHeader、@PathVariable、@MatrixVariable都赋予了这种能力~
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
-		// 支持前提 -- 形参上有指定注解@PathVariable
+		// 1. 形参上有指定注解@PathVariable
 		PathVariable ann = parameter.getParameterAnnotation(PathVariable.class);
-		// 注解不为空，同时要求，要求@PathVariable注解的属性是Map的子类，且@PathVariable的注解值不能有任何值
+		// 2. 注解不为空,形参是Map类型的,注意同时注解的value必须是空的
 		return (ann != null && Map.class.isAssignableFrom(parameter.getParameterType()) && !StringUtils.hasText(ann.value()));
 	}
 
@@ -63,11 +62,13 @@ public class PathVariableMapMethodArgumentResolver implements HandlerMethodArgum
 	public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 		// 从request中获取属性 uriTemplateVariables
+
 		// key为path路径名，value为路径属性值
 		@SuppressWarnings("unchecked")
 		Map<String, String> uriTemplateVars = (Map<String, String>) webRequest.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
 
 		if (!CollectionUtils.isEmpty(uriTemplateVars)) {
+			// 直接将其转换为LinkedHashMap传递出去
 			// 传递出 uriTemplateVars
 			return new LinkedHashMap<>(uriTemplateVars);
 		} else {

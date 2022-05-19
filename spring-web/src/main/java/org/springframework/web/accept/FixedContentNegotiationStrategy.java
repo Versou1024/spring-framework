@@ -30,6 +30,7 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @since 3.2
  */
 public class FixedContentNegotiationStrategy implements ContentNegotiationStrategy {
+	// 固定类型解析：返回固定的MediaType。
 
 	private final List<MediaType> contentTypes;
 

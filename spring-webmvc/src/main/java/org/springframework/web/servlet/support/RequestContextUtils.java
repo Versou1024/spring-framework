@@ -231,6 +231,7 @@ public abstract class RequestContextUtils {
 	@SuppressWarnings("unchecked")
 	@Nullable
 	public static Map<String, ?> getInputFlashMap(HttpServletRequest request) {
+		// 包含只读Map<String,?>的请求属性的名称，其中包含先前请求保存的“输入”闪存属性（如果有）
 		return (Map<String, ?>) request.getAttribute(DispatcherServlet.INPUT_FLASH_MAP_ATTRIBUTE);
 	}
 

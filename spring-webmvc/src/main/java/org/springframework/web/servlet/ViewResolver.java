@@ -60,6 +60,10 @@ public interface ViewResolver {
 	 * 		ResourceBundleViewResolver 这个有点复杂
 	 * 		reeMarkerViewResolver、VolocityViewResolver 都基于url 但会解析成特定的view
 	 * 		实现类也非常的多，在Spring MVC里是一个非常非常重要的概念（比如什么时候返回页面，什么时候返回json呢？），因此后面会有专门的文章进行深入解读
+	 *
+	 * 因此需要认识到
+	 *		ViewResolver是把逻辑视图名称解析为真正的视图View对象。
+	 * 		View是真正的进行视图渲染（对response里写东西），把结果返回给浏览器的
 	 */
 
 	/**

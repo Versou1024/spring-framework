@@ -30,12 +30,11 @@ import org.springframework.lang.Nullable;
  */
 public abstract class AbstractUrlBasedView extends AbstractView implements InitializingBean {
 
-	/**
-	 * 为基于URL-based的视图views，提供给一个聚合持有URL通过View包装
-	 */
+	// 下面来到我们最为重要的一个分支：AbstractUrlBasedView。
+	// 因为前面讲到过UrlBasedViewResolver这个分支是最重要的视图处理器，所以自然而然这个相关的视图也是最为重要的~~~
 
 	@Nullable
-	private String url;
+	private String url; // 重点:url
 
 
 	/**
@@ -71,7 +70,8 @@ public abstract class AbstractUrlBasedView extends AbstractView implements Initi
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		// 检查url
+		// 检查是否需要url,需要的话url不允许为空
+
 		if (isUrlRequired() && getUrl() == null) {
 			throw new IllegalArgumentException("Property 'url' is required");
 		}
@@ -83,6 +83,9 @@ public abstract class AbstractUrlBasedView extends AbstractView implements Initi
 	 * This can be overridden in subclasses.
 	 */
 	protected boolean isUrlRequired() {
+		// 返回是否需要 'url' 属性。
+		// 默认实现返回true 。这可以在子类中被覆盖
+
 		return true;
 	}
 

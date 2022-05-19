@@ -184,22 +184,32 @@ public abstract class AbstractCachingViewResolver extends WebApplicationObjectSu
 	@Nullable
 	public View resolveViewName(String viewName, Locale locale) throws Exception {
 		// 核心方法
+		// 在 AbstractCachingViewResolver 中实现就是一个模板方法,主要是将缓存功能抽取出来呗
+
 		if (!isCache()) {
-			// 不开启缓存，直接创建view
+			// 1. 不开启缓存，直接创建view
 			return createView(viewName, locale);
 		}
 		else {
+			// 2. 唯一的缓存key
 			Object cacheKey = getCacheKey(viewName, locale);
 			View view = this.viewAccessCache.get(cacheKey);
 			if (view == null) {
+				// 2.1 缓存未命中
 				synchronized (this.viewCreationCache) {
+					// 2.1.1 双重检查
 					view = this.viewCreationCache.get(cacheKey);
 					if (view == null) {
 						// Ask the subclass to create the View object.
+						// 2.1.2 子类createView
 						view = createView(viewName, locale);
+						// 2.2.2 子类无法解析,且需要缓存无法解析的逻辑视图名String[cacheUnresolved 开关是否开启]
 						if (view == null && this.cacheUnresolved) {
 							view = UNRESOLVED_VIEW;
 						}
+						// 2.2.3 子类可以根据该逻辑视图名viewName解析处view
+						// 且满足缓存条件 -- 默认的cacheFilter永远返回true
+						// 就加入到缓存中 viewAccessCache\ viewCreationCache
 						if (view != null && this.cacheFilter.filter(view, viewName, locale)) {
 							this.viewAccessCache.put(cacheKey, view);
 							this.viewCreationCache.put(cacheKey, view);
@@ -208,10 +218,14 @@ public abstract class AbstractCachingViewResolver extends WebApplicationObjectSu
 				}
 			}
 			else {
+				// 2.2 缓存命中
 				if (logger.isTraceEnabled()) {
 					logger.trace(formatKey(cacheKey) + "served from cache");
 				}
 			}
+			// 3. 返回解析出的View
+			// 这个很重要，因为没有被解析过  都会返回null
+			// 而再真正责任链处理的时候，第一个不返回null的view，最终就会被返回了~~~
 			return (view != UNRESOLVED_VIEW ? view : null);
 		}
 	}

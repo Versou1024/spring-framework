@@ -47,13 +47,14 @@ import org.springframework.util.ClassUtils;
  * @see JstlView
  */
 public class InternalResourceViewResolver extends UrlBasedViewResolver {
-	/**
-	 * UrlBasedViewResolver的实现子类，支持InternalResourceView（即servlet和JSP）
-	 */
+	// InternalResourceViewResolver 这个视图处理器最为重要，它也是Spring MVC默认给装配的视图解析器。
 
 	private static final boolean jstlPresent = ClassUtils.isPresent(
 			"javax.servlet.jsp.jstl.core.Config", InternalResourceViewResolver.class.getClassLoader());
 
+	// 指定是否始终包含视图而不是转发到视图
+	// 默认值为“false”。打开此标志以强制使用servlet include，即使可以进行转发
+	// InternalResourceView#setAlwaysInclude
 	@Nullable
 	private Boolean alwaysInclude;
 
@@ -64,10 +65,20 @@ public class InternalResourceViewResolver extends UrlBasedViewResolver {
 	 * is present.
 	 */
 	public InternalResourceViewResolver() {
+		// 该构造器一定会被执行 -- 因为其余构造器都会使用this()
+		// 因此最终都会设置 setViewClass()
+		// 因此在超类 UrlBasedViewResolver#createView()方法中
+		// 还需要用户提供 viewNames 以完成对viewName的模式匹配
+		// 然后如果是普通的view,非重定向和转发,就可以使用buildView(),从而使用到getViewClass()进行实例化
+		// 然后实例化之后进行设置View的一些属性,然后返回View
+
+		// 默认情况下，它可能会设置一个JstlView 或者 InternalResourceView
+
 		Class<?> viewClass = requiredViewClass();
 		if (InternalResourceView.class == viewClass && jstlPresent) {
 			viewClass = JstlView.class;
 		}
+		// 会尝试setVIewClass
 		setViewClass(viewClass);
 	}
 
@@ -106,7 +117,11 @@ public class InternalResourceViewResolver extends UrlBasedViewResolver {
 
 	@Override
 	protected AbstractUrlBasedView buildView(String viewName) throws Exception {
+		// 在父类实现的基础上，设置上了alwaysInclude，并且view.setPreventDispatchLoop(true)
+
+		// 1. 父类的基础
 		InternalResourceView view = (InternalResourceView) super.buildView(viewName);
+		// 2. 设置 InternalResourceView.setAlwaysInclude()
 		if (this.alwaysInclude != null) {
 			view.setAlwaysInclude(this.alwaysInclude);
 		}

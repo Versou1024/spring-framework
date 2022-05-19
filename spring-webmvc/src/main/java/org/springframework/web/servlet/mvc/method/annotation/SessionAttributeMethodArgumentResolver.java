@@ -35,6 +35,7 @@ import org.springframework.web.method.annotation.AbstractNamedValueMethodArgumen
  * @since 4.3
  */
 public class SessionAttributeMethodArgumentResolver extends AbstractNamedValueMethodArgumentResolver {
+	// 支持 @SessionAttribute 注解修饰形参
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
@@ -51,6 +52,7 @@ public class SessionAttributeMethodArgumentResolver extends AbstractNamedValueMe
 	@Override
 	@Nullable
 	protected Object resolveName(String name, MethodParameter parameter, NativeWebRequest request) {
+		// 注意:范围是SCOPE_SESSION
 		return request.getAttribute(name, RequestAttributes.SCOPE_SESSION);
 	}
 

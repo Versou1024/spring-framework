@@ -512,10 +512,10 @@ public class DispatcherServlet extends FrameworkServlet {
 		initLocaleResolver(context);
 		initThemeResolver(context);
 		initHandlerMappings(context); // ok
-		initHandlerAdapters(context);
+		initHandlerAdapters(context); // ok
 		initHandlerExceptionResolvers(context);
 		initRequestToViewNameTranslator(context); // ok
-		initViewResolvers(context);
+		initViewResolvers(context); // ok
 		initFlashMapManager(context);
 	}
 
@@ -814,6 +814,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		// 是否自动检查所有的视图解析器
 		if (this.detectAllViewResolvers) {
 			// 从BeanFactory中查找属于ViewResolver类型的Bean
+			// 在 @EnableWebMVC后的WebMVCConfigurationSupport#mvcViewResolver()会向BeanFactory中加入一个ViewResolverComposite
 			Map<String, ViewResolver> matchingBeans = BeanFactoryUtils.beansOfTypeIncludingAncestors(context, ViewResolver.class, true, false);
 			if (!matchingBeans.isEmpty()) {
 				this.viewResolvers = new ArrayList<>(matchingBeans.values());
@@ -1145,7 +1146,7 @@ public class DispatcherServlet extends FrameworkServlet {
 					return;
 				}
 
-				// 是否需要给 ModelAndView 设置 viewName,前提是mv中没有viewName
+				// 是否需要给 ModelAndView 设置 viewName, 前提是mv中没有viewName -- 使用DefaultRequestToViewNameTranslator#getDefaultViewName
 				applyDefaultViewName(processedRequest, mv);
 				// 使用applyPostHandle方法给已注册的拦截器放行
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
@@ -1218,7 +1219,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				// 2、上面需要注意了，但凡处理方法返回的不是null，有mv的返回。那后面的处理器就不会再进行处理了。具有短路的效果，一定要注意  是通过null来判断的
 				// 3、处理完成后，得到error的视图mv，最后会设置一个viewName，然后返回出去
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
-				// 核心 -- 处理异常
+				// 核心 -- 处理异常 -- 和组件HandlerExceptionHandler有关
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
 			}
@@ -1479,7 +1480,8 @@ public class DispatcherServlet extends FrameworkServlet {
 		// 如果已经有viewName了(绝大多数情况)
 		if (viewName != null) {
 			// 视图解析器  根据String类型的名字，解析出来一个视图（视图解析器有多个）
-			// 还是那个原理：只要有一个返回了不为null的，后面的就不会再解析了
+			// 还是那个原理：只要有一个ViewResolver#resolveViewName返回值不为null的，后面的就不会再解析了,并且支持解析这个view
+			// 将一个String解析为View对象
 			view = resolveViewName(viewName, mv.getModelInternal(), locale, request);
 			// 如果解析不出来视图，那就抛出异常，说不能解析该视图
 			if (view == null) {
@@ -1489,7 +1491,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 		else {
 			// No need to lookup: the ModelAndView object contains the actual View object.
-			// 没有视图名称，但是必须有视图内容，否则抛出异常
+			// 没有视图名称[String]，但是必须有视图对象[View]，否则抛出异常
 			view = mv.getView();
 			if (view == null) {
 				throw new ServletException("ModelAndView [" + mv + "] neither contains a view name nor a " +
@@ -1497,12 +1499,15 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 		}
 
+		// 运行到这里: 已经获取到解析的View对象,下面开始渲染
+
 		// Delegate to the View object for rendering.
 		// 委托给view进行渲染。
 		if (logger.isTraceEnabled()) {
 			logger.trace("Rendering view [" + view + "] ");
 		}
 		try {
+			// 检查一下:是否有设置@ResponseStatus
 			if (mv.getStatus() != null) {
 				response.setStatus(mv.getStatus().value());
 			}
@@ -1545,7 +1550,9 @@ public class DispatcherServlet extends FrameworkServlet {
 	@Nullable
 	protected View resolveViewName(String viewName, @Nullable Map<String, Object> model,
 			Locale locale, HttpServletRequest request) throws Exception {
-		// 创建View
+		// 解析viewName创建View
+
+		// 1. 遍历ViewResolvers,直到有一个可以resolveViewName解析处View对象
 		if (this.viewResolvers != null) {
 			for (ViewResolver viewResolver : this.viewResolvers) {
 				// 用viewResolver进行解析viewName，如果结果view不为null，就直接返回view

@@ -29,6 +29,10 @@ import org.springframework.web.server.ServerWebExchange;
  * @since 5.0
  */
 public interface HandlerMapping {
+	// HandlerMapping
+	// 用来查找Handler的。在SpringMVC中会有很多请求，每个请求都需要一个Handler处理，具体接收到一个请求之后使用哪个Handler进行处理呢？这就是HandlerMapping需要做的事
+	//
+	// HandlerMapping：负责映射用户的URL和对应的处理类Handler，HandlerMapping并没有规定这个URL与应用的处理类如何映射。所以在HandlerMapping接口中仅仅定义了根据一个URL必须返回一个由HandlerExecutionChain代表的处理链，我们可以在这个处理链中添加任意的HandlerAdapter实例来处理这个URL对应的请求（这样保证了最大的灵活性映射关系）。
 
 	/**
 	 * Name of the {@link ServerWebExchange#getAttributes() attribute} that
@@ -91,5 +95,6 @@ public interface HandlerMapping {
 	 * cannot be resolved to a handler
 	 */
 	Mono<Object> getHandler(ServerWebExchange exchange);
+	// 该接口提供的唯一一个方法~~~~
 
 }

@@ -65,6 +65,7 @@ import org.springframework.web.servlet.support.RequestContextUtils;
  * @since 3.1
  */
 public class ServletRequestMethodArgumentResolver implements HandlerMethodArgumentResolver {
+	// 固定参数类型的形参解析器
 
 	@Nullable
 	private static Class<?> pushBuilder;
@@ -85,17 +86,17 @@ public class ServletRequestMethodArgumentResolver implements HandlerMethodArgume
 	public boolean supportsParameter(MethodParameter parameter) {
 		Class<?> paramType = parameter.getParameterType();
 		return (WebRequest.class.isAssignableFrom(paramType) ||
-				ServletRequest.class.isAssignableFrom(paramType) ||
+				ServletRequest.class.isAssignableFrom(paramType) || // webRequest.getNativeRequest(requiredType)
 				MultipartRequest.class.isAssignableFrom(paramType) ||
-				HttpSession.class.isAssignableFrom(paramType) ||
-				(pushBuilder != null && pushBuilder.isAssignableFrom(paramType)) ||
-				Principal.class.isAssignableFrom(paramType) ||
-				InputStream.class.isAssignableFrom(paramType) ||
-				Reader.class.isAssignableFrom(paramType) ||
-				HttpMethod.class == paramType ||
-				Locale.class == paramType ||
-				TimeZone.class == paramType ||
-				ZoneId.class == paramType);
+				HttpSession.class.isAssignableFrom(paramType) || //request.getSession()
+				(pushBuilder != null && pushBuilder.isAssignableFrom(paramType)) || //PushBuilderDelegate.resolvePushBuilder(request, paramType);
+				Principal.class.isAssignableFrom(paramType) || //request.getUserPrincipal()
+				InputStream.class.isAssignableFrom(paramType) || // request.getInputStream()
+				Reader.class.isAssignableFrom(paramType) || //request.getReader()
+				HttpMethod.class == paramType || //HttpMethod.resolve(request.getMethod());
+				Locale.class == paramType || //RequestContextUtils.getLocale(request)
+				TimeZone.class == paramType || //RequestContextUtils.getTimeZone(request)
+				ZoneId.class == paramType); //RequestContextUtils.getTimeZone(request);
 	}
 
 	@Override
@@ -133,6 +134,7 @@ public class ServletRequestMethodArgumentResolver implements HandlerMethodArgume
 
 	@Nullable
 	private Object resolveArgument(Class<?> paramType, HttpServletRequest request) throws IOException {
+		// 1. HttpSession
 		if (HttpSession.class.isAssignableFrom(paramType)) {
 			HttpSession session = request.getSession();
 			if (session != null && !paramType.isInstance(session)) {
@@ -144,6 +146,7 @@ public class ServletRequestMethodArgumentResolver implements HandlerMethodArgume
 		else if (pushBuilder != null && pushBuilder.isAssignableFrom(paramType)) {
 			return PushBuilderDelegate.resolvePushBuilder(request, paramType);
 		}
+		// 2. InputStream
 		else if (InputStream.class.isAssignableFrom(paramType)) {
 			InputStream inputStream = request.getInputStream();
 			if (inputStream != null && !paramType.isInstance(inputStream)) {
@@ -152,6 +155,7 @@ public class ServletRequestMethodArgumentResolver implements HandlerMethodArgume
 			}
 			return inputStream;
 		}
+		// 3. Reader
 		else if (Reader.class.isAssignableFrom(paramType)) {
 			Reader reader = request.getReader();
 			if (reader != null && !paramType.isInstance(reader)) {
@@ -160,6 +164,7 @@ public class ServletRequestMethodArgumentResolver implements HandlerMethodArgume
 			}
 			return reader;
 		}
+		// 4. Principal
 		else if (Principal.class.isAssignableFrom(paramType)) {
 			Principal userPrincipal = request.getUserPrincipal();
 			if (userPrincipal != null && !paramType.isInstance(userPrincipal)) {
@@ -168,22 +173,27 @@ public class ServletRequestMethodArgumentResolver implements HandlerMethodArgume
 			}
 			return userPrincipal;
 		}
+		// 5. HttpMethod
 		else if (HttpMethod.class == paramType) {
 			return HttpMethod.resolve(request.getMethod());
 		}
+		// 6. Locale
 		else if (Locale.class == paramType) {
 			return RequestContextUtils.getLocale(request);
 		}
+		// 7. TimeZone
 		else if (TimeZone.class == paramType) {
 			TimeZone timeZone = RequestContextUtils.getTimeZone(request);
 			return (timeZone != null ? timeZone : TimeZone.getDefault());
 		}
+		// 8. ZoneId
 		else if (ZoneId.class == paramType) {
 			TimeZone timeZone = RequestContextUtils.getTimeZone(request);
 			return (timeZone != null ? timeZone.toZoneId() : ZoneId.systemDefault());
 		}
 
 		// Should never happen...
+		// 不支持
 		throw new UnsupportedOperationException("Unknown parameter type: " + paramType.getName());
 	}
 

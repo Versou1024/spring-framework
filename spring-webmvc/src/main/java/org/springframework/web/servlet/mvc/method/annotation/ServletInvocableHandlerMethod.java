@@ -61,16 +61,25 @@ import org.springframework.web.util.NestedServletException;
  * @since 3.1
  */
 public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
-	/**
-	 * 继承 InvocableHandlerMethod
-	 * 作用：
-	 * 1、聚合 HandlerMethodReturnValueHandlerComposite，完成对方法返回值的解析
-	 */
+	// 它是对InvocableHandlerMethod的扩展，它增加了返回值和响应状态码的处理，
+	// 另外在ServletInvocableHandlerMethod有个内部类ConcurrentResultHandlerMethod继承于它，支持异常调用结果处理，
+	// Servlet容器下Controller在查找适配器时发起调用的最终就是ServletInvocableHandlerMethod。
+
+	// ServletInvocableHandlerMethod 返回值的处理\响应状态码的处理
+	// InvocableHandlerMethod 请求参数的处理,以及HandlerMethod的invoke执行
+
+	// HandlerMethod用于封装Handler和处理请求的Method；InvocableHandlerMethod增加了方法参数解析和调用方法的能力；ServletInvocableHandlerMethod在此基础上在增加了如下三个能力：
+	//
+	//	对@ResponseStatus注解的支持
+	//		1.当一个方法注释了@ResponseStatus后，响应码就是注解上的响应码。 并且，并且如果returnValue=null或者reason不为空（不为null且不为“”），将中断处理直接返回(不再渲染页面)
+	//	对返回值returnValue的处理
+	//		1. 对返回值的处理是使用HandlerMethodReturnValueHandlerComposite完成的
+	//	对异步处理结果的处理
 
 	private static final Method CALLABLE_METHOD = ClassUtils.getMethod(Callable.class, "call");
 
 	@Nullable
-	private HandlerMethodReturnValueHandlerComposite returnValueHandlers;
+	private HandlerMethodReturnValueHandlerComposite returnValueHandlers; // Handler的返回值处理器 -- 组合模式
 
 
 	/**
@@ -84,6 +93,9 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 	 * Create an instance from a {@code HandlerMethod}.
 	 */
 	public ServletInvocableHandlerMethod(HandlerMethod handlerMethod) {
+		// 核心 --
+		// 因为在 RequestMappingHandlerAdapter#createInvocableHandlerMethod()时就是使用的这个构造器哦
+
 		super(handlerMethod);
 	}
 
@@ -93,6 +105,9 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 	 * handle return values.
 	 */
 	public void setHandlerMethodReturnValueHandlers(HandlerMethodReturnValueHandlerComposite returnValueHandlers) {
+		// 在 RequestMappingHandlerAdapter#invokeHandlerMethod() 创建了 ServletInvocableHandlerMethod后
+		// 就会调用方法设置 返回值处理器[组合模式]
+
 		this.returnValueHandlers = returnValueHandlers;
 	}
 
@@ -106,29 +121,42 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 	 */
 	public void invokeAndHandle(ServletWebRequest webRequest, ModelAndViewContainer mavContainer,
 			Object... providedArgs) throws Exception {
-		// ❗️request的方法已经准备完毕，即将开始执行
-		// invokeForRequest 执行请求，并返回结果
+		// ️request的方法已经准备完毕，即将开始执行
+		// 注意在RequestMappingHandlerAdapter#InvocableHandlerMethod()中providedArgs为null值
+
+		// 1. 调用超类的 InvocableHandlerMethod#invokeForRequest() 处理请求参,执行请求，并返回结果
+		// 职责分明
 		Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
-		// 设置响应状态码
+		// 2. 设置响应状态码 -- 与 @ResponseStatus 注解有关
+		// 设置HttpServletResponse返回状态码 这里面还是有点意思的  因为@ResponseStatus#code()在父类已经解析了  但是子类才用
 		setResponseStatus(webRequest);
 
-		// 返回值为null
+		// 3. 返回值为null
+		// 重点是这一句话：mavContainer.setRequestHandled(true); 表示该请求已经被处理过了
 		if (returnValue == null) {
+			// 3.1 request请求的内容没有被修改 或者 响应状态不为nulk 或 mavContainer已经设置为请求处理完毕
 			if (isRequestNotModified(webRequest) || getResponseStatus() != null || mavContainer.isRequestHandled()) {
 				disableContentCachingIfNecessary(webRequest);
+				// 3.2 设置请求已被处理,返回Void
 				mavContainer.setRequestHandled(true);
 				return;
 			}
 		} else if (StringUtils.hasText(getResponseStatusReason())) {
-			// what
+			// 4. 返回值不是null,同时有设置responseStatusReason响应状态原因
+			// 这个接口被@ResponseStatus标记为异常,request处理完成比,返回一个void值
 			mavContainer.setRequestHandled(true);
 			return;
 		}
 
+		// 前边都不成立,则设置RequestHandled=false即请求未完成
+		// 继续交给HandlerMethodReturnValueHandlerComposite处理
+		// 可见@ResponseStatus的优先级还是蛮高的~~~~~
+
+		// 5. 请求没有处理完
 		mavContainer.setRequestHandled(false);
 		Assert.state(this.returnValueHandlers != null, "No return value handlers");
 		try {
-			// 返回值处理器
+			// 6. 使用组合模式的返回值处理器对返回值进行处理
 			this.returnValueHandlers.handleReturnValue(returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
 		}
 		catch (Exception ex) {
@@ -143,19 +171,20 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 	 * Set the response status according to the {@link ResponseStatus} annotation.
 	 */
 	private void setResponseStatus(ServletWebRequest webRequest) throws IOException {
+		// 1. 调用超类的 InvocableHandlerMethod 解析出来的响应状态码 -- 前提是有方法上\类上\超类上有@ResponseStatus注解才会有这值
 		HttpStatus status = getResponseStatus();
 		if (status == null) {
-			// 没有@ResponseStatus的注解，直接返回
+			// 2. 方法/类/超类上没有@ResponseStatus的注解,也就没有status直接返回
 			return;
 		}
 
-		// 当前HandlerMethod上有@ResponseStatus注解，那么就对response设置状态和错误原因
+		// 3. 当前HandlerMethod/类/超类上有@ResponseStatus注解，那么还可以对respone的responseReason设置状态和错误原因
 		// 即 setStatus、setError
 		HttpServletResponse response = webRequest.getResponse();
 		if (response != null) {
 			String reason = getResponseStatusReason();
 			if (StringUtils.hasText(reason)) {
-				response.sendError(status.value(), reason);
+				response.sendError(status.value(), reason); // ❗️❗️此处务必注意：若有reason，那就是sendError  哪怕你是200哦~
 			}
 			else {
 				response.setStatus(status.value());
@@ -210,6 +239,9 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 	 * "resumes" processing with the asynchronously produced return value.
 	 */
 	private class ConcurrentResultHandlerMethod extends ServletInvocableHandlerMethod {
+		// 内部类们
+		// ServletInvocableHandlerMethod的嵌套子类，它使用简单的Callable而不是原始控制器作为处理程序，以便返回给定的固定（并发）结果值。
+		// 使用异步生成的返回值有效地“恢复”处理。
 
 		private final MethodParameter returnType;
 

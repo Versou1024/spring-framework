@@ -40,6 +40,9 @@ import org.springframework.web.context.request.NativeWebRequest;
  */
 @Deprecated
 public class ServletPathExtensionContentNegotiationStrategy extends PathExtensionContentNegotiationStrategy {
+	// ServletPathExtensionContentNegotiationStrategy
+	// 它是对PathExtensionContentNegotiationStrategy的扩展，和Servlet容器有关了。
+	// 因为Servlet额外提供了这个方法：ServletContext#getMimeType(String)来处理文件的扩展名问题。
 
 	private final ServletContext servletContext;
 
@@ -100,9 +103,13 @@ public class ServletPathExtensionContentNegotiationStrategy extends PathExtensio
 	 */
 	@Override
 	public MediaType getMediaTypeForResource(Resource resource) {
+		// 扩展基类PathExtensionContentNegotiationStrategy.getMediaTypeForResource并能够通过 ServletContext 进行查找。
+
+		// 1. 从resource的fileName中判断MimeType的key
 		MediaType mediaType = null;
 		String mimeType = this.servletContext.getMimeType(resource.getFilename());
 		if (StringUtils.hasText(mimeType)) {
+			// 2. 解析为mediaType
 			mediaType = MediaType.parseMediaType(mimeType);
 		}
 		if (mediaType == null || MediaType.APPLICATION_OCTET_STREAM.equals(mediaType)) {

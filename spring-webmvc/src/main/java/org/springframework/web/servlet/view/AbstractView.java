@@ -63,12 +63,9 @@ import org.springframework.web.servlet.support.RequestContext;
  */
 public abstract class AbstractView extends WebApplicationObjectSupport implements View, BeanNameAware {
 	/*
-	 * 1、View接口实现的抽象基类。
-	 * 2、子类应该是JavaBeans，且被Spring所管理
-	 * 3、提供对视图可用的静态属性的支持，并提供多种指定方法。对于每个渲染操作，静态属性将与给定的动态属性（控制器返回的模型）合并。
-	 * 4、扩展WebApplicationObject支持，这将有助于某些Views类渲染。-- 避免污染子类 -- 子类只需要实现实际的渲染，不用操心静态属性支持和Application的支持
-	 *
 	 * 注意：WebApplicationObject的抽象方法
+	 *
+	 * AbstractView实现了render方法，主要做的操作是将model中的参数和request中的参数全部都放到Request中，然后就转发Request就可以了
 	 */
 
 	/** Default content type. Overridable as bean property. */
@@ -78,13 +75,15 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	private static final int OUTPUT_BYTE_ARRAY_INITIAL_SIZE = 4096;
 
 
+	// 默认contentType是html格式
 	@Nullable
-	private String contentType = DEFAULT_CONTENT_TYPE; // 默认contentType是html格式
+	private String contentType = DEFAULT_CONTENT_TYPE;
 
 	// 设置此视图的RequestContext属性的名称
 	@Nullable
 	private String requestContextAttribute;
 
+	// 静态属性
 	private final Map<String, Object> staticAttributes = new LinkedHashMap<>();
 
 	//指定是否向模型Model中添加路径变量PathVariables。
@@ -327,8 +326,15 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 					(this.staticAttributes.isEmpty() ? "" : ", static attributes " + this.staticAttributes));
 		}
 
+		// 1. 合并staticAttribute\pathVars\model数据到一个map中
+		// 其中:支持覆盖,因此model的key优先级更高
+		// 最终还会暴露requestContext对象到Model你,因此Model里可以直接访问RequestContext对象
 		Map<String, Object> mergedModel = createMergedOutputModel(model, request, response);
+		// 2. 默认实现为设置几个响应头~~~
+		// 备注：默认情况下pdf的view、xstl的view会触发下载~~~
 		prepareResponse(request, response);
+		// 3. getRequestToExpose表示吧request暴露成：ContextExposingHttpServletRequest（和容器相关，以及容器内的BeanNames）
+		// renderMergedOutputModel是个抽象方法 由子类去实现~~~~
 		renderMergedOutputModel(mergedModel, getRequestToExpose(request), response);
 	}
 
@@ -338,20 +344,23 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 */
 	protected Map<String, Object> createMergedOutputModel(@Nullable Map<String, ?> model,
 			HttpServletRequest request, HttpServletResponse response) {
-		/**
-		 * 创建一个包含动态值和静态属性的组合输出Map（从不为null）。
-		 * 动态值优先于静态属性。
-		 */
+		// 合并staticAttribute\pathVars\model数据到一个map中
+		// 其中:支持覆盖,因此model的key优先级更高
+		// 最终还会暴露requestContext对象到Model你,因此Model里可以直接访问RequestContext对象
+
+
+		// 1. 暴露路径变量
 		@SuppressWarnings("unchecked")
 		Map<String, Object> pathVars = (this.exposePathVariables ? (Map<String, Object>) request.getAttribute(View.PATH_VARIABLES) : null);
 
 		// Consolidate static and dynamic model attributes.
+		// 2. size准备
 		int size = this.staticAttributes.size(); // 静态属性
 		size += (model != null ? model.size() : 0);
 		size += (pathVars != null ? pathVars.size() : 0);
 
 		Map<String, Object> mergedModel = new LinkedHashMap<>(size);
-		// 将静态属性、路径参数、已有动态model合并
+		// 3. 将静态属性、路径参数、动态model合并
 		mergedModel.putAll(this.staticAttributes);
 		if (pathVars != null) {
 			mergedModel.putAll(pathVars);
@@ -360,7 +369,7 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 			mergedModel.putAll(model);
 		}
 
-		// 是否暴露 Context
+		// 4. 暴露 RequestContext
 		if (this.requestContextAttribute != null) {
 			mergedModel.put(this.requestContextAttribute, createRequestContext(request, response, mergedModel));
 		}
@@ -392,9 +401,12 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 * @param response current HTTP response
 	 */
 	protected void prepareResponse(HttpServletRequest request, HttpServletResponse response) {
-		/**
-		 * 为渲染rendering准备给定的响应。
-		 */
+		//  默认实现为设置几个响应头~~~
+		// 备注：默认情况下pdf的view、xstl的view会触发下载~~~
+
+
+		// generatesDownloadContent() 返回此视图是否生成下载内容（通常是 PDF 或 Excel 文件等二进制内容）。
+		// 默认实现返回false 。如果子类知道他们正在生成需要在客户端临时缓存的下载内容（通常通过响应 OutputStream），则鼓励子类在此处返回true 。
 		if (generatesDownloadContent()) {
 			response.setHeader("Pragma", "private");
 			response.setHeader("Cache-Control", "private, must-revalidate");
@@ -490,11 +502,17 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 * @throws IOException if writing/flushing failed
 	 */
 	protected void writeToResponse(HttpServletResponse response, ByteArrayOutputStream baos) throws IOException {
+		// 提供给子类的工具方法:
+		// 把字节流写进response里面~~~
+
+
 		// Write content type and also length (determined via byte array).
+		// 1. 写入内容类型和长度（通过字节数组确定）。
 		response.setContentType(getContentType());
 		response.setContentLength(baos.size());
 
 		// Flush byte array to servlet output stream.
+		// 2. 将字节数组刷新到 servlet 输出流。
 		ServletOutputStream out = response.getOutputStream();
 		baos.writeTo(out);
 		out.flush();
@@ -507,6 +525,8 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 * to a concrete media type.
 	 */
 	protected void setResponseContentType(HttpServletRequest request, HttpServletResponse response) {
+		// 相当于如果request.getAttribute(View.SELECTED_CONTENT_TYPE) 指定了就以它为准~
+
 		MediaType mediaType = (MediaType) request.getAttribute(View.SELECTED_CONTENT_TYPE);
 		if (mediaType != null && mediaType.isConcrete()) {
 			response.setContentType(mediaType.toString());

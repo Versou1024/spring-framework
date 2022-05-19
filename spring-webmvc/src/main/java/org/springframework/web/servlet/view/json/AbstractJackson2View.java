@@ -51,6 +51,8 @@ import org.springframework.web.servlet.view.AbstractView;
  * @since 4.1
  */
 public abstract class AbstractJackson2View extends AbstractView {
+	// AbstractJackson2View
+	// 这个是一个比较新的Viw（@since 4.1），它是基于Jackson渲染的视图。
 
 	private ObjectMapper objectMapper;
 
@@ -64,6 +66,7 @@ public abstract class AbstractJackson2View extends AbstractView {
 	protected boolean updateContentLength = false;
 
 
+	// 唯一构造函数，并且还是protected的~~
 	protected AbstractJackson2View(ObjectMapper objectMapper, String contentType) {
 		this.objectMapper = objectMapper;
 		configurePrettyPrint();
@@ -121,6 +124,7 @@ public abstract class AbstractJackson2View extends AbstractView {
 	}
 
 	private void configurePrettyPrint() {
+		// 在构造器中被调用或setPrettyPrint()中设置
 		if (this.prettyPrint != null) {
 			this.objectMapper.configure(SerializationFeature.INDENT_OUTPUT, this.prettyPrint);
 		}
@@ -131,6 +135,10 @@ public abstract class AbstractJackson2View extends AbstractView {
 	 * <p>Default is {@code true}, which will prevent the client from caching the generated JSON.
 	 */
 	public void setDisableCaching(boolean disableCaching) {
+		// 禁用生成的 JSON 的缓存。
+		// 默认为true ，这将阻止客户端缓存生成的 JSON。
+
+
 		this.disableCaching = disableCaching;
 	}
 
@@ -141,11 +149,14 @@ public abstract class AbstractJackson2View extends AbstractView {
 	 * <p>The default setting is {@code false}.
 	 */
 	public void setUpdateContentLength(boolean updateContentLength) {
+		// 是否更新响应的“Content-Length”标头。当设置为true时，响应被缓冲以确定内容长度并设置响应的“Content-Length”标头。
+		// 默认设置为false 。
 		this.updateContentLength = updateContentLength;
 	}
 
 	@Override
 	protected void prepareResponse(HttpServletRequest request, HttpServletResponse response) {
+		// 复写了父类的此方法~~~   setResponseContentType是父类的哟~~~~
 		setResponseContentType(request, response);
 		response.setCharacterEncoding(this.encoding.getJavaName());
 		if (this.disableCaching) {
@@ -156,10 +167,13 @@ public abstract class AbstractJackson2View extends AbstractView {
 	@Override
 	protected void renderMergedOutputModel(Map<String, Object> model, HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
+		// 实现了父类的渲染方法~~~~
 
 		ByteArrayOutputStream temporaryStream = null;
 		OutputStream stream;
 
+		// 1. 获取响应的输出流
+		// 注意此处：updateContentLength默认值是false,所以会直接从response里面把输出流拿出来,而不用temp流
 		if (this.updateContentLength) {
 			temporaryStream = createTemporaryOutputStream();
 			stream = temporaryStream;
@@ -168,7 +182,13 @@ public abstract class AbstractJackson2View extends AbstractView {
 			stream = response.getOutputStream();
 		}
 
+		// 2. 从model中过滤出需要的value,并包装MappingJacksonValue后发那会
 		Object value = filterAndWrapModel(model, request);
+
+		// 3. 将MappingJacksonValue的value写入到模型中
+		// 先通过stream得到一个JsonGenerator，然后先writePrefix(generator, object)
+		// 然后objectMapper.writerWithView
+		// 最后writeSuffix(generator, object);  然后flush即可~
 		writeContent(stream, value);
 
 		if (temporaryStream != null) {
@@ -183,19 +203,28 @@ public abstract class AbstractJackson2View extends AbstractView {
 	 * @return the wrapped or unwrapped value to be rendered
 	 */
 	protected Object filterAndWrapModel(Map<String, Object> model, HttpServletRequest request) {
+		// 从model中过滤出需要被当前视图使用的value,并将其包装到MappingJacksonValue中
+
+		// 1. filterModel抽象方法，从指定的model中筛选出需要展示在当前视图的属性值
+		// 一个Object对象
 		Object value = filterModel(model);
+
+		// 2. 把这两个属性值从model中取出来，选择性的放进container容器里面  最终返回~~~~
 		Class<?> serializationView = (Class<?>) model.get(JsonView.class.getName());
 		FilterProvider filters = (FilterProvider) model.get(FilterProvider.class.getName());
 		if (serializationView != null || filters != null) {
 			MappingJacksonValue container = new MappingJacksonValue(value);
 			if (serializationView != null) {
+				// 2.1 设置序列化的视图view
 				container.setSerializationView(serializationView);
 			}
 			if (filters != null) {
+				// 2.2 设置过滤器
 				container.setFilters(filters);
 			}
 			value = container;
 		}
+		// 2.3 返回 MappingJacksonValue
 		return value;
 	}
 
@@ -206,13 +235,18 @@ public abstract class AbstractJackson2View extends AbstractView {
 	 * @throws IOException if writing failed
 	 */
 	protected void writeContent(OutputStream stream, Object object) throws IOException {
+		// 将实际的 JSON 内容写入流。
+
+		// 1. 根据响应输出流\JSONEncoding来获取JsonGenerator
 		try (JsonGenerator generator = this.objectMapper.getFactory().createGenerator(stream, this.encoding)) {
+			// 1.1 在主要内容之前写一个前缀 [抽象]
 			writePrefix(generator, object);
 
 			Object value = object;
 			Class<?> serializationView = null;
 			FilterProvider filters = null;
 
+			// 1.2 MappingJacksonValue类型
 			if (value instanceof MappingJacksonValue) {
 				MappingJacksonValue container = (MappingJacksonValue) value;
 				value = container.getValue();
@@ -220,14 +254,17 @@ public abstract class AbstractJackson2View extends AbstractView {
 				filters = container.getFilters();
 			}
 
-			ObjectWriter objectWriter = (serializationView != null ?
-					this.objectMapper.writerWithView(serializationView) : this.objectMapper.writer());
+			// 1.3 配置 objectWriter
+			ObjectWriter objectWriter = (serializationView != null ? this.objectMapper.writerWithView(serializationView) : this.objectMapper.writer());
 			if (filters != null) {
 				objectWriter = objectWriter.with(filters);
 			}
+			// 1.3 开始写vlaue
 			objectWriter.writeValue(generator, value);
 
+			// 1.4 写一个后缀 [抽象]
 			writeSuffix(generator, object);
+			// 1.5 从缓冲区刷新出去
 			generator.flush();
 		}
 	}

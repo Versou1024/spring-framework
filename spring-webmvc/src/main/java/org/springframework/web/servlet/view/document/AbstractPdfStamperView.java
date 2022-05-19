@@ -48,24 +48,35 @@ import org.springframework.web.servlet.view.AbstractUrlBasedView;
  * @see AbstractPdfView
  */
 public abstract class AbstractPdfStamperView extends AbstractUrlBasedView {
+	// AbstractPdfStamperView
+	// 这个和AbstractPdfView有点类似，不过它出来相对较晚。因为它可以基于URL去渲染PDF，它也是个抽象类，Spring MVC并没有PDF的具体的视图实现~~
 
 	public AbstractPdfStamperView(){
+		// 设置contentType application/pdf
 		setContentType("application/pdf");
 	}
 
 
 	@Override
 	protected boolean generatesDownloadContent() {
+		// 返回此视图是否生成下载内容（通常是 PDF 或 Excel 文件等二进制内容）。
+		// 对于下载类型的请求,需要在response中添加一些额外的请求头,则在AbstractView中完成了模板方法
+		// 只需要打开开关即可
+
 		return true;
 	}
 
 	@Override
 	protected final void renderMergedOutputModel(
 			Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+		// 超类 AbstractView 的模板方法 render() 已经将需要的属性从model提取出来了,需要子类进行渲染
+		// 即当前类
 
 		// IE workaround: write into byte array first.
+		// 1. 创建临时的输出流Stream
 		ByteArrayOutputStream baos = createTemporaryOutputStream();
 
+		// 2. pdfReader
 		PdfReader reader = readPdfResource();
 		PdfStamper stamper = new PdfStamper(reader, baos);
 		mergePdfDocument(model, stamper, request, response);

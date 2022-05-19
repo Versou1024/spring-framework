@@ -40,6 +40,7 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @since 3.1
  */
 public class ExpressionValueMethodArgumentResolver extends AbstractNamedValueMethodArgumentResolver {
+	// 支持@Value注解
 
 	/**
 	 * Create a new {@link ExpressionValueMethodArgumentResolver} instance.
@@ -68,6 +69,7 @@ public class ExpressionValueMethodArgumentResolver extends AbstractNamedValueMet
 	@Nullable
 	protected Object resolveName(String name, MethodParameter parameter, NativeWebRequest webRequest) throws Exception {
 		// No name to resolve
+		// 不需要解析
 		return null;
 	}
 
@@ -80,6 +82,9 @@ public class ExpressionValueMethodArgumentResolver extends AbstractNamedValueMet
 	private static final class ExpressionValueNamedValueInfo extends NamedValueInfo {
 
 		private ExpressionValueNamedValueInfo(Value annotation) {
+			// name 固定为 @Value
+			// required 固定为 false
+			// defaultValue 就是 @Value的vlaue值
 			super("@Value", false, annotation.value());
 		}
 	}

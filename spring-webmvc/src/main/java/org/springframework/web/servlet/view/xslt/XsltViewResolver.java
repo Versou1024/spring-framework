@@ -35,6 +35,7 @@ import org.springframework.web.servlet.view.UrlBasedViewResolver;
  * @since 2.0
  */
 public class XsltViewResolver extends UrlBasedViewResolver {
+	// XsltViewResolver 将视图名解析为一个指定XSLT样式表的URL文件。比如解析成Excel表格形式、 World形式等等。此处略~
 
 	@Nullable
 	private String sourceKey;

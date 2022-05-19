@@ -47,8 +47,9 @@ import org.springframework.web.util.UrlPathHelper;
  */
 @Deprecated
 public class PathExtensionContentNegotiationStrategy extends AbstractMappingContentNegotiationStrategy {
+	// PathExtensionContentNegotiationStrategy 支持通过路径参数做内容协商
 
-	private UrlPathHelper urlPathHelper = new UrlPathHelper();
+	private UrlPathHelper urlPathHelper = new UrlPathHelper(); // 需要一个url解析器
 
 
 	/**
@@ -64,8 +65,8 @@ public class PathExtensionContentNegotiationStrategy extends AbstractMappingCont
 	 */
 	public PathExtensionContentNegotiationStrategy(@Nullable Map<String, MediaType> mediaTypes) {
 		super(mediaTypes);
-		setUseRegisteredExtensionsOnly(false);
-		setIgnoreUnknownExtensions(true);
+		setUseRegisteredExtensionsOnly(false);  // 不仅仅使用注册的Extensions
+		setIgnoreUnknownExtensions(true); // 忽略位置的extensions
 		this.urlPathHelper.setUrlDecode(false);
 	}
 
@@ -92,13 +93,19 @@ public class PathExtensionContentNegotiationStrategy extends AbstractMappingCont
 	@Override
 	@Nullable
 	protected String getMediaTypeKey(NativeWebRequest webRequest) {
+		// 核心: 从 request 从提取MediaType的key
+		// 据请求URL路径中所请求的文件资源的扩展名部分判断请求的MediaType（借助UrlPathHelper和UriUtils解析URL）。
+
 		HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
 		if (request == null) {
 			return null;
 		}
 		// Ignore LOOKUP_PATH attribute, use our own "fixed" UrlPathHelper with decoding off
+		// 1. 解析处lookupPath
 		String path = this.urlPathHelper.getLookupPathForRequest(request);
+		// 2. 然后提取出path的后缀
 		String extension = UriUtils.extractFileExtension(path);
+		// 3. 返回
 		return (StringUtils.hasText(extension) ? extension.toLowerCase(Locale.ENGLISH) : null);
 	}
 

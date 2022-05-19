@@ -34,12 +34,15 @@ import org.springframework.web.servlet.view.UrlBasedViewResolver;
  * @see ScriptTemplateConfigurer
  */
 public class ScriptTemplateViewResolver extends UrlBasedViewResolver {
+	// UrlBasedViewResolver 的便利子类，支持 ScriptTemplateView 及其自定义子类
+	// 不难看出 -- 这是一个和脚本渲染有关的处理器,会处理为ScriptTemplateView
 
 	/**
 	 * Sets the default {@link #setViewClass view class} to {@link #requiredViewClass}:
 	 * by default {@link ScriptTemplateView}.
 	 */
 	public ScriptTemplateViewResolver() {
+		// 设置viewClass就是requiredViewClass()
 		setViewClass(requiredViewClass());
 	}
 
@@ -51,6 +54,7 @@ public class ScriptTemplateViewResolver extends UrlBasedViewResolver {
 	 * @since 4.3
 	 */
 	public ScriptTemplateViewResolver(String prefix, String suffix) {
+		// 一个方便的构造函数，允许将prefix和suffix指定为构造函数参数
 		this();
 		setPrefix(prefix);
 		setSuffix(suffix);

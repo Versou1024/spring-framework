@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.CookieValue;
  * @since 3.1
  */
 public abstract class AbstractCookieValueMethodArgumentResolver extends AbstractNamedValueMethodArgumentResolver {
+	// 支持 @CookieValue 注解
 
 	/**
 	 * Crate a new {@link AbstractCookieValueMethodArgumentResolver} instance.

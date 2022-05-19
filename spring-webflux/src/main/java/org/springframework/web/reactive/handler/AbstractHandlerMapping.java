@@ -49,7 +49,7 @@ import org.springframework.web.util.pattern.PathPatternParser;
 public abstract class AbstractHandlerMapping extends ApplicationObjectSupport
 		implements HandlerMapping, Ordered, BeanNameAware {
 
-	/**
+	/*
 	 * HandlerMapping：定义getHandle方法
 	 * Ordered接口：允许排序
 	 * BeanNameAware：聚合当前具体类的BeanName，取决于实现类的BeanName
@@ -62,9 +62,9 @@ public abstract class AbstractHandlerMapping extends ApplicationObjectSupport
 	private final PathPatternParser patternParser;
 
 	@Nullable
-	private CorsConfigurationSource corsConfigurationSource;
+	private CorsConfigurationSource corsConfigurationSource; // 跨域配置Source
 
-	private CorsProcessor corsProcessor = new DefaultCorsProcessor();
+	private CorsProcessor corsProcessor = new DefaultCorsProcessor(); // 跨域处理器
 
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
 
@@ -185,6 +185,8 @@ public abstract class AbstractHandlerMapping extends ApplicationObjectSupport
 
 	@Override
 	public Mono<Object> getHandler(ServerWebExchange exchange) {
+		// 获取Handler
+		// 核心 -- getHandlerInternal(exchange)
 		return getHandlerInternal(exchange).map(handler -> {
 			if (logger.isDebugEnabled()) {
 				logger.debug(exchange.getLogPrefix() + "Mapped to " + handler);

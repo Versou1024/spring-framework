@@ -41,6 +41,13 @@ import org.springframework.core.annotation.AliasFor;
 @Documented
 public @interface RequestAttribute {
 
+	// @RequestAttribute 注解比前面介绍的那些@ModelAttribute、@SessionAttributes等注解要简单很多，它只能使用在方法入参上。作用：从request中取对应的属性值。
+	// @RequestAttribute只负责从request里面取属性值，至于你什么时候往里放值，是有多种方式的可以达到的
+	// 比如:
+	// 		@ModelAttribute注解预存
+	//		HandlerInterceptor拦截器中预存
+	//		请求转发带过来
+
 	/**
 	 * Alias for {@link #name}.
 	 */

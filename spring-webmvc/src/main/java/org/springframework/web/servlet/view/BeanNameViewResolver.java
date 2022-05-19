@@ -53,13 +53,8 @@ import org.springframework.web.servlet.ViewResolver;
  * @see UrlBasedViewResolver
  */
 public class BeanNameViewResolver extends WebApplicationObjectSupport implements ViewResolver, Ordered {
-	/*
-	 * 实现order接口，以及ViewResolver视图解析器接口
-	 *
-	 * 参数解析 -- 依据试讲viewName作为BeanName解析
-	 *
-	 * 关注：ViewResolver#resolveViewName 方法
-	 */
+	// BeanNameViewResolver
+	//它是对ViewResolver的一个比较简单的实现，在Spring第一个版本就推出了。通过把返回的逻辑视图名称去匹配定义好的视图 bean 对象。（也就是说如果你返回的逻辑视图名称为test，那么它就会去容器内找到这个View，然后返回）
 
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
 
@@ -83,20 +78,21 @@ public class BeanNameViewResolver extends WebApplicationObjectSupport implements
 	@Nullable
 	public View resolveViewName(String viewName, Locale locale) throws BeansException {
 		// 根据viewName和locale进行转换为viewName
+
 		ApplicationContext context = obtainApplicationContext();
+		// 1. 上下文中是否存在指定viewName的Bean，没有就返回null,让下一个ViewResolver去处理
 		if (!context.containsBean(viewName)) {
-			// 上下文中是否存在指定的Bean，有的话，就不需要创建view了，这是属于转发
 			return null;
 		}
-		// context中是否存在bean类型为View类型的
+		// 2. context中是否存在bean类型为View类型,且为beanName为viewName的
 		if (!context.isTypeMatch(viewName, View.class)) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Found bean named '" + viewName + "' but it does not implement View");
 			}
-			// context中不存在，就直接返回null
+			// 2.1 context中不存在，就直接返回null
 			return null;
 		}
-		// 获取指定viewName的View类型的Bean
+		// 3. 获取指定viewName的View类型的Bean
 		return context.getBean(viewName, View.class);
 	}
 

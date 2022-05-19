@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.ConversionNotSupportedException;
 import org.springframework.beans.TypeMismatchException;
@@ -63,22 +64,20 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * @since 3.1
  */
 public abstract class AbstractNamedValueMethodArgumentResolver implements HandlerMethodArgumentResolver {
-	/**
-	 * 抽象基础类，实现HandlerMethodArgumentResolver，用于解析参数
-	 *
-	 * 作用
-	 * 1、聚合可配置BeanFactory、Bean表达式上下下问
-	 * 2、主要用于通过名字以及value做解析操作
-	 * 	-- 例如@RequestParam(name="id")表示请求参数id
-	 */
+	// @since 3.1  负责从路径变量、请求、头等中拿到值。（都可以指定name、required、默认值等属性）
+	// 子类需要做如下事：获取方法参数的命名值信息、将名称解析为参数值
+	// 当需要参数值时处理缺少的参数值、可选地处理解析值
+
+	//特别注意的是：默认值可以使用${}占位符，或者SpEL语句#{}是木有问题的
 
 	@Nullable
-	private final ConfigurableBeanFactory configurableBeanFactory;
+	private final ConfigurableBeanFactory configurableBeanFactory; // BeanFactory
 
 	@Nullable
-	private final BeanExpressionContext expressionContext;
+	private final BeanExpressionContext expressionContext; // spel 表达式解析器
 
 	private final Map<MethodParameter, NamedValueInfo> namedValueInfoCache = new ConcurrentHashMap<>(256);
+	// 缓存 - MethodParameter 对应 NamedValueInfo
 
 
 	public AbstractNamedValueMethodArgumentResolver() {
@@ -101,16 +100,24 @@ public abstract class AbstractNamedValueMethodArgumentResolver implements Handle
 
 	@Override
 	@Nullable
+	// 注意此方法是final的，并不希望子类覆盖掉他~
 	public final Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 		// 核心方法 -- 解析参数
+		// 对此部分的处理步骤，我把它简述如下：
+		//		基于MethodParameter构建NameValueInfo <-- 主要有name, defaultValue, required（其实主要是解析方法参数上标注的注解~）
+		//		通过BeanExpressionResolver(解析${}占位符以及SpEL的#{}) 解析name
+		//		通过模版方法resolveName从 HttpServletRequest\Http Headers\URI template variables 等等中获取对应的属性值（具体由子类去实现）
+		//		对 arg==null这种情况的处理, 要么使用默认值, 若 required = true && arg == null, 则一般报出异常（boolean类型除外~）
+		//		通过WebDataBinder将arg转换成Methodparameter.getParameterType()类型（注意：这里仅仅只是用了数据转换而已，并没有用bind()方法）
 
 		// 1、获取形参上的注解并形成NamedValueInfo
 		NamedValueInfo namedValueInfo = getNamedValueInfo(parameter);
-		// 2、parameter不是OPTIONAL类型时，原路返回，否则从OPTIONAL获取实际的请求参数
+		// 2、支持到了Java 8 中支持的 java.util.Optional
 		MethodParameter nestedParameter = parameter.nestedIfOptional();
 
-		// 3、解析name属性中的#{}与${}
+		// 3. name属性（也就是注解标注的value/name属性）这里既会解析占位符，还会解析SpEL表达式，非常强大
+		// 因为此时的 name 可能还是被 ${} 符号包裹, 则通过 BeanExpressionResolver 来进行解析
 		Object resolvedName = resolveEmbeddedValuesAndExpressions(namedValueInfo.name);
 		if (resolvedName == null) {
 			throw new IllegalArgumentException(
@@ -118,24 +125,44 @@ public abstract class AbstractNamedValueMethodArgumentResolver implements Handle
 		}
 
 		// 4、【抽象方法】通过resolvedName和nestedParameter，去webQuest中查找指定名字的resolvedName的value
+		// 模版抽象方法：将给定的参数类型和值名称解析为参数值。  由子类去实现
+		// @PathVariable     --> 通过对uri解析后得到的decodedUriVariables值(常用)
+		// @RequestParam     --> 通过 HttpServletRequest.getParameterValues(name) 获取（常用）
+		// @RequestAttribute --> 通过 HttpServletRequest.getAttribute(name) 获取   <-- 这里的 scope 是 request
+		// @SessionAttribute --> 略
+		// @RequestHeader    --> 通过 HttpServletRequest.getHeaderValues(name) 获取
+		// @CookieValue      --> 通过 HttpServletRequest.getCookies() 获取
 		Object arg = resolveName(resolvedName.toString(), nestedParameter, webRequest);
+		// 若解析出来值仍旧为null，那就走defaultValue （若指定了的话）
 		if (arg == null) {
 			// 5、通过resolvedName查找解析失败，说明webRequest中不存在指定的resolveName
 			if (namedValueInfo.defaultValue != null) {
-				// 6、注解上有默认值，就使用默认值做绑定 -- 同样也需要解析defaultValue中的占位符${}，以及Spel表达式解析#{}
+				// 6、注解上有默认值，就使用默认值做绑定 --
+				// 同样也需要解析defaultValue中的占位符${}，以及Spel表达式解析#{}
 				arg = resolveEmbeddedValuesAndExpressions(namedValueInfo.defaultValue);
 			}
 			else if (namedValueInfo.required && !nestedParameter.isOptional()) {
-				// 7、defaultValue默认值也不存在，但要求必须存在对应的值时，且不是特殊的Optional值，因此只能进行报错
+				// 7、defaultValue默认值也不存在，但要求必须存在对应的值时，且不是特殊的Optional值，因此需要处理miss value时的情况
+				// 它是个protected方法，默认抛出ServletRequestBindingException异常
+				// 各子类都复写了此方法，转而抛出自己的异常（但都是ServletRequestBindingException的异常子类）
 				handleMissingValue(namedValueInfo.name, nestedParameter, webRequest);
 			}
 			// 8、执行到此，说明允许设置为null值/False值
+			// handleNullValue是private方法，来处理null值
+			// 针对Boolean类型有这个判断：Boolean.TYPE.equals(paramType) 就return Boolean.FALSE;
+			// 此处注意：Boolean.TYPE = Class.getPrimitiveClass("boolean") 它指的基本类型的boolean，而不是Boolean类型哦~~~
+			// 如果到了这一步（value是null），但你还是基本类型，那就抛出异常了（只有boolean类型不会抛异常哦~）
+			// 这里多嘴一句，即使请求传值为&bool=1，效果同bool=true的（1：true 0：false） 并且不区分大小写哦（TrUe效果同true）
 			arg = handleNullValue(namedValueInfo.name, arg, nestedParameter.getNestedParameterType());
 		}
 		// 10、通过name找到对应的需要填充的值，但填充的值为空字符串，且defaultValue不为空，就直接用defaultValue代替找到的填充值""
+		// 兼容空串，若传入的是空串，依旧还是使用默认值（默认值支持占位符和SpEL）
 		else if ("".equals(arg) && namedValueInfo.defaultValue != null) {
 			arg = resolveEmbeddedValuesAndExpressions(namedValueInfo.defaultValue);
 		}
+
+		// 完成自动化的数据绑定~~~
+
 
 		if (binderFactory != null) {
 			// 11、WebDataBinderFactory为webRequest创建DataBinder -- 表示绑定的参数来自webRequest，绑定对象的名为namedValueInfo.name
@@ -146,18 +173,23 @@ public abstract class AbstractNamedValueMethodArgumentResolver implements Handle
 				arg = binder.convertIfNecessary(arg, parameter.getParameterType(), parameter);
 			}
 			catch (ConversionNotSupportedException ex) {
+				// 注意这个异常：MethodArgumentConversionNotSupportedException  类型不匹配的异常
 				throw new MethodArgumentConversionNotSupportedException(arg, ex.getRequiredType(),
 						namedValueInfo.name, parameter, ex.getCause());
 			}
 			catch (TypeMismatchException ex) {
+				// //MethodArgumentTypeMismatchException是TypeMismatchException 的子类
 				throw new MethodArgumentTypeMismatchException(arg, ex.getRequiredType(),
 						namedValueInfo.name, parameter, ex.getCause());
 			}
 		}
 
 		// 13、处理解析出来的结果
+		// protected的方法，本类为空实现，交给子类去复写（并不是必须的）
+		// 唯独只有 PathVariableMethodArgumentResolver实现该方法,把解析处理的值存储到 HttpServletRequest.setAttribute中（若key已经存在也不会存储了）
 		handleResolvedValue(arg, namedValueInfo.name, parameter, mavContainer, webRequest);
 
+		// 14. 返回参数arg
 		return arg;
 	}
 
@@ -165,13 +197,17 @@ public abstract class AbstractNamedValueMethodArgumentResolver implements Handle
 	 * Obtain the named value for the given method parameter.
 	 */
 	private NamedValueInfo getNamedValueInfo(MethodParameter parameter) {
+		// 模板方法 -- 主要是在提供一个缓存的存取的模板,核心方法还是子类实现 createNamedValueInfo(parameter)
+
 		// 检查缓存中parameter是否有对应的NamedValueInfo -- 提供上层的缓存，而具体的创建create或者update更新都是交给子类
 		NamedValueInfo namedValueInfo = this.namedValueInfoCache.get(parameter);
 		if (namedValueInfo == null) {
-			// 缓存未命中
-			namedValueInfo = createNamedValueInfo(parameter); // 【抽象】根据形参的注解或者形参创建NamedValueInfo
-			namedValueInfo = updateNamedValueInfo(parameter, namedValueInfo); // 更新NamedValueInfo
-			// 存入缓存中
+			// 1. 缓存未命中,根据形参parameter创建NameValueInfo
+			// 【抽象】根据形参的注解或者形参创建NamedValueInfo
+			namedValueInfo = createNamedValueInfo(parameter);
+			// 2. 更新NamedValueInfo,没有name时需要更新name,没有defaultValue时的更新默认值
+			namedValueInfo = updateNamedValueInfo(parameter, namedValueInfo);
+			// 3. 存入缓存中
 			this.namedValueInfoCache.put(parameter, namedValueInfo);
 		}
 		return namedValueInfo;
@@ -184,15 +220,15 @@ public abstract class AbstractNamedValueMethodArgumentResolver implements Handle
 	 * @return the named value information
 	 */
 	protected abstract NamedValueInfo createNamedValueInfo(MethodParameter parameter);
+	// 根据形参的注解或者形参创建NamedValueInfo
 
 	/**
 	 * Create a new NamedValueInfo based on the given NamedValueInfo with sanitized values.
 	 */
 	private NamedValueInfo updateNamedValueInfo(MethodParameter parameter, NamedValueInfo info) {
-		/**
-		 * 更新NamedValueInfo
-		 * 1、当info.name不存在时，表明注解上没有指定的name属性。因而直接将形参名作为name设置到info中
-		 */
+		// 更新NamedValueInfo
+
+		// 1. 当info.name不存在时，表明注解上没有指定的name属性。因而直接将形参名作为name设置到info中
 		String name = info.name;
 		if (info.name.isEmpty()) {
 			name = parameter.getParameterName();
@@ -202,7 +238,7 @@ public abstract class AbstractNamedValueMethodArgumentResolver implements Handle
 						"] not specified, and parameter name information not found in class file either.");
 			}
 		}
-		// 注解中是否设置过defaultValue，如果没有就返回null，有的话就是用info.defaultValue
+		// 2. 注解中是否设置过defaultValue，如果没有就返回null，有的话就是用info.defaultValue
 		String defaultValue = (ValueConstants.DEFAULT_NONE.equals(info.defaultValue) ? null : info.defaultValue);
 		return new NamedValueInfo(name, info.required, defaultValue);
 	}
@@ -303,7 +339,7 @@ public abstract class AbstractNamedValueMethodArgumentResolver implements Handle
 	 * Represents the information about a named value, including name, whether it's required and a default value.
 	 */
 	protected static class NamedValueInfo {
-		/**
+		/*
 		 * 封装类：
 		 * 封装注解@PathVariable、@RequestParam等请求参数中的name、是否必须的required、是否有默认值 defaultValue
 		 */

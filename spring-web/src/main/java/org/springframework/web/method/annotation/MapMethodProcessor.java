@@ -60,6 +60,8 @@ public class MapMethodProcessor implements HandlerMethodArgumentResolver, Handle
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
+		// 优先级很低
+		// 支持Map类型
 		return Map.class.isAssignableFrom(returnType.getParameterType());
 	}
 

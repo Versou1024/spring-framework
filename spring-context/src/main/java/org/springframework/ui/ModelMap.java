@@ -132,6 +132,7 @@ public class ModelMap extends LinkedHashMap<String, Object> {
 
 		if (attributes != null) {
 			attributes.forEach((key, value) -> {
+				// 注意:属性不会覆盖
 				if (!containsKey(key)) {
 					put(key, value);
 				}

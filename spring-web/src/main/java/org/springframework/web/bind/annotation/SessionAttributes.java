@@ -55,7 +55,7 @@ import org.springframework.core.annotation.AliasFor;
  * @author Sam Brannen
  * @since 2.5
  */
-@Target({ElementType.TYPE})
+@Target({ElementType.TYPE}) //  它只能标注在类上
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
@@ -66,6 +66,7 @@ public @interface SessionAttributes {
 	 */
 	@AliasFor("names")
 	String[] value() default {};
+	// 只有名称匹配上了的  Model上的属性会向session里放置一份~~~
 
 	/**
 	 * The names of session attributes in the model that should be stored in the

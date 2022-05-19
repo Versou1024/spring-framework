@@ -83,10 +83,13 @@ public class HttpHeaders implements MultiValueMap<String, String>, Serializable 
 	 * 		set(String, String)将标头值设置为单个字符串值
 	 *
 	 * 重点在于：组合有一个MultiValueMap<String,String>的headers属性
+	 *
+	 *  注意实现了MultiValueMap接口哦
 	 */
 
 	private static final long serialVersionUID = -8578554704772377436L;
 
+	// 支持的请求头
 
 	/**
 	 * The HTTP {@code Accept} header field name.
@@ -423,6 +426,7 @@ public class HttpHeaders implements MultiValueMap<String, String>, Serializable 
 	};
 
 
+	// 核心容器 -- 使用一个MultiValueMap
 	final MultiValueMap<String, String> headers;
 
 

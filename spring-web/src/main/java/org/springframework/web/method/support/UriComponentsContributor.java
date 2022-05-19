@@ -33,11 +33,15 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @since 4.0
  */
 public interface UriComponentsContributor {
+	// 通过查看方法参数和参数值并决定应该更新目标 URL 的哪一部分
+	// 来为UriComponents的build做出
 
 	/**
 	 * Whether this contributor supports the given method parameter.
 	 */
 	boolean supportsParameter(MethodParameter parameter);
+	// 是否支持解析这个参数parameter
+	// 和 HandlerMethodArgumentResolver的supportsParameter()一样
 
 	/**
 	 * Process the given method argument and either update the
@@ -51,5 +55,12 @@ public interface UriComponentsContributor {
 	 */
 	void contributeMethodArgument(MethodParameter parameter, Object value, UriComponentsBuilder builder,
 			Map<String, Object> uriVariables, ConversionService conversionService);
+	// 处理给定的方法参数并更新UriComponentsBuilder或使用 URI 变量添加到映射中，以便在处理完所有参数后扩展 URI。
+	//参数：
+	//		parameter - 控制器方法的形参（从不为null ）
+	//		value – 传入的参数值（可能为null ）
+	//		builder – 要更新的url构建器（从不为null ）
+	//		uriVariables – 将 URI 变量添加到的映射（从不为null ）
+	//		ConversionService – 将值格式化为字符串的 ConversionService
 
 }

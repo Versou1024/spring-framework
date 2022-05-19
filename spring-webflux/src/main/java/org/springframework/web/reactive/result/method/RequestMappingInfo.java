@@ -237,35 +237,46 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	@Override
 	@Nullable
 	public RequestMappingInfo getMatchingCondition(ServerWebExchange exchange) {
+		// RequestMappingInfo 根据请求exchage做判断
+
+
+		// 1. 判断请求方式
 		RequestMethodsRequestCondition methods = this.methodsCondition.getMatchingCondition(exchange);
 		if (methods == null) {
 			return null;
 		}
+		// 2. 判断params
 		ParamsRequestCondition params = this.paramsCondition.getMatchingCondition(exchange);
 		if (params == null) {
 			return null;
 		}
+		// 3. 判断Headers
 		HeadersRequestCondition headers = this.headersCondition.getMatchingCondition(exchange);
 		if (headers == null) {
 			return null;
 		}
-		// Match "Content-Type" and "Accept" (parsed ones and cached) before patterns
+		// 4. 判断 content-type
 		ConsumesRequestCondition consumes = this.consumesCondition.getMatchingCondition(exchange);
 		if (consumes == null) {
 			return null;
 		}
+		// 5. 判断 accept 请求头
 		ProducesRequestCondition produces = this.producesCondition.getMatchingCondition(exchange);
 		if (produces == null) {
 			return null;
 		}
+		// 6. 判断 路径 url
 		PatternsRequestCondition patterns = this.patternsCondition.getMatchingCondition(exchange);
 		if (patterns == null) {
 			return null;
 		}
+		// 7. 用户定制的RequestCondition做判断
 		RequestConditionHolder custom = this.customConditionHolder.getMatchingCondition(exchange);
 		if (custom == null) {
 			return null;
 		}
+
+		// 8. 经过所有验证,返回RequestMappingInfo
 		return new RequestMappingInfo(this.name, patterns,
 				methods, params, headers, consumes, produces, custom.getCondition());
 	}

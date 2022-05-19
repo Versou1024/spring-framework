@@ -63,16 +63,23 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @since 3.1
  */
 public class PathVariableMethodArgumentResolver extends AbstractNamedValueMethodArgumentResolver implements UriComponentsContributor {
+	// 支持@PathVariable路径变量修饰的参数值
 
 	private static final TypeDescriptor STRING_TYPE_DESCRIPTOR = TypeDescriptor.valueOf(String.class);
 
 
 	@Override
 	public boolean supportsParameter(MethodParameter parameter) {
-		// 所支持的请求参数是什么类型的 -- 即@PathVariable注解的，类型不是map的
+		// 所支持的请求参数是什么类型的 -- 即@PathVariable注解
+		// 简单一句话描述：@PathVariable是必须，不管你啥类型
+		// 标注了注解，且是Map类型
+
+		// 1. 没有@PathVariable,就不支持
 		if (!parameter.hasParameterAnnotation(PathVariable.class)) {
 			return false;
 		}
+		// 2. 到此处,表明有@PathVariable注解
+		// 如果是Map类型的,那么@PathVariable就必须要有value值,否则不会支持
 		if (Map.class.isAssignableFrom(parameter.nestedIfOptional().getNestedParameterType())) {
 			PathVariable pathVariable = parameter.getParameterAnnotation(PathVariable.class);
 			return (pathVariable != null && StringUtils.hasText(pathVariable.value()));
@@ -92,7 +99,13 @@ public class PathVariableMethodArgumentResolver extends AbstractNamedValueMethod
 	@SuppressWarnings("unchecked")
 	@Nullable
 	protected Object resolveName(String name, MethodParameter parameter, NativeWebRequest request) throws Exception {
-		// 根据已经解析的name，去request中查找是否有对应的值
+		// 根据已经解析的name，去request中查找是否有对应的值URI_TEMPLATE_VARIABLES_ATTRIBUTE属性值即可
+
+		// 根据name去拿值的过程非常之简单，但是它和前面的只知识是有关联的
+		// 至于这个attr是什么时候放进去的，AbstractHandlerMethodMapping.handleMatch()匹配处理器方法上
+		// 通过UrlPathHelper.decodePathVariables() 把参数提取出来了，然后放进request属性上暂存了~~~
+		// 关于HandlerMapping内容，可来这里：https://blog.csdn.net/f641385712/article/details/89810020
+
 		Map<String, String> uriTemplateVars = (Map<String, String>) request.getAttribute(
 				HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
 		return (uriTemplateVars != null ? uriTemplateVars.get(name) : null);
@@ -100,7 +113,7 @@ public class PathVariableMethodArgumentResolver extends AbstractNamedValueMethod
 
 	@Override
 	protected void handleMissingValue(String name, MethodParameter parameter) throws ServletRequestBindingException {
-		// 根据name无法查找到，且没有默认值，且required=true，就只能报出异常
+		// 根据name无法在request查找到对应的路径变量，且没有默认值，且required=true，就只能报出自己的异常
 		throw new MissingPathVariableException(name, parameter);
 	}
 
@@ -108,7 +121,9 @@ public class PathVariableMethodArgumentResolver extends AbstractNamedValueMethod
 	@SuppressWarnings("unchecked")
 	protected void handleResolvedValue(@Nullable Object arg, String name, MethodParameter parameter,
 			@Nullable ModelAndViewContainer mavContainer, NativeWebRequest request) {
-		// 处理被解析后的结果 -- 例如设置到Attribute属性总共
+		// 处理成功解析后的结果 -- 需要将其设置到Attribute属性中
+		// 值完全处理结束后，把处理好的值放进请求域，方便view里渲染时候使用~
+		// 抽象父类的handleResolvedValue方法，只有它复写了~
 		String key = View.PATH_VARIABLES;
 		int scope = RequestAttributes.SCOPE_REQUEST;
 		Map<String, Object> pathVars = (Map<String, Object>) request.getAttribute(key, scope);
@@ -120,24 +135,30 @@ public class PathVariableMethodArgumentResolver extends AbstractNamedValueMethod
 	}
 
 	@Override
-	public void contributeMethodArgument(MethodParameter parameter, Object value,
-			UriComponentsBuilder builder, Map<String, Object> uriVariables, ConversionService conversionService) {
+	public void contributeMethodArgument(MethodParameter parameter, Object value, UriComponentsBuilder builder, Map<String, Object> uriVariables, ConversionService conversionService) {
 
+		// 1. parameter是map类型的,或者Optional<Map>类型的
 		if (Map.class.isAssignableFrom(parameter.nestedIfOptional().getNestedParameterType())) {
 			return;
 		}
 
+		// 2. 获取@PathVariable注解
 		PathVariable ann = parameter.getParameterAnnotation(PathVariable.class);
+		// 3. name 可以是形参名,也可以是 PathVariable.value() 值
 		String name = (ann != null && StringUtils.hasLength(ann.value()) ? ann.value() : parameter.getParameterName());
+		// 4. 利用 ConversionService 转换
 		String formatted = formatUriValue(conversionService, new TypeDescriptor(parameter.nestedIfOptional()), value);
+		// 5. uriVariables 变量 name + formatted
 		uriVariables.put(name, formatted);
 	}
 
 	@Nullable
 	protected String formatUriValue(@Nullable ConversionService cs, @Nullable TypeDescriptor sourceType, Object value) {
+		// 1. String直接返回
 		if (value instanceof String) {
 			return (String) value;
 		}
+		// 2. 其余类型,利用cs转为String类型
 		else if (cs != null) {
 			return (String) cs.convert(value, sourceType, STRING_TYPE_DESCRIPTOR);
 		}
