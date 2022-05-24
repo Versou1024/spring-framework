@@ -30,6 +30,7 @@ import org.springframework.util.StringUtils;
  * @see UUID#fromString
  */
 final class StringToUUIDConverter implements Converter<String, UUID> {
+	// 根据toString方法中描述的字符串标准表示创建UUID
 
 	@Override
 	@Nullable

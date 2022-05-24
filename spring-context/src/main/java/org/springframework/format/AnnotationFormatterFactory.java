@@ -31,11 +31,14 @@ import java.util.Set;
  * @param <A> the annotation type that should trigger formatting
  */
 public interface AnnotationFormatterFactory<A extends Annotation> {
+	// 它是一个工厂，专门创建出处理（格式化）指定字段field上标注有指定注解的。（Spring内助了两个常用注解：@DateTimeFormat和@NumberFormat）
+	// 我们常说的，要自定义注解来处理参数的格式化，就需要实现接口来自定义一个处理类。
 
 	/**
 	 * The types of fields that may be annotated with the &lt;A&gt; annotation.
 	 */
 	Set<Class<?>> getFieldTypes();
+	// 注解 A 可以注解的的Class类型是哪些
 
 	/**
 	 * Get the Printer to print the value of a field of {@code fieldType} annotated with
@@ -47,6 +50,10 @@ public interface AnnotationFormatterFactory<A extends Annotation> {
 	 * @return the printer
 	 */
 	Printer<?> getPrinter(A annotation, Class<?> fieldType);
+	//	参数：
+	//		annotation - 注解实例
+	//		fieldType – 被注解的字段类型
+	//  对标注有指定注解的字段进行格式化输出~~
 
 	/**
 	 * Get the Parser to parse a submitted value for a field of {@code fieldType}
@@ -58,5 +65,6 @@ public interface AnnotationFormatterFactory<A extends Annotation> {
 	 * @return the parser
 	 */
 	Parser<?> getParser(A annotation, Class<?> fieldType);
+	// 对标注有指定注解的字段进行格式化解析~~~
 
 }

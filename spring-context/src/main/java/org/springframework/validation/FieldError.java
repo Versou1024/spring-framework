@@ -34,13 +34,15 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class FieldError extends ObjectError {
+	// 在 ObjectError 下扩展的 FieldError
+	// 扩展 field/rejectedValue/bindingFailure
 
-	private final String field;
+	private final String field; // 对象的受影响字段
 
 	@Nullable
-	private final Object rejectedValue;
+	private final Object rejectedValue; // 被拒绝的字段值。
 
-	private final boolean bindingFailure;
+	private final boolean bindingFailure; // 错误是否表示绑定失败（如类型不匹配）；否则是验证失败
 
 
 	/**

@@ -31,6 +31,8 @@ import org.springframework.util.StringUtils;
  * @since 4.2
  */
 public class FormatterPropertyEditorAdapter extends PropertyEditorSupport {
+	// 继承自 PropertyEditorSupport
+	// 完成 formatter到PropertyEditor的转换
 
 	private final Formatter<Object> formatter;
 
@@ -62,6 +64,7 @@ public class FormatterPropertyEditorAdapter extends PropertyEditorSupport {
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasText(text)) {
 			try {
+				// setValue 之前,用formatter将text做一个解析parse
 				setValue(this.formatter.parse(text, LocaleContextHolder.getLocale()));
 			}
 			catch (IllegalArgumentException ex) {
@@ -78,6 +81,8 @@ public class FormatterPropertyEditorAdapter extends PropertyEditorSupport {
 
 	@Override
 	public String getAsText() {
+		// getValue之后
+		// 使用 formatter最value转换为String类的
 		Object value = getValue();
 		return (value != null ? this.formatter.print(value, LocaleContextHolder.getLocale()) : "");
 	}

@@ -35,15 +35,17 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public class CustomValidatorBean extends SpringValidatorAdapter implements Validator, InitializingBean {
+	// 可配置（Custom）的Bean类，也同样的实现了双接口。它可以配置ValidatorFactory验证器工厂、MessageInterpolator插值器等…
+
+	// 可配置以下三个配置项
+	@Nullable
+	private ValidatorFactory validatorFactory; // javax 的校验器工厂
 
 	@Nullable
-	private ValidatorFactory validatorFactory;
+	private MessageInterpolator messageInterpolator; // 消息插值器
 
 	@Nullable
-	private MessageInterpolator messageInterpolator;
-
-	@Nullable
-	private TraversableResolver traversableResolver;
+	private TraversableResolver traversableResolver; // 可转移解析器
 
 
 	/**
@@ -71,20 +73,29 @@ public class CustomValidatorBean extends SpringValidatorAdapter implements Valid
 
 	@Override
 	public void afterPropertiesSet() {
+		// 初始化操作
+
 		if (this.validatorFactory == null) {
+			// 1. 构建默认的validatorFactory
 			this.validatorFactory = Validation.buildDefaultValidatorFactory();
 		}
 
+		// 2. 获取 ValidatorContext
 		ValidatorContext validatorContext = this.validatorFactory.usingContext();
+		// 3. 用户设置的 messageInterpolator 不存在,就获取默认的 validatorFactory.getMessageInterpolator()
 		MessageInterpolator targetInterpolator = this.messageInterpolator;
 		if (targetInterpolator == null) {
 			targetInterpolator = this.validatorFactory.getMessageInterpolator();
 		}
 		validatorContext.messageInterpolator(new LocaleContextMessageInterpolator(targetInterpolator));
+		// 4. traversableResolver 也是类似的
 		if (this.traversableResolver != null) {
 			validatorContext.traversableResolver(this.traversableResolver);
 		}
 
+		// 5. 最重要的,将Validator设置到适配器中
+		// 这里就是最重要的一步哦: -- 将 Hibernate 的 Validator 拿出来赋给 SpringValidatorAdapter 的 targetValidator 属性
+		// 真不错
 		setTargetValidator(validatorContext.getValidator());
 	}
 

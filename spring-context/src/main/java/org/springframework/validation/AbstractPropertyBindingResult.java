@@ -42,9 +42,17 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractPropertyBindingResult extends AbstractBindingResult {
-	/**
+	/*
 	 * 抽象类AbstractBindingResult的实现
-	 * 扩展引入：ConversionService
+	 * 扩展引入：ConversionService -- 能够根据 PropertyEditor 以及 Converter 做属性转换
+	 *
+	 * 同时提供了抽象方法:public abstract ConfigurablePropertyAccessor getPropertyAccessor();
+	 * 通过委托子类创建相应的 PropertyAccessor 方法预先实现字段访问。
+	 * 两个子类:
+	 * 		DirectFieldBindingResult  内部使用的属性访问器是 DirectFieldAccessor
+	 * 		BeanPropertyBindingResult 内部使用的属性访问器是 BeanWrapperImpl
+	 *
+	 * conversionService 是属性访问器所需要的公共属性
 	 */
 
 	@Nullable
@@ -65,6 +73,7 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 		Assert.notNull(conversionService, "ConversionService must not be null");
 		this.conversionService = conversionService;
 		if (getTarget() != null) {
+			// 从这里可以看出:  conversionService 是属性访问器所需要的公共属性
 			getPropertyAccessor().setConversionService(conversionService);
 		}
 	}
@@ -75,6 +84,7 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 	 */
 	@Override
 	public PropertyEditorRegistry getPropertyEditorRegistry() {
+		// 获取属性编辑器注册中心
 		return (getTarget() != null ? getPropertyAccessor() : null);
 	}
 

@@ -42,6 +42,7 @@ public class InitBinderDataBinderFactory extends DefaultDataBinderFactory {
 	 *
 	 * 扩展
 	 * 1、初始化@InitBinder的方法容器
+	 * 2. 重写扩展方法InitBinder,执行@InitBInder的方法,对WebDataBinder做增强配置
 	 */
 
 	private final List<InvocableHandlerMethod> binderMethods;
@@ -54,7 +55,7 @@ public class InitBinderDataBinderFactory extends DefaultDataBinderFactory {
 	 */
 	public InitBinderDataBinderFactory(@Nullable List<InvocableHandlerMethod> binderMethods,
 			@Nullable WebBindingInitializer initializer) {
-
+		// 需要指定: initializer\binderMethods
 		super(initializer);
 		this.binderMethods = (binderMethods != null ? binderMethods : Collections.emptyList());
 	}
@@ -69,12 +70,17 @@ public class InitBinderDataBinderFactory extends DefaultDataBinderFactory {
 	 */
 	@Override
 	public void initBinder(WebDataBinder dataBinder, NativeWebRequest request) throws Exception {
+		// 上面知道此方法的调用方法生initializer.initBinder之后
+		// 所以使用注解它生效的时机是在直接实现接口的后面的~
+
+		// 1. 执行所有@InitBinder的方法. -- 包括全局的,以及Controller局部的
+		// 这些方法的参数都是 WebDataBinder,因此用户可以向其中注册属性编辑器\转换器都是ok的
+		// 同时需要注意:@InitBinder不能返回任何值,否则抛出异常
 		for (InvocableHandlerMethod binderMethod : this.binderMethods) {
 			if (isBinderMethodApplicable(binderMethod, dataBinder)) {
 				Object returnValue = binderMethod.invokeForRequest(request, null, dataBinder);
 				if (returnValue != null) {
-					throw new IllegalStateException(
-							"@InitBinder methods must not return a value (should be void): " + binderMethod);
+					throw new IllegalStateException("@InitBinder methods must not return a value (should be void): " + binderMethod);
 				}
 			}
 		}
@@ -86,6 +92,8 @@ public class InitBinderDataBinderFactory extends DefaultDataBinderFactory {
 	 * check the specified attribute names in the annotation value, if any.
 	 */
 	protected boolean isBinderMethodApplicable(HandlerMethod initBinderMethod, WebDataBinder dataBinder) {
+		// @InitBinder有个Value值，它是个数组。它是用来匹配dataBinder.getObjectName()是否匹配的   若匹配上了，现在此注解方法就会生效
+		// 若value为空，那就对所有生效~~~
 		InitBinder ann = initBinderMethod.getMethodAnnotation(InitBinder.class);
 		Assert.state(ann != null, "No InitBinder annotation");
 		String[] names = ann.value();

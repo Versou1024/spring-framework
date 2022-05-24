@@ -48,6 +48,7 @@ import org.springframework.util.StringUtils;
  * @see PropertyResolver#resolvePlaceholders
  */
 public class ResourceEditor extends PropertyEditorSupport {
+	// 将String转换为对应的Resource
 
 	private final ResourceLoader resourceLoader;
 
@@ -95,10 +96,15 @@ public class ResourceEditor extends PropertyEditorSupport {
 
 	@Override
 	public void setAsText(String text) {
+
+		// 1. String类型的text必须有值
 		if (StringUtils.hasText(text)) {
+			// 1.1 从text解析处path
 			String locationToUse = resolvePath(text).trim();
+			// 1.2 使用resourceLoader根据path加载Resource,并存入到value字段
 			setValue(this.resourceLoader.getResource(locationToUse));
 		}
+		// 2. 没有值,就设置为null
 		else {
 			setValue(null);
 		}

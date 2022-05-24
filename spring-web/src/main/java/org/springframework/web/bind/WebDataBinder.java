@@ -53,6 +53,16 @@ import org.springframework.web.multipart.MultipartFile;
  * @see ServletRequestDataBinder
  */
 public class WebDataBinder extends DataBinder {
+	// 聊了DataBinder，这篇文章继续聊聊实际应用中的数据绑定主菜：WebDataBinder。
+	// 从继承树中可以看到，web环境统一对数据绑定DataBinder进行了增强。
+	//
+	// 毕竟数据绑定的实际应用场景：不夸张的说99%情况都是web环境~
+
+	// 单从WebDataBinder来说，它对父类进行了增强，提供的增强能力如下：
+	//
+	//	1. 支持对属性名以_打头的默认值处理（自动挡，能够自动处理所有的Bool、Collection、Map等）
+	//	2. 支持对属性名以!打头的默认值处理（手动档，需要手动给某个属性赋默认值，自己控制的灵活性很高）
+	//	3. 提供方法，支持把MultipartFile绑定到JavaBean的属性上~
 
 	/**
 	 * Default prefix that field marker parameters start with, followed by the field
@@ -65,6 +75,8 @@ public class WebDataBinder extends DataBinder {
 	 * @see #setFieldMarkerPrefix
 	 */
 	public static final String DEFAULT_FIELD_MARKER_PREFIX = "_";
+	// 此字段意思是：字段标记  比如name -> _name
+	// 这对于HTML复选框和选择选项特别有用。
 
 	/**
 	 * Default prefix that field default parameters start with, followed by the field
@@ -74,6 +86,8 @@ public class WebDataBinder extends DataBinder {
 	 * @see #setFieldDefaultPrefix
 	 */
 	public static final String DEFAULT_FIELD_DEFAULT_PREFIX = "!";
+	// !符号是处理默认值的，提供一个默认值代替空值~~~
+	// 只要参数滴啊有!,就需要对空值进行默认值处理哦
 
 	@Nullable
 	private String fieldMarkerPrefix = DEFAULT_FIELD_MARKER_PREFIX;
@@ -81,6 +95,7 @@ public class WebDataBinder extends DataBinder {
 	@Nullable
 	private String fieldDefaultPrefix = DEFAULT_FIELD_DEFAULT_PREFIX;
 
+	// 默认也会绑定空的文件流~
 	private boolean bindEmptyMultipartFiles = true;
 
 
@@ -192,6 +207,7 @@ public class WebDataBinder extends DataBinder {
 	 */
 	@Override
 	protected void doBind(MutablePropertyValues mpvs) {
+		// 在父类的基础上，增加了对_和!的处理~~~
 		checkFieldDefaults(mpvs);
 		checkFieldMarkers(mpvs);
 		super.doBind(mpvs);
@@ -206,15 +222,28 @@ public class WebDataBinder extends DataBinder {
 	 * @see #getFieldDefaultPrefix
 	 */
 	protected void checkFieldDefaults(MutablePropertyValues mpvs) {
+		// 1. 获取filed字段默认处理的标注前缀!
 		String fieldDefaultPrefix = getFieldDefaultPrefix();
 		if (fieldDefaultPrefix != null) {
+			// 2. 获取 PropertyValue[]
+			// 若你给定的PropertyValue的属性名确实是以!打头的  那就做处理如下：
+			// 如果JavaBean的该属性可写 && mpvs不存在去掉!后的同名属性，那就添加进来表示后续可以使用了（毕竟是默认值，没有精确匹配的高的）
+			// 然后把带!的给移除掉（因为默认值以已经转正了~~~）
+			// 其实这里就是说你可以使用！来给个默认值。比如!name表示若找不到name这个属性的时，就取它的值~~~
+			// 也就是说你request里若有穿!name保底，也就不怕出现null值啦~
+
 			PropertyValue[] pvArray = mpvs.getPropertyValues();
 			for (PropertyValue pv : pvArray) {
+				// 3. 以!开头
 				if (pv.getName().startsWith(fieldDefaultPrefix)) {
+					// 4. 去掉!后的field
 					String field = pv.getName().substring(fieldDefaultPrefix.length());
+					// 5. field是否可写,同时mpvs并不包含这个field
 					if (getPropertyAccessor().isWritableProperty(field) && !mpvs.contains(field)) {
+						// 6. 将新的写入到mpvs
 						mpvs.add(field, pv.getValue());
 					}
+					// 7. 去掉之前的带感叹号的pv
 					mpvs.removePropertyValue(pv);
 				}
 			}
@@ -233,6 +262,13 @@ public class WebDataBinder extends DataBinder {
 	 * @see #getEmptyValue(String, Class)
 	 */
 	protected void checkFieldMarkers(MutablePropertyValues mpvs) {
+		// 处理_的步骤
+		// 若传入的字段以_打头
+		// JavaBean的这个属性可写 && mpvs木有去掉_后的属性名字
+		// getEmptyValue(field, fieldType)就是根据Type类型给定默认值。
+		// 比如Boolean类型默认给false，数组给空数组[]，集合给空集合，Map给空map  可以参考此类：CollectionFactory
+		// 当然，这一切都是建立在你传的属性值是以_打头的基础上的，Spring才会默认帮你处理这些默认值
+
 		String fieldMarkerPrefix = getFieldMarkerPrefix();
 		if (fieldMarkerPrefix != null) {
 			PropertyValue[] pvArray = mpvs.getPropertyValues();
@@ -307,6 +343,8 @@ public class WebDataBinder extends DataBinder {
 				logger.debug("Failed to create default value - falling back to null: " + ex.getMessage());
 			}
 		}
+		// 若不在这几大类型内，就返回默认值null呗~~~
+		// 但需要说明的是，若你是简单类型比如int，
 		// Default value: null.
 		return null;
 	}
@@ -323,6 +361,9 @@ public class WebDataBinder extends DataBinder {
 	 * @see #setBindEmptyMultipartFiles
 	 */
 	protected void bindMultipart(Map<String, List<MultipartFile>> multipartFiles, MutablePropertyValues mpvs) {
+		// 	// 单独提供的方法，用于绑定org.springframework.web.multipart.MultipartFile类型的数据到JavaBean属性上~
+		//	// 显然默认是允许MultipartFile作为Bean一个属性  参与绑定的
+		//	// Map<String, List<MultipartFile>>它的key，一般来说就是文件们啦~
 		multipartFiles.forEach((key, values) -> {
 			if (values.size() == 1) {
 				MultipartFile value = values.get(0);

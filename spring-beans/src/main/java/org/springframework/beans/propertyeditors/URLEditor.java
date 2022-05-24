@@ -45,6 +45,10 @@ import org.springframework.util.Assert;
  * @see InputStreamEditor
  */
 public class URLEditor extends PropertyEditorSupport {
+	// PropertyEditor是JavaBean规范定义的接口，这是java.beans中一个接口，其设计的意图是图形化编程上，方便对象与String之间的转换工作，
+	// 而spring将其扩展，方便各种对象与String之间的转换工作。
+
+	// Spring所有的扩展都是通过继承PropertyEditorSupport，因为它只聚焦于转换上，所以只需复写setAsText()、getAsText()以及构造方法即可实现扩展。
 
 	private final ResourceEditor resourceEditor;
 
@@ -65,9 +69,14 @@ public class URLEditor extends PropertyEditorSupport {
 		this.resourceEditor = resourceEditor;
 	}
 
+	// setAsText(String text) 将String类型的text解析为某种类型的value后
+	// 调用 setValue(Object value) 这样在ProperEditor中有这个String text被转换为对应的value值啦
 
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
+		// 将String转换为指定的value设置进去
+
+		// 借用ResourceEditor的将String转换为Resource的能力
 		this.resourceEditor.setAsText(text);
 		Resource resource = (Resource) this.resourceEditor.getValue();
 		try {
@@ -78,9 +87,16 @@ public class URLEditor extends PropertyEditorSupport {
 		}
 	}
 
+	// getAsText() 是将Object的value值取出来,然后用一种方式将其转换为String类型的text后返回即可
+	// ProperEditor中只保存value,不会保留对应String的text值
+
 	@Override
 	public String getAsText() {
+		// 将value转换为String
+
+		// 1. value强转为URL
 		URL value = (URL) getValue();
+		// 2. 调用 url.toExternalForm()
 		return (value != null ? value.toExternalForm() : "");
 	}
 

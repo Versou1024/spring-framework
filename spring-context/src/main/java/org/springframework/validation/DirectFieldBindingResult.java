@@ -37,12 +37,12 @@ import org.springframework.lang.Nullable;
 public class DirectFieldBindingResult extends AbstractPropertyBindingResult {
 
 	@Nullable
-	private final Object target;
+	private final Object target; // 数据绑定的目标
 
-	private final boolean autoGrowNestedPaths;
+	private final boolean autoGrowNestedPaths; // 自动增长路径
 
 	@Nullable
-	private transient ConfigurablePropertyAccessor directFieldAccessor;
+	private transient ConfigurablePropertyAccessor directFieldAccessor; // 内部:使用directFieldAccessor做数据绑定
 
 
 	/**
@@ -80,6 +80,9 @@ public class DirectFieldBindingResult extends AbstractPropertyBindingResult {
 	 */
 	@Override
 	public final ConfigurablePropertyAccessor getPropertyAccessor() {
+		// 获取 DirectFieldAccess 并做一些设置
+		// 懒加载
+
 		if (this.directFieldAccessor == null) {
 			this.directFieldAccessor = createDirectFieldAccessor();
 			this.directFieldAccessor.setExtractOldValueForEditor(true);
@@ -93,9 +96,12 @@ public class DirectFieldBindingResult extends AbstractPropertyBindingResult {
 	 * @see #getTarget()
 	 */
 	protected ConfigurablePropertyAccessor createDirectFieldAccessor() {
+
+		// 1. 前提target存在
 		if (this.target == null) {
 			throw new IllegalStateException("Cannot access fields on null target instance '" + getObjectName() + "'");
 		}
+		// 2. 创建 DirectFieldAcces
 		return PropertyAccessorFactory.forDirectFieldAccess(this.target);
 	}
 

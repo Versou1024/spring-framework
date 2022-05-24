@@ -28,6 +28,8 @@ import java.util.Locale;
  */
 @FunctionalInterface
 public interface Parser<T> {
+	// 从String类型解析为其他类型的
+	// 解析接口，根据Locale信息解析字符串到T类型的对象
 
 	/**
 	 * Parse a text String to produce a T.

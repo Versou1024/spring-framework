@@ -39,6 +39,19 @@ import org.springframework.util.StringUtils;
 public class NumberFormatAnnotationFormatterFactory extends EmbeddedValueResolutionSupport
 		implements AnnotationFormatterFactory<NumberFormat> {
 
+	// 注解@NumberFormate支持标注在的字段类型上
+	// 	static {
+	//		Set<Class<?>> numberTypes = new HashSet<>(8);
+	//		numberTypes.add(Byte.class);
+	//		numberTypes.add(Short.class);
+	//		numberTypes.add(Integer.class);
+	//		numberTypes.add(Long.class);
+	//		numberTypes.add(BigInteger.class);
+	//		numberTypes.add(Float.class);
+	//		numberTypes.add(Double.class);
+	//		numberTypes.add(BigDecimal.class);
+	//		STANDARD_NUMBER_TYPES = Collections.unmodifiableSet(numberTypes);
+	//	}
 	@Override
 	public Set<Class<?>> getFieldTypes() {
 		return NumberUtils.STANDARD_NUMBER_TYPES;
@@ -56,18 +69,25 @@ public class NumberFormatAnnotationFormatterFactory extends EmbeddedValueResolut
 
 
 	private Formatter<Number> configureFormatterFrom(NumberFormat annotation) {
+		// 1. 解析 @NumberFormat 注解中的pattern值
 		String pattern = resolveEmbeddedValue(annotation.pattern());
+		// 2. 有 pattern 时直接返回 NumberStyleFormatter
 		if (StringUtils.hasLength(pattern)) {
+			// 2.1 数字格式化器
 			return new NumberStyleFormatter(pattern);
 		}
 		else {
+			// 3. 否则解析 @NumberFormat 注解中的style值
 			Style style = annotation.style();
+			// 3.1 货币格式化器
 			if (style == Style.CURRENCY) {
 				return new CurrencyStyleFormatter();
 			}
+			// 3.2 百分比格式化器
 			else if (style == Style.PERCENT) {
 				return new PercentStyleFormatter();
 			}
+			// 3.3 数字格式化器
 			else {
 				return new NumberStyleFormatter();
 			}

@@ -25,6 +25,8 @@ package org.springframework.beans;
  * @since 2.5.2
  */
 public final class PropertyAccessorFactory {
+	// 属性访问的工厂
+	// 目前: 仅仅支持两种PropertyAccess,那就是 BeanWrapperImpl 和 DirectFiledAccessor
 
 	private PropertyAccessorFactory() {
 	}
@@ -38,6 +40,7 @@ public final class PropertyAccessorFactory {
 	 * @see BeanWrapperImpl
 	 */
 	public static BeanWrapper forBeanPropertyAccess(Object target) {
+		// 直接返回 BeanWrapperImpl
 		return new BeanWrapperImpl(target);
 	}
 
@@ -49,6 +52,7 @@ public final class PropertyAccessorFactory {
 	 * @see DirectFieldAccessor
 	 */
 	public static ConfigurablePropertyAccessor forDirectFieldAccess(Object target) {
+		// 直接返回 DirectFieldAccessor
 		return new DirectFieldAccessor(target);
 	}
 

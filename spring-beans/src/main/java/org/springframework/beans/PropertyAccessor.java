@@ -38,7 +38,7 @@ public interface PropertyAccessor {
 	 * 可以被访问的命名属性（例如对象的属性或对象中的字段）的类的公共接口用作BeanWrapper的基本接口。
 	 *
 	 * API:
-	 * 1、通过ProPertyValue、或ProPertvValues、或Mao<String,Object>、String+Object设置target的属性值
+	 * 1、通过PropertyValue、或PropertvValues、或Mao<String,Object>、String+Object设置target的属性值
 	 * 2、属性是否可写、是否可读
 	 * 3、获取指定的name的属性类型、属性值、属性描述
 	 */
@@ -48,6 +48,8 @@ public interface PropertyAccessor {
 	 * Follows normal Java conventions: getFoo().getBar() would be "foo.bar".
 	 */
 	String NESTED_PROPERTY_SEPARATOR = ".";
+	// 简单的说就是级联属性的分隔符。
+	// 比如foo.bar最终会调用getFoo().getBar()两个方法
 
 	/**
 	 * Path separator for nested properties.
@@ -60,6 +62,7 @@ public interface PropertyAccessor {
 	 * indexed or mapped property like "person.addresses[0]".
 	 */
 	String PROPERTY_KEY_PREFIX = "[";
+	// 代表角标index的符号  如person.addresses[0]  这样就可以把值放进集合/数组/Map里了
 
 	/**
 	 * Marker that indicates the start of a property key for an
@@ -87,7 +90,8 @@ public interface PropertyAccessor {
 	 * (may be a nested path and/or an indexed/mapped property)
 	 * @return whether the property is readable
 	 */
-	boolean isReadableProperty(String propertyName); //确定指定的属性是否可读。
+	boolean isReadableProperty(String propertyName);
+	// 此属性是否可读。若属性不存在  返回false
 
 	/**
 	 * Determine whether the specified property is writable.
@@ -96,7 +100,8 @@ public interface PropertyAccessor {
 	 * (may be a nested path and/or an indexed/mapped property)
 	 * @return whether the property is writable
 	 */
-	boolean isWritableProperty(String propertyName); //确定指定的属性是否可写。
+	boolean isWritableProperty(String propertyName);
+	// 此出行是否可写。若属性不存在，返回false
 
 	/**
 	 * Determine the property type for the specified property,
@@ -111,6 +116,7 @@ public interface PropertyAccessor {
 	 */
 	@Nullable
 	Class<?> getPropertyType(String propertyName) throws BeansException;
+	// 获取对应属性的class类型
 
 	/**
 	 * Return a type descriptor for the specified property:
@@ -124,6 +130,7 @@ public interface PropertyAccessor {
 	 */
 	@Nullable
 	TypeDescriptor getPropertyTypeDescriptor(String propertyName) throws BeansException;
+	// 获取对应属性的类型描述符
 
 	/**
 	 * Get the current value of the specified property.
@@ -137,6 +144,9 @@ public interface PropertyAccessor {
 	 */
 	@Nullable
 	Object getPropertyValue(String propertyName) throws BeansException;
+	// 获取对应属性的value值
+
+	// 写操作
 
 	/**
 	 * Set the specified value as current property value.
@@ -149,6 +159,7 @@ public interface PropertyAccessor {
 	 * accessor method failed or a type mismatch occurred
 	 */
 	void setPropertyValue(String propertyName, @Nullable Object value) throws BeansException;
+
 
 	/**
 	 * Set the specified value as current property value.
@@ -240,5 +251,6 @@ public interface PropertyAccessor {
 	 */
 	void setPropertyValues(PropertyValues pvs, boolean ignoreUnknown, boolean ignoreInvalid)
 			throws BeansException;
+	// 可控制是否接受非法的字段、value值扽  ignoreUnknown/ignoreInvalid分别对应非法属性和非法value值的处理策略~
 
 }

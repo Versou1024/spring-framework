@@ -39,6 +39,7 @@ import org.springframework.util.NumberUtils;
  * @see NumberUtils
  */
 final class CharacterToNumberFactory implements ConverterFactory<Character, Number> {
+	// 从 Character 转换 Number 类型
 
 	@Override
 	public <T extends Number> Converter<Character, T> getConverter(Class<T> targetType) {

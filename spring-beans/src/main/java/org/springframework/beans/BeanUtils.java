@@ -72,6 +72,7 @@ public abstract class BeanUtils {
 
 	private static final Log logger = LogFactory.getLog(BeanUtils.class);
 
+	// 使用ClassLoader加载的未知 unknownEditorTypes
 	private static final Set<Class<?>> unknownEditorTypes =
 			Collections.newSetFromMap(new ConcurrentReferenceHashMap<>(64));
 
@@ -527,6 +528,10 @@ public abstract class BeanUtils {
 			}
 		}
 
+		// 核心:
+		// 就是获取targetType的name[class对象的],然后加上Editor
+		// 使用ClassLoader尝试加载这个 class.getName()+Editor
+		// 存在就检查是否为PropertyEditor的子类,是的话,就进行实例化吧
 		String targetTypeName = targetType.getName();
 		String editorName = targetTypeName + "Editor";
 		try {

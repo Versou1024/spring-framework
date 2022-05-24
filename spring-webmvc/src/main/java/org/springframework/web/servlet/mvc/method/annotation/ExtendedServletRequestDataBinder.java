@@ -33,6 +33,15 @@ import org.springframework.web.servlet.HandlerMapping;
  * @since 3.1
  */
 public class ExtendedServletRequestDataBinder extends ServletRequestDataBinder {
+	// ExtendedServletRequestDataBinder
+	// 此类代码不多但也不容小觑，它是对ServletRequestDataBinder的一个增强，它用于把URI template variables参数添加进来用于绑定。
+	// 它会去从request的HandlerMapping.class.getName() + ".uriTemplateVariables";这个属性里查找到值出来用于绑定~~~
+
+
+	// 向此属性放置值的地方是：
+	// AbstractUrlHandlerMapping.lookupHandler() --> chain.addInterceptor(new UriTemplateVariablesHandlerInterceptor(uriTemplateVariables));
+	// --> preHandle()方法 -> exposeUriTemplateVariables(this.uriTemplateVariables, request);
+	// -> request.setAttribute(URI_TEMPLATE_VARIABLES_ATTRIBUTE, uriTemplateVariables);
 
 	/**
 	 * Create a new instance, with default object name.
@@ -62,10 +71,14 @@ public class ExtendedServletRequestDataBinder extends ServletRequestDataBinder {
 	@Override
 	@SuppressWarnings("unchecked")
 	protected void addBindValues(MutablePropertyValues mpvs, ServletRequest request) {
+		// 父类 ServletRequestDataBinder#bind()方法中提供的扩展点
+
+		// 1. 将PathVariable都加入到mpvs中去
 		String attr = HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
 		Map<String, String> uriVars = (Map<String, String>) request.getAttribute(attr);
 		if (uriVars != null) {
 			uriVars.forEach((name, value) -> {
+				// 注意: // 若已经存在确切的key了，不会覆盖~~~~
 				if (mpvs.contains(name)) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("URI variable '" + name + "' overridden by request bind value.");

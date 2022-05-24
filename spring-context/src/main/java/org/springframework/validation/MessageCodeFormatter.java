@@ -27,6 +27,7 @@ import org.springframework.lang.Nullable;
  * @see DefaultMessageCodesResolver.Format
  */
 public interface MessageCodeFormatter {
+	// 将根据errorCode\objectName\field转换错误信息
 
 	/**
 	 * Build and return a message code consisting of the given fields,

@@ -39,9 +39,12 @@ import org.springframework.util.StringUtils;
  */
 public class DateTimeFormatAnnotationFormatterFactory  extends EmbeddedValueResolutionSupport
 		implements AnnotationFormatterFactory<DateTimeFormat> {
+	// 它和@DateTimeFormat这个注解有关，作用在Date、Calendar、Long类型上。
 
 	private static final Set<Class<?>> FIELD_TYPES;
 
+	// 作用在 Date\Calendar\Long类型上
+	// 该注解只能放在下面这集中类型上面~~~~才会生效
 	static {
 		Set<Class<?>> fieldTypes = new HashSet<>(4);
 		fieldTypes.add(Date.class);
@@ -68,11 +71,25 @@ public class DateTimeFormatAnnotationFormatterFactory  extends EmbeddedValueReso
 
 	protected Formatter<Date> getFormatter(DateTimeFormat annotation, Class<?> fieldType) {
 		DateFormatter formatter = new DateFormatter();
+		// style属性支持使用占位符的形式~  setStylePattern
+		// 'S' = Small  'M' = Medium  'L' = Long 'F' = Full '-' = Omitted
+		// 注意：这里需要同时设置两个。比如SS SM等等
+		// 第一个表示Date日期格式，第二个表示Time事件格式~~~~  注解默认值是SS
 		String style = resolveEmbeddedValue(annotation.style());
 		if (StringUtils.hasLength(style)) {
 			formatter.setStylePattern(style);
 		}
 		formatter.setIso(annotation.iso());
+		// patter也支持占位符~~~
+		// DateFormatter里说过，若pattern指定了，就直接使用SimpleDateFormat格式化了
+		// 否则根据stylePattern来进行拿模版实例：return DateFormat.getTimeInstance(timeStyle, locale)
+		//static {
+		//	Map<ISO, String> formats = new EnumMap<>(ISO.class);
+		//	formats.put(ISO.DATE, "yyyy-MM-dd");
+		//	formats.put(ISO.TIME, "HH:mm:ss.SSSXXX");
+		//	formats.put(ISO.DATE_TIME, "yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+		//	ISO_PATTERNS = Collections.unmodifiableMap(formats);
+		//}
 		String pattern = resolveEmbeddedValue(annotation.pattern());
 		if (StringUtils.hasLength(pattern)) {
 			formatter.setPattern(pattern);

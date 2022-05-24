@@ -65,7 +65,7 @@ public abstract class PropertyAccessorUtils {
 	 * @return the index of the nested property separator, or -1 if none
 	 */
 	public static int getFirstNestedPropertySeparatorIndex(String propertyPath) {
-		/**
+		/*
 		 * 为properPath获取第一个嵌套的属性
 		 */
 		return getNestedPropertySeparatorIndex(propertyPath, false);
@@ -89,7 +89,8 @@ public abstract class PropertyAccessorUtils {
 	 * @return the index of the nested property separator, or -1 if none
 	 */
 	private static int getNestedPropertySeparatorIndex(String propertyPath, boolean last) {
-		/**
+		/*
+		 * 确定给定属性路径中的第一个（或最后一个）嵌套属性分隔符，忽略键中的点（如“map[my.key]”）的 .
 		 * 为propertyPath获取第一个嵌套路径的分隔符路径
 		 */
 		boolean inKey = false;
@@ -105,6 +106,7 @@ public abstract class PropertyAccessorUtils {
 					break;
 				case PropertyAccessor.NESTED_PROPERTY_SEPARATOR_CHAR:
 					if (!inKey) {
+						// inKey为true,就表示在[]中间
 						// 在 [] 之间的 . 不会认为是嵌套属性哦
 						return i;
 					}
@@ -150,6 +152,9 @@ public abstract class PropertyAccessorUtils {
 	 * @return the canonical representation of the property path
 	 */
 	public static String canonicalPropertyName(@Nullable String propertyName) {
+		// 确定给定属性路径的规范名称。
+		// 从map键中删除周围的引号： map['key'] -> map[key] map["key"] -> map[key]
+
 		if (propertyName == null) {
 			return "";
 		}

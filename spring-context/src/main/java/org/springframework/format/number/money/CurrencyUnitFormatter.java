@@ -31,6 +31,7 @@ import org.springframework.format.Formatter;
  * @since 4.2
  */
 public class CurrencyUnitFormatter implements Formatter<CurrencyUnit> {
+	// 需要javax.money.包的支持属于`JSR-354`的内容，暂时略过
 
 	@Override
 	public String print(CurrencyUnit object, Locale locale) {

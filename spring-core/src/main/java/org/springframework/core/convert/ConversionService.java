@@ -27,6 +27,10 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public interface ConversionService {
+	// 用于类型转换的服务接口。这是转换系统的入口点。
+	// 调用convert(Object, Class)以使用此系统执行线程安全的类型转换。
+	// 判断是否可以转换 canConvert()
+	// 转换方法 convert()
 
 	/**
 	 * Return {@code true} if objects of {@code sourceType} can be converted to the {@code targetType}.
@@ -43,6 +47,7 @@ public interface ConversionService {
 	 * @throws IllegalArgumentException if {@code targetType} is {@code null}
 	 */
 	boolean canConvert(@Nullable Class<?> sourceType, Class<?> targetType);
+	// 特别说明：若是Map、集合、数组转换时。即使下面方法convert转换抛出了异常，这里也得返回true  因为Spring希望调用者处理这个异常：ConversionException
 
 	/**
 	 * Return {@code true} if objects of {@code sourceType} can be converted to the {@code targetType}.

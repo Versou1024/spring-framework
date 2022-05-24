@@ -77,6 +77,9 @@ public class FileEditor extends PropertyEditorSupport {
 
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
+		// 将text转换为File存储到value中
+
+		// 1. 检查text是否有效
 		if (!StringUtils.hasText(text)) {
 			setValue(null);
 			return;
@@ -84,6 +87,7 @@ public class FileEditor extends PropertyEditorSupport {
 
 		// Check whether we got an absolute file path without "file:" prefix.
 		// For backwards compatibility, we'll consider those as straight file path.
+		// 2. 检查text是否为有效的url
 		File file = null;
 		if (!ResourceUtils.isUrl(text)) {
 			file = new File(text);
@@ -94,10 +98,12 @@ public class FileEditor extends PropertyEditorSupport {
 		}
 
 		// Proceed with standard resource location parsing.
+		// 3. 继续进行标准资源位置解析。
 		this.resourceEditor.setAsText(text);
 		Resource resource = (Resource) this.resourceEditor.getValue();
 
 		// If it's a URL or a path pointing to an existing resource, use it as-is.
+		// 4. 如果它是指向现有资源的 URL 或路径，请按原样使用
 		if (file == null || resource.exists()) {
 			try {
 				setValue(resource.getFile());
@@ -109,6 +115,7 @@ public class FileEditor extends PropertyEditorSupport {
 		}
 		else {
 			// Set a relative File reference and hope for the best.
+			// 设置一个相对的文件参考并希望最好。
 			setValue(file);
 		}
 	}

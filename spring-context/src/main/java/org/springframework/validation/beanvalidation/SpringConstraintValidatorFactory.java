@@ -37,6 +37,8 @@ import org.springframework.util.Assert;
  * @see org.springframework.context.ApplicationContext#getAutowireCapableBeanFactory()
  */
 public class SpringConstraintValidatorFactory implements ConstraintValidatorFactory {
+	// SpringConstraintValidatorFactory
+	// ConstraintValidatorFactory整个API前问有讲过，本类就是Spring对它的扩展，从而和Spring容器整合了~
 
 	private final AutowireCapableBeanFactory beanFactory;
 

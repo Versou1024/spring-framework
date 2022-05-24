@@ -41,10 +41,10 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class PropertyValue extends BeanMetadataAttributeAccessor implements Serializable {
-	/**
+	/*
 	 * 属性包装器：
 	 * 1、包含name：value
-	 * 2、property是否为optional，或者是否已经被解析过
+	 * 2、property是否为optional，或者converted是否已经被解析过
 	 */
 
 	private final String name;

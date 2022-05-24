@@ -27,6 +27,7 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public interface SmartValidator extends Validator {
+	// 在Validator基础上增加了校验分组：hints
 
 	/**
 	 * Validate the supplied {@code target} object, which must be of a type of {@link Class}
@@ -45,6 +46,8 @@ public interface SmartValidator extends Validator {
 	 * @see javax.validation.Validator#validate(Object, Class[])
 	 */
 	void validate(Object target, Errors errors, Object... validationHints);
+	// 注意：这里的Hints最终都会被转化到JSR的分组里去~~
+	// 所以这个可变参数，传接口Class对象即可~
 
 	/**
 	 * Validate the supplied value for the specified field on the target type,

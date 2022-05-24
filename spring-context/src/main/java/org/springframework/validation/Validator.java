@@ -64,6 +64,8 @@ package org.springframework.validation;
  * @see ValidationUtils
  */
 public interface Validator {
+	// Spring提供的验证器
+	// 不同于 javax.validation.validator
 
 	/**
 	 * Can this {@link Validator} {@link #validate(Object, Errors) validate}
@@ -79,6 +81,9 @@ public interface Validator {
 	 * supplied {@code clazz}
 	 */
 	boolean supports(Class<?> clazz);
+	// 这个Validator可以validate提供的clazz的实例吗？
+	// 这种方法通常是这样实现的：
+	// return Foo.class.isAssignableFrom(clazz);
 
 	/**
 	 * Validate the supplied {@code target} object, which must be
@@ -91,5 +96,7 @@ public interface Validator {
 	 * @see ValidationUtils
 	 */
 	void validate(Object target, Errors errors);
+	// 验证提供的target对象，该对象必须是 support( Class supports(Class)方法通常具有（或将）返回true类。
+	// 提供的errors实例可用于报告任何产生的验证错误。
 
 }

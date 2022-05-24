@@ -41,6 +41,10 @@ import org.springframework.core.convert.TypeDescriptor;
  * @see ConditionalGenericConverter
  */
 public interface ConditionalConverter {
+	// 提供给Converter 、 GenericConverter或ConverterFactory 根据source和target TypeDescriptor的属性做有条件地执行。
+	// 通常用于根据字段或类级别特征（例如注解或方法）的存在选择性地匹配自定义转换逻辑。
+	// 例如，当从 String 字段转换为 Date 字段时，如果目标字段也已使用@DateTimeFormat注释，则实现可能会返回true 。
+	// 作为另一个示例，当从 String 字段转换为Account字段时，如果目标 Account 类定义了public static findAccount(String)方法，则实现可能会返回true
 
 	/**
 	 * Should the conversion from {@code sourceType} to {@code targetType} currently under
@@ -50,5 +54,6 @@ public interface ConditionalConverter {
 	 * @return true if conversion should be performed, false otherwise
 	 */
 	boolean matches(TypeDescriptor sourceType, TypeDescriptor targetType);
+	// 是否应该选择当前正在考虑的从sourceType到targetType的转换
 
 }

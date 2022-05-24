@@ -69,6 +69,9 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 
 
 	public DateTimeFormatterRegistrar() {
+		// 空参构造器
+
+		// 也会注入一个 DateTimeFormatterFactory 适配 DATE\TIME\DATE_TIME
 		for (Type type : Type.values()) {
 			this.factories.put(type, new DateTimeFormatterFactory());
 		}
@@ -161,6 +164,8 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 		DateTimeFormatter dtf = getFormatter(Type.DATE_TIME);
 
 		// Efficient ISO_LOCAL_* variants for printing since they are twice as fast...
+		// 添加各种和Date有关的转换器
+		// 主要是Local系列的,LocalDate\LocalTime\LocalDateTime\ZonedDateTime
 
 		registry.addFormatterForFieldType(LocalDate.class,
 				new TemporalAccessorPrinter(
@@ -189,6 +194,8 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 				new TemporalAccessorPrinter(tf),
 				new TemporalAccessorParser(OffsetTime.class, tf));
 
+		// InstantFormatter\PeriodFormatter\DurationFormatter\YearFormatter\MonthFormatter\MonthFormatter
+		// YearMonthFormatter\MonthDayFormatter
 		registry.addFormatterForFieldType(Instant.class, new InstantFormatter());
 		registry.addFormatterForFieldType(Period.class, new PeriodFormatter());
 		registry.addFormatterForFieldType(Duration.class, new DurationFormatter());

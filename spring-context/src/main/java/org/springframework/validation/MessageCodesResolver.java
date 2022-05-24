@@ -33,6 +33,11 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.context.MessageSourceResolvable#getCodes()
  */
 public interface MessageCodesResolver {
+	// 从验证错误代码构建消息代码的策略接口。由 DataBinder 用于构建 ObjectErrors 和 FieldErrors 的代码列表。
+	// 生成的消息代码对应于 MessageSourceResolvable 的代码（由 ObjectError 和 FieldError 实现）
+
+	// 主要作用就是:当绑定出现问题异常时,可以将errorCode,以及objectName,转换为一段错误消息即ErrorMessage
+	// 唯一实现: DefaultMessageCodesResolver
 
 	/**
 	 * Build message codes for the given error code and object name.
@@ -42,6 +47,7 @@ public interface MessageCodesResolver {
 	 * @return the message codes to use
 	 */
 	String[] resolveMessageCodes(String errorCode, String objectName);
+	// 为给定的错误代码和对象名称构建消息代码。用于构建 ObjectError 的代码列表。
 
 	/**
 	 * Build message codes for the given error code and field specification.
@@ -53,5 +59,6 @@ public interface MessageCodesResolver {
 	 * @return the message codes to use
 	 */
 	String[] resolveMessageCodes(String errorCode, String objectName, String field, @Nullable Class<?> fieldType);
+	// 为给定的错误代码和字段规范构建消息代码。用于构建 FieldError 的代码列表
 
 }

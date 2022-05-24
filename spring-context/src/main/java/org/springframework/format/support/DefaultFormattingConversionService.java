@@ -46,6 +46,8 @@ import org.springframework.util.StringValueResolver;
  * @since 3.1
  */
 public class DefaultFormattingConversionService extends FormattingConversionService {
+	// DefaultFormattingConversionService
+	// 实际使用时，基本就是使用它。它的模式属于默认模式：就是注册了一些常用的，默认支持的转换器们
 
 	private static final boolean jsr354Present;
 
@@ -107,10 +109,13 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
 	 * @param formatterRegistry the service to register default formatters with
 	 */
 	public static void addDefaultFormatters(FormatterRegistry formatterRegistry) {
+		// 这个类本身就是一个 FormatterRegistry
 		// Default handling of number values
+		// 支持@NumberFormat注解~~~~~对数字进行格式化~
 		formatterRegistry.addFormatterForFieldAnnotation(new NumberFormatAnnotationFormatterFactory());
 
 		// Default handling of monetary values
+		// JSR354使用较少~略过  银行、金融项目使用多~
 		if (jsr354Present) {
 			formatterRegistry.addFormatter(new CurrencyUnitFormatter());
 			formatterRegistry.addFormatter(new MonetaryAmountFormatter());
@@ -120,15 +125,20 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
 		// Default handling of date-time values
 
 		// just handling JSR-310 specific date and time types
+		// 对JSR310的转换的支持 DateTimeFormatterRegistrar是一个FormatterRegistrar
 		new DateTimeFormatterRegistrar().registerFormatters(formatterRegistry);
 
 		if (jodaTimePresent) {
 			// handles Joda-specific types as well as Date, Calendar, Long
 			new JodaTimeFormatterRegistrar().registerFormatters(formatterRegistry);
+			// JodaTimeFormatterRegistrar：
+			// 格式化joda的LocalDate、LocalTime、LocalDateTime、ReadableInstant、Period…等等
 		}
 		else {
 			// regular DateFormat-based Date, Calendar, Long converters
 			new DateFormatterRegistrar().registerFormatters(formatterRegistry);
+			// DateTimeFormatterRegistrar：
+			//对JSR310的那些时间类进行支持。包括：LocalDateTime、ZonedDateTime、OffsetDateTime、OffsetTime等等
 		}
 	}
 

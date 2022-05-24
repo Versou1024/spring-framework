@@ -39,6 +39,8 @@ abstract class AbstractConditionalEnumConverter implements ConditionalConverter 
 
 	@Override
 	public boolean matches(TypeDescriptor sourceType, TypeDescriptor targetType) {
+		// ClassUtils.getAllInterfacesForClassAsSet()
+		// 返回给定类作为 Set 实现的所有接口，包括由超类实现的接口。如果类本身是一个接口，它将作为唯一接口返回。
 		for (Class<?> interfaceType : ClassUtils.getAllInterfacesForClassAsSet(sourceType.getType())) {
 			if (this.conversionService.canConvert(TypeDescriptor.valueOf(interfaceType), targetType)) {
 				return false;

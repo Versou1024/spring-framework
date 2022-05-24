@@ -59,12 +59,16 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 public @interface DateTimeFormat {
 
+	// 以下三种值,只需要选择一种即可
+
 	/**
 	 * The style pattern to use to format the field.
 	 * <p>Defaults to 'SS' for short date time. Set this attribute when you wish to format
 	 * your field in accordance with a common style other than the default style.
 	 */
 	String style() default "SS";
+	// 用于格式化字段的样式模式。
+	// 短日期时间默认为“SS”。当您希望根据默认样式以外的通用样式设置字段格式时，请设置此属性
 
 	/**
 	 * The ISO pattern to use to format the field.
@@ -73,6 +77,9 @@ public @interface DateTimeFormat {
 	 * Set this attribute when you wish to format your field in accordance with an ISO format.
 	 */
 	ISO iso() default ISO.NONE;
+	// 用于格式化字段的 ISO 模式。
+	// 可能的 ISO 模式在DateTimeFormat.ISO枚举中定义。
+	// 默认为DateTimeFormat.ISO.NONE ，表示应忽略此属性。当您希望根据 ISO 格式设置字段格式时，请设置此属性。
 
 	/**
 	 * The custom pattern to use to format the field.
@@ -87,6 +94,9 @@ public @interface DateTimeFormat {
 	 * when going through that {@code DateTimeFormatter} with strict resolution mode).
 	 */
 	String pattern() default "";
+	// 用于格式化字段的自定义模式。
+	// 默认为空字符串，表示未指定自定义模式字符串。当您希望根据自定义日期时间模式设置字段格式时，请设置此属性，而不是由样式style或ISO格式表示。
+	// 注意：此模式遵循原始的java.text.SimpleDateFormat样式，Joda-Time 也支持该样式，对溢出具有严格的解析语义（例如，拒绝非闰年的 2 月 29 日值）。因此，'yy' 字符表示传统样式中的年份，而不是java.time.format.DateTimeFormatter规范中的“年份”（即“yy”在经历那个时变成“uu”具有严格分辨率模式的DateTimeFormatter ）。
 
 
 	/**
@@ -99,18 +109,21 @@ public @interface DateTimeFormat {
 		 * e.g. "2000-10-31".
 		 */
 		DATE,
+		// yyyy-MM-dd  2000-10-31
 
 		/**
 		 * The most common ISO Time Format {@code HH:mm:ss.SSSXXX},
 		 * e.g. "01:30:00.000-05:00".
 		 */
 		TIME,
+		// HH:mm:ss.SSSXXX  01:30:00.000-05:00
 
 		/**
 		 * The most common ISO DateTime Format {@code yyyy-MM-dd'T'HH:mm:ss.SSSXXX},
 		 * e.g. "2000-10-31T01:30:00.000-05:00".
 		 */
 		DATE_TIME,
+		// yyyy-MM-dd'T'HH:mm:ss.SSSXXX    2000-10-31T01:30:00.000-05:00
 
 		/**
 		 * Indicates that no ISO-based format pattern should be applied.

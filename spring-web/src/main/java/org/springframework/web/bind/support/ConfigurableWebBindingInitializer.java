@@ -39,25 +39,34 @@ import org.springframework.web.bind.WebDataBinder;
  * @see #setPropertyEditorRegistrar
  */
 public class ConfigurableWebBindingInitializer implements WebBindingInitializer {
+	// WebBindingInitializer此接口它的内建唯一实现类为：ConfigurableWebBindingInitializer，若你自己想要扩展，建议继承它
 
-	private boolean autoGrowNestedPaths = true;
+	private boolean autoGrowNestedPaths = true; // 是否自动增长路径
 
 	private boolean directFieldAccess = false;
+	// 直接访问字段
+	// true - 使用DirectFieldAccessor
+	// false - 使用BeanWrapperImpl
 
 	@Nullable
 	private MessageCodesResolver messageCodesResolver;
+	// code 转为 Message 的解析器
 
 	@Nullable
 	private BindingErrorProcessor bindingErrorProcessor;
+	// 对于必要字段缺失等异常的处理器
 
 	@Nullable
 	private Validator validator;
+	// 校验器
 
 	@Nullable
 	private ConversionService conversionService;
+	// ConversionService
 
 	@Nullable
 	private PropertyEditorRegistrar[] propertyEditorRegistrars;
+	// 属性编辑器注册者
 
 
 	/**
@@ -193,12 +202,15 @@ public class ConfigurableWebBindingInitializer implements WebBindingInitializer 
 
 	@Override
 	public void initBinder(WebDataBinder binder) {
+		// 初始化Binder =-- 将各种配置的值放进去而已
+
 		binder.setAutoGrowNestedPaths(this.autoGrowNestedPaths);
 		if (this.directFieldAccess) {
 			binder.initDirectFieldAccess();
 		}
 		if (this.messageCodesResolver != null) {
 			binder.setMessageCodesResolver(this.messageCodesResolver);
+
 		}
 		if (this.bindingErrorProcessor != null) {
 			binder.setBindingErrorProcessor(this.bindingErrorProcessor);

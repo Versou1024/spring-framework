@@ -35,7 +35,10 @@ public interface ConfigurablePropertyAccessor extends PropertyAccessor, Property
 	/*
 	 * 可配置的属性访问器
 	 * 实现 PropertyAccessor, PropertyEditorRegistry, TypeConverter
-	 * 扩展：聚合ConversionService、
+	 *
+	 * 不难看出这个类有点流批篇
+	 * 		继承了 PropertyEditorRegistry 完成对属性编辑器的注册
+	 * 		继承了 TypeConverter 完成对Converter的转换需求
 	 */
 	/**
 	 * Specify a Spring 3.0 ConversionService to use for converting
@@ -54,6 +57,7 @@ public interface ConfigurablePropertyAccessor extends PropertyAccessor, Property
 	 * property editor to a new value for a property.
 	 */
 	void setExtractOldValueForEditor(boolean extractOldValueForEditor);
+	// 设置在将属性编辑器应用于属性的新值时是否提取旧属性值
 
 	/**
 	 * Return whether to extract the old property value when applying a
@@ -70,6 +74,9 @@ public interface ConfigurablePropertyAccessor extends PropertyAccessor, Property
 	 * <p>Default is {@code false} on a plain PropertyAccessor instance.
 	 */
 	void setAutoGrowNestedPaths(boolean autoGrowNestedPaths);
+	// 设置此实例是否应尝试“自动增长”包含null值的嵌套路径。
+	// 如果为true ，则将使用默认对象值填充null路径位置并进行遍历，而不是导致NullValueInNestedPathException 。
+	// 在普通的 PropertyAccessor 实例上默认为false
 
 	/**
 	 * Return whether "auto-growing" of nested paths has been activated.

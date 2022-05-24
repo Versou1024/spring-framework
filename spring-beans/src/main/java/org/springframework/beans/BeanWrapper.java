@@ -51,6 +51,13 @@ public interface BeanWrapper extends ConfigurablePropertyAccessor {
 	 * 实现 ConfigurablePropertyAccessor
 	 * Bean包装器扩展API
 	 * 1、获取包装的对象、包装对象的CLass、属性描述符
+	 *
+	 * 如果说上篇文章所说的PropertyAccessor你没有接触过和听过，那么本文即将要说的重点：BeanWrapper你应该多少有所耳闻吧~
+	 * BeanWrapper可以简单的把它理解为：一个方便开发人员使用字符串来对Java Bean的属性执行get、set操作的工具。关于它的数据转换使用了如下两种机制：
+	 * 		PropertyEditor：隶属于Java Bean规范。PropertyEditor只提供了String <-> Object的转换。
+	 * 		ConversionService：Spring自3.0之后提供的替代PropertyEditor的机制（BeanWrapper在Spring的第一个版本就存在了~）
+	 * 按照Spring官方文档的说法，当容器内没有注册ConversionService的时候，会退回使用PropertyEditor机制。言外之意：首选方案是ConversionService
+	 * 其实了解的伙伴应该知道，这不是BeanWrapper的内容，而是父接口PropertyAccessor的内容
 	 */
 
 	/**
@@ -59,29 +66,31 @@ public interface BeanWrapper extends ConfigurablePropertyAccessor {
 	 * @since 4.1
 	 */
 	void setAutoGrowCollectionLimit(int autoGrowCollectionLimit);
+	// 指定数组和集合自动增长的限制。
+	// 默认在普通 BeanWrapper 上是无限制的
 
 	/**
 	 * Return the limit for array and collection auto-growing.
 	 * @since 4.1
 	 */
-	int getAutoGrowCollectionLimit();
+	int getAutoGrowCollectionLimit(); // 返回数组和集合自动增长的限制。
 
 	/**
 	 * Return the bean instance wrapped by this object.
 	 */
-	Object getWrappedInstance();
+	Object getWrappedInstance(); // 返回此对象包装的 bean 实例。
 
 	/**
 	 * Return the type of the wrapped bean instance.
 	 */
-	Class<?> getWrappedClass();
+	Class<?> getWrappedClass(); // 返回包装的 bean 实例的类型
 
 	/**
 	 * Obtain the PropertyDescriptors for the wrapped object
 	 * (as determined by standard JavaBeans introspection).
 	 * @return the PropertyDescriptors for the wrapped object
 	 */
-	PropertyDescriptor[] getPropertyDescriptors();
+	PropertyDescriptor[] getPropertyDescriptors(); // 获取包装对象的 PropertyDescriptors（由标准 JavaBeans 自省确定）。
 
 	/**
 	 * Obtain the property descriptor for a specific property

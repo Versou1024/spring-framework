@@ -32,6 +32,9 @@ import org.springframework.web.method.support.InvocableHandlerMethod;
  * @since 3.1
  */
 public class ServletRequestDataBinderFactory extends InitBinderDataBinderFactory {
+	// 继承了 InitBinderDataBinderFactory
+	// 特点是融于了 ServletRequest
+	// 重写 createBinderInstance() -> 返回一个特别的DataBinder即ExtendedServletRequestDataBinder,对路径参数页做兼容处理
 
 	/**
 	 * Create a new instance.

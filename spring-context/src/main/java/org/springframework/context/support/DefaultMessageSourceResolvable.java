@@ -34,6 +34,8 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public class DefaultMessageSourceResolvable implements MessageSourceResolvable, Serializable {
+	// MessageSourceResolvable 的默认实现
+	// 封装 codes\arguments\defaultMessage
 
 	@Nullable
 	private final String[] codes;

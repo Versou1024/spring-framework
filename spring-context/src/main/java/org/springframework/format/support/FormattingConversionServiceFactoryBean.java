@@ -61,25 +61,24 @@ import org.springframework.util.StringValueResolver;
  * @author Chris Beams
  * @since 3.0
  */
-public class FormattingConversionServiceFactoryBean
-		implements FactoryBean<FormattingConversionService>, EmbeddedValueResolverAware, InitializingBean {
+public class FormattingConversionServiceFactoryBean implements FactoryBean<FormattingConversionService>, EmbeddedValueResolverAware, InitializingBean {
 
 	@Nullable
-	private Set<?> converters;
+	private Set<?> converters; // 转换器
 
 	@Nullable
-	private Set<?> formatters;
+	private Set<?> formatters; // 格式化器
 
 	@Nullable
-	private Set<FormatterRegistrar> formatterRegistrars;
+	private Set<FormatterRegistrar> formatterRegistrars; // FormatterRegistrar
 
-	private boolean registerDefaultFormatters = true;
-
-	@Nullable
-	private StringValueResolver embeddedValueResolver;
+	private boolean registerDefaultFormatters = true; // 是否注册默认的formatter
 
 	@Nullable
-	private FormattingConversionService conversionService;
+	private StringValueResolver embeddedValueResolver; // spel表达式解析
+
+	@Nullable
+	private FormattingConversionService conversionService; //  FormattingConversionService
 
 
 	/**
@@ -138,12 +137,18 @@ public class FormattingConversionServiceFactoryBean
 
 	@Override
 	public void afterPropertiesSet() {
+		// 1. 创建 DefaultFormattingConversionService
+		// 传入 embeddedValueResolver\registerDefaultFormatters -- 默认会注册一批converter和formatter
 		this.conversionService = new DefaultFormattingConversionService(this.embeddedValueResolver, this.registerDefaultFormatters);
+		// 2. 将用户传入的converters也注册到conversionService中
 		ConversionServiceFactory.registerConverters(this.converters, this.conversionService);
+		// 3. 然后把用户传入的formatters页注册到conversionService
 		registerFormatters(this.conversionService);
 	}
 
 	private void registerFormatters(FormattingConversionService conversionService) {
+		// 遍历 formatters 注册到 conversionService
+		// 调用 addFormatter() addFormatterForFieldAnnotation
 		if (this.formatters != null) {
 			for (Object formatter : this.formatters) {
 				if (formatter instanceof Formatter<?>) {
@@ -158,6 +163,7 @@ public class FormattingConversionServiceFactoryBean
 				}
 			}
 		}
+		// 遍历 formatterRegistrars 页注册进去
 		if (this.formatterRegistrars != null) {
 			for (FormatterRegistrar registrar : this.formatterRegistrars) {
 				registrar.registerFormatters(conversionService);

@@ -117,7 +117,7 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
-		// ❗️核心支持：支持解析的返回值带有ResponseBody的返回值
+		// ❗️核心支持：支持解析的返回值带有@ResponseBody的返回值
 		//  显然可以发现，方法上或者类上标注有@ResponseBody都是可以的~~~~
 		//	这也就是为什么现在@RestController可以代替我们的的@Controller + @ResponseBody生效了
 
@@ -140,16 +140,23 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 		parameter = parameter.nestedIfOptional();
 		// 这个方法就特别重要了，实现就在下面，现在强烈要求吧目光先投入到下面这个方法实现上~~~~
 		Object arg = readWithMessageConverters(webRequest, parameter, parameter.getNestedGenericParameterType());
-		// 拿到入参的形参的名字
+		// 拿到入参的名字
+		// 获取到入参的名称,其实不叫形参名字，应该叫objectName给校验时用的
+		// 请注意：这里的名称是类名首字母小写，并不是你方法里写的名字。比如本利若形参名写为personAAA，但是name的值还是person
+		// 但是注意：`parameter.getParameterName()`的值可是personAAA
 		String name = Conventions.getVariableNameForParameter(parameter);
 
 		// 下面就是进行参数绑定、数据适配、转换的逻辑了  这个在Spring MVC处理请求参数这一章会详细讲解
 		// 数据校验@Validated也是在此处生效的
+		// 只有存在binderFactory才会去完成自动的绑定、校验~
+		// 此处web环境为：ServletRequestDataBinderFactory
 		if (binderFactory != null) {
 			// 创建webDataBinder用于校验数据格式是否正确
 			WebDataBinder binder = binderFactory.createBinder(webRequest, arg, name);
+			// 显然传了参数才需要去绑定校验嘛
 			if (arg != null) {
 				// 利用binder进行数据校验
+				// Applicable：适合
 				validateIfApplicable(binder, parameter);
 				// 检查binder的数据绑定结果或者校验结果中是否有errors，
 				// 抛出异常
@@ -157,6 +164,8 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 					throw new MethodArgumentNotValidException(parameter, binder.getBindingResult());
 				}
 			}
+			// 把错误消息放进去 证明已经校验出错误了~~~
+			// 后续逻辑会判断MODEL_KEY_PREFIX这个key的~~~~
 			if (mavContainer != null) {
 				mavContainer.addAttribute(BindingResult.MODEL_KEY_PREFIX + name, binder.getBindingResult());
 			}

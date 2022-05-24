@@ -37,6 +37,7 @@ import org.springframework.lang.Nullable;
  * @see #setLenient
  */
 public class NumberStyleFormatter extends AbstractNumberFormatter {
+	// 数字的格式进行转换，也可以指定pattern
 
 	@Nullable
 	private String pattern;
@@ -70,6 +71,8 @@ public class NumberStyleFormatter extends AbstractNumberFormatter {
 
 	@Override
 	public NumberFormat getNumberFormat(Locale locale) {
+		// 调用 NumberFormat.getInstance(locale)
+
 		NumberFormat format = NumberFormat.getInstance(locale);
 		if (!(format instanceof DecimalFormat)) {
 			if (this.pattern != null) {

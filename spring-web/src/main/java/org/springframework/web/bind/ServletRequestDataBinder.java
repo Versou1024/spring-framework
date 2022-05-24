@@ -58,6 +58,7 @@ import org.springframework.web.util.WebUtils;
  * @see #setFieldMarkerPrefix
  */
 public class ServletRequestDataBinder extends WebDataBinder {
+	//
 
 	/**
 	 * Create a new ServletRequestDataBinder instance, with default object name.
@@ -98,11 +99,18 @@ public class ServletRequestDataBinder extends WebDataBinder {
 	 * @see #bind(org.springframework.beans.PropertyValues)
 	 */
 	public void bind(ServletRequest request) {
+		// 注意这个可不是父类的方法，是本类增强的~~~~意思就是kv都从request里来~~当然内部还是适配成了一个MutablePropertyValues
+
+		// 内部最核心方法是它：WebUtils.getParametersStartingWith()  把request参数转换成一个Map
+		// request.getParameterNames()
 		MutablePropertyValues mpvs = new ServletRequestParameterPropertyValues(request);
 		MultipartRequest multipartRequest = WebUtils.getNativeRequest(request, MultipartRequest.class);
+		// 调用父类的bindMultipart方法，把MultipartFile都放进MutablePropertyValues里去~~~
 		if (multipartRequest != null) {
 			bindMultipart(multipartRequest.getMultiFileMap(), mpvs);
 		}
+		// 这个方法是本类流出来的一个扩展点~~~子类可以复写此方法自己往里继续添加
+		// 比如ExtendedServletRequestDataBinder它就复写了这个方法，进行了增强（下面会说）  支持到了uriTemplateVariables的绑定
 		addBindValues(mpvs, request);
 		doBind(mpvs);
 	}

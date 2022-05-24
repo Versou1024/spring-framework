@@ -25,5 +25,7 @@ package org.springframework.format;
  * @param <T> the type of object this Formatter formats
  */
 public interface Formatter<T> extends Printer<T>, Parser<T> {
-
+	// 综合 格式化和解析的能力
+	// 用于 String 和 其他类型的转换
+	// Formatter顾名思义，它表示格式化
 }

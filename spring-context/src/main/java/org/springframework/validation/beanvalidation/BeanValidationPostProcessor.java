@@ -43,9 +43,13 @@ import org.springframework.util.Assert;
 public class BeanValidationPostProcessor implements BeanPostProcessor, InitializingBean {
 
 	//BeanValidationPostProcessor：对bean进行数据校验
+	//它就是个普通的BeanPostProcessor。它能够去校验Spring容器中的Bean，从而决定允不允许它初始化完成。
+	//比如我们有些Bean某些字段是不允许为空的，比如数据的链接，用户名密码等等，这个时候用上它处理就非常的优雅和高级了~
+	//若校验不通过，在违反约束的情况下就会抛出异常，阻止容器的正常启动~
+	//备注：BeanValidationPostProcessor默认可是没有被装配进容器的~
 
 	@Nullable
-	private Validator validator;
+	private Validator validator; // javax.validation.validator
 
 	private boolean afterInitialization = false;
 
@@ -82,6 +86,7 @@ public class BeanValidationPostProcessor implements BeanPostProcessor, Initializ
 	@Override
 	public void afterPropertiesSet() {
 		if (this.validator == null) {
+			// 经典的: Validation.buildDefaultValidatorFactory.getValidator;
 			this.validator = Validation.buildDefaultValidatorFactory().getValidator();
 		}
 	}
@@ -115,8 +120,11 @@ public class BeanValidationPostProcessor implements BeanPostProcessor, Initializ
 		if (objectToValidate == null) {
 			objectToValidate = bean;
 		}
+
+		// 使用 javax.validation.validator 进行校验 -- Bean级别校验,返回一个Set<ConstraintViolation<Object>>
 		Set<ConstraintViolation<Object>> result = this.validator.validate(objectToValidate);
 
+		// 对校验失败的做,结果封装,通过BeanInitializationException抛出
 		if (!result.isEmpty()) {
 			StringBuilder sb = new StringBuilder("Bean state is invalid: ");
 			for (Iterator<ConstraintViolation<Object>> it = result.iterator(); it.hasNext();) {

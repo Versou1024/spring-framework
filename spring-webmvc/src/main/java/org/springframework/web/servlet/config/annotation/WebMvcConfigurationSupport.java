@@ -729,6 +729,8 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	protected ConfigurableWebBindingInitializer getConfigurableWebBindingInitializer(
 			FormattingConversionService mvcConversionService, Validator mvcValidator) {
+		// WebDataBinder的初始化器ConfigurableWebBindingInitializer
+		// 用来向WebDataBinder中配置属性,比如校验器\conversionService\messageCodesResolver等
 
 		ConfigurableWebBindingInitializer initializer = new ConfigurableWebBindingInitializer();
 		initializer.setConversionService(mvcConversionService);
@@ -761,9 +763,15 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public FormattingConversionService mvcConversionService() {
-		// 返回一个默认的转换服务
+		// 关于数据绑定的关键入口 -- FormattingConversionService 可以注册Formatter\Printer\Parser\Converter\GenericConverter\ConverterFactory等等
+		// 主要就是 Formatter\Converter 两大体系,以及各自的子接口
+		// 起到管理 格式器\转换器,以及提供convert的能力
 		FormattingConversionService conversionService = new DefaultFormattingConversionService();
-		addFormatters(conversionService); // 支持用户定义扩展Formatter转换器
+		addFormatters(conversionService);
+		// 支持用户定义扩展 conversionService
+		// 例如 conversionService#addFormater
+		//conversionService#addFormatterForFieldAnnotation
+		// conversionService#addConverter等等
 		return conversionService;
 	}
 
@@ -773,6 +781,13 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 * @see #mvcConversionService()
 	 */
 	protected void addFormatters(FormatterRegistry registry) {
+		// 此处conversionService既是个ConverterRegistry，又是个FormatterRegistry，所以~~
+
+		// 选择Converter, 还是Formatter
+		//		Converter是一般工具, 可以将一种类型转换成另一种类型, 例如, 将String转换成Date, 或者Long转换成Date,
+		//				Conveter既可以用在web层, 也可以用在其他层中。
+		//		Formatter只能将String转换层另一种java类型, 例如, 将String转换成Date, 但它不可能将Long转换成Date类型,
+		//				因此Formatter适用于web层, 因此, SpringMVC应用程序中, 选择Formatter比选择Converter更合适
 	}
 
 	/**
@@ -785,6 +800,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public Validator mvcValidator() {
+		// 用户可以自己提供Validator
 		Validator validator = getValidator();
 		if (validator == null) {
 			if (ClassUtils.isPresent("javax.validation.Validator", getClass().getClassLoader())) {

@@ -39,6 +39,8 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public class DefaultConversionService extends GenericConversionService {
+	// 默认的 GenericConversionService
+	// 主要目的:在空构造函数中,注册各种Converter
 
 	@Nullable
 	private static volatile DefaultConversionService sharedInstance;
@@ -49,6 +51,7 @@ public class DefaultConversionService extends GenericConversionService {
 	 * {@linkplain DefaultConversionService#addDefaultConverters(ConverterRegistry) default converters}.
 	 */
 	public DefaultConversionService() {
+		// // 空构造，那就注册到自己this身上~~~因为自己也是个ConverterRegistry
 		addDefaultConverters(this);
 	}
 
@@ -85,9 +88,15 @@ public class DefaultConversionService extends GenericConversionService {
 	 * @throws ClassCastException if the given ConverterRegistry could not be cast to a ConversionService
 	 */
 	public static void addDefaultConverters(ConverterRegistry converterRegistry) {
+		// 添加适用于大多数环境的转换器。
+
+		// 1. 添加标量/基本类型转换器
 		addScalarConverters(converterRegistry);
+
+		// 2. 添加常用的集合转换器
 		addCollectionConverters(converterRegistry);
 
+		// 3.
 		converterRegistry.addConverter(new ByteBufferConverter((ConversionService) converterRegistry));
 		converterRegistry.addConverter(new StringToTimeZoneConverter());
 		converterRegistry.addConverter(new ZoneIdToTimeZoneConverter());

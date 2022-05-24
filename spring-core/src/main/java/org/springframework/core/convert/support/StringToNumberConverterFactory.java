@@ -40,6 +40,7 @@ import org.springframework.util.NumberUtils;
  * @see NumberUtils
  */
 final class StringToNumberConverterFactory implements ConverterFactory<String, Number> {
+	// 将String转为Enum枚举类型的
 
 	@Override
 	public <T extends Number> Converter<String, T> getConverter(Class<T> targetType) {
@@ -47,8 +48,10 @@ final class StringToNumberConverterFactory implements ConverterFactory<String, N
 	}
 
 
+	// 内部类转换器: StringToNumber
 	private static final class StringToNumber<T extends Number> implements Converter<String, T> {
 
+		// 目标类型: Number的子类
 		private final Class<T> targetType;
 
 		public StringToNumber(Class<T> targetType) {
@@ -61,6 +64,7 @@ final class StringToNumberConverterFactory implements ConverterFactory<String, N
 			if (source.isEmpty()) {
 				return null;
 			}
+			// 使用NumberUtils.parseNumber做解析
 			return NumberUtils.parseNumber(source, this.targetType);
 		}
 	}

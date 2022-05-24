@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  * @see FormatterRegistrar#registerFormatters
  */
 public class DateFormatterRegistrar implements FormatterRegistrar {
+	// 对JSR310的那些时间类进行支持。包括：LocalDateTime、ZonedDateTime、OffsetDateTime、OffsetTime等等
 
 	@Nullable
 	private DateFormatter dateFormatter;
@@ -61,12 +62,17 @@ public class DateFormatterRegistrar implements FormatterRegistrar {
 	@Override
 	public void registerFormatters(FormatterRegistry registry) {
 		addDateConverters(registry);
+		// 它是个静态方法
+		// 对`@DateTimeFormat`的支持~~~~~
+		// 所以如果你导入了joda包，这个注解可能会失效的~~~~需要特别注意~~~~~~~~~~~ 但下面的DateToLongConverter之类的依旧好使~
+		// 但是你导入的是JSR310   没有这个问题~~~~
 		// In order to retain back compatibility we only register Date/Calendar
 		// types when a user defined formatter is specified (see SPR-10105)
 		if (this.dateFormatter != null) {
 			registry.addFormatter(this.dateFormatter);
 			registry.addFormatterForFieldType(Calendar.class, this.dateFormatter);
 		}
+		// 添加 DateTimeFormatAnnotationFormatterFactory
 		registry.addFormatterForFieldAnnotation(new DateTimeFormatAnnotationFormatterFactory());
 	}
 
@@ -75,12 +81,16 @@ public class DateFormatterRegistrar implements FormatterRegistrar {
 	 * @param converterRegistry the registry of converters to add to
 	 */
 	public static void addDateConverters(ConverterRegistry converterRegistry) {
+		// 将日期转换器添加到指定的注册表。
+		// DateToLongConverter\DateToCalendarConverter\CalendarToDateConverter\CalendarToLongConverter\
+		// LongToDateConverter\LongToCalendarConverter
 		converterRegistry.addConverter(new DateToLongConverter());
 		converterRegistry.addConverter(new DateToCalendarConverter());
 		converterRegistry.addConverter(new CalendarToDateConverter());
 		converterRegistry.addConverter(new CalendarToLongConverter());
 		converterRegistry.addConverter(new LongToDateConverter());
 		converterRegistry.addConverter(new LongToCalendarConverter());
+		// 都是几个内部类
 	}
 
 

@@ -31,6 +31,8 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.validation.DataBinder#registerCustomEditor
  */
 public class StringTrimmerEditor extends PropertyEditorSupport {
+	// String 转为 String
+	// 主要经过 trim() -> 删除存在charsToDelete中的字符
 
 	@Nullable
 	private final String charsToDelete;
@@ -57,8 +59,8 @@ public class StringTrimmerEditor extends PropertyEditorSupport {
 	 * transformed into {@code null}
 	 */
 	public StringTrimmerEditor(String charsToDelete, boolean emptyAsNull) {
-		this.charsToDelete = charsToDelete;
-		this.emptyAsNull = emptyAsNull;
+		this.charsToDelete = charsToDelete; // 需要被删除的字符
+		this.emptyAsNull = emptyAsNull; // 经过trim()\删除指定的字符后,如果字符为"",是否需要设置为null后存入
 	}
 
 

@@ -61,8 +61,8 @@ import org.springframework.util.ReflectionUtils;
  * @see PropertyEditorRegistrySupport
  */
 public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements BeanWrapper {
-	/**
-	 * 实现BeanWrapper接口、继承AbstractNestablePropertyAccessor
+	/*
+	 * 实现BeanWrapper接口、继承了AbstractNestablePropertyAccessor
 	 *
 	 * 默认的BeanWrapper接口的实现类
 	 */
@@ -153,6 +153,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 		setIntrospectionClass(object.getClass());
 	}
 
+	// 复写父类的方法  增加内省逻辑
 	@Override
 	public void setWrappedInstance(Object object, @Nullable String nestedPath, @Nullable Object rootObject) {
 		super.setWrappedInstance(object, nestedPath, rootObject);
@@ -165,6 +166,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * @param clazz the class to introspect
 	 */
 	protected void setIntrospectionClass(Class<?> clazz) {
+		//  如果cachedIntrospectionResults它持有的BeanClass并不是传入的clazz 那就清空缓存 重新来~~~
 		if (this.cachedIntrospectionResults != null && this.cachedIntrospectionResults.getBeanClass() != clazz) {
 			this.cachedIntrospectionResults = null;
 		}
@@ -236,11 +238,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	@Override
 	@Nullable
 	protected BeanPropertyHandler getLocalPropertyHandler(String propertyName) {
-		/**
-		 * 获取局部数据处理器：仅仅传入属性名称如何获取处理器，因为BeanPropertyHandler是需要传入PropertyDescriptor的
-		 *
-		 * 答案：通过缓存的内省结果中获取指定的PD
-		 */
+		// 获取到此属性的处理器。此处是个BeanPropertyHandler 内部类
 		PropertyDescriptor pd = getCachedIntrospectionResults().getPropertyDescriptor(propertyName);
 		return (pd != null ? new BeanPropertyHandler(pd) : null);
 	}
@@ -264,6 +262,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 
 	@Override
 	public PropertyDescriptor getPropertyDescriptor(String propertyName) throws InvalidPropertyException {
+		// 获取具体某一个属性~
 		BeanWrapperImpl nestedBw = (BeanWrapperImpl) getPropertyAccessorForPropertyPath(propertyName);
 		String finalPath = getFinalPath(nestedBw, propertyName);
 		PropertyDescriptor pd = nestedBw.getCachedIntrospectionResults().getPropertyDescriptor(finalPath);
@@ -278,6 +277,9 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	private class BeanPropertyHandler extends PropertyHandler {
 		/**
 		 * 属性处理器的实现
+		 * 不同于 DirectFieldAccessor 内部类 FieldPropertyHandler 的 setValue和getValue 是直接使用反射设置上去的
+		 *
+		 * 而 BeanWrapperImpl 内部类 BeanPropertyHandler 的 setValue 和 getValue 是需要有对应的get和set方法的
 		 */
 
 		private final PropertyDescriptor pd;

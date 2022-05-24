@@ -28,6 +28,7 @@ import org.springframework.core.convert.converter.ConverterFactory;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 final class IntegerToEnumConverterFactory implements ConverterFactory<Integer, Enum> {
+	// 将Integer转换为Enum子类型的
 
 	@Override
 	public <T extends Enum> Converter<Integer, T> getConverter(Class<T> targetType) {

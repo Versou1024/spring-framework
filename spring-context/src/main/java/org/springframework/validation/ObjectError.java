@@ -34,11 +34,11 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class ObjectError extends DefaultMessageSourceResolvable {
-	/**
-	 * 封装对象的全局错误信息：
-	 *
-	 * 聚合：错误对象名obejctname、错误源source、错误消息message、错误形参arguments、错误码codes
-	 */
+
+	 // 封装对象的全局错误信息：
+	 // 聚合：在 DefaultMessageSourceResolvable 的基础上 defaultMessage\codes\arguments
+	// 扩展了 objectName/source
+
 
 	private final String objectName; // 错误对象的名字
 

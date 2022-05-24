@@ -36,6 +36,11 @@ import org.springframework.lang.Nullable;
  */
 public class DateTimeFormatterFactoryBean extends DateTimeFormatterFactory
 		implements FactoryBean<DateTimeFormatter>, InitializingBean {
+	// DateTimeFormatterFactoryBean
+	// 这里指的是org.springframework.format.datetime.standard.DateTimeFormatterFactoryBean，而不是joda包的，需要稍微注意。它借助了DateTimeFormatterFactory然后实现了一波FactoryBean，猛如虎有木有~
+
+	// 继承了 DateTimeFormatterFactory
+	// 并在 afterPropertiesSet() 调用了超类的 createDateTimeFormatter()
 
 	@Nullable
 	private DateTimeFormatter dateTimeFormatter;

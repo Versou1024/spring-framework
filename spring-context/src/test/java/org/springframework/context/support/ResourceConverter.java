@@ -24,6 +24,8 @@ import org.springframework.core.io.Resource;
  * @author Juergen Hoeller
  */
 public class ResourceConverter implements Converter<String, Resource> {
+	// String 转 Resource
+	// 使用 FileSystemResource,且只支持xml格式
 
 	@Override
 	public Resource convert(String source) {

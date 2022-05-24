@@ -59,6 +59,7 @@ import org.springframework.validation.annotation.Validated;
  */
 public class MethodValidationInterceptor implements MethodInterceptor {
 
+	// 校验器
 	private final Validator validator;
 
 
@@ -89,22 +90,29 @@ public class MethodValidationInterceptor implements MethodInterceptor {
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		// Avoid Validator invocation on FactoryBean.getObjectType/isSingleton
+		// 1. 避免在 FactoryBean.getObjectType或isSingleton 上调用验证器
 		if (isFactoryBeanMetadataMethod(invocation.getMethod())) {
 			return invocation.proceed();
 		}
 
+		// 2. 获取分组情况
 		Class<?>[] groups = determineValidationGroups(invocation);
 
 		// Standard Bean Validation 1.1 API
+		// 3. 获取 验证器 -- 不同于Validator,对于可执行的方法/构造器需要使用ExecutableValidator校验器才可以
 		ExecutableValidator execVal = this.validator.forExecutables();
 		Method methodToValidate = invocation.getMethod();
+		// 4. 存放验证结果
 		Set<ConstraintViolation<Object>> result;
 
 		try {
+			// 5. 验证器验证参数
 			result = execVal.validateParameters(
 					invocation.getThis(), methodToValidate, invocation.getArguments(), groups);
 		}
 		catch (IllegalArgumentException ex) {
+			// 6. 参数不通过验证
+			// 此处回退了异步：找到bridged method方法再来一次
 			// Probably a generic type mismatch between interface and impl as reported in SPR-12237 / HV-1011
 			// Let's try to find the bridged method on the implementation class...
 			methodToValidate = BridgeMethodResolver.findBridgedMethod(
@@ -113,13 +121,17 @@ public class MethodValidationInterceptor implements MethodInterceptor {
 					invocation.getThis(), methodToValidate, invocation.getArguments(), groups);
 		}
 		if (!result.isEmpty()) {
+			// 7. 抛出异常
 			throw new ConstraintViolationException(result);
 		}
 
+		// 8. 执行方法
 		Object returnValue = invocation.proceed();
 
+		// 9. 验证返回值的结果是否符合约束
 		result = execVal.validateReturnValue(invocation.getThis(), methodToValidate, returnValue, groups);
 		if (!result.isEmpty()) {
+			// 10. 结果验证失败,抛出异常
 			throw new ConstraintViolationException(result);
 		}
 
@@ -155,10 +167,15 @@ public class MethodValidationInterceptor implements MethodInterceptor {
 	 * @return the applicable validation groups as a Class array
 	 */
 	protected Class<?>[] determineValidationGroups(MethodInvocation invocation) {
+		// 确定验证组
+
+		// 1. 查找执行方法上是否有@Validated注解
 		Validated validatedAnn = AnnotationUtils.findAnnotation(invocation.getMethod(), Validated.class);
 		if (validatedAnn == null) {
+			// 2. 方法上没有,查找所属类上是否有@Validated注解
 			validatedAnn = AnnotationUtils.findAnnotation(invocation.getThis().getClass(), Validated.class);
 		}
+		// 3. 有的话,返回其value值,就是对应的groups分组情况
 		return (validatedAnn != null ? validatedAnn.value() : new Class<?>[0]);
 	}
 

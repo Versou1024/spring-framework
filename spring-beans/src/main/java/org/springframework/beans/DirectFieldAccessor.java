@@ -46,7 +46,12 @@ import org.springframework.util.ReflectionUtils;
  * @see org.springframework.validation.DataBinder#initDirectFieldAccess()
  */
 public class DirectFieldAccessor extends AbstractNestablePropertyAccessor {
+	// DirectFieldAccessor
+	// 它继承自AbstractNestablePropertyAccessor，所以它肯定也就可以处理级联属性和集合数组值了。
+	// （请注意，在Spring4.2之后支持，之前是不支持的~）
 
+	// 缓存着每个字段的处理器FieldPropertyHandler
+	// ReflectionUtils.findField()根据String去找到Field对象的
 	private final Map<String, FieldPropertyHandler> fieldMap = new HashMap<>();
 
 
@@ -98,6 +103,7 @@ public class DirectFieldAccessor extends AbstractNestablePropertyAccessor {
 
 
 	private class FieldPropertyHandler extends PropertyHandler {
+		// // 字段field属性处理器，使用内部类实现PropertyHandler ~~~
 
 		private final Field field;
 
@@ -121,6 +127,13 @@ public class DirectFieldAccessor extends AbstractNestablePropertyAccessor {
 		public TypeDescriptor nested(int level) {
 			return TypeDescriptor.nested(this.field, level);
 		}
+
+		// 它的功能是直接操作Bean的属性值，而代替使用get/set方法去操作Bean。它的实现原理就是简单的field.get(getWrappedInstance())和field.set(getWrappedInstance(), value)等。
+		// 它处理级联属性的大致步骤是：
+		//
+		//遇上级联属性，先找出canonicalName
+		//根据此canonicalName调用其field.get()拿到此字段的值~
+		//若不为null（有初始值），那就继续解析此类型，循而往复即可~
 
 		@Override
 		@Nullable

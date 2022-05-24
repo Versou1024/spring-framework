@@ -64,10 +64,14 @@ import org.springframework.validation.SmartValidator;
  * @see LocalValidatorFactoryBean
  */
 public class SpringValidatorAdapter implements SmartValidator, javax.validation.Validator {
+	// 校验适配器 -- 十分重要
+	// 它是javax.validation.Validator到Spring的Validator的适配，通过它就可以对接到JSR的校验器来完成校验工作了~
 
 	private static final Set<String> internalAnnotationAttributes = new HashSet<>(4);
 
 	static {
+		// 任何校验注解都至少有这三个值
+		// message/groups/payload
 		internalAnnotationAttributes.add("message");
 		internalAnnotationAttributes.add("groups");
 		internalAnnotationAttributes.add("payload");
@@ -75,6 +79,8 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 
 	@Nullable
 	private javax.validation.Validator targetValidator;
+	// 被适配者: javax.validation.Validator
+	// 适配目标: org.springframework.validation.Validator
 
 
 	/**
@@ -100,12 +106,14 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 
 	@Override
 	public boolean supports(Class<?> clazz) {
+		// 默认情况: javax.validation.Validator 校验器支持所有的类型进行校验
 		return (this.targetValidator != null);
 	}
 
 	@Override
 	public void validate(Object target, Errors errors) {
 		if (this.targetValidator != null) {
+			// processConstraintViolations 处理 javax.validation.Validator.validate() 检验后的验证约束到Errors
 			processConstraintViolations(this.targetValidator.validate(target), errors);
 		}
 	}
@@ -114,6 +122,7 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 	public void validate(Object target, Errors errors, Object... validationHints) {
 		if (this.targetValidator != null) {
 			processConstraintViolations(
+					// 将 validationHints 转换为 需要校验的组
 					this.targetValidator.validate(target, asValidationGroups(validationHints)), errors);
 		}
 	}
@@ -134,6 +143,9 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 	 * @since 5.1
 	 */
 	private Class<?>[] asValidationGroups(Object... validationHints) {
+		// 将 validationHints 转换为 groups
+		// 注意非Class时不会被注入到groups中
+
 		Set<Class<?>> groups = new LinkedHashSet<>(4);
 		for (Object hint : validationHints) {
 			if (hint instanceof Class) {
@@ -151,13 +163,18 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 	 */
 	@SuppressWarnings("serial")
 	protected void processConstraintViolations(Set<ConstraintViolation<Object>> violations, Errors errors) {
+		// 1. 处理校验结果 ConstraintViolation<Object> ,前提是有的话
+
 		for (ConstraintViolation<Object> violation : violations) {
 			String field = determineField(violation);
 			FieldError fieldError = errors.getFieldError(field);
 			if (fieldError == null || !fieldError.isBindingFailure()) {
 				try {
+					// 约束描述符
 					ConstraintDescriptor<?> cd = violation.getConstraintDescriptor();
+					// 返回约束注解的名字,将其作为ErrorCode
 					String errorCode = determineErrorCode(cd);
+					// 获取校验的根对象名字errors.getObjectName(),根据field以及错误cd创建错误参数errorArgs
 					Object[] errorArgs = getArgumentsForConstraint(errors.getObjectName(), field, cd);
 					if (errors instanceof BindingResult) {
 						// Can do custom FieldError registration with invalid value from ConstraintViolation,
@@ -203,9 +220,14 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 	 * @see org.springframework.validation.FieldError#getField()
 	 */
 	protected String determineField(ConstraintViolation<Object> violation) {
+		// 确定给定约束违规的字段。
+		// 默认实现返回字符串化的属性路
+
+		// 1. 获取属性路径
 		Path path = violation.getPropertyPath();
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
+		// 2. 查看路径节点
 		for (Path.Node node : path) {
 			if (node.isInIterable()) {
 				sb.append('[');
@@ -227,6 +249,7 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 				sb.append(name);
 			}
 		}
+		// 3. 返回
 		return sb.toString();
 	}
 
@@ -243,6 +266,8 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 	 * @see org.springframework.validation.MessageCodesResolver
 	 */
 	protected String determineErrorCode(ConstraintDescriptor<?> descriptor) {
+		// 返回约束注解的名字,将其作为ErrorCode
+
 		return descriptor.getAnnotation().annotationType().getSimpleName();
 	}
 
@@ -266,6 +291,7 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 		List<Object> arguments = new ArrayList<>();
 		arguments.add(getResolvableField(objectName, field));
 		// Using a TreeMap for alphabetical ordering of attribute names
+		// 属性集合
 		Map<String, Object> attributesToExpose = new TreeMap<>();
 		descriptor.getAttributes().forEach((attributeName, attributeValue) -> {
 			if (!internalAnnotationAttributes.contains(attributeName)) {

@@ -30,6 +30,7 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 final class StringToBooleanConverter implements Converter<String, Boolean> {
+	// String 转换为 Boolean 类型的
 
 	private static final Set<String> trueValues = new HashSet<>(8);
 
@@ -57,12 +58,15 @@ final class StringToBooleanConverter implements Converter<String, Boolean> {
 		}
 		value = value.toLowerCase();
 		if (trueValues.contains(value)) {
+			// true/on/yes/1
 			return Boolean.TRUE;
 		}
 		else if (falseValues.contains(value)) {
+			// false/off/no/0
 			return Boolean.FALSE;
 		}
 		else {
+			// 异常情况
 			throw new IllegalArgumentException("Invalid boolean value '" + source + "'");
 		}
 	}

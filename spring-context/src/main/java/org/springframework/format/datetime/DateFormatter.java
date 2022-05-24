@@ -42,6 +42,8 @@ import org.springframework.util.StringUtils;
  * @see SimpleDateFormat
  */
 public class DateFormatter implements Formatter<Date> {
+	// 这个是最为重要的一个转换，因为Spring MVC中我们经常会使用Date来接收参数和返回，
+	// 因此这个转换器个人建议有必要了解一下，非常有助于了解序列化的原理啥的~~~依赖于java.text.DateFormat来处理的。
 
 	private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
@@ -57,18 +59,18 @@ public class DateFormatter implements Formatter<Date> {
 
 
 	@Nullable
-	private String pattern;
+	private String pattern; // 模式
 
-	private int style = DateFormat.DEFAULT;
+	private int style = DateFormat.DEFAULT; // 样式
 
 	@Nullable
 	private String stylePattern;
 
 	@Nullable
-	private ISO iso;
+	private ISO iso; // ISO
 
 	@Nullable
-	private TimeZone timeZone;
+	private TimeZone timeZone; // 时区
 
 	private boolean lenient = false;
 
@@ -164,18 +166,25 @@ public class DateFormatter implements Formatter<Date> {
 
 
 	protected DateFormat getDateFormat(Locale locale) {
+		// 1. 创建java的DateFormate
 		DateFormat dateFormat = createDateFormat(locale);
+		// 2. 设置时区
 		if (this.timeZone != null) {
 			dateFormat.setTimeZone(this.timeZone);
 		}
+		// 3. 指定日期/时间解析是否宽松
 		dateFormat.setLenient(this.lenient);
 		return dateFormat;
 	}
 
 	private DateFormat createDateFormat(Locale locale) {
+		// 1. 有指定pattern,就直接使用pattern做解析和格式化操作
+		// 创建并返回 SimpleDateFormate
 		if (StringUtils.hasLength(this.pattern)) {
 			return new SimpleDateFormat(this.pattern, locale);
 		}
+		// 2. pattern为空,iso非空且非ISO.NONE
+		// 获取IOS对应的pattern模式,同样创创建SImpleDateFormate
 		if (this.iso != null && this.iso != ISO.NONE) {
 			String pattern = ISO_PATTERNS.get(this.iso);
 			if (pattern == null) {
@@ -185,7 +194,14 @@ public class DateFormatter implements Formatter<Date> {
 			format.setTimeZone(UTC);
 			return format;
 		}
+		// 3. pattern和ISO都没有指定,查看stylePattern是否有效
 		if (StringUtils.hasLength(this.stylePattern)) {
+			// 利用 DateFormate 本来就有风格样式
+			// 主要是分为 DateStyle 和 TimeStyle
+			// 每个都有 SMLF 四种风格
+			// 例如可以 DateStyle 为 Full,Time Style为 Small
+			// 因此总的stylePattern应该就是上面组合的FS
+			// 因此有很多中组合: FF SS MM LL F- S- 等等
 			int dateStyle = getStylePatternForChar(0);
 			int timeStyle = getStylePatternForChar(1);
 			if (dateStyle != -1 && timeStyle != -1) {
@@ -204,6 +220,13 @@ public class DateFormatter implements Formatter<Date> {
 	}
 
 	private int getStylePatternForChar(int index) {
+		// 主要是将 S\M\L\F\- 解析为对应的DateFormate
+		// 使用getDateTimeInstance获取日期和时间格式。您可以将不同的选项传递给这些工厂方法以控制结果的长度；从SHORT到MEDIUM到LONG到FULL 。确切的结果取决于语言环境，但通常：
+		//		SHORT完全是数字，例如12.13.52或3:30pm
+		//		MEDIUM较长，如Jan 12, 1952
+		//		LONG更长，例如January 12, 1952或3:30:32pm
+		//		FULL非常完整，例如Tuesday, April 12, 1952 AD or 3:30:42pm PST 。
+
 		if (this.stylePattern != null && this.stylePattern.length() > index) {
 			switch (this.stylePattern.charAt(index)) {
 				case 'S': return DateFormat.SHORT;

@@ -41,6 +41,8 @@ import org.springframework.util.NumberUtils;
  * @see NumberUtils
  */
 final class NumberToNumberConverterFactory implements ConverterFactory<Number, Number>, ConditionalConverter {
+	// 1:N 将Number转换为Number的子类
+	// 比如将 Number类型值为45 转换为 Integer类型的值 45
 
 	@Override
 	public <T extends Number> Converter<Number, T> getConverter(Class<T> targetType) {
@@ -49,6 +51,7 @@ final class NumberToNumberConverterFactory implements ConverterFactory<Number, N
 
 	@Override
 	public boolean matches(TypeDescriptor sourceType, TypeDescriptor targetType) {
+		// 匹配前提是 sourceType 和 targetType 不是同一个类型的
 		return !sourceType.equals(targetType);
 	}
 
@@ -63,6 +66,8 @@ final class NumberToNumberConverterFactory implements ConverterFactory<Number, N
 
 		@Override
 		public T convert(Number source) {
+			// convertNumberToTargetClass() 注意抛出：
+			// IllegalArgumentException – 如果不支持目标类（即不是 JDK 中包含的标准 Number 子类）
 			return NumberUtils.convertNumberToTargetClass(source, this.targetType);
 		}
 	}

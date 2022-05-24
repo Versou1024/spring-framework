@@ -27,6 +27,8 @@ import java.util.Locale;
  */
 @FunctionalInterface
 public interface Printer<T> {
+	// 从 其他类型T 转换为 String 类型的
+	// 格式化显示接口，将T类型的对象根据Locale信息以某种格式进行打印显示（即返回字符串形式）
 
 	/**
 	 * Print the object of type T for display.

@@ -27,6 +27,7 @@ import org.springframework.core.convert.converter.Converter;
  * @since 4.3
  */
 final class EnumToIntegerConverter extends AbstractConditionalEnumConverter implements Converter<Enum<?>, Integer> {
+	// 枚举 转 Integer
 
 	public EnumToIntegerConverter(ConversionService conversionService) {
 		super(conversionService);

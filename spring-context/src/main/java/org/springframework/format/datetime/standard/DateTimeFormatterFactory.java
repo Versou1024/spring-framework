@@ -45,6 +45,12 @@ import org.springframework.util.StringUtils;
  * @see DateTimeFormatterFactoryBean
  */
 public class DateTimeFormatterFactory {
+	// 说白了，它就是根据一些参数比如：
+	// pattern
+	// org.springframework.format.annotation.DateTimeFormat.ISO
+	// java.time.format.FormatStyle
+	// java.util.TimeZone
+	// 等等来创建一个java.time.format.DateTimeFormatter
 
 	@Nullable
 	private String pattern;
@@ -178,6 +184,11 @@ public class DateTimeFormatterFactory {
 	 * @return a new date time formatter
 	 */
 	public DateTimeFormatter createDateTimeFormatter(DateTimeFormatter fallbackFormatter) {
+		// 使用这个工厂创建一个新的DateTimeFormatter 。
+		//	如果没有定义特定的模式或样式，将使用提供的fallbackFormatter 。
+		//	参数：fallbackFormatter – 在没有设置特定工厂属性时使用的后备格式化程序
+		//	return：一个新的日期时间格式化程序
+
 		DateTimeFormatter dateTimeFormatter = null;
 		if (StringUtils.hasLength(this.pattern)) {
 			// Using strict parsing to align with Joda-Time and standard DateFormat behavior:

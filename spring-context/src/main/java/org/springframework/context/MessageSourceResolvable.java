@@ -31,6 +31,8 @@ import org.springframework.lang.Nullable;
  */
 @FunctionalInterface
 public interface MessageSourceResolvable {
+	// 适用于MessageSource中的消息解析的对象的接口
+	// 封装有 codes\arguments\defaultMessage
 
 	/**
 	 * Return the codes to be used to resolve this message, in the order that
@@ -39,6 +41,7 @@ public interface MessageSourceResolvable {
 	 */
 	@Nullable
 	String[] getCodes();
+	// 返回用于解决此消息的代码，按照它们应该被尝试的顺序
 
 	/**
 	 * Return the array of arguments to be used to resolve this message.
@@ -51,6 +54,7 @@ public interface MessageSourceResolvable {
 	default Object[] getArguments() {
 		return null;
 	}
+	// 返回用于解析此消息的参数数组
 
 	/**
 	 * Return the default message to be used to resolve this message.
@@ -65,5 +69,6 @@ public interface MessageSourceResolvable {
 	default String getDefaultMessage() {
 		return null;
 	}
+	// 回用于解决此消息的默认消息。
 
 }

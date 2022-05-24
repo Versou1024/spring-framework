@@ -166,6 +166,8 @@ public abstract class AbstractNamedValueMethodArgumentResolver implements Handle
 
 		if (binderFactory != null) {
 			// 11、WebDataBinderFactory为webRequest创建DataBinder -- 表示绑定的参数来自webRequest，绑定对象的名为namedValueInfo.name
+			// 每个参数都会去创建一个Binder哦
+			// 注意这里哦: target为null,那没会导致 getTypeConverter() 中 使用 getSimpleTypeConverter()
 			WebDataBinder binder = binderFactory.createBinder(webRequest, null, namedValueInfo.name);
 			try {
 				// 12、如果有必要就开始进行转换 convertIfNecessary 并且做校验器校验

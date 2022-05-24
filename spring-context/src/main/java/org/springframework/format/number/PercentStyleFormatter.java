@@ -33,9 +33,12 @@ import java.util.Locale;
  * @see #setLenient
  */
 public class PercentStyleFormatter extends AbstractNumberFormatter {
+	// 对百分数进行格式化
 
 	@Override
 	protected NumberFormat getNumberFormat(Locale locale) {
+		// 直接从 NumberFormat.getPercentInstance获取百分数转换器
+
 		NumberFormat format = NumberFormat.getPercentInstance(locale);
 		if (format instanceof DecimalFormat) {
 			((DecimalFormat) format).setParseBigDecimal(true);

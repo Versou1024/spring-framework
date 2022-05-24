@@ -46,6 +46,8 @@ import org.springframework.util.Assert;
  * @see ConditionalConverter
  */
 public interface GenericConverter {
+	// N:N 的转换器
+	// 这里的转换器，都和数组、集合有关
 
 	/**
 	 * Return the source and target types that this converter can convert between.
@@ -55,6 +57,7 @@ public interface GenericConverter {
 	 */
 	@Nullable
 	Set<ConvertiblePair> getConvertibleTypes();
+	// 返回此转换器可以转换的源类型和目标类型
 
 	/**
 	 * Convert the source object to the targetType described by the {@code TypeDescriptor}.
@@ -65,12 +68,18 @@ public interface GenericConverter {
 	 */
 	@Nullable
 	Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType);
+	// 将源对象转换为由TypeDescriptor描述的目标类型。
+	//		参数：
+	//		source – 要转换的源对象（可能为null ）
+	//		sourceType – 我们要转换的字段的类型描述符
+	//		targetType – 我们要转换为的字段的类型描述符
 
 
 	/**
 	 * Holder for a source-to-target class pair.
 	 */
 	final class ConvertiblePair {
+		// 持有 source-target pair
 
 		private final Class<?> sourceType;
 

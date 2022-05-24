@@ -70,9 +70,10 @@ import org.springframework.util.StringUtils;
  * @see PropertyEditorRegistrySupport
  */
 public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyAccessor {
-	/*
-	 * 基本可配置的PropertyAccessor，为所有典型用例提供必要的基础设施。
-	 */
+	// 一个基本的ConfigurablePropertyAccessor ，为所有典型用例提供必要的基础设施。
+	//	如有必要，此访问器会将集合和数组值转换为相应的目标集合或数组。
+	//	处理集合或数组的自定义属性编辑器可以通过 PropertyEditor 的setValue编写，
+	//	也可以通过setAsText针对逗号分隔的字符串编写，因为如果数组本身不可分配，则字符串数组将以这种格式转换。
 
 	/**
 	 * We'll create a lot of these objects, so we don't want a new logger every time.
@@ -100,6 +101,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	 * @see #setWrappedInstance
 	 */
 	protected AbstractNestablePropertyAccessor() {
+		// 默认会注册属性编辑器: defaultEditors  它几乎处理了所有的Java内置类型  包括基本类型、包装类型以及对应数组类型~~~
 		this(true);
 	}
 
@@ -115,6 +117,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			registerDefaultEditors();
 		}
 		// 指定上层抽象类的 typeConverterDelegate 的具体实现者
+		// 注意:这里将this传递给委托者 TypeConverterServiceDelegate
 		this.typeConverterDelegate = new TypeConverterDelegate(this);
 	}
 
@@ -196,7 +199,13 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	 * @param rootObject the root object at the top of the path
 	 */
 	public void setWrappedInstance(Object object, @Nullable String nestedPath, @Nullable Object rootObject) {
-		// 设置 被包装的对象、嵌套路径为""、根对象在nestedPath为空时就是被包装的对象
+		// 设置
+		// wrappedObject 被包装的对象,目标对象、
+		// nestedPath	 被包装对象再rootObject中的嵌套路径
+		// rootObject 	 根对象在nestedPath为空时就是被包装的对象
+		// 以 person.address 为例
+		// object就是address,rootObject就是person
+		// 根据 person.address 表名object在rootobject的address属性成员中
 		this.wrappedObject = ObjectUtils.unwrapOptional(object);
 		Assert.notNull(this.wrappedObject, "Target object must not be null");
 		this.nestedPath = (nestedPath != null ? nestedPath : "");
@@ -242,13 +251,20 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	public void setPropertyValue(String propertyName, @Nullable Object value) throws BeansException {
 		AbstractNestablePropertyAccessor nestedPa;
 		try {
+			// 递归导航以返回嵌套属性路径的属性访问器
+			// 比如设置 wrappedObject为Address类,nestedPath为person.address,rootObject为Person
+			// 这里需啊哟设置 propertyName为city的字段,设置为value值
+			// 返回的 nestedPa 返回的就是 person.address.city
 			nestedPa = getPropertyAccessorForPropertyPath(propertyName);
 		}
 		catch (NotReadablePropertyException ex) {
 			throw new NotWritablePropertyException(getRootClass(), this.nestedPath + propertyName,
 					"Nested property in path '" + propertyName + "' does not exist", ex);
 		}
+		// getFinalPath() 获取嵌套在最后的属性
+		// getPropertyNameTokens() 将嵌套在最后的属性进行解析为 PropertyTokenHolder
 		PropertyTokenHolder tokens = getPropertyNameTokens(getFinalPath(nestedPa, propertyName));
+		// 向这个属性设置值
 		nestedPa.setPropertyValue(tokens, new PropertyValue(propertyName, value));
 	}
 
@@ -291,10 +307,12 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	protected void setPropertyValue(PropertyTokenHolder tokens, PropertyValue pv) throws BeansException {
 		if (tokens.keys != null) {
 			// 拥有过key的属性，即集合属性
+			// hobbies[1,2,3]
 			processKeyedProperty(tokens, pv);
 		}
 		else {
 			// 局部变量，非集合属性
+			// car.brand
 			processLocalProperty(tokens, pv);
 		}
 	}
@@ -442,10 +460,10 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	private void processLocalProperty(PropertyTokenHolder tokens, PropertyValue pv) {
-		// 获取属性处理器，ph能够帮助我们判断属性是否可写、获取属性值、设置属性值
+		// 1. 获取属性处理器，ph能够帮助我们判断属性是否可写、获取属性值、设置属性值
 		PropertyHandler ph = getLocalPropertyHandler(tokens.actualName);
 		if (ph == null || !ph.isWritable()) {
-			// ph为空，或者属性不可写都报错
+			// 1.1 ph为空，或者属性不可写都报错
 			if (pv.isOptional()) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Ignoring optional value for property '" + tokens.actualName +
@@ -456,6 +474,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			if (this.suppressNotWritablePropertyException) {
 				// Optimization for common ignoreUnknown=true scenario since the
 				// exception would be caught and swallowed higher up anyway...
+				// 1.2suppressNotWritablePropertyException为true,表示抑制不可写属性异常,否则后面抛出异常
 				return;
 			}
 			throw createNotWritablePropertyException(tokens.canonicalName);
@@ -465,14 +484,21 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		try {
 			Object originalValue = pv.getValue(); // 获取用户注入的原始值
 			Object valueToApply = originalValue; // 需要被注入的属性值
-			if (!Boolean.FALSE.equals(pv.conversionNecessary)) { // pv的conversionNecessary一般为null，需要的主动设置
-				if (pv.isConverted()) { // pv的isConverted默认是false，即还未转换的
-					valueToApply = pv.getConvertedValue(); // 若已转换，直接获取转换值
+			// pv的conversionNecessary一般为null，需要的主动设置
+			// 为null时,表示没有进行过转换
+			// 为true时,表示已经转换过,且前后值不相同
+			// 为false时,表示已经转换过,不过转换后还是原来那个值
+			if (!Boolean.FALSE.equals(pv.conversionNecessary)) {
+				// 2.1 pv的isConverted默认是false，即还未转换的
+				// 若已转换，直接获取转换值
+				if (pv.isConverted()) {
+					valueToApply = pv.getConvertedValue();
 				}
+				// 2.2 对于没有转换的
 				else {
 					if (isExtractOldValueForEditor() && ph.isReadable()) {
 						try {
-							// 若开启提取oldValue的功能，且ph是可读的；就提取出oldValue
+							// 2.2.1 若开启提取oldValue的功能，且ph是可读的；就提取出oldValue,即原始值
 							oldValue = ph.getValue();
 						}
 						catch (Exception ex) {
@@ -485,14 +511,14 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 							}
 						}
 					}
-					// 核心 -- ph.toTypeDescriptor() 获取的是通过局部变量处理器获取局部变量的类型
+					// 2.3 核心 -- ph.toTypeDescriptor() 获取的是通过局部变量处理器获取局部变量的类型
 					// 这里是获取转换后的结果，用Object接受
 					valueToApply = convertForProperty(tokens.canonicalName, oldValue, originalValue, ph.toTypeDescriptor());
 				}
-				// 是否需要转换，只要转换结果和原始结果不等，就已经转换了
+				// 2.4 设置conversionNecessary的值，只要转换结果和原始结果不等，就已经转换了
 				pv.getOriginalPropertyValue().conversionNecessary = (valueToApply != originalValue);
 			}
-			// 核心 -- 设置进入
+			// 3. 核心 -- 设置进入
 			ph.setValue(valueToApply);
 		}
 		catch (TypeMismatchException ex) {
@@ -621,6 +647,8 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		Assert.state(this.typeConverterDelegate != null, "No TypeConverterDelegate");
 		try {
 			// 核心利用，利用委托的类型转换器进行转换
+			// 最终还是用到啦 -- 数据绑定的神仙工具 TypeConverterDelegate
+			// TypeConverterDelegate 会先尝试用属性编辑器PropertyEditor进行转换,不行,再用注册的Converter进行转换
 			return this.typeConverterDelegate.convertIfNecessary(propertyName, oldValue, newValue, requiredType, td);
 		}
 		catch (ConverterNotFoundException | IllegalStateException ex) {
@@ -871,18 +899,24 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		 * -- 进来的时候是 this是Man对象的AbstractNestablePropertyAccessor
 		 * -- 最后返回的是 Car对象的AbstractNestablePropertyAccessor
  		 */
+
+		// 1. 确定给定属性路径中的第一个嵌套属性分隔符，忽略键中的点（如“map[my.key]”）
+		// 例如 car.brand 返回的pos就是3,而不是-1
+		// 而如 map[my.key] 返回的pos就是-1
 		int pos = PropertyAccessorUtils.getFirstNestedPropertySeparatorIndex(propertyPath);
-		// pos不等于-1，表示有嵌套属性，且为第一个嵌套属性，
+		// pos 不等于-1，表示有嵌套属性，且为第一个嵌套属性
 		if (pos > -1) {
-			String nestedProperty = propertyPath.substring(0, pos); // 截取嵌套属性之前的值
-			String nestedPath = propertyPath.substring(pos + 1);// 截取嵌套属性
+			String nestedProperty = propertyPath.substring(0, pos); // 截取嵌套属性之前的值,如car值
+			String nestedPath = propertyPath.substring(pos + 1);// 截取嵌套属性,如brand值
 			// 截取属性nestedProperty 继续向下查找
 			// 即获取嵌套的第一层的属性的 AbstractNestablePropertyAccessor
+			// 例如 this 的rootObject就是Mac对象,传入propertyPath为car.brand,那么这里nestedProperty就是car
+			// 返回的 nestedPa 就是 Mac对线的car成员变量
 			AbstractNestablePropertyAccessor nestedPa = getNestedPropertyAccessor(nestedProperty);
 			// 然后通过第一层属性的 AbstractNestablePropertyAccessor 向下第二层属性的getPropertyAccessorForPropertyPath
 			return nestedPa.getPropertyAccessorForPropertyPath(nestedPath);
 		}
-		// pos等于-1，表示没有其那套属性，直接返回this
+		// pos 等于-1，表示没有其那套属性，直接返回this
 		else {
 			return this;
 		}
@@ -996,6 +1030,12 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	 * @return representation of the parsed property tokens
 	 */
 	private PropertyTokenHolder getPropertyNameTokens(String propertyName) {
+		// 对brand属性进行风格
+		// 这里我们举例为 car.brand
+		// 还有一中情况例如 hobbies[1] 或者 maps["xx"]
+		// 就需要分割
+		// 然后存入到PropertyTokenHolder
+
 		String actualName = null;
 		List<String> keys = new ArrayList<>(2);
 		int searchIndex = 0;
@@ -1123,9 +1163,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		public abstract TypeDescriptor nested(int level);
 
 		@Nullable
-		public abstract Object getValue() throws Exception;
+		public abstract Object getValue() throws Exception; // 抽象方法 getValue()
 
-		public abstract void setValue(@Nullable Object value) throws Exception;
+		public abstract void setValue(@Nullable Object value) throws Exception; // 抽象方法 setValue()
 	}
 
 
@@ -1142,12 +1182,27 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			this.canonicalName = name;
 		}
 
-		public String actualName;
+		// 以 car.brand 为例
+		// 最终 actualName="brand",canonicalName=null,keys=null
+		// 以 car.list[1][2]
 
-		public String canonicalName;
+		// PropertyTokenHolder的作用是什么？
+		// 这个类的作用是对属性访问表达式的细化和归类。比如这句代码：
+		//
+		// propertyAccessor.setPropertyValue("listMap[0][0]", "listMapValue00");
+		//
+		// 这句代码的含义是：为Apple的成员变量listMap的第0个元素：即为Map。然后向该Map里放入键值对：0(key)和listMapValue00(value)。所以listMap[0][0]一个属性访问表达式，它在PropertyTokenHolder类里存储如下：
+		//
+		//		canonicalName:listMap[0][0]：代表整个属性访问表达式
+		//		actualName:listMap：仅包含最外层的属性名称
+		//		keys:[0, 0]：数组的长度代表索引深度，各元素代表索引值
+
+		public String actualName; // 真实的name
+
+		public String canonicalName; // 候选的key
 
 		@Nullable
-		public String[] keys;
+		public String[] keys; // keys
 	}
 
 }

@@ -45,7 +45,12 @@ import org.springframework.util.StringUtils;
  */
 public class Jsr310DateTimeFormatAnnotationFormatterFactory extends EmbeddedValueResolutionSupport
 		implements AnnotationFormatterFactory<DateTimeFormat> {
+	// 它和@DateTimeFormat这个注解有关，作用在JSR310相关类型上。
+	//
+	// 注意，它也是处理标注有@DateTimeFormat注解的字段的。
+	// DateTimeFormatterRegistrar#registerFormatters方法里注册了它，从而提供了该注解对JSR310也是支持的，并且我认为比上面还重要些，大势所趋~
 
+	// 可以标注在这些类型上面~~~~
 	private static final Set<Class<?>> FIELD_TYPES;
 
 	static {
@@ -66,11 +71,20 @@ public class Jsr310DateTimeFormatAnnotationFormatterFactory extends EmbeddedValu
 		return FIELD_TYPES;
 	}
 
+	// 往外输出的时候~~~~~~
 	@Override
 	public Printer<?> getPrinter(DateTimeFormat annotation, Class<?> fieldType) {
+		// 使用DateTimeFormatterFactory根据注解信息创建一个java.time.format.DateTimeFormatter
 		DateTimeFormatter formatter = getFormatter(annotation, fieldType);
 
 		// Efficient ISO_LOCAL_* variants for printing since they are twice as fast...
+		// Efficient ISO_LOCAL_* variants for printing since they are twice as fast...
+		// ISO.DATE -> DateTimeFormatter.ISO_DATE
+		// ISO.TIME -> DateTimeFormatter.ISO_TIME
+		// ISO.DATE_TIME -> DateTimeFormatter.ISO_DATE_TIME
+		// ISO.NONE 没有指定，就走最后的TemporalAccessorPrinter了~~~~
+		// isLocal(fieldType)  --> fieldType.getSimpleName().startsWith("Local");
+		// System.out.println(DateTimeFormatter.ofPattern("yyyy-MM-dd").format(LocalDate.now())); //2019-06-04 标准格式输出~~~~
 		if (formatter == DateTimeFormatter.ISO_DATE) {
 			if (isLocal(fieldType)) {
 				formatter = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -87,6 +101,7 @@ public class Jsr310DateTimeFormatAnnotationFormatterFactory extends EmbeddedValu
 			}
 		}
 
+		// 它的print方法为：return DateTimeContextHolder.getFormatter(this.formatter, locale).format(partial);
 		return new TemporalAccessorPrinter(formatter);
 	}
 

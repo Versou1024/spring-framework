@@ -42,10 +42,11 @@ import org.springframework.lang.Nullable;
  * @see ValidationUtils
  */
 public interface Errors {
-	// 存储并暴露有关特定对象的数据绑定和验证错误的信息。
-	/**
-	 * Errors聚合ObjectError对象、FiledError对象
-	 */
+	// 存储和公开有关特定对象的数据绑定和验证错误的信息。
+	// 字段名称可以是目标对象的属性（例如，绑定到客户对象时的“名称”），
+	// 或者是子对象情况下的嵌套字段（例如“address.street”）。通过setNestedPath(String)支持子树导航：例如， AddressValidator验证“地址”，不知道这是客户的子对象。
+
+	// 和ObjectError有关,封装有  source/objectName/arguments/codes/defaultMessage
 
 	/**
 	 * The separator between path elements in a nested path,
@@ -106,7 +107,7 @@ public interface Errors {
 	 * 全局错误使用给定的错误描述。
 	 * @param errorCode error code, interpretable as a message key
 	 */
-	void reject(String errorCode);
+	void reject(String errorCode); // 为整个目标对象注册全局错误。 全局错误使用给定的错误描述。
 
 	/**
 	 * Register a global error for the entire target object,

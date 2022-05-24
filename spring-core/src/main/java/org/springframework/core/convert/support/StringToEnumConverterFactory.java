@@ -32,10 +32,12 @@ final class StringToEnumConverterFactory implements ConverterFactory<String, Enu
 
 	@Override
 	public <T extends Enum> Converter<String, T> getConverter(Class<T> targetType) {
+		// 获取StringToEnum的转换器,传参指定Enum的子类型
 		return new StringToEnum(ConversionUtils.getEnumType(targetType));
 	}
 
 
+	// 转换器支持从 String 转换为 T
 	private static class StringToEnum<T extends Enum> implements Converter<String, T> {
 
 		private final Class<T> enumType;

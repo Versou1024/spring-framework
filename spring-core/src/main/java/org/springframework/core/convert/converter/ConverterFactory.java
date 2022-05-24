@@ -29,6 +29,8 @@ package org.springframework.core.convert.converter;
  * @see ConditionalConverter
  */
 public interface ConverterFactory<S, R> {
+	// 主要是提供getConverter()方法,是1:N的
+	// 经典的就是 StringToEnumConverterFactory 它支持获取从 String 转换为 Enum子类的各种方法
 
 	/**
 	 * Get the converter to convert from S to target type T, where T is also an instance of R.

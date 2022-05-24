@@ -46,6 +46,7 @@ public final class ConversionServiceFactory {
 	 * @param registry the target registry
 	 */
 	public static void registerConverters(@Nullable Set<?> converters, ConverterRegistry registry) {
+		// 将所有的converters注册到registry中
 		if (converters != null) {
 			for (Object converter : converters) {
 				if (converter instanceof GenericConverter) {

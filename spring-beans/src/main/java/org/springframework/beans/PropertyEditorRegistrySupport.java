@@ -91,12 +91,12 @@ import org.springframework.util.ClassUtils;
  */
 public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	/**
-	 * 继承体系：
-	 * 属性编辑器的注册中心
+	 * 属性编辑器的注册中心 --
+	 * 通过组合关系 ConversionService Converter有任何耦合关系
 	 */
 
 	@Nullable
-	private ConversionService conversionService;
+	private ConversionService conversionService; // ❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️
 
 	private boolean defaultEditorsActive = false;
 
@@ -106,13 +106,17 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	private Map<Class<?>, PropertyEditor> defaultEditors; // 默认编辑器
 
 	@Nullable
-	private Map<Class<?>, PropertyEditor> overriddenDefaultEditors; // 重写的默认编辑器
+	private Map<Class<?>, PropertyEditor> overriddenDefaultEditors;
+	// 重写的默认编辑器 -- ConversionService 将覆盖这样的默认编辑器
 
 	@Nullable
-	private Map<Class<?>, PropertyEditor> customEditors; // 定制编辑器
+	private Map<Class<?>, PropertyEditor> customEditors;
+	// 定制编辑器 -- 自定义编辑器通常会覆盖 ConversionService
 
 	@Nullable
-	private Map<String, CustomEditorHolder> customEditorsForPath; // 根据属性路径作映射的属性编辑器
+	private Map<String, CustomEditorHolder> customEditorsForPath;
+	// 该map的key是用户可以自定义的
+	// 而customEditors就是属性编辑器的转换目标的class作为key
 
 	@Nullable
 	private Map<Class<?>, PropertyEditor> customEditorCache; // 定制编辑器 - 缓存
@@ -144,7 +148,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	 * allowing for lazily registering default editors when needed.
 	 */
 	protected void registerDefaultEditors() {
-		// 开启注册默认属性编辑器
+		// 激活此注册表实例的默认编辑器，允许在需要时延迟注册默认编辑器。
 		this.defaultEditorsActive = true;
 	}
 
@@ -169,6 +173,9 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	 * @see #registerCustomEditor(Class, PropertyEditor)
 	 */
 	public void overrideDefaultEditor(Class<?> requiredType, PropertyEditor propertyEditor) {
+		// 使用给定的属性编辑器覆盖指定类型的默认编辑器。
+		//	请注意，这与注册自定义编辑器不同，因为该编辑器在语义上仍然是默认编辑器。
+		//	ConversionService 将覆盖这样的默认编辑器，而自定义编辑器通常会覆盖 ConversionService
 		if (this.overriddenDefaultEditors == null) {
 			this.overriddenDefaultEditors = new HashMap<>();
 		}
@@ -184,22 +191,24 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	 */
 	@Nullable
 	public PropertyEditor getDefaultEditor(Class<?> requiredType) {
-		// defaultEditorsActive默认是false，直接返回null
-		// 否则就依次从 overriddenDefaultEditors、defaultEditors查找合适requireType的编辑器
+		// 1. defaultEditorsActive 为true,表示默认的数据编辑器被激活
+		// 依次从 overriddenDefaultEditors、defaultEditors查找合适requireType的编辑器
 		if (!this.defaultEditorsActive) {
 			return null;
 		}
-		// 一般 overriddenDefaultEditors、defaultEditors第一次都是null
+		// 2. 一般 overriddenDefaultEditors 第一次都是null
 		if (this.overriddenDefaultEditors != null) {
 			PropertyEditor editor = this.overriddenDefaultEditors.get(requiredType);
 			if (editor != null) {
 				return editor;
 			}
 		}
+		// 3. 一般 defaultEditors 第一次都是null
 		if (this.defaultEditors == null) {
-			// defaultEditors为空，就需要进行初始阿虎 -- 重点
+			// defaultEditors为空，就需要进行延迟初始阿虎 -- 重点
 			createDefaultEditors();
 		}
+		// 4. 重新差杭州啊
 		return this.defaultEditors.get(requiredType); // 然后根据类型查找
 	}
 
@@ -208,14 +217,14 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	 */
 	private void createDefaultEditors() {
 		/**
-		 * 核心初始化 -- 默认注册的编辑器
+		 * 核心的延迟初始化 -- 默认注册的编辑器
 		 *
 		 * 需要认识一点：PropertyEditorSupport的实现类其内部没有保存与具体转换目标的信息，仅仅是以Object存储
-		 * 因此需要这里的mapkey作为转换的目标，这也是注册中心的一个作用
+		 * 因此需要这里的map key作为转换的目标，这也是注册中心的一个作用
 		 */
 		this.defaultEditors = new HashMap<>(64);
 
-		//简单的编辑器，没有参数化功能。JDK不包含任何这些目标类型的默认编辑器。
+		// 简单的编辑器，没有参数化功能。JDK不包含任何这些目标类型的默认编辑器。
 		this.defaultEditors.put(Charset.class, new CharsetEditor());
 		this.defaultEditors.put(Class.class, new ClassEditor());
 		this.defaultEditors.put(Class[].class, new ClassArrayEditor());
@@ -244,14 +253,17 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 		this.defaultEditors.put(SortedMap.class, new CustomMapEditor(SortedMap.class));
 
 		// Default editors for primitive arrays.
+		// 原始数组的默认编辑器。
 		this.defaultEditors.put(byte[].class, new ByteArrayPropertyEditor());
 		this.defaultEditors.put(char[].class, new CharArrayPropertyEditor());
 
 		// The JDK does not contain a default editor for char!
+		// JDK 不包含 char 的默认编辑器！
 		this.defaultEditors.put(char.class, new CharacterEditor(false));
 		this.defaultEditors.put(Character.class, new CharacterEditor(true));
 
 		// Spring's CustomBooleanEditor accepts more flag values than the JDK's default editor.
+		// Spring 的 CustomBooleanEditor 接受的标志值比 JDK 的默认编辑器多。
 		this.defaultEditors.put(boolean.class, new CustomBooleanEditor(false));
 		this.defaultEditors.put(Boolean.class, new CustomBooleanEditor(true));
 
@@ -309,7 +321,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 		if (requiredType == null && propertyPath == null) {
 			throw new IllegalArgumentException("Either requiredType or propertyPath is required");
 		}
-		// 属性路径不为空
+		// 1. 属性路径不为空,就以propertyPath作为key,存储到customEditorsForPath
 		if (propertyPath != null) {
 			if (this.customEditorsForPath == null) {
 				// 初始化 自定义属性编辑器集合
@@ -318,7 +330,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 			// 向容器中存入指定的key和value -- 注意使用CustomEditorHolder包装requiredType
 			this.customEditorsForPath.put(propertyPath, new CustomEditorHolder(propertyEditor, requiredType));
 		}
-		// 属性路径为空
+		// 2. 属性路径为空,就以requiredType作为key
 		else {
 			if (this.customEditors == null) {
 				// 初始化 自定义属性加载器集合
@@ -333,20 +345,21 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	@Override
 	@Nullable
 	public PropertyEditor findCustomEditor(@Nullable Class<?> requiredType, @Nullable String propertyPath) {
-		/**
+		/*
 		 * 核心：根据要求编辑的属性的type、或者属性的路径查找对应的属性编辑器
 		 * 1、先根据属性路径propertyPath去查找属性编辑器
 		 * 2、查找不到，就根据属性类型requiredType去查找属性编辑器
 		 */
 		Class<?> requiredTypeToUse = requiredType;
-		// propertyPath 不为空，一般成立
+		// 1. propertyPath 不为空，一般成立
 		if (propertyPath != null) {
-			// customEditorsForPath 需要扩展，否则就只是null，
+			// 1.1 customEditorsForPath 不为空,
 			if (this.customEditorsForPath != null) {
 				// 首先检查 property-specific editor
 				PropertyEditor editor = getCustomEditor(propertyPath, requiredType);
 				if (editor == null) {
 					List<String> strippedPaths = new ArrayList<>();
+					// addStrippedPropertyPaths() 添加具有剥离键和/或索引的所有变体的属性路径。使用嵌套路径递归调用自身
 					addStrippedPropertyPaths(strippedPaths, "", propertyPath);
 					for (Iterator<String> it = strippedPaths.iterator(); it.hasNext() && editor == null;) {
 						String strippedPath = it.next();
@@ -364,7 +377,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 			}
 		}
 		// No property-specific editor -> check type-specific editor.
-		// 没有特定于属性路径的编辑器->那么就选中特定于类型的编辑器。
+		// 2. 没有特定于属性路径的编辑器->那么就选中特定于类型的编辑器。
 		return getCustomEditor(requiredTypeToUse);
 	}
 
@@ -414,8 +427,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	 */
 	@Nullable
 	private PropertyEditor getCustomEditor(String propertyName, @Nullable Class<?> requiredType) {
-		CustomEditorHolder holder =
-				(this.customEditorsForPath != null ? this.customEditorsForPath.get(propertyName) : null);
+		CustomEditorHolder holder = (this.customEditorsForPath != null ? this.customEditorsForPath.get(propertyName) : null);
 		return (holder != null ? holder.getPropertyEditor(requiredType) : null);
 	}
 
@@ -429,9 +441,8 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	 */
 	@Nullable
 	private PropertyEditor getCustomEditor(@Nullable Class<?> requiredType) {
-		/*
-		 * 查找特定类型的 requiredType 的属性编辑器
-		 */
+		// 查找特定类型的 requiredType 的属性编辑器
+
 		if (requiredType == null || this.customEditors == null) {
 			return null;
 		}

@@ -27,6 +27,7 @@ import org.springframework.core.convert.converter.Converter;
  * @since 4.2
  */
 class StringToCharsetConverter implements Converter<String, Charset> {
+	// String 转换为 Charset
 
 	@Override
 	public Charset convert(String source) {

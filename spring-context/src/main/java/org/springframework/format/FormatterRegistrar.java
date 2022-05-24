@@ -25,6 +25,9 @@ import org.springframework.core.convert.converter.Converter;
  * @since 3.1
  */
 public interface FormatterRegistrar {
+	// java doc里说它是一个注册Converter和Formatter的SPI
+	// Registrar 登记员
+	// Registry 注册表
 
 	/**
 	 * Register Formatters and Converters with a FormattingConversionService

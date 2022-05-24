@@ -88,10 +88,21 @@ import org.springframework.util.ReflectionUtils;
  */
 public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 		implements ValidatorFactory, ApplicationContextAware, InitializingBean, DisposableBean {
+	// 它和CustomValidatorBean平级，都是继承自SpringValidatorAdapter，但是它提供的能力更加的强大，
+	// 比如Spring处理校验这块最重要的处理器MethodValidationPostProcessor就是依赖于它来给提供验证器~
+	// 它是Spring上下文中javax.validation的中心配置类。
+
+	// 实现了ApplicationContextAware拿到Spring上下文...
+	// 但其实，它的实际工作都是委托式，自己只提供了各式各样的配置~~~（主要是配置JSR）
+
+	// 备注：虽然命名后缀是FactoryBean，但它并不是org.springframework.beans.factory.FactoryBean这个接口的子类。
+	// 其实这是断句问题，正确断句方式是：Local ValidatorFactory Bean~
 
 	@SuppressWarnings("rawtypes")
 	@Nullable
 	private Class providerClass;
+
+	// 以下都是 javax 的配置项哦
 
 	@Nullable
 	private ValidationProviderResolver validationProviderResolver;
@@ -119,6 +130,7 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	@Nullable
 	private ValidatorFactory validatorFactory;
 
+	// 关于 验证配置项 的系列Set方法,不做过多阐述
 
 	/**
 	 * Specify the desired provider class, if any.
@@ -236,6 +248,7 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) {
+		// ApplicationContextAware
 		this.applicationContext = applicationContext;
 	}
 
@@ -243,6 +256,9 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	@Override
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	public void afterPropertiesSet() {
+		// 注意这个初始化过程,会构建约束相关的配置configuration,并且获取ValidatorFactory
+		// 从中拿到对应的Validator作为SpringValidatorAdapter的适配者来使用哦
+
 		Configuration<?> configuration;
 		if (this.providerClass != null) {
 			ProviderSpecificBootstrap bootstrap = Validation.byProvider(this.providerClass);

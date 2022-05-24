@@ -28,6 +28,8 @@ import org.springframework.core.convert.converter.ConverterRegistry;
  * @since 3.0
  */
 public interface FormatterRegistry extends ConverterRegistry {
+	// FormatterRegistry用于注册格式化器
+	// 从接口继承关系中可以看出，它还可以可议注册转换器
 
 	/**
 	 * Adds a Printer to print fields of a specific type.
@@ -66,6 +68,8 @@ public interface FormatterRegistry extends ConverterRegistry {
 	 * @param formatter the formatter to add
 	 */
 	void addFormatterForFieldType(Class<?> fieldType, Formatter<?> formatter);
+	// fieldType – 要格式化的字段类型
+	// formatter – 要添加的格式化程序
 
 	/**
 	 * Adds a Printer/Parser pair to format fields of a specific type.
@@ -86,5 +90,6 @@ public interface FormatterRegistry extends ConverterRegistry {
 	 * @param annotationFormatterFactory the annotation formatter factory to add
 	 */
 	void addFormatterForFieldAnnotation(AnnotationFormatterFactory<? extends Annotation> annotationFormatterFactory);
+	// 添加 Formatter 以格式化使用特定格式注解标注了的的字段
 
 }

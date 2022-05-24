@@ -52,6 +52,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Validated {
+	// Spring提供的分组校验 @Validated
 
 	/**
 	 * Specify one or more validation groups to apply to the validation step

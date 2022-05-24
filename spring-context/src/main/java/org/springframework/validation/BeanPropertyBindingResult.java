@@ -44,14 +44,14 @@ import org.springframework.lang.Nullable;
 public class BeanPropertyBindingResult extends AbstractPropertyBindingResult implements Serializable {
 
 	@Nullable
-	private final Object target;
+	private final Object target; // 绑定数据的目标对象
 
-	private final boolean autoGrowNestedPaths;
+	private final boolean autoGrowNestedPaths; // 是否自动增长路径
 
-	private final int autoGrowCollectionLimit;
+	private final int autoGrowCollectionLimit; // 数组/集合自动增长的上限
 
 	@Nullable
-	private transient BeanWrapper beanWrapper;
+	private transient BeanWrapper beanWrapper; // 内部:使用BeanWrapper做数据绑定哦
 
 
 	/**
@@ -93,10 +93,16 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 	 */
 	@Override
 	public final ConfigurablePropertyAccessor getPropertyAccessor() {
+		// 获取属性访问器 -- 之BeanWrapper
+		// 懒加载
+
 		if (this.beanWrapper == null) {
 			this.beanWrapper = createBeanWrapper();
+			// 提取旧值为true
 			this.beanWrapper.setExtractOldValueForEditor(true);
+			// 设置自动增长空值路径
 			this.beanWrapper.setAutoGrowNestedPaths(this.autoGrowNestedPaths);
+			// 设置数组/集合的扩容上限
 			this.beanWrapper.setAutoGrowCollectionLimit(this.autoGrowCollectionLimit);
 		}
 		return this.beanWrapper;
@@ -107,9 +113,13 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 	 * @see #getTarget()
 	 */
 	protected BeanWrapper createBeanWrapper() {
+		// 创建BeanWrapperImpl对象
+
+		// 1. 前提有target对象
 		if (this.target == null) {
 			throw new IllegalStateException("Cannot access properties on null bean instance '" + getObjectName() + "'");
 		}
+		// 2. 从PropertyAccessorFactory查找
 		return PropertyAccessorFactory.forBeanPropertyAccess(this.target);
 	}
 

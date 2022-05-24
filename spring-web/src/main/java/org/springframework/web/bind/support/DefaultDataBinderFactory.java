@@ -28,13 +28,11 @@ import org.springframework.web.context.request.NativeWebRequest;
  * @since 3.1
  */
 public class DefaultDataBinderFactory implements WebDataBinderFactory {
-	/**
+	/*
 	 * 实现 WebDataBinderFactory 作为默认的web数据绑定工厂
 	 *
 	 * 作用：
 	 * 1、聚合用来初始化的WebDataBinder的WebBindingInitializer
-	 * 2、
-	 * 3、
 	 */
 
 	@Nullable
@@ -47,6 +45,8 @@ public class DefaultDataBinderFactory implements WebDataBinderFactory {
 	 * (or {@code null} if none)
 	 */
 	public DefaultDataBinderFactory(@Nullable WebBindingInitializer initializer) {
+		// 注意：这是唯一构造函数
+		// 因此必须给定DataBinder的初始化器,完成配置的初始化操作
 		this.initializer = initializer;
 	}
 
@@ -59,12 +59,16 @@ public class DefaultDataBinderFactory implements WebDataBinderFactory {
 	@Override
 	@SuppressWarnings("deprecation")
 	public final WebDataBinder createBinder(NativeWebRequest webRequest, @Nullable Object target, String objectName) throws Exception {
-		// 创建一个WebDataBinder
+
+		// 1.创建一个WebRequestDataBinder
 		WebDataBinder dataBinder = createBinderInstance(target, objectName, webRequest);
+		// 2. 如果初始化器initializer不为空,就用WebBindingInitializer来初始化WebRequestDataBinder的各项配置
 		if (this.initializer != null) {
 			this.initializer.initBinder(dataBinder, webRequest);
 		}
+		// 3. 留给子类的扩展方法 - 初始化@InitBinder方法
 		initBinder(dataBinder, webRequest);
+		// 4. 返回dataBinder
 		return dataBinder;
 	}
 
@@ -78,7 +82,8 @@ public class DefaultDataBinderFactory implements WebDataBinderFactory {
 	 */
 	protected WebDataBinder createBinderInstance(
 			@Nullable Object target, String objectName, NativeWebRequest webRequest) throws Exception {
-
+		//  子类可以复写，默认实现是WebRequestDataBinder
+		//  比如子类ServletRequestDataBinderFactory就复写了，使用的new ExtendedServletRequestDataBinder(target, objectName)
 		return new WebRequestDataBinder(target, objectName);
 	}
 

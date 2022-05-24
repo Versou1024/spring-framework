@@ -158,6 +158,8 @@ public interface BindingResult extends Errors {
 	 * @see DataBinder#setAllowedFields
 	 */
 	default void recordSuppressedField(String field) {
+		// 将指定的不允许字段标记为禁止。
+		// 数据绑定器为检测到的每个字段值调用此方法以针对不允许的字段。
 	}
 
 	/**

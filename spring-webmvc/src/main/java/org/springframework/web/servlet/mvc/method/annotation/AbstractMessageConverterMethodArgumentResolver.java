@@ -280,13 +280,19 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 	 * @see #isBindExceptionRequired
 	 */
 	protected void validateIfApplicable(WebDataBinder binder, MethodParameter parameter) {
-		// 性参上是否有注解@Validated，有的话，就利用binder的校验能力
+		// 形参上是否有注解@Validated，有的话，就利用binder的校验能力
+
+		// 1. 获取形参上的所有注解,遍历注解
 		Annotation[] annotations = parameter.getParameterAnnotations();
 		for (Annotation ann : annotations) {
+			// 2. 是否有@Validated标注
 			Validated validatedAnn = AnnotationUtils.getAnnotation(ann, Validated.class);
 			if (validatedAnn != null || ann.annotationType().getSimpleName().startsWith("Valid")) {
+				// 3. @Validated是否指定了分组即其valu值
 				Object hints = (validatedAnn != null ? validatedAnn.value() : AnnotationUtils.getValue(ann));
 				Object[] validationHints = (hints instanceof Object[] ? (Object[]) hints : new Object[] {hints});
+				// 4. 尝试做校验
+				// binder在validateIfApplicable()方法之前,已经设置了target
 				binder.validate(validationHints);
 				break;
 			}

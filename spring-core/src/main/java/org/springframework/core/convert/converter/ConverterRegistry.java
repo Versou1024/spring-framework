@@ -24,6 +24,13 @@ package org.springframework.core.convert.converter;
  * @since 3.0
  */
 public interface ConverterRegistry {
+	// 使用ConverterRegistry可以使我们对类型转换器做一个统一的注册。正如前言所说的，
+	// 要实现自己的类型转换逻辑我们可以实现Converter接口、ConverterFactory接口和GenericConverter接口，
+	// ConverterRegistry接口就分别为这三种类型提供了对应的注册方法，至于里面的逻辑就可以发挥自己的设计能力进行设计实现了。
+	//
+	// 通过ConverterAdapter或者ConverterFactoryAdapter最后都会转化成GenericConverter，
+	// 我想应该是因为这种converter是最通用的原因吧
+	// 一般而言：我们在实现ConversionService接口的时候也会实现ConverterRegistry接口
 
 	/**
 	 * Add a plain converter to this registry.

@@ -36,13 +36,16 @@ import org.springframework.lang.Nullable;
  * @see BeanWrapperImpl
  */
 public interface TypeConverter {
-	/*
-	 * 定义类型转换方法的接口。
-	 * 通常与PropertyEditorRegistry接口一起实现。
-	 * 1、如果必须就进行转换 convertIfNecessary -- 将value转换为所需类型requiredType
-	 * 2、从字符串到任何类型的转换通常使用PropertyEditor类的setAsText方法，或ConversionService中的Spring转换器。
-	 * 3、转换后的值可以赋予到MethodParameter、Field
-	 */
+	// PropertyEditor用于字符串到其它对象的转换，由于其局限性，spring提供了converter接口，
+	// 由ConversionService来调用对外提供服务，而TypeConverter综合了上述两种转换方式，交由TypeConverterDelegate来进行转换。
+	// TypeConverterDelegate先使用PropertyEditor转换器器转换，如果没找到对应的转换器器，会⽤ConversionService来进⾏行行对象转换
+
+	// PropertyEditor 是一般在PropertyEditorRegistrySupport中注册
+	// 而Converter主要是ConverterService中管理,作为转换的入口
+	// 但是可以发现 PropertyEditorRegistrySupport 属性编辑器的注册中心有一个成员变量是ConversionService
+	// 因此 TypeConverter 需要同时兼容两种就需要
+	// 		extends PropertyEditorRegistrySupport 继承属性编辑器的继承中心,间接有ConversionService
+	// 因此TypeConverter就有两个PropertyEditor以及Converter两种能力
 
 	/**
 	 * Convert the value to the required type (if necessary from a String).

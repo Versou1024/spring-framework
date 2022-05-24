@@ -41,6 +41,12 @@ import org.springframework.beans.PropertyAccessException;
  */
 public interface BindingErrorProcessor {
 
+	// 处理DataBinder的缺失字段错误以及将PropertyAccessException转换为FieldError的策略。
+	// 错误处理器是可插入的，因此您可以根据需要以不同的方式处理错误。为典型需求提供了默认实现。
+
+	// 注意：从 Spring 2.0 开始，此接口对给定的 BindingResult 进行操作，
+	// 以兼容任何绑定策略（bean 属性、直接字段访问等）。它仍然可以接收 BindException 作为参数（因为 BindException 也实现了 BindingResult 接口），但不再直接对其进行操作。
+
 	/**
 	 * Apply the missing field error to the given BindException.
 	 * <p>Usually, a field error is created for a missing required field.
@@ -53,6 +59,8 @@ public interface BindingErrorProcessor {
 	 * @see BeanPropertyBindingResult#resolveMessageCodes
 	 */
 	void processMissingFieldError(String missingField, BindingResult bindingResult);
+	// 当requiredField要求某些字段必须存在时,但是mpv没有提供
+	// 就需要处理异常,将异常写入bindingResult
 
 	/**
 	 * Translate the given {@code PropertyAccessException} to an appropriate
@@ -73,5 +81,6 @@ public interface BindingErrorProcessor {
 	 * @see BeanPropertyBindingResult#resolveMessageCodes
 	 */
 	void processPropertyAccessException(PropertyAccessException ex, BindingResult bindingResult);
+	//
 
 }

@@ -44,6 +44,7 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.beans.MethodInvocationException#ERROR_CODE
  */
 public class DefaultBindingErrorProcessor implements BindingErrorProcessor {
+	// BindingErrorProcessor 的唯一默认实现
 
 	/**
 	 * Error code that a missing field error (i.e. a required field not
@@ -51,16 +52,30 @@ public class DefaultBindingErrorProcessor implements BindingErrorProcessor {
 	 * "required".
 	 */
 	public static final String MISSING_FIELD_ERROR_CODE = "required";
+	// 将注册缺少字段错误（即在属性值列表中找不到必填字段）的错误代码：“必填”。
 
 
 	@Override
 	public void processMissingFieldError(String missingField, BindingResult bindingResult) {
 		// Create field error with code "required".
+		// 1. 返回此Errors对象的当前嵌套路径。
+		// 返回带有点的嵌套路径，即“地址.”，以便于构建连接路径。默认为空字符串。
 		String fixedField = bindingResult.getNestedPath() + missingField;
+		// 2. 将给定的错误代码解析为给定字段的消息代码
 		String[] codes = bindingResult.resolveMessageCodes(MISSING_FIELD_ERROR_CODE, missingField);
+		// 3. 返回给定字段上绑定错误的 FieldError 参数。为每个缺少的必填字段和每个类型不匹配调用
 		Object[] arguments = getArgumentsForBindError(bindingResult.getObjectName(), fixedField);
+		// 4. 创建一个新的 FieldError 实例
+		 // objectName – 受影响对象的名称
+		 // field - 对象的受影响字段
+		 // deniedValue – 被拒绝的字段的值
+		 // bindingFailure – 此错误是否表示绑定失败（如类型不匹配）；否则，这是验证失败
+		 // code - 用于解析此消息的代码
+		 // arguments – 用于解析此消息的参数数组
+		 // defaultMessage – 用于解析此消息的默认消
 		FieldError error = new FieldError(bindingResult.getObjectName(), fixedField, "", true,
 				codes, arguments, "Field '" + fixedField + "' is required");
+		// 5. 将自定义ObjectError或FieldError添加到错误列表中
 		bindingResult.addError(error);
 	}
 

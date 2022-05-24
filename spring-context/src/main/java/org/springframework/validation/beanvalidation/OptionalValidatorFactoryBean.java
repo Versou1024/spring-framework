@@ -33,6 +33,33 @@ import org.apache.commons.logging.LogFactory;
  * @since 4.0.1
  */
 public class OptionalValidatorFactoryBean extends LocalValidatorFactoryBean {
+	// LocalValidatorFactoryBean子类，它只是将org.springframework.validation.Validator调用转换为无操作，
+	// 以防没有可用的 Bean 验证提供程序。
+
+	// 核心 在SpringMVC 中被使用校验器哦
+	// 在 @EnableWebMvc 的 WebMvcConfigurationSupport 中
+	// 以下代码块中进行了注册哦 -- @Bean修饰的mvcValidator方法
+	// 	@Bean
+	//	public Validator mvcValidator() {
+	//		Validator validator = getValidator(); // 用户没有定制Validator,就是用默认的OptionalValidatorFactoryBean
+	//		if (validator == null) {
+	//			if (ClassUtils.isPresent("javax.validation.Validator", getClass().getClassLoader())) {
+	//				Class<?> clazz;
+	//				try {
+	//					String className = "org.springframework.validation.beanvalidation.OptionalValidatorFactoryBean";
+	//					clazz = ClassUtils.forName(className, WebMvcConfigurationSupport.class.getClassLoader());
+	//				}
+	//				catch (ClassNotFoundException | LinkageError ex) {
+	//					throw new BeanInitializationException("Failed to resolve default validator class", ex);
+	//				}
+	//				validator = (Validator) BeanUtils.instantiateClass(clazz);
+	//			}
+	//			else {
+	//				validator = new NoOpValidator();
+	//			}
+	//		}
+	//		return validator;
+	//	}
 
 	@Override
 	public void afterPropertiesSet() {

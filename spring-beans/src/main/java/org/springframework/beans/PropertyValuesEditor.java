@@ -35,6 +35,10 @@ import org.springframework.beans.propertyeditors.PropertiesEditor;
  * @author Juergen Hoeller
  */
 public class PropertyValuesEditor extends PropertyEditorSupport {
+	// PropertyEditor是JavaBean规范定义的接口，这是java.beans中一个接口，其设计的意图是图形化编程上，方便对象与String之间的转换工作，
+	// 而spring将其扩展，方便各种对象与String之间的转换工作。
+
+	// Spring所有的扩展都是通过继承PropertyEditorSupport，因为它只聚焦于转换上，所以只需复写setAsText()、getAsText()以及构造方法即可实现扩展。
 
 	private final PropertiesEditor propertiesEditor = new PropertiesEditor();
 

@@ -95,12 +95,12 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	/**
 	 * The separator that this implementation uses when resolving message codes.
 	 */
-	public static final String CODE_SEPARATOR = ".";
+	public static final String CODE_SEPARATOR = "."; // code分隔符
 
-	private static final MessageCodeFormatter DEFAULT_FORMATTER = Format.PREFIX_ERROR_CODE;
+	private static final MessageCodeFormatter DEFAULT_FORMATTER = Format.PREFIX_ERROR_CODE; // 消息格式化器
 
 
-	private String prefix = "";
+	private String prefix = ""; // 前缀
 
 	private MessageCodeFormatter formatter = DEFAULT_FORMATTER;
 
@@ -151,17 +151,22 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	public String[] resolveMessageCodes(String errorCode, String objectName, String field, @Nullable Class<?> fieldType) {
 		Set<String> codeList = new LinkedHashSet<>();
 		List<String> fieldList = new ArrayList<>();
+		// 1. 根据field构建fieldList
 		buildFieldList(field, fieldList);
+		// 2. 根据field\errorCode\objectName来构建codeList
 		addCodes(codeList, errorCode, objectName, fieldList);
 		int dotIndex = field.lastIndexOf('.');
+		// 3. field有"."就继续构建下面这个属性
 		if (dotIndex != -1) {
 			buildFieldList(field.substring(dotIndex + 1), fieldList);
 		}
+		// 4. 再添加addCodes
 		addCodes(codeList, errorCode, null, fieldList);
 		if (fieldType != null) {
 			addCode(codeList, errorCode, null, fieldType.getName());
 		}
 		addCode(codeList, errorCode, null, null);
+		//5. 将codeList合并为一个String传出去
 		return StringUtils.toStringArray(codeList);
 	}
 
@@ -172,6 +177,8 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	private void addCode(Collection<String> codeList, String errorCode, @Nullable String objectName, @Nullable String field) {
+		// 格式化 errorCode\objectName\field 的关系
+		// 默认的格式化结果为:  errorCode + "." + object name + "." + field
 		codeList.add(postProcessMessageCode(this.formatter.format(errorCode, objectName, field)));
 	}
 
@@ -180,6 +187,13 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	 * to the supplied field list.
 	 */
 	protected void buildFieldList(String field, List<String> fieldList) {
+		// 将提供的字段的键控和非键控条目添加到提供的field列表。
+		// field = list[1][2].ele
+		// fieldList 就有一下值
+		// list[1][2].ele
+		// list[1].ele
+		// list.ele
+
 		fieldList.add(field);
 		String plainField = field;
 		int keyIndex = plainField.lastIndexOf('[');
@@ -214,12 +228,14 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	 * @see DefaultMessageCodesResolver#setMessageCodeFormatter(MessageCodeFormatter)
 	 */
 	public enum Format implements MessageCodeFormatter {
+		// MessageCodeFormatter 唯一的默认实现,就是这个内部类
 
 		/**
 		 * Prefix the error code at the beginning of the generated message code. e.g.:
 		 * {@code errorCode + "." + object name + "." + field}
 		 */
 		PREFIX_ERROR_CODE {
+			// 在生成的消息代码开头添加错误代码前缀。例如： errorCode + "." + object name + "." + field
 			@Override
 			public String format(String errorCode, @Nullable String objectName, @Nullable String field) {
 				return toDelimitedString(errorCode, objectName, field);
@@ -231,6 +247,7 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 		 * {@code object name + "." + field + "." + errorCode}
 		 */
 		POSTFIX_ERROR_CODE {
+			// 在生成的消息代码末尾添加错误代码。例如： object name + "." + field + "." + errorCode
 			@Override
 			public String format(String errorCode, @Nullable String objectName, @Nullable String field) {
 				return toDelimitedString(objectName, field, errorCode);

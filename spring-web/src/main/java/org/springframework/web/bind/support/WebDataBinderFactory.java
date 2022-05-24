@@ -35,6 +35,8 @@ public interface WebDataBinderFactory {
 	 *
 	 * 一般 WebDataBinderFactory + WebBindingInitializer 一起继承或者继承组合使用
 	 * 原因：WebDataBinderFactory 用于定义创建的WebDataBinder的方法，但具体的初始化操作需要交给WebBindingInitializer
+	 *
+	 * 顾名思义它就是来创造一个WebDataBinder的工厂。
 	 */
 
 	/**

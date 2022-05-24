@@ -35,11 +35,11 @@ import org.springframework.util.Assert;
  */
 public abstract class TypeConverterSupport extends PropertyEditorRegistrySupport implements TypeConverter {
 
-	/**
-	 * TypeConverter接口的接不了实现
-	 *
-	 * 统一 convertIfNecessary 将 Class、methodParameter、Filed转为TypeDescriptor
-	 */
+	// TypeConverter接口的基本实现，使用包私有委托。主要作为BeanWrapperImpl的基类。
+	// 同时扩展了 PropertyEditorRegistrySupport
+	// PropertyEditorRegistrySupport implements PropertyEditorRegistry 注册中心有属性编辑器
+	// 同时 PropertyEditorRegistrySupport 有一个成员就是 ConverterService
+
 
 	@Nullable
 	TypeConverterDelegate typeConverterDelegate;
@@ -73,6 +73,8 @@ public abstract class TypeConverterSupport extends PropertyEditorRegistrySupport
 	@Override
 	public <T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType,
 			@Nullable TypeDescriptor typeDescriptor) throws TypeMismatchException {
+
+		// 上面三个convertIfNecessary()最终都会执行到这里
 
 		Assert.state(this.typeConverterDelegate != null, "No TypeConverterDelegate");
 		try {

@@ -25,6 +25,7 @@ import org.springframework.core.convert.converter.Converter;
  * @since 3.0
  */
 final class ObjectToStringConverter implements Converter<Object, String> {
+	// object 转 String
 
 	@Override
 	public String convert(Object source) {

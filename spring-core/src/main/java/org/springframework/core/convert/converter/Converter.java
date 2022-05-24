@@ -32,6 +32,20 @@ import org.springframework.lang.Nullable;
  */
 @FunctionalInterface
 public interface Converter<S, T> {
+	/*
+	 * 转换器 -- 支持从s转换到t
+	 * 是类型到类型的转换
+	 *
+	 * 最开始的PropertyEditor是String到其他类型的转换
+	 * 因此 Converter 是包含 PropertyEditor
+	 *
+	 * Spring提供了3种converter接口,分别是Converter、ConverterFactory和GenericConverter.一般用于1:1, 1:N, N:N的source->target类型转化。
+	 * Converter接口 ：		 	使用最简单，最不灵活； 	支持1:1
+	 * ConverterFactory接口 ：	使用较复杂，比较灵活；	支持1:N
+	 * GenericConverter接口 ：	使用最复杂，也最灵活；	支持N:N
+	 *
+	 * 这个类大部分时候都是作为 ConverterFactory 的内部类
+	 */
 
 	/**
 	 * Convert the source object of type {@code S} to target type {@code T}.
@@ -41,5 +55,6 @@ public interface Converter<S, T> {
 	 */
 	@Nullable
 	T convert(S source);
+	// 将类型S的源对象转换为目标类型T 。
 
 }

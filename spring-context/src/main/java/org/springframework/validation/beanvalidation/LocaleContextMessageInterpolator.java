@@ -32,6 +32,9 @@ import org.springframework.util.Assert;
  * @see org.springframework.context.i18n.LocaleContextHolder#getLocale()
  */
 public class LocaleContextMessageInterpolator implements MessageInterpolator {
+	// 消息插值器
+	// 委托给目标MessageInterpolator实现，但强制执行 Spring 的托管 Locale。
+	// 通常用于包装验证提供程序的默认插值器。
 
 	private final MessageInterpolator targetInterpolator;
 

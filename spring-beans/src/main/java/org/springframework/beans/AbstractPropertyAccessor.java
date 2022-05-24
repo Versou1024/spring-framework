@@ -35,20 +35,27 @@ import org.springframework.lang.Nullable;
  * @see #setPropertyValue
  */
 public abstract class AbstractPropertyAccessor extends TypeConverterSupport implements ConfigurablePropertyAccessor {
-	/**
-	 * ConfigurablePropertyAccessor 的抽象类，提供基本实现
+	/*
+	 * 继承了 TypeConverterSupport
+	 * TypeConverterSupport 是一个很流批的类,
 	 *
-	 * 关于 ConfigurablePropertyAccessor extends PropertyAccessor, PropertyEditorRegistry, TypeConverter
-	 * 中的PropertyEditorRegistry、TypeConverter都已经委托给直接父类 TypeConverterSupport 或超父类 所实现
-	 * 只需要关注对于 PropertyAccessor 的基本实现
+	 * TypeConverterSupport extends PropertyEditorRegistrySupport implements TypeConverter
+	 * TypeConverterSupport继承了PropertyEditorRegistrySupport
+	 * PropertyEditorRegistrySupport, 完成了属性编辑器的注册,以及持有一个ConverterService成员,完成了对converter的注册以及转换服务
+	 * TypeConverterSupport 将 converter 和 PropertyEditor 转换都交给委托类去实现啦
 	 *
-	 * 核心：
-	 * 在于抽象方法 - setPropertyValue(String,Object)方法 -- 具体实现类如何完成属性设置到target上的
+	 * 主要作用: 就是继承TypeConverterSupport\实现ConfigurationPropertyAccessor
 	 */
 
 	private boolean extractOldValueForEditor = false; // 是否为编辑器提取旧值
 
-	private boolean autoGrowNestedPaths = false; // 是否自动增长嵌套路径包含一个null值
+	private boolean autoGrowNestedPaths = false;
+	// 是否自动增长,当嵌套路径包含一个null值
+	// 当然若你希望null值能够被自动初始化也是可以的，请设值：accessor.setAutoGrowNestedPaths(true);这样数组、集合、Map等都会为null时候给你初始化(其它Bean请保证有默认构造函数)
+	// 比如  PropertyAccessor,setPropertyValue("list[1]","niubi");  表示将当前目标对象的list成员的第一个元素设置为"niubi"
+	// 但前提是啥,你得事先把这个对象 list 给初始话创建起来,比如 private List<String> list = new ArrayList<>();
+	// 否则就会报错
+	// 但是可以将 autoGrowNestedPaths 设置为true,一旦检查到路径上的某个属性为null,没有被用户初始化,那么我们来帮助他完成初始化操作
 
 	boolean suppressNotWritablePropertyException = false; // 是否支持抛出不可写得异常
 
@@ -97,7 +104,9 @@ public abstract class AbstractPropertyAccessor extends TypeConverterSupport impl
 	@Override
 	public void setPropertyValues(PropertyValues pvs, boolean ignoreUnknown, boolean ignoreInvalid)
 			throws BeansException {
+		// 核心哦
 
+		// 1. 存储异常
 		List<PropertyAccessException> propertyAccessExceptions = null;
 		List<PropertyValue> propertyValues = (pvs instanceof MutablePropertyValues ?
 				((MutablePropertyValues) pvs).getPropertyValueList() : Arrays.asList(pvs.getPropertyValues()));
@@ -115,12 +124,17 @@ public abstract class AbstractPropertyAccessor extends TypeConverterSupport impl
 					setPropertyValue(pv);
 				}
 				catch (NotWritablePropertyException ex) {
+					// 无法写入,如果ignoreUnknown为true,表示忽略未知的属性时,就不需要抛出异常
 					if (!ignoreUnknown) {
 						throw ex;
 					}
 					// Otherwise, just ignore it and continue...
 				}
 				catch (NullValueInNestedPathException ex) {
+					// 属性的嵌套路径中有空值
+					// 比如 Person类中有一个Address类,Address类有一个String类型的City
+					// 那么对应的就是 person.address.city
+					// 这就是嵌套路径,若使用 person.address1.city 就有异常
 					if (!ignoreInvalid) {
 						throw ex;
 					}
@@ -141,6 +155,7 @@ public abstract class AbstractPropertyAccessor extends TypeConverterSupport impl
 		}
 
 		// If we encountered individual exceptions, throw the composite exception.
+		// 如果我们遇到单个异常，则抛出复合异常。
 		if (propertyAccessExceptions != null) {
 			PropertyAccessException[] paeArray = propertyAccessExceptions.toArray(new PropertyAccessException[0]);
 			throw new PropertyBatchUpdateException(paeArray);

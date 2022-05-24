@@ -28,6 +28,7 @@ import org.springframework.core.convert.converter.Converter;
  * @since 3.0
  */
 final class EnumToStringConverter extends AbstractConditionalEnumConverter implements Converter<Enum<?>, String> {
+	// 枚举转String -- source.name()
 
 	public EnumToStringConverter(ConversionService conversionService) {
 		super(conversionService);

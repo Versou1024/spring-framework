@@ -32,6 +32,11 @@ import org.springframework.format.Formatter;
  * @since 3.0
  */
 public abstract class AbstractNumberFormatter implements Formatter<Number> {
+	//  对java.lang.Number进行格式化。依赖于java.text.NumberFormat来处理的，java.text.DecimalFormat是它的子类。
+	//  有三个实现类
+	// 	CurrencyStyleFormatter -- 货币相关
+	//  PercentStyleFormatter -- 百分比相关
+	// 	NumberStyleFormatter -- Number子类
 
 	private boolean lenient = false;
 
@@ -42,6 +47,7 @@ public abstract class AbstractNumberFormatter implements Formatter<Number> {
 	 * With strict parsing, inputs must match the format exactly.
 	 */
 	public void setLenient(boolean lenient) {
+		// 指定解析是否宽松。默认为假
 		this.lenient = lenient;
 	}
 
@@ -74,5 +80,6 @@ public abstract class AbstractNumberFormatter implements Formatter<Number> {
 	 * @return the NumberFormat instance (never {@code null})
 	 */
 	protected abstract NumberFormat getNumberFormat(Locale locale);
+	// 交给子类重写
 
 }

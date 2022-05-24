@@ -35,8 +35,8 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.validation.DataBinder
  */
 public interface PropertyEditorRegistry {
-	/**
-	 * 为属性编辑器注册中心定义接口
+	/*
+	 * 属性编辑器注册中心的定义接口
 	 * 1、注册定义编辑器：registerCustomEditor
 	 * 2、查找定制编辑器：findCustomEditor
 	 *
@@ -50,6 +50,10 @@ public interface PropertyEditorRegistry {
 	 * @param propertyEditor the editor to register
 	 */
 	void registerCustomEditor(Class<?> requiredType, PropertyEditor propertyEditor);
+	// 为给定类型的所有属性注册给定的自定义属性编辑器。
+	//		参数：
+	//		requiredType – 属性的类型 -- 属性编辑器需要从String转换过去的类型
+	//		propertyEditor – 要注册的编辑器
 
 	/**
 	 * Register the given custom property editor for the given type and
@@ -86,5 +90,9 @@ public interface PropertyEditorRegistry {
 	 */
 	@Nullable
 	PropertyEditor findCustomEditor(@Nullable Class<?> requiredType, @Nullable String propertyPath);
+	// 查找属性编辑器
+	// 要求给定
+	//	 转换过去的类型 -- requireType
+	//	 属性路径 -- propertyPath
 
 }

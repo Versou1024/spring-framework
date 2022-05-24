@@ -433,6 +433,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter i
 	 * to every DataBinder instance.
 	 */
 	public void setWebBindingInitializer(@Nullable WebBindingInitializer webBindingInitializer) {
+		// 会被 WebMVCConfigurationSupport 给使用到
 		this.webBindingInitializer = webBindingInitializer;
 	}
 
@@ -934,7 +935,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter i
 		ServletWebRequest webRequest = new ServletWebRequest(request, response);
 		try {
 			// 1. 最终创建的是一个ServletRequestDataBinderFactory，持有所有@InitBinder的method方法们
-			WebDataBinderFactory binderFactory = getDataBinderFactory(handlerMethod);
+			WebDataBinderFactory binderFactory = getDataBinderFactory(handlerMethod); // 每个请求过来都会创建一个BinderFactory哦
 			// 2. 创建一个ModelFactory，@ModelAttribute啥的方法就会被引用进来
 			ModelFactory modelFactory = getModelFactory(handlerMethod, binderFactory); // 将方法上带有@ModelAttribute注解传给ModelFactory来构造它,然后后面调用ModelFactory.init
 
@@ -1075,12 +1076,19 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter i
 		// 而是带有@InitBinder这种的可执行方法，用来处理数据绑定的方法
 		List<InvocableHandlerMethod> initBinderMethods = new ArrayList<>();
 		// Global methods first -- 全局方法首先执行
-		// 因此遍历initBinderAdviceCache即@ControllerAdvice类中的@InitBinder的方法，
+		// 首先遍历全局的initBinderAdviceCache即@ControllerAdvice类中的@InitBinder的方法，
 		this.initBinderAdviceCache.forEach((controllerAdviceBean, methodSet) -> {
 			// 当前HanlderType是否满足controllerAdiviceBean的要求
+			// 简单的说就是`RestControllerAdvice`它可以指定：basePackages之类的属性，看本类是否能被扫描到吧~~~~
 			if (controllerAdviceBean.isApplicableToBeanType(handlerType)) {
+				// 这个resolveBean() 有点意思：它持有的Bean若是个BeanName的话，会getBean()一下的
+				// 大多数情况下都是BeanName，这在@ControllerAdvice的初始化时会讲~~~
 				Object bean = controllerAdviceBean.resolveBean();
 				for (Method method : methodSet) {
+					// createInitBinderMethod：把Method适配为可执行的InvocableHandlerMethod
+
+					// 特点是把本类的HandlerMethodArgumentResolverComposite传进去了
+					// 当然还有DataBinderFactory和ParameterNameDiscoverer等
 					initBinderMethods.add(createInitBinderMethod(bean, method));
 				}
 			}
@@ -1090,6 +1098,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter i
 			Object bean = handlerMethod.getBean();
 			initBinderMethods.add(createInitBinderMethod(bean, method));
 		}
+		// protected方法，就一句代码：new ServletRequestDataBinderFactory(binderMethods, getWebBindingInitializer())
 		return createDataBinderFactory(initBinderMethods); // DataBinderFactory
 	}
 
@@ -1114,6 +1123,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter i
 	protected InitBinderDataBinderFactory createDataBinderFactory(List<InvocableHandlerMethod> binderMethods)
 			throws Exception {
 		// 将 初始化绑定参数方法 与 WebDataBinder的初始化器 传递给 DataBinderFactory
+		// 使用的就是最底层的ServletRequestDataBinderFactory哦
 		return new ServletRequestDataBinderFactory(binderMethods, getWebBindingInitializer());
 	}
 

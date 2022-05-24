@@ -38,6 +38,10 @@ import org.springframework.format.Formatter;
  * @see java.time.format.DateTimeFormatter#RFC_1123_DATE_TIME
  */
 public class InstantFormatter implements Formatter<Instant> {
+	// JSR-310 Instant的Formatter程序实现，遵循 JSR-310 对 Instant 的解析规则
+	// （即，不使用可配置的DateTimeFormatter ）：接受默认的ISO_INSTANT格式以及RFC_1123_DATE_TIME （通常用于 HTTP 日期标头值）
+	// // 如果你的请求入参串为：2007-12-03T10:15:30.00Z这种格式，是可以使用Instant接收的~~~
+
 
 	@Override
 	public Instant parse(String text, Locale locale) throws ParseException {

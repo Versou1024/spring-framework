@@ -53,6 +53,7 @@ public abstract class ValidationUtils {
 	 * {@link Validator#supports(Class) support} the validation of the supplied object's type
 	 */
 	public static void invokeValidator(Validator validator, Object target, Errors errors) {
+		// 为提供的对象和Errors实例调用给定的Validator 。
 		invokeValidator(validator, target, errors, (Object[]) null);
 	}
 
@@ -77,17 +78,23 @@ public abstract class ValidationUtils {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Invoking validator [" + validator + "]");
 		}
+
+		// 1. 首先调用validator的supports()方法做检查
 		if (!validator.supports(target.getClass())) {
 			throw new IllegalArgumentException(
 					"Validator [" + validator.getClass() + "] does not support [" + target.getClass() + "]");
 		}
 
+		// 2.1 validationHints非空,同时属于SmartValidator,就需要做分组校验
 		if (!ObjectUtils.isEmpty(validationHints) && validator instanceof SmartValidator) {
 			((SmartValidator) validator).validate(target, errors, validationHints);
 		}
+		// 2.2 否则就是普通的校验
 		else {
+			// 这个方法返回Void,因为错误信息都会被绑定到Errors中
 			validator.validate(target, errors);
 		}
+
 
 		if (logger.isDebugEnabled()) {
 			if (errors.hasErrors()) {

@@ -37,6 +37,9 @@ import org.springframework.util.Assert;
  * @see org.springframework.web.servlet.support.JstlUtils#exposeLocalizationContext
  */
 public class MessageSourceResourceBundle extends ResourceBundle {
+	// 关于MessageSourceResourceBundle它，就相对比较熟悉点了，它不是校验专用的，
+	// 是Spring整体上用来处理国际化资源：MessageSource，java.util.ResourceBundle的帮助类~
+	// Spring环境下不仅可以使用Hibernate的国际化文件，也可以借助MessageSourceResourceBundleLocator搞自己的
 
 	private final MessageSource messageSource;
 

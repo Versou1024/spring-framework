@@ -48,6 +48,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 public @interface NumberFormat {
+	// @since 3.0 类比效果参见：java.text.NumberFormat
+	// 可以标注在方法上、属性field上、参数上~~~~
 
 	/**
 	 * The style pattern to use to format the field.
@@ -57,6 +59,8 @@ public @interface NumberFormat {
 	 * accordance with a common style other than the default style.
 	 */
 	Style style() default Style.DEFAULT;
+
+	// 格式化数字的模版~~~  若指定了pattern 那就使用new NumberStyleFormatter(pattern)进行格式化
 
 	/**
 	 * The custom pattern to use to format the field.

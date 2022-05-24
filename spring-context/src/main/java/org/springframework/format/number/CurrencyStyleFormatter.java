@@ -40,14 +40,15 @@ import org.springframework.lang.Nullable;
  * @see #setRoundingMode
  */
 public class CurrencyStyleFormatter extends AbstractNumberFormatter {
+	// 从 String 转为 货币类型
 
-	private int fractionDigits = 2;
-
-	@Nullable
-	private RoundingMode roundingMode;
+	private int fractionDigits = 2;  // 默认保留两位小数点
 
 	@Nullable
-	private Currency currency;
+	private RoundingMode roundingMode;  // 四舍五入
+
+	@Nullable
+	private Currency currency;  // 货币 java.util.Currency
 
 	@Nullable
 	private String pattern;
@@ -100,17 +101,25 @@ public class CurrencyStyleFormatter extends AbstractNumberFormatter {
 
 	@Override
 	protected NumberFormat getNumberFormat(Locale locale) {
+		// 使用到java中的NumberFormat
+
 		DecimalFormat format = (DecimalFormat) NumberFormat.getCurrencyInstance(locale);
+		// 设置parse(String, ParsePosition)方法是否返回BigDecimal
 		format.setParseBigDecimal(true);
+		// 设置数字的小数部分允许的最大位数。对于除BigInteger和BigDecimal对象以外的格式化数字，使用newValue和 340 中的较低值。负输入值替换为 0。
 		format.setMaximumFractionDigits(this.fractionDigits);
+		// 设置数字的小数部分允许的最小位数。对于除BigInteger和BigDecimal对象以外的格式化数字，使用newValue和 340 中的较低值。负输入值替换为 0
 		format.setMinimumFractionDigits(this.fractionDigits);
 		if (this.roundingMode != null) {
+			// 设置四舍五入的模式
 			format.setRoundingMode(this.roundingMode);
 		}
 		if (this.currency != null) {
+			// 在格式化货币值时设置此数字格式使用的货币。这不会更新数字格式使用的最小或最大小数位数。
 			format.setCurrency(this.currency);
 		}
 		if (this.pattern != null) {
+			// 将给定的模式应用于此 Format 对象。模式是各种格式属性的简写规范。这些属性也可以通过各种 setter 方法单独更改。
 			format.applyPattern(this.pattern);
 		}
 		return format;

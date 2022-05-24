@@ -36,6 +36,9 @@ import org.springframework.util.Assert;
  * @see MessageSourceResourceBundle
  */
 public class MessageSourceResourceBundleLocator implements ResourceBundleLocator {
+	// 这个类也非常有意思，它扩展了Hibernate包的ResourceBundleLocator资源包定位器做国际化，而使用
+	// Spring自己的国际化资源：org.springframework.context.MessageSource
+	// 说明：ResourceBundleLocator是它Hibernate的一个SPI，Hibernate内部自己对它可是也有实现的哦~（Bean Validation内部大量的用到了SPI技术，有兴趣的可以了解）
 
 	private final MessageSource messageSource;
 
