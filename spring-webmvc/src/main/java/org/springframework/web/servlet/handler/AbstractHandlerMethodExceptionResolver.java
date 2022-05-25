@@ -32,6 +32,8 @@ import org.springframework.web.servlet.ModelAndView;
  * @since 3.1
  */
 public abstract class AbstractHandlerMethodExceptionResolver extends AbstractHandlerExceptionResolver {
+	// Abstract HandlerMethod ExceptionResolver
+	// 主要是符合 HandlerMethod
 
 	/**
 	 * Checks if the handler is a {@link HandlerMethod} and then delegates to the
@@ -40,12 +42,17 @@ public abstract class AbstractHandlerMethodExceptionResolver extends AbstractHan
 	 */
 	@Override
 	protected boolean shouldApplyTo(HttpServletRequest request, @Nullable Object handler) {
+		// 重写 shouldApplyTo() 方法
+
+		// 1. handler为空,就使用super.shouldApplyTo()
 		if (handler == null) {
 			return super.shouldApplyTo(request, null);
 		}
+		// 2. 特殊处理 -- 针对 HandlerMethod
 		else if (handler instanceof HandlerMethod) {
 			HandlerMethod handlerMethod = (HandlerMethod) handler;
 			handler = handlerMethod.getBean();
+			// 2.1 获取HandlerMethod归属真实的Handler
 			return super.shouldApplyTo(request, handler);
 		}
 		else {
@@ -57,7 +64,7 @@ public abstract class AbstractHandlerMethodExceptionResolver extends AbstractHan
 	@Nullable
 	protected final ModelAndView doResolveException(
 			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex) {
-
+		// 强转为 HandlerMethod 后去执行
 		return doResolveHandlerMethodException(request, response, (HandlerMethod) handler, ex);
 	}
 

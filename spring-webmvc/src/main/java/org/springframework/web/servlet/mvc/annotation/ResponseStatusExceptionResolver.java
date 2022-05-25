@@ -55,6 +55,9 @@ import org.springframework.web.servlet.handler.AbstractHandlerExceptionResolver;
  * @see ResponseStatusException
  */
 public class ResponseStatusExceptionResolver extends AbstractHandlerExceptionResolver implements MessageSourceAware {
+	// 若抛出的异常类型上有@ResponseStatus注解，那么此处理器就会处理，并且状态码会返给response。
+	// Spring5.0还能处理ResponseStatusException这个异常（此异常是5.0新增）
+	// SpringMVC仍然支持该异常处理器
 
 	@Nullable
 	private MessageSource messageSource;
@@ -72,20 +75,28 @@ public class ResponseStatusExceptionResolver extends AbstractHandlerExceptionRes
 			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex) {
 
 		try {
+			// 1. 若异常类型是，那就处理这个异常
+			// 处理很简单：response.sendError(statusCode, resolvedReason)
+			// 当然会有国际化消息的处理。最终new一个空的new ModelAndView()供以返回
 			if (ex instanceof ResponseStatusException) {
 				return resolveResponseStatusException((ResponseStatusException) ex, request, response, handler);
 			}
 
+			// 2. 在类上查找@ReponseStatus注解 -- 注意不是从方法上查找哦
 			ResponseStatus status = AnnotatedElementUtils.findMergedAnnotation(ex.getClass(), ResponseStatus.class);
 			if (status != null) {
 				return resolveResponseStatus(status, request, response, handler, ex);
 			}
 
+			// 3. 这里有个递归：如果异常类型是Course里面的，也会继续处理，所以需要注意这里的递归处理
 			if (ex.getCause() instanceof Exception) {
+				// 这里有个处理的小细节：递归调用了doResolveException()方法，也就是说若有coouse原因也是异常，那就继续会尝试处理的。
+				// 另外请注意：@ResponseStatus标注在异常类上此处理器才会处理，而不是标注在处理方法上，或者所在类上哦，所以一般用于自定义异常时使用。
 				return doResolveException(request, response, handler, (Exception) ex.getCause());
 			}
 		}
 		catch (Exception resolveEx) {
+			// 处理失败，就记录warn日志（非info哦~）
 			if (logger.isWarnEnabled()) {
 				logger.warn("Failure while trying to resolve exception [" + ex.getClass().getName() + "]", resolveEx);
 			}
@@ -129,12 +140,15 @@ public class ResponseStatusExceptionResolver extends AbstractHandlerExceptionRes
 	 */
 	protected ModelAndView resolveResponseStatusException(ResponseStatusException ex,
 			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler) throws Exception {
-
+		// 1. 获取 ResponseStatusException 中的 ResponseHeader
 		ex.getResponseHeaders().forEach((name, values) ->
 				values.forEach(value -> response.addHeader(name, value)));
 
+		// 2. 获取 httpStatus\reason
 		int statusCode = ex.getStatus().value();
 		String reason = ex.getReason();
+
+		// 3. 创建ModelAndView
 		return applyStatusAndReason(statusCode, reason, response);
 	}
 

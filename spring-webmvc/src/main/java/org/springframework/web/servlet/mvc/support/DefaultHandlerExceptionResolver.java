@@ -141,6 +141,24 @@ import org.springframework.web.servlet.handler.AbstractHandlerExceptionResolver;
  * @see org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
  */
 public class DefaultHandlerExceptionResolver extends AbstractHandlerExceptionResolver {
+	// DefaultHandlerExceptionResolver
+	// 默认的异常处理器。它能够处理标准的Spring MVC异常们，并且把它转换为对应的HTTP status codes，
+	// 一般作为兜底处理，Spring MVC默认也注册了此处理器。它能处理的异常非常之多，简单列出来如下
+	// MissingPathVariableException	500
+	// ConversionNotSupportedException	500
+	// HttpMessageNotWritableException	500
+	// AsyncRequestTimeoutException	503
+	// MissingServletRequestParameterException	400
+	// ServletRequestBindingException	400
+	// TypeMismatchException	400
+	// HttpMessageNotReadableException	400
+	// MethodArgumentNotValidException	400
+	// MissingServletRequestPartException	400
+	// BindException	400
+	// NoHandlerFoundException	404
+	// HttpRequestMethodNotSupportedException	405
+	// HttpMediaTypeNotAcceptableException	406
+	// HttpMediaTypeNotSupportedException	415
 
 	/**
 	 * Log category to use when no mapped handler is found for a request.
@@ -159,6 +177,7 @@ public class DefaultHandlerExceptionResolver extends AbstractHandlerExceptionRes
 	 * Sets the {@linkplain #setOrder(int) order} to {@link #LOWEST_PRECEDENCE}.
 	 */
 	public DefaultHandlerExceptionResolver() {
+		// 优先级很低的
 		setOrder(Ordered.LOWEST_PRECEDENCE);
 		setWarnLogCategory(getClass().getName());
 	}
@@ -168,6 +187,8 @@ public class DefaultHandlerExceptionResolver extends AbstractHandlerExceptionRes
 	@Nullable
 	protected ModelAndView doResolveException(
 			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex) {
+		// 这里大多数的handle方法几乎一样的，都是response.sendError()
+		// 有的还会response.setHeader("Accept", MediaType.toString(mediaTypes));等等
 
 		try {
 			if (ex instanceof HttpRequestMethodNotSupportedException) {

@@ -34,6 +34,7 @@ import org.springframework.lang.Nullable;
  * @since 22.11.2003
  */
 public interface HandlerExceptionResolver {
+	// 注意：handler是有可能为null的，比如404
 
 	/**
 	 * Try to resolve the given exception that got thrown during handler execution,

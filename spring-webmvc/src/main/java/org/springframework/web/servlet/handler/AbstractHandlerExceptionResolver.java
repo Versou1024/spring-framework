@@ -44,6 +44,8 @@ import org.springframework.web.servlet.ModelAndView;
  * @since 3.0
  */
 public abstract class AbstractHandlerExceptionResolver implements HandlerExceptionResolver, Ordered {
+	// 此抽象类主要是提供setMappedHandlers和setMappedHandlerClasses让此处理器可以作用在指定类型/处理器上，因此子类只要继承了它都将会有这种能力，
+	// 这也是为何我推荐自定义实现也继承于它的原因。它提供了shouldApplyTo()方法用于匹配逻辑，子类若想定制化匹配规则，亦可复写此方法。
 
 	private static final String HEADER_CACHE_CONTROL = "Cache-Control";
 
@@ -54,10 +56,10 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
 	@Nullable
-	private Set<?> mappedHandlers;
+	private Set<?> mappedHandlers; // 指定此异常解析器应应用于的handler集合
 
 	@Nullable
-	private Class<?>[] mappedHandlerClasses;
+	private Class<?>[] mappedHandlerClasses; // 指定此异常解析器应应用于的类class集。
 
 	@Nullable
 	private Log warnLogger;
@@ -134,11 +136,13 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	 */
 	@Override
 	@Nullable
-	public ModelAndView resolveException(
-			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex) {
+	public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex) {
 
+		// 1. 检查mappedHandlers与mappedHandlerClasses中是否有包含这个Handler
 		if (shouldApplyTo(request, handler)) {
+			// 2. 是否执行；response.addHeader(HEADER_CACHE_CONTROL, "no-store")  默认是不执行的
 			prepareResponse(ex, response);
+			// 3. 此抽象方法留给子类去完成~~~~~
 			ModelAndView result = doResolveException(request, response, handler, ex);
 			if (result != null) {
 				// Print debug message when warn logger is not enabled.
@@ -171,8 +175,11 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 	protected boolean shouldApplyTo(HttpServletRequest request, @Nullable Object handler) {
 		if (handler != null) {
 			if (this.mappedHandlers != null && this.mappedHandlers.contains(handler)) {
+				// 1. mappedHandlers包含当前handler,返回ture
 				return true;
 			}
+			// 2. mappedHandlers为空,或者不包含handler
+			// 就检查 mappedHandlerClasses 是否包含当前 handler
 			if (this.mappedHandlerClasses != null) {
 				for (Class<?> handlerClass : this.mappedHandlerClasses) {
 					if (handlerClass.isInstance(handler)) {
@@ -181,7 +188,8 @@ public abstract class AbstractHandlerExceptionResolver implements HandlerExcepti
 				}
 			}
 		}
-		// Else only apply if there are no explicit handler mappings.
+		// 3. 两个都是空的,就返回true
+		// 或者,两个在前面都没匹配上,但不是空的,就返回false
 		return (this.mappedHandlers == null && this.mappedHandlerClasses == null);
 	}
 

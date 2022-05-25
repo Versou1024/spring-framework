@@ -121,10 +121,11 @@ public class ControllerAdviceBean implements Ordered {
 		Assert.notNull(beanFactory, "BeanFactory must not be null");
 		Assert.isTrue(beanFactory.containsBean(beanName), () -> "BeanFactory [" + beanFactory +
 				"] does not contain specified controller advice bean '" + beanName + "'");
-
+		// 复制 beanName\是否单例\bean的class\BeanFactory
 		this.beanOrName = beanName;
 		this.isSingleton = beanFactory.isSingleton(beanName);
 		this.beanType = getBeanType(beanName, beanFactory);
+		// 关注点 -- createBeanTypePredicate 创建BeanType的谓词
 		this.beanTypePredicate = (controllerAdvice != null ? createBeanTypePredicate(controllerAdvice) :
 				createBeanTypePredicate(this.beanType));
 		this.beanFactory = beanFactory;
@@ -280,6 +281,7 @@ public class ControllerAdviceBean implements Ordered {
 				if (controllerAdvice != null) {
 					// Use the @ControllerAdvice annotation found by findAnnotationOnBean()
 					// in order to avoid a subsequent lookup of the same annotation.
+					// 传入 beanName\ApplicationContext\注解ControllerAdvice
 					adviceBeans.add(new ControllerAdviceBean(name, context, controllerAdvice));
 				}
 			}
@@ -306,7 +308,7 @@ public class ControllerAdviceBean implements Ordered {
 		// 创建Bean类型的谓词方法
 
 		// @ControllerAdvice 注解中带有属性用来判断 --
-		// 包括basePackages、annotation、
+		// 包括basePackages\annotation\assignableTypes\basePackages来做判断
 		if (controllerAdvice != null) {
 			return HandlerTypePredicate.builder()
 					.basePackage(controllerAdvice.basePackages())

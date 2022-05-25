@@ -79,6 +79,12 @@ import org.springframework.web.util.WebUtils;
  * @see org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver
  */
 public abstract class ResponseEntityExceptionHandler {
+	// ResponseEntityExceptionHandler
+	// 它是个抽象类，可谓是Spring 3.2后对REST应用异常支持的一个暖心举动。它包装了各种Spring MVC在处理请求时可能抛出的异常的处理，
+	// 处理结果都是封装成一个ResponseEntity对象。通过ResponseEntity我们可以指定需要响应的状态码、header和body等信息~
+	//
+	// 因为它是个抽象类，所以我们要使用它只需要定义一个标注有@ControllerAdvice的类继承于它便可（如上示例）：
+	// 加上全局处理前（被DefaultHandlerExceptionResolver处理的结果）：
 
 	/**
 	 * Log category to use when no mapped handler is found for a request.

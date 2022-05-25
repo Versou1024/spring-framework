@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -44,27 +45,32 @@ import org.springframework.web.util.WebUtils;
  * @see org.springframework.web.servlet.DispatcherServlet
  */
 public class SimpleMappingExceptionResolver extends AbstractHandlerExceptionResolver {
+	// 几乎没有使用,已经被抛弃
 
 	/** The default name of the exception attribute: "exception". */
 	public static final String DEFAULT_EXCEPTION_ATTRIBUTE = "exception";
 
 
 	@Nullable
-	private Properties exceptionMappings;
+	private Properties exceptionMappings; // 异常映射表
+	// 通过异常类型Properties exceptionMappings;映射。它的key可以是全类名、短名称，同时还有继承效果：比如key是Exception那将匹配所有的异常。value是view name视图名称
+	// 设置异常类名称和错误视图名称之间的映射。异常类名可以是子字符串，目前不支持通配符。例如，“ServletException”的值将匹配javax.servlet.ServletException和子类
 
 	@Nullable
-	private Class<?>[] excludedExceptions;
+	private Class<?>[] excludedExceptions; // 设置要从异常映射中排除的一个或多个异常。
 
 	@Nullable
-	private String defaultErrorView;
+	private String defaultErrorView; 		// 设置默认错误视图的名称。如果未找到特定映射，则将返回此视图
 
 	@Nullable
-	private Integer defaultStatusCode;
+	private Integer defaultStatusCode; // 默认的错误码
 
 	private Map<String, Integer> statusCodes = new HashMap<>();
+	// 设置此异常解析器将应用于给定已解析错误视图的 HTTP 状态代码。键是视图名称；值是状态代码
+
 
 	@Nullable
-	private String exceptionAttribute = DEFAULT_EXCEPTION_ATTRIBUTE;
+	private String exceptionAttribute = DEFAULT_EXCEPTION_ATTRIBUTE; // 异常属性的key
 
 
 	/**
@@ -82,6 +88,7 @@ public class SimpleMappingExceptionResolver extends AbstractHandlerExceptionReso
 	 * and error view names as values
 	 */
 	public void setExceptionMappings(Properties mappings) {
+		// 设置异常类名称和错误视图名称之间的映射。异常类名可以是子字符串，目前不支持通配符。例如，“ServletException”的值将匹配javax.servlet.ServletException和子类
 		this.exceptionMappings = mappings;
 	}
 
@@ -92,6 +99,7 @@ public class SimpleMappingExceptionResolver extends AbstractHandlerExceptionReso
 	 * @param excludedExceptions one or more excluded exception types
 	 */
 	public void setExcludedExceptions(Class<?>... excludedExceptions) {
+		// 设置要从异常映射中排除的一个或多个异常。
 		this.excludedExceptions = excludedExceptions;
 	}
 
@@ -101,6 +109,7 @@ public class SimpleMappingExceptionResolver extends AbstractHandlerExceptionReso
 	 * <p>Default is none.
 	 */
 	public void setDefaultErrorView(String defaultErrorView) {
+		// 设置默认错误视图的名称。如果未找到特定映射，则将返回此视图
 		this.defaultErrorView = defaultErrorView;
 	}
 
@@ -114,6 +123,7 @@ public class SimpleMappingExceptionResolver extends AbstractHandlerExceptionReso
 	 * @see #setDefaultStatusCode(int)
 	 */
 	public void setStatusCodes(Properties statusCodes) {
+		// 设置此异常解析器将应用于给定已解析错误视图的 HTTP 状态代码。键是视图名称；值是状态代码
 		for (Enumeration<?> enumeration = statusCodes.propertyNames(); enumeration.hasMoreElements();) {
 			String viewName = (String) enumeration.nextElement();
 			Integer statusCode = Integer.valueOf(statusCodes.getProperty(viewName));
@@ -186,14 +196,23 @@ public class SimpleMappingExceptionResolver extends AbstractHandlerExceptionReso
 			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler, Exception ex) {
 
 		// Expose ModelAndView for chosen error view.
+		// 1. 为选定的错误视图公开 ModelAndView
+		// 根据异常类型去exceptionMappings匹配到一个viewName
+		// 实在木有匹配到，就用的defaultErrorView（当然defaultErrorView也可能为null没配置，不过建议配置）
 		String viewName = determineViewName(ex, request);
 		if (viewName != null) {
 			// Apply HTTP status code for error views, if specified.
 			// Only apply it if we're processing a top-level request.
+			// 2. 为错误视图应用 HTTP 状态代码（如果指定）。仅当我们正在处理顶级请求时才应用它
+			// 如果匹配上了一个视图后，再去使用视图匹配出一个statusCode
+			// 若没匹配上就用defaultStatusCode（当然它也有可能为null）
 			Integer statusCode = determineStatusCode(request, viewName);
 			if (statusCode != null) {
+				//	执行response.setStatus(statusCode)
 				applyStatusCodeIfPossible(request, response, statusCode);
 			}
+			// new ModelAndView(viewName) 设置好viewName
+			// 并且，并且，并且：mv.addObject(this.exceptionAttribute, ex)把异常信息放进去。exceptionAttribute的值默认为：exception
 			return getModelAndView(viewName, ex, request);
 		}
 		else {
@@ -348,6 +367,7 @@ public class SimpleMappingExceptionResolver extends AbstractHandlerExceptionReso
 	protected ModelAndView getModelAndView(String viewName, Exception ex) {
 		ModelAndView mv = new ModelAndView(viewName);
 		if (this.exceptionAttribute != null) {
+			// 将异常放入到modelAndView的属性中
 			mv.addObject(this.exceptionAttribute, ex);
 		}
 		return mv;

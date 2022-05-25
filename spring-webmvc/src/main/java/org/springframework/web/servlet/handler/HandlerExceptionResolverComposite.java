@@ -35,6 +35,9 @@ import org.springframework.web.servlet.ModelAndView;
  * @since 3.1
  */
 public class HandlerExceptionResolverComposite implements HandlerExceptionResolver, Ordered {
+	// HandlerExceptionResolverComposite这种模式的类已经非常熟悉了，就不用再分析了，它实现的是短路效果：
+	// 只要有一个Resolver返回了不为null的视图就截止了，否则继续处理。多个处理器的顺序可用Ordered控制
+	// （需要注意的是：若你是HandlerExceptionResolverComposite#add进来的，那order是不生效的请手动控制此ArrayList）~
 
 	@Nullable
 	private List<HandlerExceptionResolver> resolvers;

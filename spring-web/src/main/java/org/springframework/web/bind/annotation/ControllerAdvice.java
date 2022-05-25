@@ -78,6 +78,9 @@ import org.springframework.stereotype.Component;
 @Component
 public @interface ControllerAdvice {
 	// 控制器全局增强
+	// 支持指定映射到的Controller
+	// 包括 basePackages -> assignableTypes ->
+	// 检查顺序就是, 依次从上面三个检查,只要有一个满足,就符合当前ControllerAdvice的全局增强
 
 	/**
 	 * Alias for the {@link #basePackages} attribute.
@@ -89,6 +92,9 @@ public @interface ControllerAdvice {
 	 */
 	@AliasFor("basePackages")
 	String[] value() default {};
+	// 允许更简洁的注解声明——例如，
+	// @ControllerAdvice("org.my.pkg")等价于@ControllerAdvice(basePackages = "org.my.pkg") 。
+	// 表名 org.my.pkg 下面的 Controller 都会被处理
 
 	/**
 	 * Array of base packages.
@@ -104,6 +110,10 @@ public @interface ControllerAdvice {
 	 */
 	@AliasFor("value")
 	String[] basePackages() default {};
+	// 基础包数组。
+	// 属于这些基础包或其子包的控制器将被包括在内——例如，
+	// @ControllerAdvice(basePackages = "org.my.pkg")或@ControllerAdvice(basePackages = {"org.my.pkg", "org.my.other.pkg"})
+	// 我的@ControllerAdvice(basePackages = {"org.my.pkg", "org.my.other.pkg"})
 
 	/**
 	 * Type-safe alternative to {@link #basePackages} for specifying the packages
@@ -114,6 +124,11 @@ public @interface ControllerAdvice {
 	 * @since 4.0
 	 */
 	Class<?>[] basePackageClasses() default {};
+	// basePackages的类型安全替代方案，
+	// 例如给定 @ControllerAdvice( basePackageClasses = org.my.pkg.SysController.Class)
+	// 将从其中提取 org.my.pkg.SysController 出基础的package,即 org.my.pkg
+	// 本质上等价于 @ControllerAdvice("org.my.pkg")
+	// 也等于 @ControllerAdvice(basePackages = "org.my.pkg")
 
 	/**
 	 * Array of classes.
@@ -123,7 +138,7 @@ public @interface ControllerAdvice {
 	 */
 	Class<?>[] assignableTypes() default {};
 	// 类数组。
-	// @ControllerAdvice注释类将建议可分配给至少一种给定类型的控制器。
+	// 根据类是否属于指定的class,如果属于的话,将匹配这个全局的ControllerAdvice
 
 	/**
 	 * Array of annotation types.
@@ -134,7 +149,7 @@ public @interface ControllerAdvice {
 	 * @since 4.0
 	 */
 	Class<? extends Annotation>[] annotations() default {};
-	// 注释类型数组。
-	// @ControllerAdvice注解类将建议使用至少一种提供的注释类型注释的控制器
+	// 注解类型数组。
+	// 根据类上是否有指定的注解,如果有的话,将匹配这个全局的ControllerAdvice
 
 }

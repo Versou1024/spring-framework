@@ -77,36 +77,40 @@ public final class HandlerTypePredicate implements Predicate<Class<?>> {
 	public boolean test(@Nullable Class<?> controllerType) {
 		// 核心：谓词检查方法
 
-		// 没有Selectors，就直接返回true
+		// 1. 没有Selectors，就直接返回true
+		// 如果三个判断条件都是空，直接返回true，表示不需要筛选
+		// return (!this.basePackages.isEmpty() || !this.assignableTypes.isEmpty() || !this.annotations.isEmpty());
 		if (!hasSelectors()) {
 			return true;
 		}
 		else if (controllerType != null) {
-			// 依次检查 basePackages -> assignableTypes -> annotations
+			// 2. 依次检查 basePackages -> assignableTypes -> annotations
+
 			for (String basePackage : this.basePackages) {
-				// Controller的权限名是以指定的basePackages开头的
+				// 2.1 Controller的权限名是以指定的basePackages开头的
 				if (controllerType.getName().startsWith(basePackage)) {
 					return true;
 				}
 			}
 			for (Class<?> clazz : this.assignableTypes) {
-				// Controller是clazz的子类或者同类
+				// 2.2 Controller是clazz的子类或者同类
 				if (ClassUtils.isAssignable(clazz, controllerType)) {
 					return true;
 				}
 			}
 			for (Class<? extends Annotation> annotationClass : this.annotations) {
-				// Controller上有指定的annotationClass的注解
+				// 2.3 Controller上有指定的annotationClass的注解
 				if (AnnotationUtils.findAnnotation(controllerType, annotationClass) != null) {
 					return true;
 				}
 			}
 		}
+		// 3. 都不满足就返回false
 		return false;
 	}
 
 	private boolean hasSelectors() {
-		// 如果三个判断条件都是空，直接返回true，表示不需要筛选
+		// 1.如果三个判断条件都是空，直接返回true，表示不需要筛选
 		return (!this.basePackages.isEmpty() || !this.assignableTypes.isEmpty() || !this.annotations.isEmpty());
 	}
 
@@ -179,6 +183,7 @@ public final class HandlerTypePredicate implements Predicate<Class<?>> {
 		 * @param packages one or more base package classes
 		 */
 		public Builder basePackage(String... packages) {
+			// packages 直接加入到 basePackages
 			Arrays.stream(packages).filter(StringUtils::hasText).forEach(this::addBasePackage);
 			return this;
 		}
@@ -189,6 +194,7 @@ public final class HandlerTypePredicate implements Predicate<Class<?>> {
 		 * @param packageClasses one or more base package names
 		 */
 		public Builder basePackageClass(Class<?>... packageClasses) {
+			// 获取 packageClasses 的 basePackage 加入到 basePackages
 			Arrays.stream(packageClasses).forEach(clazz -> addBasePackage(ClassUtils.getPackageName(clazz)));
 			return this;
 		}
@@ -202,6 +208,7 @@ public final class HandlerTypePredicate implements Predicate<Class<?>> {
 		 * @param types one or more handler super types
 		 */
 		public Builder assignableType(Class<?>... types) {
+			// types
 			this.assignableTypes.addAll(Arrays.asList(types));
 			return this;
 		}
@@ -212,6 +219,8 @@ public final class HandlerTypePredicate implements Predicate<Class<?>> {
 		 */
 		@SuppressWarnings("unchecked")
 		public final Builder annotation(Class<? extends Annotation>... annotations) {
+			// annotations
+
 			this.annotations.addAll(Arrays.asList(annotations));
 			return this;
 		}

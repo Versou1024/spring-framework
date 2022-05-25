@@ -103,6 +103,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface ExceptionHandler {
+	// 它(只能)标注在方法上，可以使得这个方法成为一个异常处理器，处理指定的异常类型
 
 	/**
 	 * Exceptions handled by the annotated method. If empty, will default to any

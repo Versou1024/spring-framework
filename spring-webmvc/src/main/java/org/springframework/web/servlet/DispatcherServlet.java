@@ -1210,10 +1210,13 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		if (exception != null) {
 			// 如果Exception属于ModelAndViewDefiningException，那么就可以从异常中获取mav
+			// 此种异常属于Spring MVC内部的异常
 			if (exception instanceof ModelAndViewDefiningException) {
 				logger.debug("ModelAndViewDefiningException encountered", exception);
 				mv = ((ModelAndViewDefiningException) exception).getModelAndView();
 			}else {
+				// 若是普通异常，就交给方法processHandlerException()去统一处理
+				// 从而得到一个异常视图ModelAndView，并且标注errorView = true（若不为null的话）
 				// 否则，调用processHandlerException处理Handler过程产生的异常
 				// 1、会执行所有的我们的自己配置（或者默认配置）了的HandlerExceptionResolver处理器
 				// 2、上面需要注意了，但凡处理方法返回的不是null，有mv的返回。那后面的处理器就不会再进行处理了。具有短路的效果，一定要注意  是通过null来判断的

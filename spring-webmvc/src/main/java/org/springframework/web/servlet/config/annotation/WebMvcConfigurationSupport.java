@@ -1049,6 +1049,13 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 			addDefaultHandlerExceptionResolvers(exceptionResolvers, contentNegotiationManager);
 		}
 		extendHandlerExceptionResolvers(exceptionResolvers);
+		// 这里向ioc容器中,加入了一个HandlerExceptionResolverComposite组合模式
+		// 其中 exceptionResolvers 在 addDefaultHandlerExceptionResolvers 被默认加载三个异常处理器
+		// 1. ExceptionHandlerExceptionResolver
+		// 2. ResponseStatusExceptionResolver
+		// 3. DefaultHandlerExceptionResolver
+		// 并且允许在 extendHandlerExceptionResolvers(exceptionResolvers)
+		// 用户扩展自己的异常处理器
 		HandlerExceptionResolverComposite composite = new HandlerExceptionResolverComposite();
 		composite.setOrder(0);
 		composite.setExceptionResolvers(exceptionResolvers);
@@ -1091,7 +1098,11 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	protected final void addDefaultHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers,
 			ContentNegotiationManager mvcContentNegotiationManager) {
-
+		// 默认添加的异常处理器
+		// 并且优先级如下:
+		// 1. ExceptionHandlerExceptionResolver
+		// 2. ResponseStatusExceptionResolver
+		// 3. DefaultHandlerExceptionResolver
 		ExceptionHandlerExceptionResolver exceptionHandlerResolver = createExceptionHandlerExceptionResolver();
 		exceptionHandlerResolver.setContentNegotiationManager(mvcContentNegotiationManager);
 		exceptionHandlerResolver.setMessageConverters(getMessageConverters());
