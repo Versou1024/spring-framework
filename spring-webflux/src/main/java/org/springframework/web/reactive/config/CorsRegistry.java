@@ -32,7 +32,9 @@ import org.springframework.web.cors.CorsConfiguration;
  * @since 5.0
  */
 public class CorsRegistry {
+	// CorsRegistration 注册表
 
+	// 持有 CorsRegistration 跨域配置注册员的集合
 	private final List<CorsRegistration> registrations = new ArrayList<>();
 
 
@@ -45,7 +47,12 @@ public class CorsRegistry {
 	 * {@link CorsConfiguration#applyPermitDefaultValues()}.
 	 */
 	public CorsRegistration addMapping(String pathPattern) {
+		// 为指定的路径模式启用跨域请求处理。
+		// 支持精确路径映射 URI（例如"/admin" ）以及 Ant 样式的路径模式（例如"/admin/**" ）
+
+		// 1. 方法中使用了默认的跨域配置 --  new CorsConfiguration().applyPermitDefaultValues()
 		CorsRegistration registration = new CorsRegistration(pathPattern);
+		// 2. 然后加入到 注册表中
 		this.registrations.add(registration);
 		return registration;
 	}

@@ -60,8 +60,11 @@ import org.springframework.web.servlet.HandlerMapping;
  * @author Rossen Stoyanchev
  * @since 4.3.1
  */
-public class HandlerMappingIntrospector
-		implements CorsConfigurationSource, ApplicationContextAware, InitializingBean {
+public class HandlerMappingIntrospector implements CorsConfigurationSource, ApplicationContextAware, InitializingBean {
+	// 实现 CorsConfigurationSource 接口
+	// 它是一个帮助类用于从HandlerMapping里获取信息，这些信息用于服务特定的请求。
+	// @EnableWebMvc默认会把它放进容器里，开发者可以@Autowired拿来使用（框架内部木有使用）
+	// 这个自省器最重要的功能就是初始化的时候把所有的HandlerMapping都拿到了。这个处理逻辑和DispatcherServlet.initHandlerMappings是一样的，为何不提取成公用的呢？？？
 
 	@Nullable
 	private ApplicationContext applicationContext;
@@ -103,6 +106,9 @@ public class HandlerMappingIntrospector
 
 	@Override
 	public void afterPropertiesSet() {
+		// 1、Map<String, HandlerMapping> beans = BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, HandlerMapping.class, true, false)
+		// 2、如果第一步获取到了Beans，sort()排序一下
+		// 3、若没找到，回退到`DispatcherServlet.properties`这个配置文件里去找
 		if (this.handlerMappings == null) {
 			Assert.notNull(this.applicationContext, "No ApplicationContext");
 			this.handlerMappings = initHandlerMappings(this.applicationContext);
@@ -122,6 +128,9 @@ public class HandlerMappingIntrospector
 	 */
 	@Nullable
 	public MatchableHandlerMapping getMatchableHandlerMapping(HttpServletRequest request) throws Exception {
+		// 从这些HandlerMapping找到MatchableHandlerMapping
+		// 若一个都木有，此方法抛出异常
+
 		Assert.notNull(this.handlerMappings, "Handler mappings not initialized");
 		HttpServletRequest wrapper = new RequestAttributeChangeIgnoringWrapper(request);
 		for (HandlerMapping handlerMapping : this.handlerMappings) {
@@ -140,11 +149,19 @@ public class HandlerMappingIntrospector
 	@Override
 	@Nullable
 	public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+		// 它另外一个功能便是获取HttpServletRequest对应的CORS配置信息：
+		//
+		//	1. 从作用在此Handler的拦截器HandlerInterceptor上获取
+		//	2. 若拦截器里木有，那就从Handler本身获取（若实现了CorsConfigurationSource接口）
+		//	3. 都没有就返回null
+
 		Assert.notNull(this.handlerMappings, "Handler mappings not initialized");
 		HttpServletRequest wrapper = new RequestAttributeChangeIgnoringWrapper(request);
 		for (HandlerMapping handlerMapping : this.handlerMappings) {
 			HandlerExecutionChain handler = null;
 			try {
+				// 0 .为当期请求reuqest通过HandlerMapping构造一个HandlerExecutionChain
+				// 方便后续对拦截器中是否有实现接口CorsConfigurationSource做检查
 				handler = handlerMapping.getHandler(wrapper);
 			}
 			catch (Exception ex) {
@@ -153,6 +170,8 @@ public class HandlerMappingIntrospector
 			if (handler == null) {
 				continue;
 			}
+			// 1. 拿到作用在此Handler上的所有的拦截器们：HandlerInterceptor
+			// 若有拦截器实现了CorsConfigurationSource接口，那就返回此拦截器上的CORS配置源
 			if (handler.getInterceptors() != null) {
 				for (HandlerInterceptor interceptor : handler.getInterceptors()) {
 					if (interceptor instanceof CorsConfigurationSource) {
@@ -160,6 +179,8 @@ public class HandlerMappingIntrospector
 					}
 				}
 			}
+			// 2. 若这个Handle本身（注意：并不是所有的handler都是一个方法，也可能是个类，所以也有可能是会实现接口的）
+			// 就是个CorsConfigurationSource 那就以它的为准
 			if (handler.getHandler() instanceof CorsConfigurationSource) {
 				return ((CorsConfigurationSource) handler.getHandler()).getCorsConfiguration(wrapper);
 			}
@@ -169,6 +190,8 @@ public class HandlerMappingIntrospector
 
 
 	private static List<HandlerMapping> initHandlerMappings(ApplicationContext applicationContext) {
+		// 查找 ApplicationContext 中所有的 HandlerMapping,排序后,返回HandlerMapping的集合
+
 		Map<String, HandlerMapping> beans = BeanFactoryUtils.beansOfTypeIncludingAncestors(
 				applicationContext, HandlerMapping.class, true, false);
 		if (!beans.isEmpty()) {

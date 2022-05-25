@@ -28,8 +28,13 @@ import org.springframework.lang.Nullable;
  * @since 4.2
  */
 public interface CorsConfigurationSource {
-	// 跨域配置源
+	// 跨域配置源 -- CorsConfiguration Source -- 什么什么源的接口,一般都会提供一个getXxx的接口
 	// 提供getCorsConfiguration()方法
+
+	// 此接口方法的调用处有三个地方：
+	//		AbstractHandlerMapping.getHandler()/getCorsConfiguration()	-- HandlerMapping
+	//		CorsFilter.doFilterInternal()								-- 过滤器
+	//		HandlerMappingIntrospector.getCorsConfiguration()			-- HandlerMapping 内省器
 
 	/**
 	 * Return a {@link CorsConfiguration} based on the incoming request.
@@ -37,5 +42,6 @@ public interface CorsConfigurationSource {
 	 */
 	@Nullable
 	CorsConfiguration getCorsConfiguration(HttpServletRequest request);
+	// 因为它可以根据request返回一个CORS配置。可以把这个接口理解为：存储request与跨域配置信息的容器
 
 }

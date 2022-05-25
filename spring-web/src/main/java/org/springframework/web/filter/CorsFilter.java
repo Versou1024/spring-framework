@@ -53,8 +53,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  */
 public class CorsFilter extends OncePerRequestFilter {
 
+	// 指定 CorsConfigurationSource
 	private final CorsConfigurationSource configSource;
 
+	// 默认的跨域处理器
 	private CorsProcessor processor = new DefaultCorsProcessor();
 
 
@@ -83,10 +85,17 @@ public class CorsFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
 			FilterChain filterChain) throws ServletException, IOException {
+		// 核心逻辑
 
+		// 1. 根据当前request获取对应的跨域配置CorsConfiguration
 		CorsConfiguration corsConfiguration = this.configSource.getCorsConfiguration(request);
+		// 2. 使用 processor 处理请求
 		boolean isValid = this.processor.processRequest(corsConfiguration, request, response);
 		if (!isValid || CorsUtils.isPreFlightRequest(request)) {
+			// 3.
+			// isValid为false,或者
+			// isValidated为true,但是request是一个预检请求
+			// 就直接return,不需要到继续下面的Filter以及DispatcherServlet的运行啦
 			return;
 		}
 		filterChain.doFilter(request, response);

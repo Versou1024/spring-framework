@@ -978,8 +978,12 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 
 		// 1. dispatchOptionsRequest 是否允许客户端向我们发送OPTIONS请求,如果允许
 		// 检查这个请求是不是预检请求: 条件 - OPTIONS请求\带有Orgin请求头\带有Access-Control-Request-Method请求头
+		// 若dispatchOptionsRequest = true 或者是预检请求OPTIONS请求，都会processRequest
+		// processRequest(request, response);就是复杂的视图渲染逻辑~~~
 		if (this.dispatchOptionsRequest || CorsUtils.isPreFlightRequest(request)) {
+			// 预检请求也会继续向DispatcherServlet中执行
 			processRequest(request, response);
+			// 若你自己设置了allow响应头，那就不处理了。否则交给下面处理
 			if (response.containsHeader("Allow")) {
 				// Proper OPTIONS response coming from a handler - we're done.
 				// 1.1 来自处理程序的正确 OPTIONS 响应 - 我们完成了。
@@ -987,8 +991,12 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			}
 		}
 
+		// 预检请求执行完,如果没有allow请求头,那就需要给他加上allow请求头啦
+
 		// Use response wrapper in order to always add PATCH to the allowed methods
 		// 2. 如果上述设置失败,使用响应包装器以便始终将 PATCH 添加到允许的方法
+		// 开发者自己没有设置Allow这个响应头就会进这里来，最终效果是
+		// Allow：GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH
 		super.doOptions(request, new HttpServletResponseWrapper(response) {
 			@Override
 			public void setHeader(String name, String value) {

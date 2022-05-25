@@ -50,40 +50,43 @@ import org.springframework.util.StringUtils;
  */
 public class CorsConfiguration {
 	// 跨域配置 -- CorsConfiguration是一个用于跨域配置的容器,以及检查给定请求的实际来源
+	// 它代表一个cors配置，记录着各种配置项。它还提供了检查给定请求的实际来源、http方法和头的方法供以调用。用人话说：它就是具体封装跨域配置信息的pojo。
+	// 默认情况下新创建的CorsConfiguration它是不允许任何跨域请求的，需要你手动去配置，或者调用applyPermitDefaultValues()开启GET、POST、Head的支持~
 
 	/** Wildcard representing <em>all</em> origins, methods, or headers. */
-	public static final String ALL = "*";
+	public static final String ALL = "*";//表示所有来源、方法或标头的通配符
 
-	// 默认方法
+	// 默认支持的方法
 	private static final List<HttpMethod> DEFAULT_METHODS = Collections.unmodifiableList(Arrays.asList(HttpMethod.GET, HttpMethod.HEAD));
 
 	// 默认许可方法names
 	private static final List<String> DEFAULT_PERMIT_METHODS = Collections.unmodifiableList(Arrays.asList(HttpMethod.GET.name(), HttpMethod.HEAD.name(), HttpMethod.POST.name()));
 
-	// 默认允许所有
+	// 默认允许暴露的请求头
 	private static final List<String> DEFAULT_PERMIT_ALL = Collections.singletonList(ALL);
 
 
 	@Nullable
-	private List<String> allowedOrigins; // origin 请求头
+	private List<String> allowedOrigins; // 允许浏览器的跨域来源
 
 	@Nullable
-	private List<String> allowedMethods; // 允许请求方式
+	private List<String> allowedMethods; // 允许的请求方式
 
 	@Nullable
 	private List<HttpMethod> resolvedMethods = DEFAULT_METHODS;
 
 	@Nullable
-	private List<String> allowedHeaders; // 允许请求头
+	private List<String> allowedHeaders; // 允许request传递的请求头
 
 	@Nullable
-	private List<String> exposedHeaders; // 允许暴露的请求头
+	private List<String> exposedHeaders; // 允许浏览器获取的响应头
 
 	@Nullable
-	private Boolean allowCredentials; // 是否允许cookies=
+	private Boolean allowCredentials; // 是否允许浏览器发送cookies
 
 	@Nullable
-	private Long maxAge; // 不用预检的最大时间
+	private Long maxAge; // 预检缓存的最大时间,以秒为计算
+	// 针对的是单个URl
 
 
 	/**
@@ -348,6 +351,13 @@ public class CorsConfiguration {
 	 * </ul>
 	 */
 	public CorsConfiguration applyPermitDefaultValues() {
+		// 默认情况下，新创建的CorsConfiguration不允许任何跨域请求，并且必须明确配置以指示应允许的内容。
+		// 使用此方法翻转初始化模型以从允许所有跨域请求的 GET、HEAD 和 POST 请求的开放默认值开始。但是请注意，此方法不会覆盖已设置的任何现有值。
+		// 如果尚未设置，则应用以下默认值：
+		// 	1. 允许所有来源。
+		// 	2. 允许“简单”方法GET 、 HEAD和POST 。
+		// 	3. 允许所有标题。
+		// 	4. 将最大age设置为 1800 秒（30 分钟）。
 		if (this.allowedOrigins == null) {
 			this.allowedOrigins = DEFAULT_PERMIT_ALL;
 		}
@@ -385,6 +395,11 @@ public class CorsConfiguration {
 	 */
 	@Nullable
 	public CorsConfiguration combine(@Nullable CorsConfiguration other) {
+		// 将提供的CorsConfiguration的非空属性与这个结合起来。
+		// 当组合像allowCredentials或maxAge这样的单个值时，this属性将被非空的other属性（如果有）覆盖。
+		// 组合列表，如allowedOrigins 、 allowedMethods 、 allowedHeaders或exposedHeaders是通过附加方式完成的。
+		// 例如，将["GET", "POST"]与["PATCH"]组合会产生["GET", "POST", "PATCH"] ，但请记住，组合["GET", "POST"]使用["*"]会导致["*"] 。
+		// 请注意，由applyPermitDefaultValues()设置的默认许可值被任何明确定义的值覆盖。
 		if (other == null) {
 			return this;
 		}
@@ -433,6 +448,9 @@ public class CorsConfiguration {
 	 */
 	@Nullable
 	public String checkOrigin(@Nullable String requestOrigin) {
+		// 根据配置的允许来源检查请求的来源
+		// 返回值并不是bool值，而是字符串--> 返回可用的origin。若是null表示请求的origin不被支持
+
 		if (!StringUtils.hasText(requestOrigin)) {
 			return null;
 		}
@@ -467,6 +485,8 @@ public class CorsConfiguration {
 	 */
 	@Nullable
 	public List<HttpMethod> checkHttpMethod(@Nullable HttpMethod requestMethod) {
+		// 根据配置的允许方法检查 HTTP 请求方法（或来自飞行前请求的Access-Control-Request-Method标头的方法）。
+		// 参数：requestMethod – 要检查的 HTTP 请求方法
 		if (requestMethod == null) {
 			return null;
 		}
@@ -486,6 +506,8 @@ public class CorsConfiguration {
 	 */
 	@Nullable
 	public List<String> checkHeaders(@Nullable List<String> requestHeaders) {
+		// 根据配置的允许标头检查提供的请求标头（或飞行前请求的Access-Control-Request-Headers中列出的标头）
+
 		if (requestHeaders == null) {
 			return null;
 		}

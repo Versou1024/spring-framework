@@ -39,6 +39,8 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.handler.AbstractHandlerMapping#setCorsProcessor
  */
 public interface CorsProcessor {
+	// 它便是CORS真正处理器：用于接收请求和一个配置，然后更新Response：比如接受/拒绝
+	// 唯一实现类是DefaultCorsProcessor
 
 	/**
 	 * Process a request given a {@code CorsConfiguration}.

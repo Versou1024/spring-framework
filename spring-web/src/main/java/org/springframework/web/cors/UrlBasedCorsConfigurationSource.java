@@ -39,15 +39,22 @@ import org.springframework.web.util.UrlPathHelper;
  * @since 4.2
  */
 public class UrlBasedCorsConfigurationSource implements CorsConfigurationSource {
+	// 实现 CorsConfigurationSource 接口
+	// 里面存储着path patterns和CorsConfiguration的键值对
+
+	// 从命名不难看出,这个CorsConfiguration的来源根据就是提前设置好的url->CorsConfiguration
+	// 所以是基于URL映射到的CorsConfiguration来做跨域配置查询的
+
+	// 在CorsFilter和AbstractHandlerMapping中有使用到哦
 
 	private final Map<String, CorsConfiguration> corsConfigurations = new LinkedHashMap<>();
 
-	private PathMatcher pathMatcher = new AntPathMatcher();
+	private PathMatcher pathMatcher = new AntPathMatcher(); // 路径匹配器
 
-	private UrlPathHelper urlPathHelper = new UrlPathHelper();
+	private UrlPathHelper urlPathHelper = new UrlPathHelper(); // 路径帮助器
 
 	@Nullable
-	private String lookupPathAttributeName;
+	private String lookupPathAttributeName; // 查找的urlPath的属性key
 
 
 	/**
@@ -125,6 +132,8 @@ public class UrlBasedCorsConfigurationSource implements CorsConfigurationSource 
 	 * Register a {@link CorsConfiguration} for the specified path pattern.
 	 */
 	public void registerCorsConfiguration(String path, CorsConfiguration config) {
+		// 注册映射的跨域配置信息
+
 		this.corsConfigurations.put(path, config);
 	}
 
@@ -132,7 +141,9 @@ public class UrlBasedCorsConfigurationSource implements CorsConfigurationSource 
 	@Override
 	@Nullable
 	public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+		// 1. 获取request上的lookupPath
 		String lookupPath = this.urlPathHelper.getLookupPathForRequest(request, this.lookupPathAttributeName);
+		// 2. 从预先设置的corsConfigurations中,使用pathMatcher做模式匹配,只要匹配,就返回该request对应的CorsConfiguration
 		for (Map.Entry<String, CorsConfiguration> entry : this.corsConfigurations.entrySet()) {
 			if (this.pathMatcher.match(entry.getKey(), lookupPath)) {
 				return entry.getValue();

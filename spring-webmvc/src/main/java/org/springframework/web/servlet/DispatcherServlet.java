@@ -513,7 +513,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		initThemeResolver(context);
 		initHandlerMappings(context); // ok
 		initHandlerAdapters(context); // ok
-		initHandlerExceptionResolvers(context);
+		initHandlerExceptionResolvers(context); // ok
 		initRequestToViewNameTranslator(context); // ok
 		initViewResolvers(context); // ok
 		initFlashMapManager(context);

@@ -477,14 +477,19 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		}
 
 		// 6. 做一个跨域处理 -- 检查当前Handler是否有跨域cors配置即实现CorsConfigurationSource，或者当前请求为预检请求
+		// hasCorsConfigurationSource(handler) = 当前handler本身实现了CorsConfigurationSource接口/或者,提前配置了corsConfigurationSource
+		// CorsUtils.isPreFlightRequest(request) = 或者请求是预检请求
 		if (hasCorsConfigurationSource(handler) || CorsUtils.isPreFlightRequest(request)) {
-			// 6.1 从当前HandlerMapping设置的跨域配置来源中获取为当前请求匹配的跨域配置
+			// 6.1 全局配置 -- 从当前HandlerMapping设置的跨域配置来源中获取为当前请求匹配的跨域配置
 			CorsConfiguration config = (this.corsConfigurationSource != null ? this.corsConfigurationSource.getCorsConfiguration(request) : null);
-			// 6.2 从handler本身中尝试获取这个reuqest的跨域配置
+			// 6.2 局部配置 -- 从handler本身实现了CorsConfigurationSource接口时,就从handler中尝试获取这个request的跨域配置
+			// 从handler自己里找：若handler自己实现了CorsConfigurationSource接口，那就从自己这哪呗
+			// 说明：此种方式适用于一个类就是一个处理器的case。比如servlet处理器
+			// 所以对于@RequestMapping情况，这个值大部分情况都是null
 			CorsConfiguration handlerConfig = getCorsConfiguration(handler, request);
-			// 6.3 如果两个跨域配置都存在就联合在一起;否则就是使用不为null的那一个
+			// 6.3 把全局配置和handler配置combine组合合并
 			config = (config != null ? config.combine(handlerConfig) : handlerConfig);
-			// 6.3 对预检七里渠做一些处理
+			// 6.4 这个方法很重要。请看下面这个方法
 			executionChain = getCorsHandlerExecutionChain(request, executionChain, config);
 		}
 
@@ -561,6 +566,9 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @since 5.2
 	 */
 	protected boolean hasCorsConfigurationSource(Object handler) {
+		// 1. 当前handler本身实现了CorsConfigurationSource接口
+		// 2. 或者,提前配置了corsConfigurationSource
+
 		if (handler instanceof HandlerExecutionChain) {
 			handler = ((HandlerExecutionChain) handler).getHandler();
 		}
@@ -605,12 +613,22 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 			HandlerExecutionChain chain, @Nullable CorsConfiguration config) {
 
 		// 1. 再次检查是否为预检请求
+		// 若是预检请求：就new一个新的HandlerExecutionChain。
+		// PreFlightHandler是一个HttpRequestHandler哦~~~并且实现了接口CorsConfigurationSource
 		if (CorsUtils.isPreFlightRequest(request)) {
-			// 1.1 预检请求 -- 只需要用默认的PreFlightHandler 即可,提供之前的Handler
+			// 1.1 预检请求
+			// 需要重新给定Handler,即PreFlightHandler,当然拦截器还是不变interceptors
+			// 因此若是预检请求：针对此请求会直接new一个PreFlightHandler作为HttpRequestHandler处理器来处理它，而不再是交给匹配上的Handler去处理（这点特别的重要）
+			//- PreFlightHandler#handle方法委托给了corsProcessor去处理跨域请求头、响应头的
+			//- 值得注意的是：此时即使原Handler它不执行了，但匹配上的HandlerInterceptor们仍都还是会生效执行作用在OPTIONS方法上的
 			HandlerInterceptor[] interceptors = chain.getInterceptors();
 			return new HandlerExecutionChain(new PreFlightHandler(config), interceptors);
 		}
-		// 2. 添加一个预检请求的拦截器
+		// 2. 否则就是普通请求,且这个普通请求是在全局/局部都有一个CorsConfiguration跨域配置
+		// 添加一个预检请求的拦截器,以让跨域配置生效
+		// 添加的拦截器就是 CorsInterceptor
+		// 若是简单请求/真实请求：在原来的处理链上加一个拦截器chain.addInterceptor(new CorsInterceptor(config))，
+		// 由这个拦截器它最终复杂来处理相关逻辑（全权委托给corsProcessor）
 		else {
 			chain.addInterceptor(0, new CorsInterceptor(config));
 			return chain;
@@ -619,6 +637,8 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 
 
 	private class PreFlightHandler implements HttpRequestHandler, CorsConfigurationSource {
+		// 这个和上面的CorsInterceptor互斥，它最终也是委托给corsProcessor来处理请求，只是它是专门用于处理预检请求的。详见CORS请求处理流程部分。
+		// 持有一个 CorsConfiguration 用于给预检请求做请求处理
 
 		@Nullable
 		private final CorsConfiguration config;
@@ -641,6 +661,8 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 
 
 	private class CorsInterceptor extends HandlerInterceptorAdapter implements CorsConfigurationSource {
+		// Cors拦截器。它最终会被放到处理器链HandlerExecutionChain里，用于拦截处理（最后一个拦截）。
+		// 持有一个 CorsConfiguration 用于在请求之前做跨域配置
 
 		@Nullable
 		private final CorsConfiguration config;

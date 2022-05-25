@@ -61,6 +61,7 @@ public class DefaultCorsProcessor implements CorsProcessor {
 	public boolean processRequest(@Nullable CorsConfiguration config, HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
 
+		// 1. 略过 VARY 请求头
 		Collection<String> varyHeaders = response.getHeaders(HttpHeaders.VARY);
 		if (!varyHeaders.contains(HttpHeaders.ORIGIN)) {
 			response.addHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
@@ -72,26 +73,51 @@ public class DefaultCorsProcessor implements CorsProcessor {
 			response.addHeader(HttpHeaders.VARY, HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
 		}
 
+		// 2. 若不是跨域请求，不处理
+		// 这个判断极其简单：请求中是否有Origin请求头,有这个头就是跨域请求
 		if (!CorsUtils.isCorsRequest(request)) {
 			return true;
 		}
 
+		// 3. 若响应头里已经设置好了Access-Control-Allow-Origin这个响应头，此处理器也不管了
 		if (response.getHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN) != null) {
 			logger.trace("Skip: response already contains \"Access-Control-Allow-Origin\"");
 			return true;
 		}
 
+		// 4. 是否是预检请求，判断标准如下：
+		// 是跨域请求 && 是`OPTIONS`请求 && 有Access-Control-Request-Method这个请求头
 		boolean preFlightRequest = CorsUtils.isPreFlightRequest(request);
+		// 若config == null，分两种case：
+		// 是预检请求but木有给config，那就拒绝：给出状态码403
+		//   response.setStatusCode(HttpStatus.FORBIDDEN)
+		//   response.getBody().write("Invalid CORS request".getBytes(StandardCharsets.UTF_8));
 		if (config == null) {
+			// 5. 没有给定跨域配置
+
+			// 5.1 预检请求,就直接拒绝请求 -- 直接决绝掉403并return false。都合法的话：就在response设置上一些头信息~~~
 			if (preFlightRequest) {
 				rejectRequest(new ServletServerHttpResponse(response));
+				// 告诉后面的处理器不用再处理了 -- 例如拦截器
+				// CorsInterceptor -- 返回false,就不需要到Handler上运行啦
 				return false;
 			}
+			// 5.2 非预检请求,直接return true;表示自己处理不了,交给后面的处理吧
 			else {
+				// PreFlightHandler -- 返回
+				// 虽然没给config，但不是预检请求（是真是请求，返回true）
 				return true;
 			}
 		}
 
+		// 真正的跨域处理逻辑~~~~
+		// 它的处理逻辑比较简单，立即了W3C规范理解它起来非常简单，本文略
+		// checkOrigin/checkMethods/checkHeaders等等方法最终都是委托给CorsConfiguration去做的
+		// 正常处理CORS请求，大致是如下步骤：
+		//1. 判断 origin 是否合法
+		//2. 判断 method 是否合法
+		//3. 判断 header是否合法
+		//4. 若其中有一项不合法，直接决绝掉403并return false。都合法的话：就在response设置上一些头信息~~~
 		return handleInternal(new ServletServerHttpRequest(request), new ServletServerHttpResponse(response), config, preFlightRequest);
 	}
 
@@ -111,6 +137,8 @@ public class DefaultCorsProcessor implements CorsProcessor {
 	 */
 	protected boolean handleInternal(ServerHttpRequest request, ServerHttpResponse response,
 			CorsConfiguration config, boolean preFlightRequest) throws IOException {
+
+		// 1. 检查各种跨域配置是否符合
 
 		String requestOrigin = request.getHeaders().getOrigin();
 		String allowOrigin = checkOrigin(config, requestOrigin);
@@ -137,6 +165,8 @@ public class DefaultCorsProcessor implements CorsProcessor {
 			rejectRequest(response);
 			return false;
 		}
+
+		// 2. 写上各种请求头
 
 		responseHeaders.setAccessControlAllowOrigin(allowOrigin);
 

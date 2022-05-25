@@ -31,15 +31,19 @@ import org.springframework.web.cors.CorsConfiguration;
  * @see CorsRegistry
  */
 public class CorsRegistration {
+	// 模式匹配的跨域配置项
+	// spring 5.0 才出来哦,需要注意一下
+	// 结合了: pathPattern + config
 
-	private final String pathPattern;
+	private final String pathPattern; // 匹配的路径模式
 
-	private final CorsConfiguration config;
+	private final CorsConfiguration config; // 匹配上的Url将使用的跨域配置
 
 
 	public CorsRegistration(String pathPattern) {
 		this.pathPattern = pathPattern;
 		// Same implicit default values as the @CrossOrigin annotation + allows simple methods
+		// 这里调用了applyPermitDefaultValues()做一个默认的跨域的配置化操作
 		this.config = new CorsConfiguration().applyPermitDefaultValues();
 	}
 
@@ -59,6 +63,8 @@ public class CorsRegistration {
 	 * See the Spring Framework reference for more on this filter.
 	 */
 	public CorsRegistration allowedOrigins(String... origins) {
+		// 设置 origins
+
 		this.config.setAllowedOrigins(Arrays.asList(origins));
 		return this;
 	}
@@ -70,6 +76,8 @@ public class CorsRegistration {
 	 * are allowed.
 	 */
 	public CorsRegistration allowedMethods(String... methods) {
+		// 设置 methods
+
 		this.config.setAllowedMethods(Arrays.asList(methods));
 		return this;
 	}
@@ -84,6 +92,8 @@ public class CorsRegistration {
 	 * <p>By default all headers are allowed.
 	 */
 	public CorsRegistration allowedHeaders(String... headers) {
+		// 设置允许浏览器传过来的headers
+
 		this.config.setAllowedHeaders(Arrays.asList(headers));
 		return this;
 	}
@@ -98,6 +108,8 @@ public class CorsRegistration {
 	 * <p>By default this is not set.
 	 */
 	public CorsRegistration exposedHeaders(String... headers) {
+		// 允许浏览器读取的响应头
+
 		this.config.setExposedHeaders(Arrays.asList(headers));
 		return this;
 	}
@@ -116,6 +128,8 @@ public class CorsRegistration {
 	 * credentials are therefore not allowed.
 	 */
 	public CorsRegistration allowCredentials(boolean allowCredentials) {
+		// 允许浏览器使用Cookie
+
 		this.config.setAllowCredentials(allowCredentials);
 		return this;
 	}
@@ -126,6 +140,8 @@ public class CorsRegistration {
 	 * <p>By default this is set to 1800 seconds (30 minutes).
 	 */
 	public CorsRegistration maxAge(long maxAge) {
+		// 允许浏览器缓存预检请求,不必每次发送
+
 		this.config.setMaxAge(maxAge);
 		return this;
 	}
