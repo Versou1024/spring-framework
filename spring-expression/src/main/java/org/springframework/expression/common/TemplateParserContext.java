@@ -26,6 +26,7 @@ import org.springframework.expression.ParserContext;
  * @since 3.0
  */
 public class TemplateParserContext implements ParserContext {
+	// 用于模板解析的可配置ParserContext实现。期望表达式前缀和后缀作为构造函数参数
 
 	private final String expressionPrefix;
 

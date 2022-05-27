@@ -73,6 +73,8 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	 */
 	@SuppressWarnings("unchecked")
 	public QualifierAnnotationAutowireCandidateResolver() {
+		// 构造函数
+
 		// 默认情况：都是使用构造函数，将qualifierTypes配置为Qualifier注解的class
 		this.qualifierTypes.add(Qualifier.class);
 		try {
@@ -147,11 +149,19 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	 */
 	@Override
 	public boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
+		// 该方法用来 -- 确定提供的 bean 定义是否是自动装配候选者。
+		// 要被视为候选，bean 的autowire-candidate属性不得设置为“false”。
+		// 此外，如果此 bean 工厂将要自动装配的字段或参数上的注释识别为qualifier ，
+		// 则 bean 必须“匹配”该注释以及它可能包含的任何属性。
+		// bean 定义必须包含相同的限定符或元属性匹配。
+		// 如果限定符或属性不匹配，“值”属性将回退以匹配 bean 名称或别名。
+
 		// 会一直向上依次调用
-		// 调用 SimpleAutowireCandidateResolver 的 isAutowireCandidate 查看 BeanDefinition 中的 AutowireCandidate 是否为tru
+		// 调用 SimpleAutowireCandidateResolver 的 isAutowireCandidate 查看 BeanDefinition 中的 AutowireCandidate 是否为true
 		// 调用 GenericTypeAwareAutowireCandidateResolver 的  isAutowireCandidate 查看 是否为泛型，在泛型的情况下是否能够满足匹配呢
 		boolean match = super.isAutowireCandidate(bdHolder, descriptor);
-		// 如果是false，说明beanDefinition.autowireCandidate 或者 依赖上泛型没有匹配上(那就不用继续往下走了)
+		// 如果是false，说明beanDefinition.autowireCandidate 或者 依赖上泛型没有匹配上(那就不用继续往下走了) -- 依赖中泛型通常是 @Autowrite List<XxxInterface> list;
+		// 即不负好 XxxInterface 这个泛型实现类
 		// 如果是true，那就继续，解析@Qualifier注解啦
 		// 所以若你标记了@Qualifier注解，也是需要对应上
 		if (match) {
@@ -161,9 +171,11 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 			match = checkQualifiers(bdHolder, descriptor.getAnnotations());
 			if (match) {
 				// 兼容到方法形参级别的注入~~~~~~~~~~~~~
+				// 因为 @Autowrited 支持在方法形参上使用
 				MethodParameter methodParam = descriptor.getMethodParameter();
 				if (methodParam != null) {
 					Method method = methodParam.getMethod();
+					// 但是有要求 @Autowrite 标注的方法,其返回值必须是Void的哦
 					if (method == null || void.class == method.getReturnType()) {
 						match = checkQualifiers(bdHolder, methodParam.getMethodAnnotations());
 					}
@@ -178,29 +190,30 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	 * 将给定的@Qualifier注解与候选bean定义匹配~~~（简单的书就是看看类型已匹配上的，@Qualifier是否还能匹配上）
 	 */
 	protected boolean checkQualifiers(BeanDefinitionHolder bdHolder, Annotation[] annotationsToSearch) {
-		// 这里一般会有两个注解  一个@Autowired 一个@Qualifier
-		// 或者还有其余的组合注解~~~
+
+		// 1. 被搜索的注解 annotationsToSearch 为空的
 		if (ObjectUtils.isEmpty(annotationsToSearch)) {
 			return true;
 		}
+		// 2. TypeConverter
 		SimpleTypeConverter typeConverter = new SimpleTypeConverter();
 		for (Annotation annotation : annotationsToSearch) {
 			Class<? extends Annotation> type = annotation.annotationType();
 			boolean checkMeta = true;
 			boolean fallbackToMeta = false;
 
-			// isQualifier：判断是不是@Qualifier注解以及 JSR330的`javax.inject.Qualifier`注解也是支持的
-			// 这里是检查type是否有直接注解@Qualifier
+			// 2.1 isQualifier：判断注解type类型是不是@Qualifier注解以及 JSR330的`javax.inject.Qualifier`注解也是支持的
+			// 这里是检查type是@Qualifier的注解
 			if (isQualifier(type)) {
 				// checkQualifier 最重要的方法就是这个了，它是个重载方法。。。它的内容非常长，大致我在这里解析步骤如下：
 				//1、bd.getQualifier 看看Bean定义里是否已经定义过Qualifier们(但是经过我的跟踪，Bean定义得这个字段：private final Map<String, AutowireCandidateQualifier> qualifiers;永远不会被赋值 如有人知道，请告知我 了能事Spring预留得吧)
 				//2、该Bean定义得AnnotatedElement qualifiedElement的这个属性上是否有指定的注解，有就拿出这个Annotation，否则继续下一步
 				//3、resolvedFactoryMethod工厂方法上是否有这个注解，否则进行下一步（下一步事关键。。。）
-				//4、Look for matching annotation on the target class  JavaDoc得意思备注也很清晰，就是去具体得类上面，看有没有有对应的注解，有就拿出来。
+				//4、Look for matching annotation on the target class  JavaDoc得意思备注也很清晰，就是去具体的类上面，看有没有有对应的注解，有就拿出来。
 				//（有个细节）：即使这个类被代理了，也是能拿到标注在它上面的注解的  因为： AnnotationUtils.getAnnotation(ClassUtils.getUserClass(bd.getBeanClass()), type)
-				//5、到这里，如国获得了对应的@Qualifier注解，那就会比较。如果value值也相同，那就return true，否则继续往下走
+				//5、到这里，若获得了对应的@Qualifier注解，那就会比较。如果value值也相同，那就return true，否则继续往下走
 				//6、接下来拿到这个注解的attributes，然后判断若@Qualifier没有value值或者是空串，就只return false了  否则继续看
-				//7、最终会和Bean上面那个注解（一般都是@Component等注解）的value值和@Qualifier得value值进行比较，若相等  就最终返回true勒（请注意：此处Bean得alias别名若相等也是会返回true）
+				//7、最终会和Bean上面那个注解（一般都是@Component等注解）的value值和@Qualifier中value值进行比较，若相等, 就最终返回true勒（请注意：此处Bean的alias别名若相等也是会返回true）
 				//8、======就这样，我们就完成了Bean定义和@Qualifier得一个匹配过程======
 				if (!checkQualifier(bdHolder, annotation, typeConverter)) {
 					fallbackToMeta = true;
@@ -211,7 +224,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 				}
 			}
 
-			// 这一步非常有效：相当于支持到了组合注解的情况。 它连注解的注解都会解析
+			// 3. 这一步非常有效：相当于支持到了组合注解的情况。 它连注解的注解都会解析
 			// 比如我们@MyAnno上面还有@Qualifier注解，仍然会被这里解析到的  内部有一个递归
 			if (checkMeta) {
 				boolean foundMeta = false;
@@ -382,16 +395,17 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	@Override
 	@Nullable
 	public Object getSuggestedValue(DependencyDescriptor descriptor) {
-		// 拿到value注解的这个属性（若标注有@Value注解的话）
+
+		// 1. 拿到value注解的这个属性（若标注有@Value注解的话）
 		Object value = findValue(descriptor.getAnnotations());
 		if (value == null) {
-			// 字段没有使用@Value，就看形参方法上有没有(前提是注入的形参，而不是类字段，常见注入的形参就是@Bean标注的方法的形参)
+			// 2. 字段没有使用@Value，就看形参方法上有没有(前提是注入的形参，而不是类字段，常见注入的形参就是@Bean标注的方法的形参)
 			MethodParameter methodParam = descriptor.getMethodParameter();
 			if (methodParam != null) {
 				value = findValue(methodParam.getMethodAnnotations());
 			}
 		}
-		// 获取@Value的value属性值，注意属性值是没有经过spel解析或占位符解析的哦
+		// 3. 获取到@Value的value属性值，注意属性值是没有经过spel解析或占位符解析的哦,是原生的字符串
 		return value;
 	}
 
@@ -401,10 +415,10 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	@Nullable
 	protected Object findValue(Annotation[] annotationsToSearch) {
 		if (annotationsToSearch.length > 0) {   // qualifier annotations have to be local
-			// 对于给定的annotationsToSearch注解生成一个AnnotationElement元素，这样AnnotatedElementUtils才可以会使用
+			// 1. 对于给定的annotationsToSearch注解生成一个AnnotationElement元素，这样AnnotatedElementUtils才可以会使用
 			AnnotationAttributes attr = AnnotatedElementUtils.getMergedAnnotationAttributes(AnnotatedElementUtils.forAnnotations(annotationsToSearch), this.valueAnnotationType);
 			if (attr != null) {
-				// 提取@value属性的value值
+				// 2. 提取@value属性的value值
 				return extractValue(attr);
 			}
 		}

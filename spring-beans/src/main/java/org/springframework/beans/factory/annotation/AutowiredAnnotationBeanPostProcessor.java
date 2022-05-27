@@ -129,6 +129,14 @@ import org.springframework.util.StringUtils;
  * @see Value
  */
 public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {
+	// 当Bean进行初始化完成之后会populateBean()对它的属性进行赋值，这个时候AutowiredAnnotationBeanPostProcessor这个后置处理器生效，从而对属性进行依赖注入赋值。
+	//
+	// AutowiredAnnotationBeanPostProcessor它能够处理@Autowired和@Value注解~
+	//
+	// 注意：因为@Value是BeanPostProcessor来解析的，所以具有容器隔离性（本容器内的Bean使用@Value只能引用到本容器内的值哦~，因为BeanPostProcessor是具有隔离性的）
+	// 推荐：所有的@Value都写在根容器（也就是我们常说的Service容器）内，请不要放在web容器里。也就是说，请尽量不要在controller从使用@Value注解，因为业务我们都要求放在service层
+	// 三层架构：Controller、Service、Repository务必做到职责分离和松耦合~
+	// 但SpringBoot中只有一个容器 -- 可忽略不计
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -162,6 +170,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	 */
 	@SuppressWarnings("unchecked")
 	public AutowiredAnnotationBeanPostProcessor() {
+		// 为 Spring 的标准@Autowired和@Value注解创建一个新的AutowiredAnnotationBeanPostProcessor
 		// autowiredAnnotationTypes 用来存储需要处理的注解class
 		// AutowiredAnnotationBeanPostProcessor 用来处理Autowrited、value、以及Inject注解、
 		this.autowiredAnnotationTypes.add(Autowired.class);
@@ -188,6 +197,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	 * to be autowired.
 	 */
 	public void setAutowiredAnnotationType(Class<? extends Annotation> autowiredAnnotationType) {
+		// 设置 'autowired' 注释类型，用于构造函数、字段、setter 方法和任意配置方法。
+		// 默认的自动装配注释类型是 Spring 提供的@Autowired和@Value注释以及 JSR-330 的@Inject注释（如果可用）。
+
 		Assert.notNull(autowiredAnnotationType, "'autowiredAnnotationType' must not be null");
 		this.autowiredAnnotationTypes.clear();
 		this.autowiredAnnotationTypes.add(autowiredAnnotationType);
@@ -439,8 +451,11 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	}
 
 
+	// 这个方法是InstantiationAwareBeanPostProcessor的，它在给属性赋值的时候会被调用~~
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		// InjectionMetadata 里包含private final Collection<InjectedElement> injectedElements;表示所有需要注入处理的属性们~~~
+		// 所以最终都是InjectionMetadata去处理~
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
 			metadata.inject(bean, beanName, pvs);
@@ -492,7 +507,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		// Fall back to class name as cache key, for backwards compatibility with custom callers.
 		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
 		// Quick check on the concurrent map first, with minimal locking.
-		// injectionMetadataCache 缓存中是否包含指定的metadata
+		// 1. injectionMetadataCache 缓存中是否包含需要注入的metadata
 		InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
 		// 是否需要重新刷新：
 		// 进入InjectionMetadata：可以发现只有
@@ -505,13 +520,13 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 				metadata = this.injectionMetadataCache.get(cacheKey);
 				if (InjectionMetadata.needsRefresh(metadata, clazz)) {
 					// 进入下面if代码块：
-					// 表明属于上面说的缓存数据无效，需要将失效的metadata清空
+					// 3. 表明属于上面说的缓存数据无效，需要将失效的metadata清空
 					if (metadata != null) {
 						metadata.clear(pvs);
 					}
 					// 核心：重新构建Autowrite的元数据
 					metadata = buildAutowiringMetadata(clazz);
-					// 缓存
+					// 缓存起来
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
 			}
@@ -520,11 +535,12 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	}
 
 	private InjectionMetadata buildAutowiringMetadata(Class<?> clazz) {
-		// clazz类中是否存在@Autowrited和@Value的注解，没有就返回空，有的话就再去查
+		// 1. clazz类中是否存在@Autowrited和@Value的注解，没有就返回空，有的话就再去查
 		if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
 			return InjectionMetadata.EMPTY; // 不存在，返回空
 		}
 
+		// 2. 被注入的元素集合 InjectedElement - 封装有 是否为字段/成员值/是否可以跳过检查/属性描述符
 		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
 		Class<?> targetClass = clazz;
 
@@ -532,9 +548,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			// 当前元素
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
 
-			// 对本类所有的field遍历
+			// 3. 对本类所有的field遍历
 			ReflectionUtils.doWithLocalFields(targetClass, field -> {
-				// 找到满足有@Value和@Autowrited注解的字段
+				// 找到满足有@Value或@Autowrited注解的字段 -- @Autowrited 和 @Value 注解不会同时使用哦
 				MergedAnnotation<?> ann = findAutowiredAnnotation(field);
 				if (ann != null) {
 					// 注意：@Autowrited 不应该修饰静态变量
@@ -565,7 +581,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						}
 						return;
 					}
-					// @Autowrited注入的方法不能够是形参数量为0
+					// @Autowrited注入的方法是形参数量不能为0
 					if (method.getParameterCount() == 0) {
 						if (logger.isInfoEnabled()) {
 							logger.info("Autowired annotation should only be used on methods with parameters: " + method);
@@ -631,7 +647,8 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	 */
 	@Deprecated
 	protected boolean determineRequiredStatus(AnnotationAttributes ann) {
-		// ann不包含"required"属性，或者，"required"属性值为true，都可以返回true
+		// @Value 的 注解ann不包含"required"属性，
+		// @AutoWrited 注解 的 "required"属性值为true，就可以返回true
 		return (!ann.containsKey(this.requiredParameterName) || this.requiredParameterValue == ann.getBoolean(this.requiredParameterName));
 	}
 
@@ -688,9 +705,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	private class AutowiredFieldElement extends InjectionMetadata.InjectedElement {
 		// 继承 InjectedElement
 
-		private final boolean required;
+		private final boolean required; // 是否必须
 
-		private volatile boolean cached;
+		private volatile boolean cached; // 是否缓存
 
 		@Nullable
 		private volatile Object cachedFieldValue; // 缓存字段值
@@ -703,12 +720,14 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		@Override
 		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
 			// 核心 -- 重写inject方法
+
+			// 1. 强转为Field
 			Field field = (Field) this.member;
 			Object value;
-			// 是否已经缓存了
+			// 2. 是否已经缓存了
 			if (this.cached) {
 				try {
-					// 已经缓存的话，从cachedFieldValue
+					// 2.1 已经缓存的话，从cachedFieldValue
 					value = resolvedCachedArgument(beanName, this.cachedFieldValue);
 				}
 				catch (NoSuchBeanDefinitionException ex) {
@@ -717,9 +736,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 					value = resolveFieldValue(field, bean, beanName);
 				}
 			} else {
+				// 2.2 核心 -- 如何获取这个Field的值
 				value = resolveFieldValue(field, bean, beanName);
 			}
-			// 拿到需要注入的值后，直接注入
+			// 3. 拿到需要注入的值后，直接注入
 			if (value != null) {
 				ReflectionUtils.makeAccessible(field);
 				field.set(bean, value);
@@ -728,13 +748,16 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 		@Nullable
 		private Object resolveFieldValue(Field field, Object bean, @Nullable String beanName) {
+			// 1. 创建依赖描述符 -- desc
 			DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
 			desc.setContainingClass(bean.getClass());
 			Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
 			Assert.state(beanFactory != null, "No BeanFactory available");
+			// 此处一般为SimpleTypeConverter，它registerDefaultEditors=true，所以普通类型大都能能通过属性编辑器实现转换的
 			TypeConverter typeConverter = beanFactory.getTypeConverter();
 			Object value;
 			try {
+				// 最最最根本的原理，其实在resolveDependency这个方法里，它最终返回的就是一个具体的值，这个value是个Object~
 				value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
 			}
 			catch (BeansException ex) {
@@ -750,6 +773,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						registerDependentBeans(beanName, autowiredBeanNames);
 						if (autowiredBeanNames.size() == 1) {
 							String autowiredBeanName = autowiredBeanNames.iterator().next();
+							// 检查 BeanFactory 中是否包含这个自动注入的 autowiredBeanName,且为字段对应的类型哦
 							if (beanFactory.containsBean(autowiredBeanName) && beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
 								cachedFieldValue = new ShortcutDependencyDescriptor(desc, autowiredBeanName, field.getType());
 							}
@@ -771,12 +795,12 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	private class AutowiredMethodElement extends InjectionMetadata.InjectedElement {
 		// 继承 InjectedElement
 
-		private final boolean required;
+		private final boolean required; // 是否必须
 
-		private volatile boolean cached;
+		private volatile boolean cached; // 是否缓存
 
 		@Nullable
-		private volatile Object[] cachedMethodArguments;
+		private volatile Object[] cachedMethodArguments; // 方法形参
 
 		public AutowiredMethodElement(Method method, boolean required, @Nullable PropertyDescriptor pd) {
 			super(method, pd);

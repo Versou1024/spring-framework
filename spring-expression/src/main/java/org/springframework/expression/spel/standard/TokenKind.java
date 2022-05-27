@@ -25,6 +25,9 @@ package org.springframework.expression.spel.standard;
 enum TokenKind {
 
 	// ordered by priority - operands first
+	// 按优先级排序 - 操作数在前
+
+	// 基本类型 - int\long\hexInt\hexLong\real\realFloat
 
 	LITERAL_INT,
 
@@ -39,6 +42,8 @@ enum TokenKind {
 	LITERAL_REAL,
 
 	LITERAL_REAL_FLOAT,
+
+	// 符号
 
 	LPAREN("("),
 
@@ -68,13 +73,13 @@ enum TokenKind {
 
 	MINUS("-"),
 
-	SELECT_FIRST("^["),
+	SELECT_FIRST("^["), // 选择第一个 -- 用于集合/map中
 
-	SELECT_LAST("$["),
+	SELECT_LAST("$["), // 选择最后个 -- 用于集合/map中
 
 	QMARK("?"),
 
-	PROJECT("!["),
+	PROJECT("!["), // 集合投影 - 对集合中每个元素都做遍历
 
 	DIV("/"),
 
@@ -96,23 +101,25 @@ enum TokenKind {
 
 	ASSIGN("="),
 
-	INSTANCEOF("instanceof"),
+	INSTANCEOF("instanceof"), // instanceOf 判断
 
-	MATCHES("matches"),
+	MATCHES("matches"), // 正则匹配
 
-	BETWEEN("between"),
+	BETWEEN("between"), // between
 
-	SELECT("?["),
+	SELECT("?["), // 过滤符号
 
 	POWER("^"),
 
 	ELVIS("?:"),
+	// 就是三元运算符的 ?: 的缩写,即 x!=null ?: y
+	// 转换就是 x!=null ? x : y
 
-	SAFE_NAVI("?."),
+	SAFE_NAVI("?."), // 安全引用 -- 避免空指针异常 例如 car?.getBrand() -> 防止 car 为空的
 
-	BEAN_REF("@"),
+	BEAN_REF("@"), // bean 引用 -- 使用@符号 + beanName
 
-	FACTORY_BEAN_REF("&"),
+	FACTORY_BEAN_REF("&"), // FactoryBean 引用 --- 使用 & 符号 + FactoryBeanName
 
 	SYMBOLIC_OR("||"),
 
@@ -123,8 +130,13 @@ enum TokenKind {
 	DEC("--");
 
 
+	// 代表符号
 	final char[] tokenChars;
 
+	// 表示是否有载荷
+	// 例如
+	// LITERAL_INT 返回 true
+	// DEC 返回 false
 	private final boolean hasPayload;  // is there more to this token than simply the kind
 
 

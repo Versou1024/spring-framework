@@ -35,6 +35,8 @@ public class EnvironmentAccessor implements PropertyAccessor {
 
 	@Override
 	public Class<?>[] getSpecificTargetClasses() {
+		// target 必须是 Environment
+		// 即 read 和 write 都必须是从 target 中获取
 		return new Class<?>[] {Environment.class};
 	}
 
@@ -53,6 +55,7 @@ public class EnvironmentAccessor implements PropertyAccessor {
 	 */
 	@Override
 	public TypedValue read(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
+		// Environment.getProperty(name)
 		Assert.state(target instanceof Environment, "Target must be of type Environment");
 		return new TypedValue(((Environment) target).getProperty(name));
 	}
@@ -62,6 +65,7 @@ public class EnvironmentAccessor implements PropertyAccessor {
 	 */
 	@Override
 	public boolean canWrite(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
+		// 不支持写
 		return false;
 	}
 

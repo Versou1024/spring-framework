@@ -60,23 +60,29 @@ import org.springframework.util.Assert;
  * @see StandardOperatorOverloader
  */
 public class StandardEvaluationContext implements EvaluationContext {
+	// 当计算表达式解析properties, methods, fields，并帮助执行类型转换, 使用接口 EvaluationContext 这是一个开箱即用的实现,
+	// StandardEvaluationContext，使用反射来操纵对象， 缓存java.lang.reflect的Method，Field，和Constructor实例 提高性能。
+	//
+	// 该StandardEvaluationContext是你可以指定root object通过使用 setRootObject（）或传递root object到构造函数. 你
+	// 也可以指定变量和函数 使用方法'的setVariable（）和`registerFunction（）的表达式。 变量和函数的使用将在变量中介绍 ，同时 函数.
+	// StandardEvaluationContext也是在那里你可以自定义的注册 ConstructorResolvers, MethodResolvers, and PropertyAccessors to extend how SpEL evaluates expressions. 请参见这些类的Javadoc获得更多信息。
 
-	private TypedValue rootObject;
-
-	@Nullable
-	private volatile List<PropertyAccessor> propertyAccessors;
-
-	@Nullable
-	private volatile List<ConstructorResolver> constructorResolvers;
-
-	@Nullable
-	private volatile List<MethodResolver> methodResolvers;
+	private TypedValue rootObject; // 设置的根对象
 
 	@Nullable
-	private volatile ReflectiveMethodResolver reflectiveMethodResolver;
+	private volatile List<PropertyAccessor> propertyAccessors; // 属性访问器
 
 	@Nullable
-	private BeanResolver beanResolver;
+	private volatile List<ConstructorResolver> constructorResolvers; // 构造器解析器
+
+	@Nullable
+	private volatile List<MethodResolver> methodResolvers; // 方法解析器
+
+	@Nullable
+	private volatile ReflectiveMethodResolver reflectiveMethodResolver; // 反射方法解析器
+
+	@Nullable
+	private BeanResolver beanResolver; // bean解析器
 
 	@Nullable
 	private TypeLocator typeLocator;
@@ -122,11 +128,13 @@ public class StandardEvaluationContext implements EvaluationContext {
 	}
 
 	public void setPropertyAccessors(List<PropertyAccessor> propertyAccessors) {
+		// 设置属性访问器 -- 例如 EnvironmentPropertyAccessor\BeanFactoryPropertyAccessor\MapPropertyAccessor\ReflectivePropertyAccessor
 		this.propertyAccessors = propertyAccessors;
 	}
 
 	@Override
 	public List<PropertyAccessor> getPropertyAccessors() {
+		// 获取 PropertyAccessors 会调用 initPropertyAccessors
 		return initPropertyAccessors();
 	}
 
@@ -278,6 +286,9 @@ public class StandardEvaluationContext implements EvaluationContext {
 
 
 	private List<PropertyAccessor> initPropertyAccessors() {
+
+		// 1. 如果用户没有 set或add PropertyAccessor,那么propertyAccessors就为空
+		// 需要构造默认的,默认的就是只有一个反射的 ReflectivePropertyAccessor
 		List<PropertyAccessor> accessors = this.propertyAccessors;
 		if (accessors == null) {
 			accessors = new ArrayList<>(5);
@@ -309,6 +320,7 @@ public class StandardEvaluationContext implements EvaluationContext {
 	}
 
 	private static <T> void addBeforeDefault(List<T> resolvers, T resolver) {
+		//
 		resolvers.add(resolvers.size() - 1, resolver);
 	}
 

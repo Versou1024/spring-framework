@@ -36,22 +36,29 @@ public class BeanFactoryAccessor implements PropertyAccessor {
 
 	@Override
 	public Class<?>[] getSpecificTargetClasses() {
+		// 用于访问 target 是 BeanFactory 的
+		// 也就是 read() 和 write() 方法中 target 对象应该是 BeanFactory 哦
 		return new Class<?>[] {BeanFactory.class};
 	}
 
 	@Override
 	public boolean canRead(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
+		// 读的前提
+		// target是BeanFactory的,且target中包含这个BeanName
 		return (target instanceof BeanFactory && ((BeanFactory) target).containsBean(name));
 	}
 
 	@Override
 	public TypedValue read(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
+		// 1. 首先 target 必须是 BeanFactory
 		Assert.state(target instanceof BeanFactory, "Target must be of type BeanFactory");
+		// 2. 从 BeanFactory 中根据属性name去查找Bean
 		return new TypedValue(((BeanFactory) target).getBean(name));
 	}
 
 	@Override
 	public boolean canWrite(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
+		// 不能向 BeanFactory 中写
 		return false;
 	}
 

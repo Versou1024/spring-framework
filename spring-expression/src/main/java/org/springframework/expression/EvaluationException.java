@@ -24,6 +24,7 @@ package org.springframework.expression;
  */
 @SuppressWarnings("serial")
 public class EvaluationException extends ExpressionException {
+	// 表示在表达式求值期间发生的异常。
 
 	/**
 	 * Create a new expression evaluation exception.

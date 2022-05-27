@@ -27,9 +27,10 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class ExpressionException extends RuntimeException {
+	// 处理表达式时可能发生的异常的超类。
 
 	@Nullable
-	protected final String expressionString;
+	protected final String expressionString; // 未修改的表达式原字符串
 
 	protected int position;  // -1 if not known; should be known in all reasonable cases
 

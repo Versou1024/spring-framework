@@ -47,20 +47,32 @@ import org.springframework.util.Assert;
  * @since 4.0
  */
 public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotationAutowireCandidateResolver {
+	// org.springframework.beans.factory.support.AutowireCandidateResolver策略接口的完整实现，
+	// 提供对限定符注解的支持以及由context.annotation包中的Lazy注解驱动的惰性解析。
+
+	// 主要就是对@Lazy做出解析反应
 
 	@Override
 	@Nullable
 	public Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, @Nullable String beanName) {
+		// 如果 注入依赖 上的@Lazy注解
+		// 就执行 buildLazyResolutionProxy(descriptor, beanName)
+		// 否则就是返回的null哦
 		return (isLazy(descriptor) ? buildLazyResolutionProxy(descriptor, beanName) : null);
 	}
 
 	protected boolean isLazy(DependencyDescriptor descriptor) {
+
+		// 1. 有@Lazy注解,且value值为true,就返回true
+		// 适用于 注入依赖 是字段的
 		for (Annotation ann : descriptor.getAnnotations()) {
 			Lazy lazy = AnnotationUtils.getAnnotation(ann, Lazy.class);
 			if (lazy != null && lazy.value()) {
 				return true;
 			}
 		}
+		// 2. 参见形参上私有@Lazy注解,且value为true,就返回true
+		// 适用于 注入依赖 是方法/构造器级别的
 		MethodParameter methodParam = descriptor.getMethodParameter();
 		if (methodParam != null) {
 			Method method = methodParam.getMethod();
@@ -75,11 +87,16 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 	}
 
 	protected Object buildLazyResolutionProxy(final DependencyDescriptor descriptor, final @Nullable String beanName) {
+		// 构建惰性解析代理
+
+		// 1. BeanFactory
 		BeanFactory beanFactory = getBeanFactory();
 		Assert.state(beanFactory instanceof DefaultListableBeanFactory,
 				"BeanFactory needs to be a DefaultListableBeanFactory");
 		final DefaultListableBeanFactory dlbf = (DefaultListableBeanFactory) beanFactory;
 
+		// 2. 目标对象 -- target目标类，用于对外统一被代理的目标对象
+		// 主要写入 targetClass\target
 		TargetSource ts = new TargetSource() {
 			@Override
 			public Class<?> getTargetClass() {
@@ -89,10 +106,13 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 			public boolean isStatic() {
 				return false;
 			}
+			// getTarget() 方法不会被直接调用的哦
 			@Override
 			public Object getTarget() {
 				Set<String> autowiredBeanNames = (beanName != null ? new LinkedHashSet<>(1) : null);
 				Object target = dlbf.doResolveDependency(descriptor, beanName, autowiredBeanNames, null);
+				// 解析失败,如果是@Autowrite的map/list/array就给一个空的集合
+				// 而其余直接注入的一个bean,不存在,就爆出异常
 				if (target == null) {
 					Class<?> type = getTargetClass();
 					if (Map.class == type) {
@@ -108,12 +128,14 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 							"Optional dependency not present for lazy injection point");
 				}
 				if (autowiredBeanNames != null) {
+					// 检查需要注入的依赖,是否包含在ioc容器中,有的话,就需要注册 autowiredBeanName 和 目标 beanName 的依赖关系
 					for (String autowiredBeanName : autowiredBeanNames) {
 						if (dlbf.containsBean(autowiredBeanName)) {
 							dlbf.registerDependentBean(autowiredBeanName, beanName);
 						}
 					}
 				}
+				// 返回目标对象
 				return target;
 			}
 			@Override
@@ -121,13 +143,19 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 			}
 		};
 
+		// 3. proxyFactory
 		ProxyFactory pf = new ProxyFactory();
+		// 4. 设置 targetSource
 		pf.setTargetSource(ts);
 		Class<?> dependencyType = descriptor.getDependencyType();
 		if (dependencyType.isInterface()) {
 			pf.addInterface(dependencyType);
 		}
+		// 5. 获取代理对象
 		return pf.getProxy(dlbf.getBeanClassLoader());
+
+		// 因此@Lazy标注的注入,使用代理对象返回的
+		// 因此用户使用@Lazy标注的属性的方法时,会触发getTarget()动作->然后才会触发去IOC容器解析这个依赖的动作->然后从ioc容器中拿到这个注入的bean->执行相应的方法
 	}
 
 }

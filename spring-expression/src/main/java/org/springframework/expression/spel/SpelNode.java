@@ -36,6 +36,7 @@ public interface SpelNode {
 	 */
 	@Nullable
 	Object getValue(ExpressionState expressionState) throws EvaluationException;
+	// 在提供的表达式状态的上下文中评估表达式节点并返回值
 
 	/**
 	 * Evaluate the expression node in the context of the supplied expression state
@@ -44,6 +45,7 @@ public interface SpelNode {
 	 * @return the type value of this node evaluated against the specified state
 	 */
 	TypedValue getTypedValue(ExpressionState expressionState) throws EvaluationException;
+	// 在提供的表达式状态的上下文中评估表达式节点并返回类型化的值。
 
 	/**
 	 * Determine if this expression node will support a setValue() call.
@@ -53,6 +55,7 @@ public interface SpelNode {
 	 * if the node supports writing
 	 */
 	boolean isWritable(ExpressionState expressionState) throws EvaluationException;
+	//确定此表达式节点是否支持 setValue() 调用。
 
 	/**
 	 * Evaluate the expression to a node and then set the new value on that node.
@@ -97,11 +100,13 @@ public interface SpelNode {
 	 * @return the start position
 	 */
 	int getStartPosition();
+	// 返回表达式字符串中此 AST 节点的起始位置
 
 	/**
 	 * Return the end position of this AST node in the expression string.
 	 * @return the end position
 	 */
 	int getEndPosition();
+	// 返回表达式字符串中此 AST 节点的结束位置。
 
 }

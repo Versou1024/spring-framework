@@ -49,21 +49,30 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 			return parseTemplate(expressionString, context);
 		}
 		else {
+			// 抽象方法,子类实现
 			return doParseExpression(expressionString, context);
 		}
 	}
 
 
 	private Expression parseTemplate(String expressionString, ParserContext context) throws ParseException {
+		// 解析模板 -- 返回表达式
+
+		// 1. expressionString 为空,直接报错
 		if (expressionString.isEmpty()) {
 			return new LiteralExpression("");
 		}
 
+		// 2. 解析expressionString作为template时其中的表达式
 		Expression[] expressions = parseExpressions(expressionString, context);
 		if (expressions.length == 1) {
+			// 3.1 一个expression直接返回
 			return expressions[0];
 		}
 		else {
+			// 3. 多个expression,需要组合起来
+			// 第一个参数: expressionString 表示原表达式
+			// 第二个参数: expressions 表示解析后的expressions
 			return new CompositeStringExpression(expressionString, expressions);
 		}
 	}
@@ -87,6 +96,15 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 	 * @throws ParseException when the expressions cannot be parsed
 	 */
 	private Expression[] parseExpressions(String expressionString, ParserContext context) throws ParseException {
+		// 使用配置的解析器解析给定表达式字符串的助手。
+		// 表达式字符串可以包含任意数量的表达式，这些表达式都包含在“${...}”标记中。
+		// 例如：“foo${expr0}bar${expr1}”。静态文本也将作为仅返回该静态文本的表达式返回。
+		// 因此，评估所有返回的表达式并连接结果会生成完整的评估字符串。
+		// 仅对找到的最外层分隔符进行展开，
+		// 因此字符串“hello ${foo${abc}}”将分成“hello”和“foo${abc}”。
+		// 这意味着支持使用 ${..} 作为其功能的一部分的表达式语言没有任何问题。
+		// 解析知道嵌入表达式的结构。它假定括号 '('、方括号 '[' 和大括号 '}' 在表达式中必须成对出现，
+		// 除非它们在字符串文字中并且字符串文字以单引号 ' 开始和结束。
 		List<Expression> expressions = new ArrayList<>();
 		String prefix = context.getExpressionPrefix();
 		String suffix = context.getExpressionSuffix();
@@ -243,6 +261,8 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 	 * square brackets [] round brackets () and curly brackets {}
 	 */
 	private static class Bracket {
+		// 捕获了一种括号类型以及它在表达式中出现的位置。如果由于找不到相关的结束括号而必须报告错误，
+		// 则使用位置信息。括号用来描述：方括号[]圆括号()和大括号{}
 
 		char bracket;
 
@@ -263,6 +283,7 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 			return closeBracket == ')';
 		}
 
+		// 开括号
 		static char theOpenBracketFor(char closeBracket) {
 			if (closeBracket == '}') {
 				return '{';
@@ -273,6 +294,7 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 			return '(';
 		}
 
+		// 闭括号
 		static char theCloseBracketFor(char openBracket) {
 			if (openBracket == '{') {
 				return '}';

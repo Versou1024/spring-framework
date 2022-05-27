@@ -39,6 +39,9 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 public abstract class InstantiationAwareBeanPostProcessorAdapter implements SmartInstantiationAwareBeanPostProcessor {
+	// 将SmartInstantiationAwareBeanPostProcessor上的所有方法实现为无操作的适配器，
+	// 这不会改变容器实例化的每个 bean 的正常处理。子类可能只覆盖他们真正感兴趣的那些方法。
+	// 请注意，仅当您确实需要InstantiationAwareBeanPostProcessor功能时，才建议使用此基类。如果您只需要简单的BeanPostProcessor功能，则更喜欢该（更简单）接口的直接实现。
 
 	@Override
 	@Nullable

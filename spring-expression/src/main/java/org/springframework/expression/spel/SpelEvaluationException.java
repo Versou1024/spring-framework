@@ -29,6 +29,7 @@ import org.springframework.expression.EvaluationException;
  */
 @SuppressWarnings("serial")
 public class SpelEvaluationException extends EvaluationException {
+	// Spring EL 相关异常的根异常。它不是保存指示问题的硬编码字符串，而是记录消息密钥和消息的插入。有关可能出现的所有可能消息的列表，
 
 	private final SpelMessage message;
 

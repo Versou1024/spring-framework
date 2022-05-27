@@ -27,6 +27,8 @@ package org.springframework.expression;
  */
 @SuppressWarnings("serial")
 public class ExpressionInvocationTargetException extends EvaluationException {
+	// 此异常包含（作为原因）SpEL 调用的某个方法抛出的已检查异常。它与 SpelEvaluationException 不同，
+	// 因为这表明发生了已检查异常，调用的方法被定义为抛出。 SpelEvaluationExceptions 用于处理（和包装）意外异常
 
 	public ExpressionInvocationTargetException(int position, String message, Throwable cause) {
 		super(position, message, cause);

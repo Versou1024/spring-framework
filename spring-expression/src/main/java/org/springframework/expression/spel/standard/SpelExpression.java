@@ -48,33 +48,40 @@ import org.springframework.util.Assert;
  */
 public class SpelExpression implements Expression {
 
+	// 在编译表达式之前解释该表达式的次数。
 	// Number of times to interpret an expression before compiling it
 	private static final int INTERPRETED_COUNT_THRESHOLD = 100;
 
+	// 放弃前尝试编译表达式的次数
 	// Number of times to try compiling an expression before giving up
 	private static final int FAILED_ATTEMPTS_THRESHOLD = 100;
 
 
 	private final String expression;
 
+	// AST：抽象语法树~
 	private final SpelNodeImpl ast;
 
 	private final SpelParserConfiguration configuration;
 
 	// The default context is used if no override is supplied by the user
+	// 如果没有指定，就会用默认的上下文 new StandardEvaluationContext()
 	@Nullable
 	private EvaluationContext evaluationContext;
 
 	// Holds the compiled form of the expression (if it has been compiled)
+	// 如果该表达式已经被编译了，就会放在这里 @since 4.1  Spring内部并没有它的实现类  尴尬~~~编译是要交给我们自己实现？？？
 	@Nullable
 	private volatile CompiledExpression compiledAst;
 
 	// Count of many times as the expression been interpreted - can trigger compilation
 	// when certain limit reached
+	// // 表达式被解释的次数-达到某个限制时可以触发编译
 	private final AtomicInteger interpretedCount = new AtomicInteger(0);
 
 	// The number of times compilation was attempted and failed - enables us to eventually
 	// give up trying to compile it when it just doesn't seem to be possible.
+	// // 编译尝试和失败的次数——使我们最终放弃了在似乎不可能编译时尝试编译它的尝试
 	private final AtomicInteger failedAttempts = new AtomicInteger(0);
 
 

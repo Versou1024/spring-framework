@@ -26,6 +26,7 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class ParseException extends ExpressionException {
+	// 表示表达式解析期间发生的异常。
 
 	/**
 	 * Create a new expression parsing exception.

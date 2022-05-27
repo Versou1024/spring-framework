@@ -29,26 +29,37 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.expression.spel.standard.SpelExpressionParser#SpelExpressionParser(SpelParserConfiguration)
  */
 public class SpelParserConfiguration {
+	// 这里的SpelParserConfiguration表示：顾名思义它表示SpEL的配置类。
+	// 在构建SpelExpressionParser时我们可以给其传递一个SpelParserConfiguration对象以对SpelExpressionParser进行配置。
+	// 其可以用于指定在遇到List或Array为null时是否自动new一个对应的实例（一般不建议修改此值~以保持语义统一）
 
 	private static final SpelCompilerMode defaultCompilerMode;
 
 	static {
+		/// 可以通过 Spring的属性 spring.expression.compiler.mode 指定编辑模式  - 解释/编译/混合
 		String compilerMode = SpringProperties.getProperty("spring.expression.compiler.mode");
-		defaultCompilerMode = (compilerMode != null ?
-				SpelCompilerMode.valueOf(compilerMode.toUpperCase()) : SpelCompilerMode.OFF);
+		// 默认是 SpelCompilerMode.OFF - 即每次都需要解释
+		defaultCompilerMode = (compilerMode != null ? SpelCompilerMode.valueOf(compilerMode.toUpperCase()) : SpelCompilerMode.OFF);
 	}
 
 
+	// SpelCompilerMode -> Spel 编译 模式
 	private final SpelCompilerMode compilerMode;
 
 	@Nullable
 	private final ClassLoader compilerClassLoader;
 
 	private final boolean autoGrowNullReferences;
+	// 如果null引用应该自动增长，则返回true 。
+	// 碰到为null的，是否给自动new一个对象，比如new String()，new ArrayList()等等~
 
 	private final boolean autoGrowCollections;
+	// 是否允许自动增长集合
+	// 专门针对于集合是否new
 
 	private final int maximumAutoGrowSize;
+	// 自动增长集合的最大size
+	// 集合能够自动增长到的最大值~~~~
 
 
 	/**
@@ -125,6 +136,7 @@ public class SpelParserConfiguration {
 	 * Return {@code true} if {@code null} references should be automatically grown.
 	 */
 	public boolean isAutoGrowNullReferences() {
+		// 如果null引用应该自动增长，则返回true 。
 		return this.autoGrowNullReferences;
 	}
 
@@ -132,6 +144,7 @@ public class SpelParserConfiguration {
 	 * Return {@code true} if collections should be automatically grown.
 	 */
 	public boolean isAutoGrowCollections() {
+		// 如果集合应该自动增长，则返回true
 		return this.autoGrowCollections;
 	}
 
@@ -139,6 +152,7 @@ public class SpelParserConfiguration {
 	 * Return the maximum size that a collection can auto grow.
 	 */
 	public int getMaximumAutoGrowSize() {
+		// 返回集合可以自动增长的最大大小
 		return this.maximumAutoGrowSize;
 	}
 

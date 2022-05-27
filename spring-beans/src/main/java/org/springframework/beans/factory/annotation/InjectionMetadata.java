@@ -44,6 +44,8 @@ import org.springframework.util.ReflectionUtils;
  * @since 2.5
  */
 public class InjectionMetadata {
+	// InjectionMetadata -- 注入元数据
+	// 注入--就是指的依赖注入这个玩意儿
 
 	/**
 	 * An empty {@code InjectionMetadata} instance with no-op callbacks.
@@ -66,7 +68,7 @@ public class InjectionMetadata {
 	};
 
 
-	private final Class<?> targetClass; // 需要注入元数据的目标class
+	private final Class<?> targetClass; // 需要注入元数据的目标class -- 即需要向哪一个Bean中注入injectedElement
 
 	private final Collection<InjectedElement> injectedElements; // 待注入元素的集合 InjectedElement 可以是字段或方法上的形参
 
@@ -111,12 +113,17 @@ public class InjectionMetadata {
 	}
 
 	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
-		// target 被注入属性的目标对象,以AutowritedAnnotationBeanPostProcessor为例，这里的beanName为null，pvs为null
+		// target 属性被注入的目标对象中
+		// 以AutowritedAnnotationBeanPostProcessor为例，这里的beanName为null，pvs为null
 		Collection<InjectedElement> checkedElements = this.checkedElements;
+		// 1. 在 AutowritedAnnotationBeanPostProcessor 中injectedElements已经查找出来了
 		Collection<InjectedElement> elementsToIterate = (checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
-			// 对每个元素执行inject操作
+			// 2. 对每个元素执行inject操作
 			for (InjectedElement element : elementsToIterate) {
+				// target 属性需要注入的目标对象
+				// beanName bean的名字
+				// pvs 加入到这个属性集合中
 				element.inject(target, beanName, pvs);
 			}
 		}
@@ -127,9 +134,10 @@ public class InjectionMetadata {
 	 * @since 3.2.13
 	 */
 	public void clear(@Nullable PropertyValues pvs) {
+		// 清除元素 -- 如果包含pvs元素的属性跳过。
+
 		Collection<InjectedElement> checkedElements = this.checkedElements;
-		Collection<InjectedElement> elementsToIterate =
-				(checkedElements != null ? checkedElements : this.injectedElements);
+		Collection<InjectedElement> elementsToIterate = (checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
 			for (InjectedElement element : elementsToIterate) {
 				element.clearPropertySkipping(pvs);
@@ -166,7 +174,7 @@ public class InjectionMetadata {
 	 */
 	public abstract static class InjectedElement {
 
-		// 封装 - 待注入的Member、是否为字段isField、是否跳过skip、
+		// 封装 - 待注入的Member、是否为字段isField、是否跳过skip、属性描述符
 
 		protected final Member member;
 
@@ -222,9 +230,14 @@ public class InjectionMetadata {
 		 * Either this or {@link #getResourceToInject} needs to be overridden.
 		 */
 		protected void inject(Object target, @Nullable String requestingBeanName, @Nullable PropertyValues pvs) throws Throwable {
+			// 关键在于 getResourceToInject 是如何获取到这个 需要注入的属性哦
+			// 同时也需要注意:有些类是直接重写inject方法,而不是写getResourceToInject()这个钩子方法的
+			// 例如:
+			// AutowiredFieldElement/AutowiredMethodElement 都是重写 Inject() 方法
+			// ResourceElement 等是重写的 getResourceToInject() 方法
 
 			if (this.isField) {
-				// 如果是字段的话，直接通过反射注入即可
+				// 1. 如果是字段的话，直接通过反射注入即可
 				Field field = (Field) this.member;
 				ReflectionUtils.makeAccessible(field);
 				field.set(target, getResourceToInject(target, requestingBeanName));
@@ -234,7 +247,7 @@ public class InjectionMetadata {
 					return;
 				}
 				try {
-					// 否则说明是方法
+					// 2. 否则说明是方法
 					Method method = (Method) this.member;
 					ReflectionUtils.makeAccessible(method);
 					// 通过调用方法即可，

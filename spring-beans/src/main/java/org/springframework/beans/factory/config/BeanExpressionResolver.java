@@ -32,6 +32,9 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public interface BeanExpressionResolver {
+	// 策略接口，用于通过将值作为表达式进行评估来解析值（如果适用）。它持有Bean工厂~
+	// 它的唯一实现类StandardBeanExpressionResolver（当然我们是可以自己实现的，比如后面我们自定义@Value功能，
+	// 通过继承StandardBeanExpressionResolver来扩展实现~毕竟Spring很暖心的给我们开了口）
 
 	/**
 	 * Evaluate the given value as an expression, if applicable;

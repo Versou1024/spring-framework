@@ -53,7 +53,12 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.expression.spel.support.StandardEvaluationContext
  */
 public class StandardBeanExpressionResolver implements BeanExpressionResolver {
+	// StandardBeanExpressionResolver
+	// 语言解析器的标准实现，支持解析SpEL语言。
 
+
+	// 因为SpEL是支持自定义前缀、后缀的   此处保持了和SpEL默认值的统一
+	// 它的属性值事public的   so你可以自定义~
 	/** Default expression prefix: "#{". */
 	public static final String DEFAULT_EXPRESSION_PREFIX = "#{";
 
@@ -65,12 +70,17 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 
 	private String expressionSuffix = DEFAULT_EXPRESSION_SUFFIX;
 
+	// 它的最终值是SpelExpressionParser
 	private ExpressionParser expressionParser;
 
+	// 每个表达式都对应一个Expression,这样可以不用重复解析了~~~
 	private final Map<String, Expression> expressionCache = new ConcurrentHashMap<>(256);
 
+	// 每个BeanExpressionContext都对应着一个取值上下文~~~
 	private final Map<BeanExpressionContext, StandardEvaluationContext> evaluationCache = new ConcurrentHashMap<>(8);
 
+	// 匿名内部类   解析上下文。  和TemplateParserContext的实现一样。个人觉得直接使用它更优雅
+	// 和ParserContext.TEMPLATE_EXPRESSION 这个常量也一毛一样
 	private final ParserContext beanExpressionParserContext = new ParserContext() {
 		@Override
 		public boolean isTemplate() {
@@ -91,6 +101,7 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	 * Create a new {@code StandardBeanExpressionResolver} with default settings.
 	 */
 	public StandardBeanExpressionResolver() {
+		// 空构造函数：默认就是使用的SpelExpressionParser  下面你也可以自己set你自己的实现~
 		this.expressionParser = new SpelExpressionParser();
 	}
 
@@ -100,6 +111,7 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	 * @param beanClassLoader the factory's bean class loader
 	 */
 	public StandardBeanExpressionResolver(@Nullable ClassLoader beanClassLoader) {
+		// 解析代码相对来说还是比较简单的，毕竟复杂的解析逻辑都是SpEL里边~  这里只是使用一下而已~
 		this.expressionParser = new SpelExpressionParser(new SpelParserConfiguration(null, beanClassLoader));
 	}
 
@@ -147,19 +159,34 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 				expr = this.expressionParser.parseExpression(value, this.beanExpressionParserContext);
 				this.expressionCache.put(value, expr);
 			}
+			// 构建getValue计算时的执行上下文~~~
+			// 做种解析BeanName的ast为；org.springframework.expression.spel.ast.PropertyOrFieldReference
 			StandardEvaluationContext sec = this.evaluationCache.get(evalContext);
 			if (sec == null) {
 				sec = new StandardEvaluationContext(evalContext);
+				// 此处新增了4个，加上一个默认的   所以一共就有5个属性访问器了
+				// 这样我们的SpEL就能访问BeanFactory、Map、Environment等组件中的属性或方法啦了~
+				// BeanExpressionContextAccessor 表示调用bean的方法~~~~(比如我们此处就是使用的它)  最终执行者为;BeanExpressionContext   它持有BeanFactory的引用嘛~
+				// 如果是单村的Bean注入，最终使用的也是BeanExpressionContextAccessor 目前没有找到BeanFactoryAccessor的用于之地~~~
+				// addPropertyAccessor只是：addBeforeDefault 所以只是把default的放在了最后，我们手动add的还是保持着顺序的~
+				// 注意：这些属性访问器是有先后顺序的，具体看下面~~~
 				sec.addPropertyAccessor(new BeanExpressionContextAccessor());
 				sec.addPropertyAccessor(new BeanFactoryAccessor());
 				sec.addPropertyAccessor(new MapAccessor());
 				sec.addPropertyAccessor(new EnvironmentAccessor());
+				// setBeanResolver不是接口方法，仅仅辅助StandardEvaluationContext 去获取Bean
 				sec.setBeanResolver(new BeanFactoryResolver(evalContext.getBeanFactory()));
 				sec.setTypeLocator(new StandardTypeLocator(evalContext.getBeanFactory().getBeanClassLoader()));
+				// 若conversionService不为null，就使用工厂的。否则就使用SpEL里默认的DefaultConverterService那个
+				// 最后包装成TypeConverter给set进去~~~
 				ConversionService conversionService = evalContext.getBeanFactory().getConversionService();
 				if (conversionService != null) {
+					// 如上，整个@Value的解析过程至此就全部完成了。可能有小伙伴会问：怎么不见Resource这种注入呢？其实，从上面不难看出，
+					// 这个是ConversionService去做的事，它能够把一个字符串转换成Resource对象，仅此而已
 					sec.setTypeConverter(new StandardTypeConverter(conversionService));
 				}
+				// 这个很有意思，是一个protected的空方法，因此我们发现若我们自己要自定义BeanExpressionResolver，完全可以继承自StandardBeanExpressionResolver
+				// 因为我们绝大多数情况下，只需要提供更多的计算环境即可~~~~~
 				customizeEvaluationContext(sec);
 				this.evaluationCache.put(evalContext, sec);
 			}
@@ -175,6 +202,7 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	 * <p>The default implementation is empty.
 	 */
 	protected void customizeEvaluationContext(StandardEvaluationContext evalContext) {
+		//Spring留给我们扩展的SPI
 	}
 
 }

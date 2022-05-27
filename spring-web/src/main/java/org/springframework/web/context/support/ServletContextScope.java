@@ -48,6 +48,11 @@ import org.springframework.util.Assert;
  * @see org.springframework.web.context.ContextCleanupListener
  */
 public class ServletContextScope implements Scope, DisposableBean {
+	// ServletContext 的Scope包装器，即用于全局 Web 应用程序属性。
+	// 这与传统的 Spring 单例不同，它在 ServletContext 中公开属性。
+	// 每当整个应用程序关闭时，这些属性都会被销毁，这可能早于或晚于包含 Spring ApplicationContext 的关闭。
+	// 相关的销毁机制依赖于在web.xml中注册的org.springframework.web.context.ContextCleanupListener 。
+	// 注意org.springframework.web.context.ContextLoaderListener包含 ContextCleanupListener 的功能
 
 	private final ServletContext servletContext;
 
@@ -77,6 +82,8 @@ public class ServletContextScope implements Scope, DisposableBean {
 	@Override
 	@Nullable
 	public Object remove(String name) {
+		// 移除同名的ServletContext属性或注册的销毁回调
+
 		Object scopedObject = this.servletContext.getAttribute(name);
 		if (scopedObject != null) {
 			synchronized (this.destructionCallbacks) {
@@ -92,6 +99,8 @@ public class ServletContextScope implements Scope, DisposableBean {
 
 	@Override
 	public void registerDestructionCallback(String name, Runnable callback) {
+		// 注册销毁回调
+
 		synchronized (this.destructionCallbacks) {
 			this.destructionCallbacks.put(name, callback);
 		}
@@ -100,12 +109,15 @@ public class ServletContextScope implements Scope, DisposableBean {
 	@Override
 	@Nullable
 	public Object resolveContextualObject(String key) {
+		// 解析上下文对象
 		return null;
 	}
 
 	@Override
 	@Nullable
 	public String getConversationId() {
+		// 获取会话ID
+
 		return null;
 	}
 
@@ -117,6 +129,8 @@ public class ServletContextScope implements Scope, DisposableBean {
 	 */
 	@Override
 	public void destroy() {
+		// 调用 destructionCallbacks() 异步回调销毁机制被触发
+
 		synchronized (this.destructionCallbacks) {
 			for (Runnable runnable : this.destructionCallbacks.values()) {
 				runnable.run();

@@ -41,11 +41,15 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public class CompositeStringExpression implements Expression {
+	// CompositeStringExpression
+	// 表示一个分为多个部分的模板表达式（它只处理Template模式）。每个部分都是表达式，
+	// 但模板的纯文本部分将表示为LiteralExpression对象。显然它是一个聚合
 
 	private final String expressionString;
 
 	/** The array of expressions that make up the composite expression. */
 	private final Expression[] expressions;
+	// 模板被分割后的多个表达式数组
 
 
 	public CompositeStringExpression(String expressionString, Expression[] expressions) {
@@ -65,8 +69,11 @@ public class CompositeStringExpression implements Expression {
 
 	@Override
 	public String getValue() throws EvaluationException {
+		// 它是把每个表达式的值都拼接起来了 因为它只会运用于Template模式~~~~~
+
 		StringBuilder sb = new StringBuilder();
 		for (Expression expression : this.expressions) {
+			// 1. 获取表达式评估的值,转为String类型的
 			String value = expression.getValue(String.class);
 			if (value != null) {
 				sb.append(value);
@@ -97,12 +104,14 @@ public class CompositeStringExpression implements Expression {
 	@Override
 	@Nullable
 	public <T> T getValue(@Nullable Object rootObject, @Nullable Class<T> desiredResultType) throws EvaluationException {
+		// 可以设置 rootObject
 		Object value = getValue(rootObject);
 		return ExpressionUtils.convertTypedValue(null, new TypedValue(value), desiredResultType);
 	}
 
 	@Override
 	public String getValue(EvaluationContext context) throws EvaluationException {
+		// 可以设置 EvaluationContext
 		StringBuilder sb = new StringBuilder();
 		for (Expression expression : this.expressions) {
 			String value = expression.getValue(context, String.class);
@@ -142,6 +151,8 @@ public class CompositeStringExpression implements Expression {
 		Object value = getValue(context,rootObject);
 		return ExpressionUtils.convertTypedValue(context, new TypedValue(value), desiredResultType);
 	}
+
+	// 	getValueType() -> 返回值的类型一样的永远是String.class
 
 	@Override
 	public Class<?> getValueType() {

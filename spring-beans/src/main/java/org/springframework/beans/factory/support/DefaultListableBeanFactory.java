@@ -1247,24 +1247,25 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// 这里面注意了：有必要说说名字发现器这个东西，具体看下面吧==========还是比较重要的
 		// Bean工厂的默认值为：private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 		descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
-		// 依赖类型为Optional类型
+
+		// 1. 依赖值的类型为Optional类型 ~~ 忽略
 		if (Optional.class == descriptor.getDependencyType()) {
 			return createOptionalDependency(descriptor, requestingBeanName);
 		}
-		// 依赖类型为ObjectFactory、ObjectProvider
+		// 2. 依赖值类型为ObjectFactory、ObjectProvider ~~ 忽略
 		else if (ObjectFactory.class == descriptor.getDependencyType() ||
 				ObjectProvider.class == descriptor.getDependencyType()) {
 			return new DependencyObjectProvider(descriptor, requestingBeanName);
 		}
-		// javaxInjectProviderClass类注入的特殊处理
+		// 3. javaxInjectProviderClass类注入的特殊处理 ~~ 忽略
 		else if (javaxInjectProviderClass == descriptor.getDependencyType()) {
 			return new Jsr330Factory().createDependencyProvider(descriptor, requestingBeanName);
 		}
 		else {
-			// 为实际依赖关系目标的延迟解析构建代理
+			// 4. 为实际依赖关系目标的延迟解析构建代理 -- 核心
 			// 如果字段上带有@Lazy注解，表示进行懒加载 Spring不会立即创建注入属性的实例，而是生成代理对象，来代替实例
 			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(descriptor, requestingBeanName);
-			// 如果在@Autowired上面还有个注解@Lazy，那就是懒加载的，是另外一种处理方式（是一门学问）
+			// 如果在@Autowired或@Value上面还有个注解@Lazy，那就是懒加载的，是另外一种处理方式（是一门学问）
 			// 这里如果不是懒加载的（绝大部分情况都走这里） 就进入核心方法doResolveDependency 下面有分解
 			if (result == null) {
 				// 通用处理逻辑
@@ -1290,31 +1291,35 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
 		try {
-			// 简单的说就是去Bean工厂的缓存里去看看，有没有名称为此的Bean，有就直接返回，没必要继续往下走了
+			// 1. 简单的说就是去Bean工厂的缓存里去看看，有没有名称为此的Bean，有就直接返回，没必要继续往下走了
 			// 大部分@Autowrited都可以通过这里完成哦
-			Object shortcut = descriptor.resolveShortcut(this);
+			Object shortcut = descriptor.resolveShortcut(this); // 该方法在5.2版本默认是返回null,且没有任何具体实现类
 			if (shortcut != null) {
 				return shortcut;
 			}
 
-			// 注入的依赖的类型
+			// 2. 注入的依赖的类型
 			Class<?> type = descriptor.getDependencyType();
 
-			// 支持Spring的注解@Value
+			// 3. 主要就是获取@Value中的value属性,注意此刻没有经过Spel等解析,是原生字符串
 			// 看看ContextAnnotationAutowireCandidateResolver的getSuggestedValue方法,具体实现在父类 QualifierAnnotationAutowireCandidateResolver中
-			// 处理@Value注解-------------------------------------
-			// 获取@Value中的value属性
 			Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
-			// 若存在value值，那就去解析它。使用到了AbstractBeanFactory#resolveEmbeddedValue
+			// 4. 若存在value值，那就去解析它。使用到了AbstractBeanFactory#resolveEmbeddedValue
 			// 也就是使用StringValueResolver处理器去处理一些表达式~~
 			if (value != null) {
 				if (value instanceof String) {
-					String strVal = resolveEmbeddedValue((String) value); // 解析#{}
+					// 使用StringValueResolver处理${}占位符~
+					// 所以我们常用的只使用@Value("${xxx}")这样来注入值或者你就是个字面量值，到这一步就已经完事了~解析完成
+					// 若你是个el表达式  或者文件资源Resource啥的，会继续交给下面的beanExpressionResolver处理，所以它是处理复杂类型的核心~
+					String strVal = resolveEmbeddedValue((String) value);
 					BeanDefinition bd = (beanName != null && containsBean(beanName) ? getMergedBeanDefinition(beanName) : null);
-					// 运算结果
+					// 5. 运算结果
+					// 此处注意：处理器是BeanExpressionResolver~~~~它是处理@Value表达式的核心方法
+					// 它的默认值是：StandardBeanExpressionResolver#evaluate
+					// 这里面就会解析
 					value = evaluateBeanDefinitionString(strVal, bd);
 				}
-				//如果需要会进行类型转换后返回结果
+				// 6. 如果@Value标注的不是String类型,会进行类型转换后返回结果
 				TypeConverter converter = (typeConverter != null ? typeConverter : getTypeConverter());
 				try {
 					return converter.convertIfNecessary(value, type, descriptor.getTypeDescriptor());

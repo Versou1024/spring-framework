@@ -27,6 +27,7 @@ import org.springframework.expression.EvaluationException;
  */
 @SuppressWarnings("serial")
 class VariableNotAvailableException extends EvaluationException {
+	// 一个特定的EvaluationException用于提及表达式中使用的给定变量在上下文中不可用。
 
 	private final String name;
 

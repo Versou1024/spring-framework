@@ -33,6 +33,7 @@ import org.springframework.util.Assert;
  * @since 3.0
  */
 public class BeanExpressionContextAccessor implements PropertyAccessor {
+	//org.springframework.beans.factory.config.BeanExpressionContext  这个是Spring Bean工厂相关的默认使用的语言上线文
 
 	@Override
 	public boolean canRead(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
@@ -41,6 +42,7 @@ public class BeanExpressionContextAccessor implements PropertyAccessor {
 
 	@Override
 	public TypedValue read(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
+		// BeanExpressionContext.getObject()
 		Assert.state(target instanceof BeanExpressionContext, "Target must be of type BeanExpressionContext");
 		return new TypedValue(((BeanExpressionContext) target).getObject(name));
 	}
@@ -59,6 +61,8 @@ public class BeanExpressionContextAccessor implements PropertyAccessor {
 
 	@Override
 	public Class<?>[] getSpecificTargetClasses() {
+		// target 属于 BeanExpressionContext
+
 		return new Class<?>[] {BeanExpressionContext.class};
 	}
 

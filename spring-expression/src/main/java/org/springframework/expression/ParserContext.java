@@ -25,6 +25,7 @@ package org.springframework.expression;
  * @since 3.0
  */
 public interface ParserContext {
+	// 提供给可以影响 表达式解析/编译 的表达式解析器的输入。
 
 	/**
 	 * Whether or not the expression being parsed is a template. A template expression
@@ -37,6 +38,13 @@ public interface ParserContext {
 	 * @return true if the expression is a template, false otherwise
 	 */
 	boolean isTemplate();
+	// 被解析的表达式是否是模板。模板表达式由可以与可评估块混合的文字文本组成。一些例子：
+	//	   	   Some literal text
+	//	       Hello #{name.firstName}!
+	//	       #{3 + 4}
+	//
+	//回报：
+	//如果表达式是模板，则为 true，否则为 false
 
 	/**
 	 * For template expressions, returns the prefix that identifies the start of an
@@ -44,6 +52,7 @@ public interface ParserContext {
 	 * @return the prefix that identifies the start of an expression
 	 */
 	String getExpressionPrefix();
+	// 对于模板表达式，返回标识字符串中表达式块开始的前缀。例如：“${”
 
 	/**
 	 * For template expressions, return the prefix that identifies the end of an
@@ -51,6 +60,7 @@ public interface ParserContext {
 	 * @return the suffix that identifies the end of an expression
 	 */
 	String getExpressionSuffix();
+	// 对于模板表达式，返回标识字符串中表达式块结尾的前缀。例如： ”}”
 
 
 	/**
@@ -59,6 +69,7 @@ public interface ParserContext {
 	 * @see #isTemplate()
 	 */
 	ParserContext TEMPLATE_EXPRESSION = new ParserContext() {
+		// 启用模板表达式解析模式的默认 ParserContext 实现。表达式前缀是“#{”，表达式后缀是“}”。
 
 		@Override
 		public boolean isTemplate() {

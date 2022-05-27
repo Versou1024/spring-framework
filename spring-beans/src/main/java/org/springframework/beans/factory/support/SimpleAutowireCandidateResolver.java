@@ -40,7 +40,8 @@ public class SimpleAutowireCandidateResolver implements AutowireCandidateResolve
 
 	@Override
 	public boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
-		// 默认就是查看：BeanDefinition中是否设置AutowrireCandidate为true，即允许作为自动装配的候选者
+		// 默认就是查看：BeanDefinition中是否设置isAutowrireCandidate为true，即允许作为自动装配的候选者
+		//否则这个Bean是无法作为候选者被依赖注入的哦
 		return bdHolder.getBeanDefinition().isAutowireCandidate();
 	}
 
@@ -63,6 +64,7 @@ public class SimpleAutowireCandidateResolver implements AutowireCandidateResolve
 	@Override
 	@Nullable
 	public Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, @Nullable String beanName) {
+		// 默认实现就是返回null的
 		return null;
 	}
 

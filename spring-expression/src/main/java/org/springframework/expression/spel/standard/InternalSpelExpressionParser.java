@@ -86,19 +86,25 @@ import org.springframework.util.StringUtils;
  * @since 3.0
  */
 class InternalSpelExpressionParser extends TemplateAwareExpressionParser {
+	// 上面知道SpelExpressionParser最终都是委托它里做的，并且configuration也交给它，然后调用doParseExpression方法处理~
 
 	private static final Pattern VALID_QUALIFIED_ID_PATTERN = Pattern.compile("[\\p{L}\\p{N}_$]+");
 
 
+	// Spel 配置
+	// 四大配置: 编译模式\是否自动增长\是否允许Null引用\最大增长集合上限
 	private final SpelParserConfiguration configuration;
 
 	// For rules that build nodes, they are stacked here for return
+	// 此处用一个双端队列  来保存表达式的每一个节点，每个节点都是一个SpelNode 该对象记录着位置、子节点、父节点等等~~~
 	private final Deque<SpelNodeImpl> constructedNodes = new ArrayDeque<>();
 
 	// The expression being parsed
+	// 准备解析的表达式字符串~
 	private String expressionString = "";
 
 	// The token stream constructed from that expression string
+	// Token流：token保存着符号类型（如int(,]+=?>=等等各种符号 非常之多）  然后记录着它startPos和endPos
 	private List<Token> tokenStream = Collections.emptyList();
 
 	// length of a populated token stream
@@ -120,10 +126,14 @@ class InternalSpelExpressionParser extends TemplateAwareExpressionParser {
 	@Override
 	protected SpelExpression doParseExpression(String expressionString, @Nullable ParserContext context)
 			throws ParseException {
+		// doParseExpression() 方法仅仅返回 SpelExpression
+		// 还需要 SpelExpression.getValue() 从中获取解析的值
 
 		try {
 			this.expressionString = expressionString;
+			// 1. Tokenizer就是分词器。把待解析的表达式交给它分词~~~
 			Tokenizer tokenizer = new Tokenizer(expressionString);
+			// process处理，得到tokenStream  并且记录上它的总长度  并且标记当前处理点为0
 			this.tokenStream = tokenizer.process();
 			this.tokenStreamLength = this.tokenStream.size();
 			this.tokenStreamPointer = 0;

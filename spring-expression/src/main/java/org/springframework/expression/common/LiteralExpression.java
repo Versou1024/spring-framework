@@ -34,9 +34,15 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public class LiteralExpression implements Expression {
+	// 表示字符串文字的 Expression 接口
+	// 当表示由片段组成的模板表达式时，它与 CompositeStringExpression 一起使用 - 有些是由诸如 SpEL 之类的 EL 实现处理的真实表达式，有些只是文本元素
+	// 例如 "foo#{expr0}bar#{expr1}" 在模板中,模板为#{}
+	// 其中
+	// 		foo和bar都是文字表达式LiteralExpression
+	// 		${expr0}与${expr1}都是Spel表达式
 
 	/** Fixed literal value of this expression. */
-	private final String literalValue;
+	private final String literalValue; // 修复了此表达式的文字值。
 
 
 	public LiteralExpression(String literalValue) {

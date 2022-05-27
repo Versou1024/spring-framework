@@ -415,7 +415,13 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	@Nullable
 	Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
 			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException;
-	// 通常需要@Autowrite等方法注入的属性，是需要BeanFactory来解析出来被注入的对象Obj
+	// 通常需要@Autowrite/@Value等方法注入的属性，是需要BeanFactory来解析出来被注入的对象Obj
+	// 解决对该工厂中定义的 bean 的指定依赖关系。
+	//	参数：
+	//		descriptor —— 依赖的描述符（字段/方法/构造函数）
+	//		requestingBeanName – 声明给定依赖项的 bean 的名称
+	//		autowiredBeanNames – 一个集合，所有自动装配的 bean 的名称（用于解决给定的依赖项）都应该被添加到这个集合中
+	//		typeConverter – 用于填充数组和集合的 TypeConverter
 
 
 }

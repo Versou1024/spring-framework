@@ -62,6 +62,8 @@ import org.springframework.util.StringUtils;
  * @see DataBindingPropertyAccessor
  */
 public class ReflectivePropertyAccessor implements PropertyAccessor {
+	// ReflectivePropertyAccessor 它能够处理所有的类型，所以Spring把它作为默认的处理器
+	// 放在最后一位(它通过反射处理的是字段Field、Method等的引用~)
 
 	private static final Set<Class<?>> ANY_TYPES = Collections.emptySet();
 

@@ -29,11 +29,13 @@ import org.springframework.expression.PropertyAccessor;
  * @since 4.1
  */
 public interface CompilablePropertyAccessor extends PropertyAccessor, Opcodes {
+	// @since 4.1  org.springframework.asm.Opcodes：和asm相关的接口
 
 	/**
 	 * Return {@code true} if this property accessor is currently suitable for compilation.
 	 */
 	boolean isCompilable();
+	// Compilable：合适的
 
 	/**
 	 * Return the type of the accessed property - may only be known once an access has occurred.
@@ -48,5 +50,6 @@ public interface CompilablePropertyAccessor extends PropertyAccessor, Opcodes {
 	 * @param cf the current state of the expression compiler
 	 */
 	void generateCode(String propertyName, MethodVisitor mv, CodeFlow cf);
+	// CodeFlow 和asm有关的对象~
 
 }

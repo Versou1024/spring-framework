@@ -30,12 +30,22 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public interface Expression {
+	// 能够根据上下文对象评估自身的表达式
+	// 封装先前解析的表达式字符串的详细信息。为表达式求值提供通用抽象。
+
+	// ExpressionParser 和 ParserContext 相关 -- 用来做模板解析
+	// ExpressionParser -> 将产生 Expression
+	// Expression 和 EvaluationContext 相关 -- 用来做表达式解析
+	// 所以 ExpressionParser 将原来的字符串作为模板解析为多个 Expression[]
+	// Expression 通过运算,得到 解析后的值
+	// 然后拼接起来就ok啦
 
 	/**
 	 * Return the original string used to create this expression (unmodified).
 	 * @return the original expression string
 	 */
 	String getExpressionString();
+	// 返回用于创建此表达式的原始字符串（未修改）
 
 	/**
 	 * Evaluate this expression in the default standard context.
@@ -44,6 +54,7 @@ public interface Expression {
 	 */
 	@Nullable
 	Object getValue() throws EvaluationException;
+	// 在默认的标准上下文中计算这个表达式
 
 	/**
 	 * Evaluate the expression in the default context. If the result
@@ -64,6 +75,7 @@ public interface Expression {
 	 */
 	@Nullable
 	Object getValue(@Nullable Object rootObject) throws EvaluationException;
+	// 针对指定的根对象评估此表达式。
 
 	/**
 	 * Evaluate the expression in the default context against the specified root
@@ -76,6 +88,7 @@ public interface Expression {
 	 */
 	@Nullable
 	<T> T getValue(@Nullable Object rootObject, @Nullable Class<T> desiredResultType) throws EvaluationException;
+	// 根据指定的根对象评估默认上下文中的表达式。如果评估的结果与预期的结果类型不匹配（并且无法转换为），则将返回异常。
 
 	/**
 	 * Evaluate this expression in the provided context and return the result
@@ -86,6 +99,7 @@ public interface Expression {
 	 */
 	@Nullable
 	Object getValue(EvaluationContext context) throws EvaluationException;
+	// 在提供的上下文中评估此表达式并返回评估结果
 
 	/**
 	 * Evaluate this expression in the provided context and return the result
@@ -251,6 +265,7 @@ public interface Expression {
 	 * @throws EvaluationException if there is a problem during evaluation
 	 */
 	void setValue(EvaluationContext context, @Nullable Object value) throws EvaluationException;
+	// EvaluationContext 是当前表达式 Expression 的执行上下文
 
 	/**
 	 * Set this expression in the provided context to the value provided.
@@ -261,5 +276,8 @@ public interface Expression {
 	 * @throws EvaluationException if there is a problem during evaluation
 	 */
 	void setValue(EvaluationContext context, @Nullable Object rootObject, @Nullable Object value) throws EvaluationException;
+	// EvaluationContext 是当前表达式 Expression 的执行上下文
+	// rootObject 是当前表达式 Expression 的根对象
+
 
 }

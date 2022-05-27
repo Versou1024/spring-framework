@@ -43,6 +43,8 @@ import org.springframework.util.ObjectUtils;
  * @since 3.0
  */
 public abstract class SpelNodeImpl implements SpelNode, Opcodes {
+	// 解析的 Spring Expression Language 格式表达式中所有 AST 节点的公共超类型
+	// Opcodes --  JVM 操作码、访问标志和数组类型代码。这个接口没有定义所有的 JVM 操作码，因为一些操作码是自动处理的
 
 	private static final SpelNodeImpl[] NO_CHILDREN = new SpelNodeImpl[0];
 

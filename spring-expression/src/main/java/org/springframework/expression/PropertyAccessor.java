@@ -59,6 +59,7 @@ public interface PropertyAccessor {
 	 * @throws AccessException if there is any problem determining whether the property can be read
 	 */
 	boolean canRead(EvaluationContext context, @Nullable Object target, String name) throws AccessException;
+	// 调用以确定解析器实例是否能够访问指定目标对象上的指定属性
 
 	/**
 	 * Called to read a property from a specified target object.
@@ -70,6 +71,7 @@ public interface PropertyAccessor {
 	 * @throws AccessException if there is any problem accessing the property value
 	 */
 	TypedValue read(EvaluationContext context, @Nullable Object target, String name) throws AccessException;
+	// 调用以从指定的目标对象中读取属性。只有当canRead也返回true时才应该成功。
 
 	/**
 	 * Called to determine if a resolver instance is able to write to a specified
@@ -82,6 +84,9 @@ public interface PropertyAccessor {
 	 * property can be written to
 	 */
 	boolean canWrite(EvaluationContext context, @Nullable Object target, String name) throws AccessException;
+	// 调用以确定解析器实例是否能够写入指定目标对象上的指定属性
+	// target – 访问属性的目标对象
+	// name - 正在访问的属性的名称
 
 	/**
 	 * Called to write to a property on a specified target object.
@@ -94,5 +99,9 @@ public interface PropertyAccessor {
 	 */
 	void write(EvaluationContext context, @Nullable Object target, String name, @Nullable Object newValue)
 			throws AccessException;
+	// 调用以写入指定目标对象的属性。只有当canWrite也返回true时才应该成功
+	// target – 访问属性的目标对象
+	// name - 正在访问的属性的名称
+	// newValue – 属性的新值
 
 }

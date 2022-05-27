@@ -33,11 +33,11 @@ public interface AutowireCandidateResolver {
 	/*
 	 * 策略接口，对特定的依赖，这个接口决定一个特定的bean definition是否满足作为自动绑定的备选项
 	 * clonefNecessary():AutowireCandidate Resolver
-	 * getLazyResolutionProxyfNecessary(DependencyDescriptor,String):Object
-	 * getSuggestedValue(DependencyDescriptor):Object 要求注入的依赖如果是@Value标注的，获取其解析后的value值
-	 * hasQualifier(DependencyDescriptor):boolean 要求注入的依赖上是否有标注@Qualifier
-	 * isAutowireCandidate(BeanDefinitionHolder,DependencyDescriptor):boolean 检查BeanDefinition是否有资格作为注入依赖的候选者
-	 * isRequired(DependencyDescriptor):boolean 要去注入的依赖是否为必要
+	 * getLazyResolutionProxyfNecessary(DependencyDescriptor,String):Object 	如果注入点需要，为实际依赖目标的延迟解析构建代理。默认实现只返回null 。
+	 * getSuggestedValue(DependencyDescriptor):Object 							要求注入的依赖如果是@Value标注的，获取其解析后的value值
+	 * hasQualifier(DependencyDescriptor):boolean 								要求注入的依赖上是否有标注@Qualifier
+	 * isAutowireCandidate(BeanDefinitionHolder,DependencyDescriptor):boolean 	检查BeanDefinition是否有资格作为注入依赖的候选者
+	 * isRequired(DependencyDescriptor):boolean 								要进行注入的依赖是否为必要
 	 */
 
 	/**
