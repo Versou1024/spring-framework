@@ -271,7 +271,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport imp
 
 	@Override
 	public Object getEarlyBeanReference(Object bean, String beanName) {
-		// getEarlyBeanReference()它是为了解决单例bean之间的循环依赖问题，提前将代理对象暴露出去
+		// getEarlyBeanReference() 用来在加入到三级缓存时,对原对象进行代理,返回出去的
+		// 执行时机就在 AbstractAutowireCapableBeanFactory#doCreateBean() -> 提前暴露引用,存入三级缓存时 -> AbstractAutowireCapableBeanFactory#getEarlyBeanReference
+
 		Object cacheKey = getCacheKey(bean.getClass(), beanName);
 		this.earlyProxyReferences.put(cacheKey, bean);
 		return wrapIfNecessary(bean, beanName, cacheKey);
@@ -296,7 +298,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport imp
 			// 存入到 advisedBeans ，value为false，表示这个BeanName已经处理过，但不需要进行代理增强
 			// shouldSkip:默认都是返回false的。
 			// AspectJAwareAdvisorAutoProxyCreator重写此方法：只要存在一个Advisor   ((AspectJPointcutAdvisor) advisor).getAspectName().equals(beanName)成立  就返回true
-			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) { // todo shouldSKip
+			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) { //
 				this.advisedBeans.put(cacheKey, Boolean.FALSE);
 				return null;
 			}

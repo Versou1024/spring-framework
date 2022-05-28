@@ -245,6 +245,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 */
 	@Override
 	protected void removeSingleton(String beanName) {
+		// 清除 beanName 在所有缓存中的记录
 		synchronized (getSingletonMutex()) {
 			super.removeSingleton(beanName);
 			this.factoryBeanObjectCache.remove(beanName);

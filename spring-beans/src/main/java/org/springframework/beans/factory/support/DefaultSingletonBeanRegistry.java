@@ -74,6 +74,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private static final int SUPPRESSED_EXCEPTIONS_LIMIT = 100;
 
 	// 下面分别是：单例Bean容器一级缓存、二级缓存、三级缓存
+	// singletonObjects：用于存放完全初始化好的 bean，从该缓存中取出的 bean 可以直接使用
+	// earlySingletonObjects：提前曝光的单例对象的cache，存放原始的 bean 对象（尚未填充属性），用于解决循环依赖
+	// singletonFactories：单例对象工厂的cache，存放 bean 工厂对象，用于解决循环依赖
 
 	/** Cache of singleton objects: bean name to bean instance. */
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256); // 一级缓存
@@ -114,7 +117,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 
 	/** Map between dependent bean names: bean name to Set of dependent bean names. */
 	private final Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64);
-	// key 被value 所依赖
+	// key 被 value 所依赖
 
 	/** Map between depending bean names: bean name to Set of bean names for the bean's dependencies. */
 	private final Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64);
@@ -188,10 +191,22 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
-		// 首先从一级缓存singletonObjects中获取，如果为null，且当前bean正在被创建，
-		// 则从二级缓存earlySingletonObjects中获取，如果还是为null，且允许singletonFactories通过getObject获取，
+		// 首先从一级缓存singletonObjects中获取，如果有的话,就直接返回,如果为null，且当前bean正在被创建，
+		// 则从二级缓存earlySingletonObjects中尝试获取，如果还是为null，且允许singletonFactories通过getObject获取，
 		// 则从三级缓存singletonFactories中获取，如果得到，则将其加入二级缓存earlySingletonObjects中，并从三级缓存singletonFactories中移除对应的工厂对象
-		// (因为单例模式的bean只会被创建一次)，这样三级缓存就升级到二级缓存了，所以二级缓存存在的意义就是缓存三级缓存中ObjectFactory#getObject的执行结果，提前曝光单例Bean对象。
+		// (因为单例模式的bean只会被创建一次)，这样三级缓存就升级到二级缓存了，
+		// 所以二级缓存存在的意义就是缓存三级缓存中ObjectFactory#getObject的执行结果，
+
+		// 1. 先从一级缓存singletonObjects中去获取。（如果获取到就直接return）
+		// 2. 如果获取不到或者对象正在创建中（isSingletonCurrentlyInCreation()），那就再从二级缓存earlySingletonObjects中获取。（如果获取到就直接return）
+		// 3. 如果还是获取不到，且允许singletonFactories（allowEarlyReference=true）通过getObject()获取。就从三级缓存singletonFactory.getObject()获取。
+		// （如果获取到了就从singletonFactories中移除，并且放进earlySingletonObjects。其实也就是从三级缓存移动（是剪切、不是复制哦~）到了二级缓存）
+		// 加入singletonFactories三级缓存的前提是执行了构造器，所以构造器注入的循环依赖没法解决
+
+		// 此处说一下二级缓存earlySingletonObjects它里面的数据什么时候添加什么移除？？?
+		//
+		// 添加：向里面添加数据只有一个地方，就是上面说的getSingleton()里从三级缓存里挪过来
+		// 移除：addSingleton、addSingletonFactory、removeSingleton 从语义中可以看出添加单例、添加单例工厂ObjectFactory的时候都会删除二级缓存里面对应的缓存值，是互斥的
 
 		// 此处是先从已经缓存好了的singletonObjects的一级缓存Map中，
 		Object singletonObject = this.singletonObjects.get(beanName);
@@ -260,7 +275,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				// 创建前置检查：
 				// 1、若在inCreationCheckExclusions面校验名单里，是ok的
 				// 2、singletonsCurrentlyInCreation把它添加进去，证明这个Bean正在创建中
-				beforeSingletonCreation(beanName); // 相当于是一把同步锁加锁的操作
+				beforeSingletonCreation(beanName);
 
 				// 此处先打标记为为false
 				boolean newSingleton = false;
@@ -553,6 +568,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @return the array of dependent bean names, or an empty array if none
 	 */
 	public String[] getDependentBeans(String beanName) {
+		// 返回依赖于指定 bean 的所有 bean 的名称（如果有）
+
 		Set<String> dependentBeans = this.dependentBeanMap.get(beanName);
 		if (dependentBeans == null) {
 			return new String[0];

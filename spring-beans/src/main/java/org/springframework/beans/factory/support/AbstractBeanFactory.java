@@ -321,8 +321,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 			// 如果不仅仅是做类型检查，而是创建bean，这里需要记录
 			if (!typeCheckOnly) {
-				//typeCheckOnly一般为false，
+				// typeCheckOnly一般为false，
 				// 确保bean已经被创建，添加到已创建的beanNames集合中
+				// 标记beanName是已经创建过至少一次的~~~ 它会一直存留在缓存里不会被移除（除非抛出了异常）
+				// 参见缓存Set<String> alreadyCreated = Collections.newSetFromMap(new ConcurrentHashMap<>(256))
 				markBeanAsCreated(beanName);  //
 			}
 
@@ -339,8 +341,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
-						// 检查是否出现了循环依赖，比如这里明确是是beanName依赖了dep
-						// 而isDependent()，返回true，表示dep也想依赖beanName
+						// 检查是否出现了无法解决的循环依赖，
+						// 比如这里要创建的beanName是依赖了dep
+						// 然而通过 isDependent(beanName, dep) 发现已经注册的依赖关系中, dep 也依赖 beanName 啦, 出现循环依赖
+
+						// 而对于一般可以解决的循环依赖而言,通常 beanname 依赖 dep,但是 dep 是还未创建,无法缓存的依赖关系表中找到
+						// 只有在填充属性时,才会发现dep,去注册dep的依赖关系
 						if (isDependent(beanName, dep)) {
 							// 循环依赖报错
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
@@ -361,6 +367,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				if (mbd.isSingleton()) {
 					// 也是一样先尝试从缓存去获取，获取失败就通过ObjectFactory的createBean方法创建
 					// 这个getSingleton方法和上面是重载方法，它支持通过ObjectFactory去根据Scope来创建对象，具体源码解析见下面
+					// 这个getSingleton方法不是SingletonBeanRegistry的接口方法  属于实现类DefaultSingletonBeanRegistry的一个public重载方法~~~
+					// 它的特点是在执行singletonFactory.getObject();前后会执行beforeSingletonCreation(beanName);和afterSingletonCreation(beanName);
+					// 也就是保证这个Bean在创建过程中，放入正在创建的缓存池里  可以看到它实际创建bean调用的是我们的createBean方法~~~~
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							return createBean(beanName, mbd, args);
@@ -1846,10 +1855,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @return {@code true} if actually removed, {@code false} otherwise
 	 */
 	protected boolean removeSingletonIfCreatedForTypeCheckOnly(String beanName) {
+		// 删除给定 bean 名称的单例实例（如果有），但前提是它没有用于类型检查以外的其他目的。
+
+		// 1. 若不已经存在 创建中 alreadyCreated,调用removeSingleton(beanName)
 		if (!this.alreadyCreated.contains(beanName)) {
 			removeSingleton(beanName);
 			return true;
 		}
+		// 2. 否则就是已经存在啦
 		else {
 			return false;
 		}
