@@ -53,6 +53,7 @@ import org.springframework.util.StringUtils;
  * @see StandardEnvironment
  */
 public abstract class AbstractEnvironment implements ConfigurableEnvironment {
+	// Environment实现的抽象基类。支持保留默认配置文件名称的概念，并允许通过ACTIVE_PROFILES_PROPERTY_NAME和DEFAULT_PROFILES_PROPERTY_NAME属性指定活动和默认配置文件。
 
 	/**
 	 * System property that instructs Spring to ignore system environment variables,
@@ -99,6 +100,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	 * @see AbstractEnvironment#ACTIVE_PROFILES_PROPERTY_NAME
 	 */
 	protected static final String RESERVED_DEFAULT_PROFILE_NAME = "default";
+	// 保留的默认的profile值   protected final属性，证明子类可以访问
 
 
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -107,8 +109,12 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 
 	private final Set<String> defaultProfiles = new LinkedHashSet<>(getReservedDefaultProfiles()); // 默认的环境
 
+	// 这个很关键，直接new了一个 MutablePropertySources来管理属性源们
+	// 并且是用的PropertySourcesPropertyResolver来处理里面可能的占位符~~~~~
 	private final MutablePropertySources propertySources = new MutablePropertySources(); // PropertySource 属性源的结合 -- 核心哦
 
+	// PropertySourcesPropertyResolver 中加入了 propertySources
+	// 解析占位符
 	private final ConfigurablePropertyResolver propertyResolver = new PropertySourcesPropertyResolver(this.propertySources); // 属性解析器
 
 
@@ -237,6 +243,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 		synchronized (this.activeProfiles) {
 			if (this.activeProfiles.isEmpty()) {
 				// 懒加载 - 创建模式
+				// 核心 -- getProperty(ACTIVE_PROFILES_PROPERTY_NAME) -> 依靠 propertyResolver 解析器出查找注册的 spring.profiles.active
 				String profiles = getProperty(ACTIVE_PROFILES_PROPERTY_NAME);
 				if (StringUtils.hasText(profiles)) {
 					setActiveProfiles(StringUtils.commaDelimitedListToStringArray(
@@ -249,6 +256,8 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 
 	@Override
 	public void setActiveProfiles(String... profiles) {
+		// 也可以直接设置激活的环境Profile
+
 		Assert.notNull(profiles, "Profile array must not be null");
 		if (logger.isDebugEnabled()) {
 			logger.debug("Activating profiles " + Arrays.asList(profiles));
@@ -268,8 +277,9 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Activating profile '" + profile + "'");
 		}
-		validateProfile(profile); // profie检查是为合理的String
+		validateProfile(profile); // Profile必须非空串,且不能以!开头
 		doGetActiveProfiles(); // 获取spring.profiles.active属性，并注入到activeProfiles
+		// 将 profile 与 配置文件中的 activeProfiles 加入到一起
 		synchronized (this.activeProfiles) {
 			this.activeProfiles.add(profile);
 		}
@@ -294,7 +304,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	 * @see #getReservedDefaultProfiles()
 	 */
 	protected Set<String> doGetDefaultProfiles() {
-		// 获取：spring.profiles.default的值
+		// 获取：通过 propertyParser 获取 spring.profiles.default的值
 		synchronized (this.defaultProfiles) {
 			if (this.defaultProfiles.equals(getReservedDefaultProfiles())) {
 				String profiles = getProperty(DEFAULT_PROFILES_PROPERTY_NAME);
@@ -384,6 +394,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 
 	@Override
 	public MutablePropertySources getPropertySources() {
+		// 获取属性源
 		return this.propertySources;
 	}
 
@@ -527,6 +538,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 
 	//---------------------------------------------------------------------
 	// Implementation of PropertyResolver interface
+	// PropertyResolver 接口的实现
 	//---------------------------------------------------------------------
 
 	@Override

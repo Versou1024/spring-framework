@@ -44,8 +44,12 @@ public class MutablePropertySources implements PropertySources {
 	 * 1、PropertySources接口的默认实现MutablePropertySources。允许操纵包含的属性源，并提供用于复制现有PropertySources实例的构造函数。
 	 * 2、在addFirst和addLast等方法中提到优先级的地方，这与使用PropertyResolver解析给定属性时搜索属性源的顺序有关。
 	 * 3、有具体的优先级，例如addFirst、addBefore、addAfter、addAfter
+	 *
+	 * 需要注意一点 -- MutablePropertySources 仅仅用来管理所有的PropertySource,
+	 * 具体从PropertySource中检查依靠的是 PropertySourcesPropertyResolver
 	 */
 
+	// 组合
 	private final List<PropertySource<?>> propertySourceList = new CopyOnWriteArrayList<>();
 
 
@@ -84,6 +88,8 @@ public class MutablePropertySources implements PropertySources {
 
 	@Override
 	public boolean contains(String name) {
+		// 优先级高的propertySource匹配中后,就返回true
+		// 注意这里匹配的 属性源 -- 而非属性哦
 		for (PropertySource<?> propertySource : this.propertySourceList) {
 			if (propertySource.getName().equals(name)) {
 				return true;
@@ -95,6 +101,9 @@ public class MutablePropertySources implements PropertySources {
 	@Override
 	@Nullable
 	public PropertySource<?> get(String name) {
+		// 优先级高的propertySource匹配中后,就返回对应的值
+		// 注意:这里获取的是指定的属性源 -- 而不是属性哦
+
 		for (PropertySource<?> propertySource : this.propertySourceList) {
 			if (propertySource.getName().equals(name)) {
 				return propertySource;
@@ -108,6 +117,7 @@ public class MutablePropertySources implements PropertySources {
 	 * Add the given property source object with highest precedence.
 	 */
 	public void addFirst(PropertySource<?> propertySource) {
+		// 添加之前都会进行删除,确保propertySource可以被添加到第一个位置
 		synchronized (this.propertySourceList) {
 			removeIfPresent(propertySource);
 			this.propertySourceList.add(0, propertySource);
@@ -154,6 +164,8 @@ public class MutablePropertySources implements PropertySources {
 	 * Return the precedence of the given property source, {@code -1} if not found.
 	 */
 	public int precedenceOf(PropertySource<?> propertySource) {
+		// 返回给定属性源的优先级，如果没有找到则返回-1
+		// 也就是在 propertySourceList 排序位置
 		return this.propertySourceList.indexOf(propertySource);
 	}
 

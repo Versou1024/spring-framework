@@ -34,9 +34,14 @@ public interface ConfigurablePropertyResolver extends PropertyResolver {
 	 * 大多数（如果不是所有的话）PropertyResolver类型将实现的配置接口。
 	 * 提供用于访问和自定义将属性值从一种类型转换为另一种类型时使用的转换服务的工具。
 	 *
-	 * 实际转换交给：ConfigurableConversionService
-	 * Configurable通常表示一些配置属性的get和set
-	 * 包含：属性占位符的前缀和后缀、value分隔符、
+	 * 在 PropertyResolver 基础上增加配置能力
+	 * 		比如
+	 * 		<T> T getProperty(String key, Class<T> targetType);
+	 *		这种需要将获取到的属性从String转换到T的能力,就需要配置好 ConversionService
+	 * 		resolvePlaceholders(String text)
+	 * 		解析占位符,那么就可以配置占位符的Prefix和Suffix
+	 *      有获取属性的方法 getProperty
+	 * 		也可以提供一个设置属性的方法
 	 */
 
 	/**

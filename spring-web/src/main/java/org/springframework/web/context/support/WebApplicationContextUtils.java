@@ -301,12 +301,18 @@ public abstract class WebApplicationContextUtils {
 	 */
 	public static void initServletPropertySources(MutablePropertySources sources,
 			@Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
+		// 替换操作
+		// 初始化 Servlet环境 下相关的属性源到 sources 中去
 
+		// 1. sources中有名为servletContextInitParams的属性源,且是属于可替换的属性源StubPropertySource
+		// 触发替换操作
 		Assert.notNull(sources, "'propertySources' must not be null");
 		String name = StandardServletEnvironment.SERVLET_CONTEXT_PROPERTY_SOURCE_NAME;
 		if (servletContext != null && sources.get(name) instanceof StubPropertySource) {
 			sources.replace(name, new ServletContextPropertySource(name, servletContext));
 		}
+		// 2. sources中有名为servletConfigInitParams的属性源,且是属于可替换的属性源StubPropertySource
+		// 触发替换操作
 		name = StandardServletEnvironment.SERVLET_CONFIG_PROPERTY_SOURCE_NAME;
 		if (servletConfig != null && sources.get(name) instanceof StubPropertySource) {
 			sources.replace(name, new ServletConfigPropertySource(name, servletConfig));

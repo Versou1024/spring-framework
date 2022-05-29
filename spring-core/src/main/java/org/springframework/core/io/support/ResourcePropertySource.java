@@ -43,6 +43,7 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.core.io.support.EncodedResource
  */
 public class ResourcePropertySource extends PropertiesPropertySource {
+	// 这个是被 @PropertySource 注解解析后封装陈的 ResourcePropertySource
 
 	/** The original resource name, if different from the given name. */
 	@Nullable
@@ -54,6 +55,9 @@ public class ResourcePropertySource extends PropertiesPropertySource {
 	 * loaded from the given encoded resource.
 	 */
 	public ResourcePropertySource(String name, EncodedResource resource) throws IOException {
+		// 需要注意的是: 传入的resource必须是编码的EncodedResource
+
+		// 1. 使用 PropertiesLoaderUtils.loadProperties() 加载的这个properties文件资源后返回
 		super(name, PropertiesLoaderUtils.loadProperties(resource));
 		this.resourceName = getNameForResource(resource.getResource());
 	}

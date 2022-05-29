@@ -31,6 +31,8 @@ import org.springframework.util.StringUtils;
  * @see ServletContextPropertySource
  */
 public class ServletConfigPropertySource extends EnumerablePropertySource<ServletConfig> {
+	// 属性源 -- ServletConfig
+	// 属性都是 ServletConfig#getInitParameterNames()
 
 	public ServletConfigPropertySource(String name, ServletConfig servletConfig) {
 		super(name, servletConfig);

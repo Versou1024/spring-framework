@@ -40,9 +40,12 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public class PropertyPlaceholderHelper {
+	// 用于处理其中具有占位符值的字符串的实用程序类。占位符采用${name}形式。
+	// 使用PropertyPlaceholderHelper这些占位符可以替换用户提供的值。
 
 	private static final Log logger = LogFactory.getLog(PropertyPlaceholderHelper.class);
 
+	// 众所周知的简单前缀
 	private static final Map<String, String> wellKnownSimplePrefixes = new HashMap<>(4);
 
 	static {
@@ -52,15 +55,20 @@ public class PropertyPlaceholderHelper {
 	}
 
 
+	// 前缀
 	private final String placeholderPrefix;
 
+	// 后缀
 	private final String placeholderSuffix;
 
+	// 简单前缀
 	private final String simplePrefix;
 
+	// value 分隔符
 	@Nullable
 	private final String valueSeparator;
 
+	// 是否
 	private final boolean ignoreUnresolvablePlaceholders;
 
 
@@ -122,6 +130,8 @@ public class PropertyPlaceholderHelper {
 	 * @return the supplied value with placeholders replaced inline
 	 */
 	public String replacePlaceholders(String value, PlaceholderResolver placeholderResolver) {
+		// 将格式${name}的所有占位符替换为从提供的PropertyPlaceholderHelper.PlaceholderResolver返回的值。
+
 		Assert.notNull(value, "'value' must not be null");
 		return parseStringValue(value, placeholderResolver, null);
 	}
@@ -129,6 +139,7 @@ public class PropertyPlaceholderHelper {
 	protected String parseStringValue(
 			String value, PlaceholderResolver placeholderResolver, @Nullable Set<String> visitedPlaceholders) {
 
+		// 1. 没有占位符前缀时直接返回value
 		int startIndex = value.indexOf(this.placeholderPrefix);
 		if (startIndex == -1) {
 			return value;
@@ -136,8 +147,10 @@ public class PropertyPlaceholderHelper {
 
 		StringBuilder result = new StringBuilder(value);
 		while (startIndex != -1) {
+			// 2. 查找占位符后缀的位置
 			int endIndex = findPlaceholderEndIndex(result, startIndex);
 			if (endIndex != -1) {
+				// 3. 提取占位符中间的key
 				String placeholder = result.substring(startIndex + this.placeholderPrefix.length(), endIndex);
 				String originalPlaceholder = placeholder;
 				if (visitedPlaceholders == null) {
@@ -148,24 +161,42 @@ public class PropertyPlaceholderHelper {
 							"Circular placeholder reference '" + originalPlaceholder + "' in property definitions");
 				}
 				// Recursive invocation, parsing placeholders contained in the placeholder key.
+				// 4. 递归调用，解析占位符键中包含的占位符 -- 直到最小的占位符
+				// 比如 ${you${name}} 会递归到处理 name
 				placeholder = parseStringValue(placeholder, placeholderResolver, visitedPlaceholders);
 				// Now obtain the value for the fully resolved key...
+				// 5. 现在获取完全解析键的值.. 然后就可以去 placeholderResolver.resolvePlaceholder()尝试解析占位符啦
+				// 解析结果 propVal 为空,并且由分隔符的话
+				// 尝试用分隔符分割开后,在做一下解析
 				String propVal = placeholderResolver.resolvePlaceholder(placeholder);
 				if (propVal == null && this.valueSeparator != null) {
+					// 5. 尝试分隔符
 					int separatorIndex = placeholder.indexOf(this.valueSeparator);
 					if (separatorIndex != -1) {
+						// 5.1 分隔符前 - 真实的占位符
 						String actualPlaceholder = placeholder.substring(0, separatorIndex);
+						// 5.2 分隔符后 - 默认value
 						String defaultValue = placeholder.substring(separatorIndex + this.valueSeparator.length());
+						// 5.3 将分隔符分割后的占位符名称解析为替换值。
 						propVal = placeholderResolver.resolvePlaceholder(actualPlaceholder);
 						if (propVal == null) {
+							// 5.3 使用默认值,前提是有默认值
 							propVal = defaultValue;
 						}
 					}
 				}
+				// 6. 最终获取到 对应的属性值
 				if (propVal != null) {
 					// Recursive invocation, parsing placeholders contained in the
 					// previously resolved placeholder value.
+					// 6.1 还需要递归处理哦
+					// 用户使用 @Value("${uploadUrl}")
+					// 比如 application.yaml 中
+					// internalUrl = http://localhost:8080/
+					// uploadUrl = ${internalUrl}/api/rest
+					// 因此 还需要对拿到的 ${internalUrl}/api/rest 在做一次解析哦
 					propVal = parseStringValue(propVal, placeholderResolver, visitedPlaceholders);
+					// 替换回去
 					result.replace(startIndex, endIndex + this.placeholderSuffix.length(), propVal);
 					if (logger.isTraceEnabled()) {
 						logger.trace("Resolved placeholder '" + placeholder + "'");
@@ -174,6 +205,7 @@ public class PropertyPlaceholderHelper {
 				}
 				else if (this.ignoreUnresolvablePlaceholders) {
 					// Proceed with unprocessed value.
+					// 忽略不可解析的占位符
 					startIndex = result.indexOf(this.placeholderPrefix, endIndex + this.placeholderSuffix.length());
 				}
 				else {

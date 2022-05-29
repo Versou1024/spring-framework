@@ -52,6 +52,13 @@ package org.springframework.core.env;
  * @see org.springframework.web.context.support.StandardServletEnvironment
  */
 public class StandardEnvironment extends AbstractEnvironment {
+	// 标准的 environment
+	// 主要就是注册的标准的系统属性源\系统环境变量
+
+	// 实际上 -- AbstractEnvironment 已经完成了大部分工作
+	// AbstractEnvironment 将大部分工作又交给了
+	// private final MutablePropertySources propertySources = new MutablePropertySources(); // PropertySource 属性源的结合 -- 核心哦
+	// private final ConfigurablePropertyResolver propertyResolver = new PropertySourcesPropertyResolver(this.propertySources); // 属性解析器 -- 核心哦
 
 	/** System environment property source name: {@value}. */
 	public static final String SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME = "systemEnvironment";
@@ -76,8 +83,13 @@ public class StandardEnvironment extends AbstractEnvironment {
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
 		// 注册标准环境下的需要使用的数据源
+
+		// 1. 系统属性感
+		// name=systemProperties
 		propertySources.addLast(
 				new PropertiesPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, getSystemProperties()));
+		// 2. 系统系统环境
+		// name=systemEnvironment
 		propertySources.addLast(
 				new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, getSystemEnvironment()));
 	}

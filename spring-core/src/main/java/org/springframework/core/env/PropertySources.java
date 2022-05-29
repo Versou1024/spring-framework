@@ -30,7 +30,7 @@ import org.springframework.lang.Nullable;
  * @see PropertySource
  */
 public interface PropertySources extends Iterable<PropertySource<?>> {
-	//持有PropertySource的集合 -- get、contains、
+	// 持有PropertySource的集合 -- get、contains、
 
 	/**
 	 * Return a sequential {@link Stream} containing the property sources.

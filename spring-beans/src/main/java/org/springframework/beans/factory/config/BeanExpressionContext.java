@@ -26,6 +26,8 @@ import org.springframework.util.Assert;
  * @since 3.0
  */
 public class BeanExpressionContext {
+	// 用于评估 bean 定义中的表达式的上下文对象。
+	// 和 Spel 有关
 
 	private final ConfigurableBeanFactory beanFactory;
 

@@ -373,6 +373,7 @@ class ConfigurationClassParser {
 		// 显然必须是ConfigurableEnvironment的环境采取解析，否则发出警告：会忽略这个不进行解析
 		for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(sourceClass.getMetadata(), PropertySources.class, org.springframework.context.annotation.PropertySource.class)) {
 			if (this.environment instanceof ConfigurableEnvironment) {
+				// propertySource 是 注解@PropertySource 的属性
 				processPropertySource(propertySource);
 			}
 			else {
@@ -572,34 +573,35 @@ class ConfigurationClassParser {
 	 * @throws IOException if loading a property source failed
 	 */
 	private void processPropertySource(AnnotationAttributes propertySource) throws IOException {
-		// 获取@PropertySource的name属性 -- 指定资源名称，如果为空
+		// 1. 获取@PropertySource的name属性 -- 指定资源名称，如果为空
 		String name = propertySource.getString("name");
 		if (!StringUtils.hasLength(name)) {
 			name = null;
 		}
-		// 获取@PropertySource的encoding属性 -- 编码格式
+		// 2. 获取@PropertySource的encoding属性 -- 编码格式
 		String encoding = propertySource.getString("encoding");
 		if (!StringUtils.hasLength(encoding)) {
 			encoding = null;
 		}
-		// 获取@PropertySource的value属性 --  指定资源路径
+		// 3. 获取@PropertySource的value属性 --  指定资源路径
 		String[] locations = propertySource.getStringArray("value");
 		Assert.isTrue(locations.length > 0, "At least one @PropertySource(value) location is required");
-		// 获取@PropertySource的ignoreResourceNotFound属性 -- 是否忽略Resource不存在
+		// 4. 获取@PropertySource的ignoreResourceNotFound属性 -- 是否忽略Resource不存在
 		boolean ignoreResourceNotFound = propertySource.getBoolean("ignoreResourceNotFound");
 
 		Class<? extends PropertySourceFactory> factoryClass = propertySource.getClass("factory");
-		// 没有指定factory时，就使用默认的factory
+		// 5. 没有指定factory时，就使用默认的factory
 		PropertySourceFactory factory = (factoryClass == PropertySourceFactory.class ? DEFAULT_PROPERTY_SOURCE_FACTORY : BeanUtils.instantiateClass(factoryClass));
 
-		// 解析locations
+		// 6. 解析locations
 		for (String location : locations) {
 			try {
-				// 解析${}
+				// 7. 解析${}
 				String resolvedLocation = this.environment.resolveRequiredPlaceholders(location);
-				// 获取对应Resource
+				// 8. 获取对应Resource
 				Resource resource = this.resourceLoader.getResource(resolvedLocation);
-				// 添加属性源头 -- over
+				// 9. 添加属性源头 -- over
+				// EncodedResource 持有 Resource 和 对应的编解码格式
 				addPropertySource(factory.createPropertySource(name, new EncodedResource(resource, encoding)));
 			}
 			catch (IllegalArgumentException | FileNotFoundException | UnknownHostException | SocketException ex) {
@@ -616,7 +618,7 @@ class ConfigurationClassParser {
 		}
 	}
 
-	// 把属性资源添加进来，最终全部要放进MutablePropertySources 里  这点非常重要~~~~ 这个时机
+	// 把属性资源添加进来，最终全部要放进 MutablePropertySources 里  这点非常重要~~~~ 这个时机
 	private void addPropertySource(PropertySource<?> propertySource) {
 		// 1. 资源名
 		String name = propertySource.getName();
@@ -624,9 +626,10 @@ class ConfigurationClassParser {
 		// 这个特别的重要，这个其实就是Spring处理配置文件优先级的原理，下面有个截图可以看到
 		// 因为这块特别重要，后面还会有专门章节分析~~~
 		// MutablePropertySources它维护着一个List<PropertySource<?>> 并且是有序的~~~
+		// 从 environment 中获取
 		MutablePropertySources propertySources = ((ConfigurableEnvironment) this.environment).getPropertySources();
 
-		// 3. 包含这个资源,就继续扩展吧PropertySource
+		// 3. 若propertySourceNames已经包含这个资源,就继续扩展吧PropertySource
 		// 此处若发现你的同名PropertySource已经有了，还是要继续处理的~~~而不是直接略过
 		if (this.propertySourceNames.contains(name)) {
 			// We've already added a version, we need to extend it
@@ -654,7 +657,7 @@ class ConfigurationClassParser {
 			}
 		}
 
-		// 这段代码处理的意思是：若你是第一个自己导入进来的，那就放在最末尾
+		// 4. 这段代码处理的意思是：若你是第一个自己导入进来的，那就放在最末尾
 		// 若你不是第一个，那就把你放在已经导入过的最后一个的前一个里面~~~
 		if (this.propertySourceNames.isEmpty()) {
 			propertySources.addLast(propertySource);

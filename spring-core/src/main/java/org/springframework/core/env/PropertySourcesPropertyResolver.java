@@ -40,12 +40,16 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 	 * @param propertySources the set of {@link PropertySource} objects to use
 	 */
 	public PropertySourcesPropertyResolver(@Nullable PropertySources propertySources) {
+		// 唯一构造函数
+		// 传入了 PropertySources -> 一般都是 MultiPropertySources
 		this.propertySources = propertySources;
 	}
 
 
 	@Override
 	public boolean containsProperty(String key) {
+		// propertySources 本身就是一个集合接口,实现了 Iterable<PropertySource<?>
+		// 所以可以在增强for循环中直接使用哦
 		if (this.propertySources != null) {
 			for (PropertySource<?> propertySource : this.propertySources) {
 				if (propertySource.containsProperty(key)) {
@@ -111,6 +115,7 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 	 * @since 4.3.1
 	 */
 	protected void logKeyFound(String key, PropertySource<?> propertySource, Object value) {
+		// 记录 key  没有找到
 		if (logger.isDebugEnabled()) {
 			logger.debug("Found key '" + key + "' in PropertySource '" + propertySource.getName() +
 					"' with value of type " + value.getClass().getSimpleName());

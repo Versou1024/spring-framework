@@ -989,6 +989,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 		// at this point, primarily for resolution in annotation attribute values.
 		// beanFactory是否存在内嵌的占位符解析器，没有就需要添加进去
 		if (!beanFactory.hasEmbeddedValueResolver()) {
+			// 可以看见 实际上 BeanFactory做的字符串解析
+			// 最终都是走到了 strVal -> getEnvironment().resolvePlaceholders(strVal) 这个lambda 表达式的执行总共来
 			beanFactory.addEmbeddedValueResolver(strVal -> getEnvironment().resolvePlaceholders(strVal));
 		}
 

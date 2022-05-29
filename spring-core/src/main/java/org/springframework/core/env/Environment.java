@@ -84,6 +84,11 @@ public interface Environment extends PropertyResolver {
 	 * 可以发现
 	 * Environment 注重 profiles 的获取
 	 * PropertyResolver 注重 environment 的获取
+	 *
+	 * 这个接口代表了当前应用正在运行的环境，为应用的两个重要方面建立抽象模型 【profiles】和【properties】。关于属性访问的方法通过父接口PropertyResolver暴露给客户端使用，本接口主要是扩展出访问【profiles】相关的接口。
+	 * 对于他俩，我愿意这么来翻译：
+	 * 		profiles：配置。它代表应用在一启动时注册到context中bean definitions的命名的逻辑分组。
+	 * 		properties：属性。几乎在所有应用中都扮演着重要角色，他可能源自多种源头。例如属性文件，JVM系统属性，系统环境变量，JNDI，servlet上下文参数，Map等等，Environment对象和其相关的对象一起提供给用户一个方便用来配置和解析属性的服务。
 	 */
 
 	/**

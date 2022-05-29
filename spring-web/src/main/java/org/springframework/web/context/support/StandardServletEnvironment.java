@@ -43,6 +43,8 @@ import org.springframework.web.context.ConfigurableWebEnvironment;
  * @see StandardEnvironment
  */
 public class StandardServletEnvironment extends StandardEnvironment implements ConfigurableWebEnvironment {
+	// 在标准的 StandardEnvironment 基础上再添加Servlet相关的属性源
+	// 分别是: servletContextInitParams\servletConfigInitParams\jndiProperties
 
 	/** Servlet context init parameters property source name: {@value}. */
 	public static final String SERVLET_CONTEXT_PROPERTY_SOURCE_NAME = "servletContextInitParams";
@@ -82,14 +84,22 @@ public class StandardServletEnvironment extends StandardEnvironment implements C
 	 */
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
+		// 1. 这里需要注入的是: StubPropertySource(String name)传入的只有name
+		// 没有具体的 ServletContext\ServletConfig 对象
+		// 此刻无法获取响应的属性
 		propertySources.addLast(new StubPropertySource(SERVLET_CONFIG_PROPERTY_SOURCE_NAME));
 		propertySources.addLast(new StubPropertySource(SERVLET_CONTEXT_PROPERTY_SOURCE_NAME));
 		if (JndiLocatorDelegate.isDefaultJndiEnvironmentAvailable()) {
 			propertySources.addLast(new JndiPropertySource(JNDI_PROPERTY_SOURCE_NAME));
 		}
+
+		// 当前 标准环境的customizePropertySources() 定制化操作也不能忽略哦
 		super.customizePropertySources(propertySources);
 	}
 
+	// ConfigurableWebEnvironment 在 ConfigurableEnvironment 接口下扩展的新功能
+	// 该方法会在适当的时机触发
+	// 将 ServletContext\ServletConfig 加入到PropertySources中
 	@Override
 	public void initPropertySources(@Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
 		WebApplicationContextUtils.initServletPropertySources(getPropertySources(), servletContext, servletConfig);

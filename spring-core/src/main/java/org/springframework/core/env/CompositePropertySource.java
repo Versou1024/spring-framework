@@ -41,10 +41,11 @@ import org.springframework.util.StringUtils;
  * @since 3.1.1
  */
 public class CompositePropertySource extends EnumerablePropertySource<Object> {
-	/**
+	/*
 	 * 组合模式 - 属性源的组合模式
 	 */
 
+	// 组合模式哦
 	private final Set<PropertySource<?>> propertySources = new LinkedHashSet<>();
 
 
@@ -84,6 +85,7 @@ public class CompositePropertySource extends EnumerablePropertySource<Object> {
 	@Override
 	public String[] getPropertyNames() {
 		// 依次遍历查找属性名
+		// 将所有的属性源的属性集合到一起后返回出去
 		Set<String> names = new LinkedHashSet<>();
 		for (PropertySource<?> propertySource : this.propertySources) {
 			if (!(propertySource instanceof EnumerablePropertySource)) {

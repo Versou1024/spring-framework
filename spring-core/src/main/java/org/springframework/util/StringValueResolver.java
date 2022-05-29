@@ -30,6 +30,7 @@ import org.springframework.lang.Nullable;
  */
 @FunctionalInterface
 public interface StringValueResolver {
+	// 说说StringValueResolver本身，Spring对它的定义为：一个处理字符串的简单策略接口。
 
 	/**
 	 * Resolve the given String value, for example parsing placeholders.

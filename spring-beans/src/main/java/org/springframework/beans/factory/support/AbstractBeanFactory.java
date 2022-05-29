@@ -996,8 +996,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			return null;
 		}
 		String result = value;
+		// embeddedValueResolvers是个复数：因为我们可以自定义处理器添加到bean工厂来，增强它的能力
 		for (StringValueResolver resolver : this.embeddedValueResolvers) {
 			result = resolver.resolveStringValue(result);
+			// 只要处理结果不为null，所以的处理器都会执行到~~~~
 			if (result == null) {
 				return null;
 			}

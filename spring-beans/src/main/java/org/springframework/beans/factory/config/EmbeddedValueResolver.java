@@ -35,7 +35,14 @@ import org.springframework.util.StringValueResolver;
  * @see BeanExpressionContext
  */
 public class EmbeddedValueResolver implements StringValueResolver {
+	// StringValueResolver唯一public实现类为：EmbeddedValueResolver
+	// EmbeddedValueResolver
+	// 帮助ConfigurableBeanFactory处理placeholders占位符的。
+	// ConfigurableBeanFactory#resolveEmbeddedValue处理占位符真正干活的间接的就是它~~
 
+	// BeanExpressionResolver 之前有非常详细的讲解，简直不要太熟悉~  它支持的是SpEL  可以说非常的强大
+	// 并且它有BeanExpressionContext就能拿到BeanFactory工厂，就能使用它的`resolveEmbeddedValue`来处理占位符~~~~
+	// 双重功能都有了~~~拥有了和@Value一样的能力，非常强大~~~
 	private final BeanExpressionContext exprContext;
 
 	@Nullable
@@ -51,7 +58,9 @@ public class EmbeddedValueResolver implements StringValueResolver {
 	@Override
 	@Nullable
 	public String resolveStringValue(String strVal) {
+		// 1. 先使用Bean工厂处理占位符resolveEmbeddedValue
 		String value = this.exprContext.getBeanFactory().resolveEmbeddedValue(strVal);
+		// 2. 再使用el表达式参与计算 ~~~~
 		if (this.exprResolver != null && value != null) {
 			Object evaluated = this.exprResolver.evaluate(value, this.exprContext);
 			value = (evaluated != null ? evaluated.toString() : null);

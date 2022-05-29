@@ -43,8 +43,8 @@ import org.springframework.util.ObjectUtils;
  * @param <T> the source type
  */
 public abstract class EnumerablePropertySource<T> extends PropertySource<T> {
-	/**
-	 * 扩展PropertySource的能力：
+	/*
+	 * 扩展PropertySource的能力： 可以列举
 	 * 1、能够查询其底层源对象，以枚举所有可能的属性名称/值对
 	 */
 
@@ -75,6 +75,10 @@ public abstract class EnumerablePropertySource<T> extends PropertySource<T> {
 	 */
 	@Override
 	public boolean containsProperty(String name) {
+		// 是否包含属性
+
+		// 1. 子类通过getPropertyNames()获取当前T这个属性源所有的属性key
+		// 2. ObjectUtils.containsElement() 检查结合中是否存在指定的name哦
 		return ObjectUtils.containsElement(getPropertyNames(), name);
 	}
 

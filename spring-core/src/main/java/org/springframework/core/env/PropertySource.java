@@ -70,9 +70,10 @@ public abstract class PropertySource<T> {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	protected final String name;
+	protected final String name; // 属性来源的名字 -- 必须是唯一的
+	// 因为 equals() 方法有的都是比较的name
 
-	protected final T source;
+	protected final T source; // 属性文件
 
 
 	/**
@@ -213,6 +214,12 @@ public abstract class PropertySource<T> {
 	 * @see org.springframework.web.context.support.ServletContextPropertySource
 	 */
 	public static class StubPropertySource extends PropertySource<Object> {
+		// 在应用程序上下文创建时无法立即初始化实际属性源的情况下，
+		// StubPropertySource将用作占位符。
+		// 例如，基于ServletContext的属性源必须等到ServletContext对象对其封闭的ApplicationContext可用
+		// 。在这种情况下，应该使用存根来保存属性源的预期默认位置/顺序，然后在上下文刷新期间被替换
+
+		// Stub 可替换的 -- 表名这个属性可以被随时有真实值的时候做替换操作
 
 		public StubPropertySource(String name) {
 			super(name, new Object());
