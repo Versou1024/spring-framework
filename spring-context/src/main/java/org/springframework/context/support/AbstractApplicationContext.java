@@ -319,6 +319,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 	@Override
 	public ConfigurableEnvironment getEnvironment() {
 		if (this.environment == null) {
+			// 一般情况 -- 没有Environment,会默认创建一个
 			this.environment = createEnvironment();
 		}
 		return this.environment;
@@ -723,7 +724,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 		// Tell the internal bean factory to use the context's class loader etc.
 		// 基本属性：
 		// classLoader、
-		// Spel表达式解析器 - spring3增加了表达式语言的支持，默认可以使用#{bean.xxx}的形式来调用相关属性值
+		// Spel表达式解析器 - spring3增加了表达式语言的支持，默认可以使用#{bean.xxx}的形式来调用相关属性值 -- El表达式的核心之一
 		// 属性编辑器注册中心 - 主要是对bean的属性等设置管理的一个工具
 		beanFactory.setBeanClassLoader(getClassLoader());
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));

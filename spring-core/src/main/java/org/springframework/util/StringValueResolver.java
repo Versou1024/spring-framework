@@ -42,5 +42,9 @@ public interface StringValueResolver {
 	 */
 	@Nullable
 	String resolveStringValue(String strVal);
+	// 解析给定的字符串值，例如解析占位符。
+	// 有一个特别强大的 EmbeddedValueResolver
+	// 他会首先解析占位符${},然后解析el表达式#{}
+	// 当前这两个的解析能力是BeanExpressionResolver\environment的能力
 
 }

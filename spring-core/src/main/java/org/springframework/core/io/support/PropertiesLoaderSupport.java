@@ -40,24 +40,32 @@ import org.springframework.util.PropertiesPersister;
  * @since 1.2.2
  */
 public abstract class PropertiesLoaderSupport {
+	// 需要从一个或多个资源加载属性的 JavaBean 样式组件的基类。也支持本地属性，具有可配置的覆盖。
+	// PropertiesLoaderSupport
+	// org.springframework.core.io.support.PropertiesLoaderSupport是一个抽象基类，它抽象了从不同渠道加载属性的通用逻辑，以及这些属性应用优先级上的一些考虑，它所提供的这些功能主要供实现子类使用。
+	//它将属性分成两类：
+	//		本地属性(也叫缺省属性)：直接以Properties对象形式设置进来的属性
+	//		外来属性：通过外部资源Resource形式设置进来需要加载的那些属性
+	// PropertiesLoaderSupport所实现的功能并不多，主要是设置要使用的本地属性和外部属性文件资源路径，
+	// 最终通过mergeProperties()方法将这些属性合并成一个Properties对象，本地属性和外部属性之间的优先级关系由属性localOverride决定。
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	@Nullable
-	protected Properties[] localProperties;
+	protected Properties[] localProperties; // 缺省属性,以Properties对象形式设置进来
 
-	protected boolean localOverride = false;
+	protected boolean localOverride = false; // 是否允许缺省属性被覆盖
 
 	@Nullable
-	private Resource[] locations;
+	private Resource[] locations; // 外部资源的位置
 
 	private boolean ignoreResourceNotFound = false;
 
 	@Nullable
 	private String fileEncoding;
 
-	private PropertiesPersister propertiesPersister = new DefaultPropertiesPersister();
+	private PropertiesPersister propertiesPersister = new DefaultPropertiesPersister(); // 属性持久化
 
 
 	/**
@@ -147,17 +155,20 @@ public abstract class PropertiesLoaderSupport {
 	protected Properties mergeProperties() throws IOException {
 		Properties result = new Properties();
 
+		// localOverride为true时,外部属性优先级高
 		if (this.localOverride) {
 			// Load properties from file upfront, to let local properties override.
 			loadProperties(result);
 		}
 
+		// 本地属性
 		if (this.localProperties != null) {
 			for (Properties localProp : this.localProperties) {
 				CollectionUtils.mergePropertiesIntoMap(localProp, result);
 			}
 		}
 
+		// localOverride为false时,外部属性优先级低
 		if (!this.localOverride) {
 			// Load properties from file afterwards, to let those properties override.
 			loadProperties(result);
@@ -173,6 +184,8 @@ public abstract class PropertiesLoaderSupport {
 	 * @see #setLocations
 	 */
 	protected void loadProperties(Properties props) throws IOException {
+		// 加载外部配置 locations -- 加载到同一个文件 props 中
+
 		if (this.locations != null) {
 			for (Resource location : this.locations) {
 				if (logger.isTraceEnabled()) {

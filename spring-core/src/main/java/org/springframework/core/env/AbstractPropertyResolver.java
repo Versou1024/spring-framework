@@ -207,8 +207,9 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	public String resolvePlaceholders(String text) {
 		// 解析占位符哦 -- 也是一个大核心哦
 
-		// 1. ;懒加载
+		// 1. 懒加载
 		if (this.nonStrictHelper == null) {
+			// 注意:传参为true
 			this.nonStrictHelper = createPlaceholderHelper(true);
 		}
 		// 2. 使用占位符解析器做解析占位符操作
@@ -218,6 +219,7 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	@Override
 	public String resolveRequiredPlaceholders(String text) throws IllegalArgumentException {
 		if (this.strictHelper == null) {
+			// 注意:传参给false
 			this.strictHelper = createPlaceholderHelper(false);
 		}
 		return doResolvePlaceholders(text, this.strictHelper);

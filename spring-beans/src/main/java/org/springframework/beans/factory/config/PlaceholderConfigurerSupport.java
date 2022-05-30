@@ -90,6 +90,8 @@ import org.springframework.util.StringValueResolver;
  */
 public abstract class PlaceholderConfigurerSupport extends PropertyResourceConfigurer
 		implements BeanNameAware, BeanFactoryAware {
+	// 额外继承 BeanNameAware, BeanFactoryAware 两个接口
+	//
 
 	/** Default placeholder prefix: {@value}. */
 	public static final String DEFAULT_PLACEHOLDER_PREFIX = "${";
@@ -212,18 +214,21 @@ public abstract class PlaceholderConfigurerSupport extends PropertyResourceConfi
 	}
 
 
-	protected void doProcessProperties(ConfigurableListableBeanFactory beanFactoryToProcess,
-			StringValueResolver valueResolver) {
+	protected void doProcessProperties(ConfigurableListableBeanFactory beanFactoryToProcess, StringValueResolver valueResolver) {
 
 		BeanDefinitionVisitor visitor = new BeanDefinitionVisitor(valueResolver);
 
+		// 1. 获取所有的BeanNames
 		String[] beanNames = beanFactoryToProcess.getBeanDefinitionNames();
 		for (String curName : beanNames) {
 			// Check that we're not parsing our own bean definition,
 			// to avoid failing on unresolvable placeholders in properties file locations.
+			// 2. 只有非当前Bean,且属于当前类[一般也作为一个bean时]同一个BeanFactory时
 			if (!(curName.equals(this.beanName) && beanFactoryToProcess.equals(this.beanFactory))) {
+				// 2.1 获取 BeanDefinition
 				BeanDefinition bd = beanFactoryToProcess.getBeanDefinition(curName);
 				try {
+					// 2.2 查阅Bean定义 -- 进行占位符填充
 					visitor.visitBeanDefinition(bd);
 				}
 				catch (Exception ex) {
@@ -233,9 +238,12 @@ public abstract class PlaceholderConfigurerSupport extends PropertyResourceConfi
 		}
 
 		// New in Spring 2.5: resolve placeholders in alias target names and aliases as well.
+		// Spring 2.5 中的新功能：解析别名目标名称和别名中的占位符。
 		beanFactoryToProcess.resolveAliases(valueResolver);
 
 		// New in Spring 3.0: resolve placeholders in embedded values such as annotation attributes.
+		// Spring 3.0 中的新功能：解析嵌入值中的占位符，例如注释属性。
+		// 因此这里向其中加入了StringValueResovler
 		beanFactoryToProcess.addEmbeddedValueResolver(valueResolver);
 	}
 

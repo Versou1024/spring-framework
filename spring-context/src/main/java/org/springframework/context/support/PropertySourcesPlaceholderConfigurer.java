@@ -63,6 +63,10 @@ import org.springframework.util.StringValueResolver;
  * @see org.springframework.beans.factory.config.PropertyPlaceholderConfigurer
  */
 public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerSupport implements EnvironmentAware {
+	// 实际上,到目前为止,PropertiesLoaderSupport继承体系中,最重要的就是这个PropertySourcesPlaceholderConfigurer类
+	// 是Spring注解驱动的中常用的
+
+	// 实现了 EnvironmentAware 接口
 
 	/**
 	 * {@value} is the name given to the {@link PropertySource} for the set of
@@ -76,15 +80,16 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	 */
 	public static final String ENVIRONMENT_PROPERTIES_PROPERTY_SOURCE_NAME = "environmentProperties";
 
+	// 以下三个哥们懂得都懂
 
 	@Nullable
-	private MutablePropertySources propertySources;
+	private MutablePropertySources propertySources; // 注意此处：它只表示当前的环境持有的~~~~
 
 	@Nullable
 	private PropertySources appliedPropertySources;
 
 	@Nullable
-	private Environment environment;
+	private Environment environment; // 当前bean所处的环境~
 
 
 	/**
@@ -94,6 +99,7 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	 * @see #postProcessBeanFactory
 	 */
 	public void setPropertySources(PropertySources propertySources) {
+		// 显然，~~并不建议直接set
 		this.propertySources = new MutablePropertySources(propertySources);
 	}
 
@@ -126,10 +132,16 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	 */
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+		// 此处：它完全重写了Bean工厂后置处理器的处理方法~~~~~
+
 		if (this.propertySources == null) {
+			// 1. 默认会创建一个 MutablePropertySources()
 			this.propertySources = new MutablePropertySources();
 			if (this.environment != null) {
+				// 2. 此处把当前环境作为属性源头都放进去了，所以占位符可以使用当前环境Environment内的任何key了~~~~
+				// 并实现了 getProperty()  就是 source.getProperty(key) 就是传入的 environment.getProperty(key)
 				this.propertySources.addLast(
+						// ENVIRONMENT_PROPERTIES_PROPERTY_SOURCE_NAME = "environmentProperties"
 					new PropertySource<Environment>(ENVIRONMENT_PROPERTIES_PROPERTY_SOURCE_NAME, this.environment) {
 						@Override
 						@Nullable
@@ -140,8 +152,12 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 				);
 			}
 			try {
+				// 3. LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME = "localProperties"
+				// 将外部配置和内部配置,都合并mergeProperties()后返回,作为localProperties的属性源,属性源类型时Properties
 				PropertySource<?> localPropertySource =
 						new PropertiesPropertySource(LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME, mergeProperties());
+				// 4. 优先级设置
+				// 把本地的也作为一个source加进去  注意此处可能是addFirst和addLast~~~
 				if (this.localOverride) {
 					this.propertySources.addFirst(localPropertySource);
 				}
@@ -164,21 +180,29 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	 */
 	protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess,
 			final ConfigurablePropertyResolver propertyResolver) throws BeansException {
+		// 访问给定 bean 工厂中的每个 bean 定义，并尝试用给定属性的值替换 ${...} 属性占位符
 
+		// 1. 设置占位符和分隔符
 		propertyResolver.setPlaceholderPrefix(this.placeholderPrefix);
 		propertyResolver.setPlaceholderSuffix(this.placeholderSuffix);
 		propertyResolver.setValueSeparator(this.valueSeparator);
 
+		// 2. 配置 StringValueResolver
+		// 使用lambda表达式创建一个StringValueResolver~~~~
 		StringValueResolver valueResolver = strVal -> {
+			// 解析占位符~~~~~ 此处只能解析占位符
 			String resolved = (this.ignoreUnresolvablePlaceholders ?
 					propertyResolver.resolvePlaceholders(strVal) :
 					propertyResolver.resolveRequiredPlaceholders(strVal));
 			if (this.trimValues) {
 				resolved = resolved.trim();
 			}
+			// 返回null还是返回resolved  最后还得有个判断
 			return (resolved.equals(this.nullValue) ? null : resolved);
 		};
 
+		// 调用父类的doProcessProperties  把属性扫描到Bean的身上去~~~
+		// 并且我们发现 我们自定义的EmbeddedValueResolver是会被添加到bean工厂里面的
 		doProcessProperties(beanFactoryToProcess, valueResolver);
 	}
 

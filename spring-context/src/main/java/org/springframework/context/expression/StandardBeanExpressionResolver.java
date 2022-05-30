@@ -112,6 +112,8 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	 */
 	public StandardBeanExpressionResolver(@Nullable ClassLoader beanClassLoader) {
 		// 解析代码相对来说还是比较简单的，毕竟复杂的解析逻辑都是SpEL里边~  这里只是使用一下而已~
+		// ❗️❗️❗️
+		// 这里会被 AbstractApplicationContext#prepareBeanFactory() 方法所调用
 		this.expressionParser = new SpelExpressionParser(new SpelParserConfiguration(null, beanClassLoader));
 	}
 
@@ -159,12 +161,13 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 				expr = this.expressionParser.parseExpression(value, this.beanExpressionParserContext);
 				this.expressionCache.put(value, expr);
 			}
-			// 构建getValue计算时的执行上下文~~~
+			// 1. 构建getValue计算时的执行上下文~~~
 			// 做种解析BeanName的ast为；org.springframework.expression.spel.ast.PropertyOrFieldReference
 			StandardEvaluationContext sec = this.evaluationCache.get(evalContext);
 			if (sec == null) {
+				// 2. 注意这里: 设置了RootObject哦,因此根对象就是 BeanExpressionContext
 				sec = new StandardEvaluationContext(evalContext);
-				// 此处新增了4个，加上一个默认的   所以一共就有5个属性访问器了
+				// 3. 此处新增了4个，加上一个默认的   所以一共就有5个属性访问器了
 				// 这样我们的SpEL就能访问BeanFactory、Map、Environment等组件中的属性或方法啦了~
 				// BeanExpressionContextAccessor 表示调用bean的方法~~~~(比如我们此处就是使用的它)  最终执行者为;BeanExpressionContext   它持有BeanFactory的引用嘛~
 				// 如果是单村的Bean注入，最终使用的也是BeanExpressionContextAccessor 目前没有找到BeanFactoryAccessor的用于之地~~~
@@ -174,18 +177,18 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 				sec.addPropertyAccessor(new BeanFactoryAccessor());
 				sec.addPropertyAccessor(new MapAccessor());
 				sec.addPropertyAccessor(new EnvironmentAccessor());
-				// setBeanResolver不是接口方法，仅仅辅助StandardEvaluationContext 去获取Bean
+				// 4. setBeanResolver不是接口方法，仅仅辅助StandardEvaluationContext 去获取Bean
 				sec.setBeanResolver(new BeanFactoryResolver(evalContext.getBeanFactory()));
 				sec.setTypeLocator(new StandardTypeLocator(evalContext.getBeanFactory().getBeanClassLoader()));
-				// 若conversionService不为null，就使用工厂的。否则就使用SpEL里默认的DefaultConverterService那个
+				// 5. 若conversionService不为null，就使用工厂的。否则就使用SpEL里默认的DefaultConverterService那个
 				// 最后包装成TypeConverter给set进去~~~
 				ConversionService conversionService = evalContext.getBeanFactory().getConversionService();
 				if (conversionService != null) {
-					// 如上，整个@Value的解析过程至此就全部完成了。可能有小伙伴会问：怎么不见Resource这种注入呢？其实，从上面不难看出，
+					// 6. 如上，整个@Value的解析过程至此就全部完成了。可能有小伙伴会问：怎么不见Resource这种注入呢？其实，从上面不难看出，
 					// 这个是ConversionService去做的事，它能够把一个字符串转换成Resource对象，仅此而已
 					sec.setTypeConverter(new StandardTypeConverter(conversionService));
 				}
-				// 这个很有意思，是一个protected的空方法，因此我们发现若我们自己要自定义BeanExpressionResolver，完全可以继承自StandardBeanExpressionResolver
+				// 7. 这个很有意思，是一个protected的空方法，因此我们发现若我们自己要自定义BeanExpressionResolver，完全可以继承自StandardBeanExpressionResolver
 				// 因为我们绝大多数情况下，只需要提供更多的计算环境即可~~~~~
 				customizeEvaluationContext(sec);
 				this.evaluationCache.put(evalContext, sec);

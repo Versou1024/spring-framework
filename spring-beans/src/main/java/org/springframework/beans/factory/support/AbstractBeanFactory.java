@@ -980,12 +980,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	@Override
 	public void addEmbeddedValueResolver(StringValueResolver valueResolver) {
+		// 添加内嵌是的StringValueResolver
+		// ❗️❗️❗️
+		// 在 AbstractApplicationContext#finishBeanFactoryInitialization() 在IOC容器中实例化单例Bean之前提前加入了一个 StringValueResolver
+		// strVal -> getEnvironment().resolvePlaceholders(strVal)
 		Assert.notNull(valueResolver, "StringValueResolver must not be null");
 		this.embeddedValueResolvers.add(valueResolver);
 	}
 
 	@Override
 	public boolean hasEmbeddedValueResolver() {
+		// 检查是否有 StringValueResolver
 		return !this.embeddedValueResolvers.isEmpty();
 	}
 
@@ -996,10 +1001,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			return null;
 		}
 		String result = value;
-		// embeddedValueResolvers是个复数：因为我们可以自定义处理器添加到bean工厂来，增强它的能力
+		// 1. embeddedValueResolvers 是个复数：因为我们可以自定义处理器添加到bean工厂来，增强它的能力
+		// embeddedValueResolvers 是 AbstrcatApplicaitonContext#finishBeanFactoryInitialization() 中添加了解析占位符#{}
 		for (StringValueResolver resolver : this.embeddedValueResolvers) {
 			result = resolver.resolveStringValue(result);
-			// 只要处理结果不为null，所以的处理器都会执行到~~~~
+			// 2. 只要处理结果不为null，所以的处理器都会执行到~~~~
 			if (result == null) {
 				return null;
 			}

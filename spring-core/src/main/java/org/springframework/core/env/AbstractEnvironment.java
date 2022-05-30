@@ -115,6 +115,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 
 	// PropertySourcesPropertyResolver 中加入了 propertySources
 	// 解析占位符
+	// 默认就是 PropertySourcesPropertyResolver -- 是StringValueResolver的子类,仅仅用来处理占位符的解析
 	private final ConfigurablePropertyResolver propertyResolver = new PropertySourcesPropertyResolver(this.propertySources); // 属性解析器
 
 

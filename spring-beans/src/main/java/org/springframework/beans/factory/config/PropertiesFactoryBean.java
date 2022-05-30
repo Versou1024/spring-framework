@@ -45,6 +45,8 @@ import org.springframework.lang.Nullable;
  */
 public class PropertiesFactoryBean extends PropertiesLoaderSupport
 		implements FactoryBean<Properties>, InitializingBean {
+	// PropertiesFactoryBean
+	// 实现了FactoryBean，用来生产Properties，可以配置是否单例（默认是单例）
 
 	private boolean singleton = true;
 

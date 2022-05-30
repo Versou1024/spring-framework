@@ -51,6 +51,15 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class PropertyResourceConfigurer extends PropertiesLoaderSupport
 		implements BeanFactoryPostProcessor, PriorityOrdered {
+	// 允许从属性资源（即属性文件）配置单个 bean 属性值。对于针对覆盖应用程序上下文中配置的 bean 属性的系统管理员的自定义配置文件很有用。
+	//	发行版中提供了两个具体的实现：
+	//		PropertyOverrideConfigurer用于“beanName.property=value”样式覆盖（将属性文件中的值推送到 bean 定义中）
+	//		PropertyPlaceholderConfigurer用于替换“${...}”占位符（将属性文件中的值提取到 bean 定义中）
+	// 读入属性值后，可以通过重写convertPropertyValue方法对其进行转换。例如，可以在处理加密值之前检测并相应地解密它们。
+
+	// 实现了 PropertiesLoaderSupport 超类
+	// 同时是一个 BeanFactoryPostProcessor 会在 容器初始化过程中调用 BeanFactoryPostProcessor#POSTProcessBeanFactory()方法
+	// 优先级 -- 很高 -- 使用的 PriorityOrdered 接口
 
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
 
@@ -77,12 +86,16 @@ public abstract class PropertyResourceConfigurer extends PropertiesLoaderSupport
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
 		try {
+			// 超类提供的 : 将内部配置和外部配置合并为一个Properties的方法 -- mergeProperties()
 			Properties mergedProps = mergeProperties();
 
 			// Convert the merged properties, if necessary.
+			// 如有必要，转换合并的属性。
+			// 具体转换会交给 -- 子类去实现 convertProperty(propertyName, propertyValue)
 			convertProperties(mergedProps);
 
 			// Let the subclass process the properties.
+			// 让子类处理属性。
 			processProperties(beanFactory, mergedProps);
 		}
 		catch (IOException ex) {
@@ -99,6 +112,7 @@ public abstract class PropertyResourceConfigurer extends PropertiesLoaderSupport
 	 * @see #processProperties
 	 */
 	protected void convertProperties(Properties props) {
+		// 遍历转换 -- 具体转换交给子类哦
 		Enumeration<?> propertyNames = props.propertyNames();
 		while (propertyNames.hasMoreElements()) {
 			String propertyName = (String) propertyNames.nextElement();

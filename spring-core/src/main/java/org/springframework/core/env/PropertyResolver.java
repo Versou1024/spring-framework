@@ -30,7 +30,11 @@ import org.springframework.lang.Nullable;
 public interface PropertyResolver {
 	/*
 	 * 根据任何基础源解析属性。
-	 * API：获取属性getProperty、获取必要属性getRequiredProperty\解析占位符resolvePlaceholders、是否包含containsProperty
+	 * API：
+	 * 		获取属性getProperty、
+	 * 		获取必要属性getRequiredProperty
+	 * 		解析占位符resolvePlaceholders
+	 * 		是否包含containsProperty
 	 */
 
 	/**

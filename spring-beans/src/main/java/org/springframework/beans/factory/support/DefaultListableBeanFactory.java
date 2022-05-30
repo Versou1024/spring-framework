@@ -1313,7 +1313,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					// 若你是个el表达式  或者文件资源Resource啥的，会继续交给下面的beanExpressionResolver处理，所以它是处理复杂类型的核心~
 					String strVal = resolveEmbeddedValue((String) value);
 					BeanDefinition bd = (beanName != null && containsBean(beanName) ? getMergedBeanDefinition(beanName) : null);
-					// 5. 运算结果
+					// 5. 运算结果 #{}
 					// 此处注意：处理器是BeanExpressionResolver~~~~它是处理@Value表达式的核心方法
 					// 它的默认值是：StandardBeanExpressionResolver#evaluate
 					// 这里面就会解析
