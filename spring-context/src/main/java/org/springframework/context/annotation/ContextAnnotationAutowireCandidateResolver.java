@@ -55,7 +55,7 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 	@Override
 	@Nullable
 	public Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, @Nullable String beanName) {
-		// 如果 注入依赖 上的@Lazy注解
+		// 如果 注入依赖 上的是@Lazy注解
 		// 就执行 buildLazyResolutionProxy(descriptor, beanName)
 		// 否则就是返回的null哦
 		return (isLazy(descriptor) ? buildLazyResolutionProxy(descriptor, beanName) : null);
@@ -100,6 +100,7 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 		TargetSource ts = new TargetSource() {
 			@Override
 			public Class<?> getTargetClass() {
+				// 目标class -- 就是依赖注入的目标字段或形参的class
 				return descriptor.getDependencyType();
 			}
 			@Override
@@ -107,9 +108,13 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 				return false;
 			}
 			// getTarget() 方法不会被直接调用的哦
+			// getTarget是调用代理方法的时候会调用的，所以执行每个代理方法都会执行此方法，这也是为何doResolveDependency
+			// 我个人认为它在效率上，是存在一定的问题的~~~所以此处建议尽量少用@Lazy~~~
+			//不过效率上应该还好，对比http、序列化反序列化处理，简直不值一提  所以还是无所谓  用吧
 			@Override
 			public Object getTarget() {
 				Set<String> autowiredBeanNames = (beanName != null ? new LinkedHashSet<>(1) : null);
+				// 延迟调用 dlbf.doResolveDependency(descriptor, beanName, autowiredBeanNames, null);
 				Object target = dlbf.doResolveDependency(descriptor, beanName, autowiredBeanNames, null);
 				// 解析失败,如果是@Autowrite的map/list/array就给一个空的集合
 				// 而其余直接注入的一个bean,不存在,就爆出异常

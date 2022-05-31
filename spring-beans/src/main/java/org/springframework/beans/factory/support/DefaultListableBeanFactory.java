@@ -1246,6 +1246,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// 把当前Bean工厂的名字发现器赋值给传进来DependencyDescriptor 类
 		// 这里面注意了：有必要说说名字发现器这个东西，具体看下面吧==========还是比较重要的
 		// Bean工厂的默认值为：private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
+		// 这就是为什么我们使用@Autowired注入，即使有多个同类型的Bean，也可以通过field属性名进行区分的根本原因（可以不需要使用@Qualifier注解）
 		descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
 
 		// 1. 依赖值的类型为Optional类型 ~~ 忽略
@@ -1261,9 +1262,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		else if (javaxInjectProviderClass == descriptor.getDependencyType()) {
 			return new Jsr330Factory().createDependencyProvider(descriptor, requestingBeanName);
 		}
-		else {
+		else {// 绝大部分情况下  肯定走到这里~~~~
 			// 4. 为实际依赖关系目标的延迟解析构建代理 -- 核心
-			// 如果字段上带有@Lazy注解，表示进行懒加载 Spring不会立即创建注入属性的实例，而是生成代理对象，来代替实例
+			// 如果字段上带有@Lazy注解，表示进行懒加载 Spring 不会立即创建注入属性的实例，而是生成代理对象，来代替实例 -- 而是在调用代理对象的方法时,才会创建 TargetSource.getTarget() -> 又延迟调用resolveDependency()
+			// 此处特别特别的需要重视：这是@Lazy支持的根本原因~~
+			// 关于AutowireCandidateResolver我建议小伙伴先看下一个章节~~~
+			// 此处若通过AutowireCandidateResolver解析到了值就直接返回了（若标注了@Lazy，此处的result将不会为null了~~~）
 			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(descriptor, requestingBeanName);
 			// 如果在@Autowired或@Value上面还有个注解@Lazy，那就是懒加载的，是另外一种处理方式（是一门学问）
 			// 这里如果不是懒加载的（绝大部分情况都走这里） 就进入核心方法doResolveDependency 下面有分解
@@ -1289,10 +1293,14 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		//			如果类型匹配的结果为多个，需要进行筛选(@Primary、优先级、字段名)
 		//			如果筛选结果不为空，或者只有一个bean类型匹配，就直接使用该bean
 
+		// 0. 记录注入点，其实使用的ThreadLocal~
 		InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
 		try {
 			// 1. 简单的说就是去Bean工厂的缓存里去看看，有没有名称为此的Bean，有就直接返回，没必要继续往下走了
 			// 大部分@Autowrited都可以通过这里完成哦
+			// 只有ShortcutDependencyDescriptor实现了resolveShortcut方法，其实就是根据
+			// 实现也就一句话：beanFactory.getBean(this.shortcut, this.requiredType)
+			// ShortcutDependencyDescriptor实在inject完成后创建的，就是有缓存的效果~~~
 			Object shortcut = descriptor.resolveShortcut(this); // 该方法在5.2版本默认是返回null,且没有任何具体实现类
 			if (shortcut != null) {
 				return shortcut;
@@ -1369,6 +1377,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				// 确定给定 bean autowire 的候选者
 				// 按照@Primary和@priority的顺序
 				// 该方法作用：从给定的beans里面筛选出一个符合条件的bean，此筛选步骤还是比较重要的，因此看看可以看看下文解释吧
+				// 由它进行判别  从弱水三千中  取出一瓢
+				// 1、是否标注有@Primary  有这种bean就直接返回（@Primary只允许标注在一个同类型Bean上）
+				// 2、看是否有标注有`javax.annotation.Priority`这个注解的
+				// 3、根据字段field名，去和beanName匹配  匹配上了也行（这就是为何我们有时候不用@Qulifier也没事的原因之一）
+				// 此处注意：descriptor.getDependencyName()这个属性表示字段名，靠的是`DefaultParameterNameDiscoverer`去把字段名取出来的~
 				autowiredBeanName = determineAutowireCandidate(matchingBeans, descriptor);
 				if (autowiredBeanName == null) {
 					// 如果此Bean是要求的，或者 不是Array、Collection、Map等类型，那就抛出异常NoUniqueBeanDefinitionException
@@ -1394,7 +1407,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				instanceCandidate = entry.getValue();
 			}
 
-			// 把找到的autowiredBeanName 放进去
+			// 把找到的autowiredBeanName 放进去 -- 形参中
 			if (autowiredBeanNames != null) {
 				autowiredBeanNames.add(autowiredBeanName);
 			}
@@ -1413,7 +1426,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 				result = null;
 			}
-			// 再一次校验，type和result的type类型是否吻合=====
+			// 再一次校验，目标的type和注入的result的type类型是否吻合=====
 			if (!ClassUtils.isAssignableValue(type, result)) {
 				throw new BeanNotOfRequiredTypeException(autowiredBeanName, type, instanceCandidate.getClass());
 			}

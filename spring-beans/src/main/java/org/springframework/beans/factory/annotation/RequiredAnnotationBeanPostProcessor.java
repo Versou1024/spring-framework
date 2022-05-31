@@ -78,6 +78,9 @@ import org.springframework.util.Assert;
 public class RequiredAnnotationBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter
 		implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {
 
+	// 类似:支持@Autowrite注解的AutowritedAnnotationBeanPostProcessor
+	// 这个 RequiredAnnotationBeanPostProcessor 是用来处理 @Required 注解的
+
 	/**
 	 * Bean definition attribute that may indicate whether a given bean is supposed
 	 * to be skipped when performing this post-processor's required property check.

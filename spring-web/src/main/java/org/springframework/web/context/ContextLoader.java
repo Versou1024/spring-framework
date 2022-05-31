@@ -451,6 +451,7 @@ public class ContextLoader {
 			((ConfigurableWebEnvironment) env).initPropertySources(sc, null);
 		}
 		// 5. 检查web.xml是否有一些其余初始化类的配置，极大多数情况都不需要，所以粗暴理解为没什么卵用
+		// customizeContext(sc, wac) -> ApplicationContextInitializer#initializer() -> 在初始化之前对ConfigurableWebApplicationContext进行定制化
 		customizeContext(sc, wac);
 		// 6. 容器的核心方法，也是最难的一个方法，这个在Spring容器详解中，会继续降到此方法 [most Import]
 		wac.refresh();
@@ -474,6 +475,11 @@ public class ContextLoader {
 	 * @see ApplicationContextInitializer#initialize(ConfigurableApplicationContext)
 	 */
 	protected void customizeContext(ServletContext sc, ConfigurableWebApplicationContext wac) {
+		// 由此可见所有的ApplicationContextInitializer的执行，都发生在wac.refresh();之前
+
+
+		// 1. 这里是从 ServletContext 读取context初始化器配置 -- 即 ApplicationContextInitializer 的Class集合
+		// 拿到配置的这些全类名后，下面都要反射创建对象的~~~
 		List<Class<ApplicationContextInitializer<ConfigurableApplicationContext>>> initializerClasses =
 				determineContextInitializerClasses(sc);
 
@@ -487,13 +493,17 @@ public class ContextLoader {
 						"context loader: [%s]", initializerClass.getName(), initializerContextClass.getName(),
 						wac.getClass().getName()));
 			}
+			// 2. 创建好实例对象后，添加进全局的list里面（默认使用空构造函数）
 			this.contextInitializers.add(BeanUtils.instantiateClass(initializerClass));
 		}
 
+		// 3. 采用order排序后，再分别执行~~~~
 		AnnotationAwareOrderComparator.sort(this.contextInitializers);
 		for (ApplicationContextInitializer<ConfigurableApplicationContext> initializer : this.contextInitializers) {
 			initializer.initialize(wac);
 		}
+
+		// 注意:该方法将在 wac.refresh() 刷新之前使用
 	}
 
 	/**
@@ -508,6 +518,7 @@ public class ContextLoader {
 		List<Class<ApplicationContextInitializer<ConfigurableApplicationContext>>> classes =
 				new ArrayList<>();
 
+		// 通过: globalInitializerClasses 初始化参数指定需要使用的 ApplicationContextInitializer
 		String globalClassNames = servletContext.getInitParameter(GLOBAL_INITIALIZER_CLASSES_PARAM);
 		if (globalClassNames != null) {
 			for (String className : StringUtils.tokenizeToStringArray(globalClassNames, INIT_PARAM_DELIMITERS)) {
@@ -515,6 +526,7 @@ public class ContextLoader {
 			}
 		}
 
+		// 通过: contextInitializerClasses 初始化参数指定需要使用的 ApplicationContextInitializer
 		String localClassNames = servletContext.getInitParameter(CONTEXT_INITIALIZER_CLASSES_PARAM);
 		if (localClassNames != null) {
 			for (String className : StringUtils.tokenizeToStringArray(localClassNames, INIT_PARAM_DELIMITERS)) {
@@ -522,6 +534,7 @@ public class ContextLoader {
 			}
 		}
 
+		// 返回context初始化器的Class集合
 		return classes;
 	}
 

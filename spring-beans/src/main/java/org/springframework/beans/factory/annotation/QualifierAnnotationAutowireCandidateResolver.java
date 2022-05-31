@@ -161,7 +161,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 		// 调用 GenericTypeAwareAutowireCandidateResolver 的  isAutowireCandidate 查看 是否为泛型，在泛型的情况下是否能够满足匹配呢
 		boolean match = super.isAutowireCandidate(bdHolder, descriptor);
 		// 如果是false，说明beanDefinition.autowireCandidate 或者 依赖上泛型没有匹配上(那就不用继续往下走了) -- 依赖中泛型通常是 @Autowrite List<XxxInterface> list;
-		// 即不负好 XxxInterface 这个泛型实现类
+		// 即不符合 XxxInterface 这个泛型实现类
 		// 如果是true，那就继续，解析@Qualifier注解啦
 		// 所以若你标记了@Qualifier注解，也是需要对应上
 		if (match) {
@@ -203,7 +203,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 			boolean fallbackToMeta = false;
 
 			// 2.1 isQualifier：判断注解type类型是不是@Qualifier注解以及 JSR330的`javax.inject.Qualifier`注解也是支持的
-			// 这里是检查type是@Qualifier的注解
+			// 这里是检查type是@Qualifier的注解 -- 只有@Qualifier的注解才会向下继续运行
 			if (isQualifier(type)) {
 				// checkQualifier 最重要的方法就是这个了，它是个重载方法。。。它的内容非常长，大致我在这里解析步骤如下：
 				//1、bd.getQualifier 看看Bean定义里是否已经定义过Qualifier们(但是经过我的跟踪，Bean定义得这个字段：private final Map<String, AutowireCandidateQualifier> qualifiers;永远不会被赋值 如有人知道，请告知我 了能事Spring预留得吧)
@@ -267,18 +267,23 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	protected boolean checkQualifier(
 			BeanDefinitionHolder bdHolder, Annotation annotation, TypeConverter typeConverter) {
 
+		// 1. 注入的目标字段或方法上的@Qualifier注解信息
 		Class<? extends Annotation> type = annotation.annotationType();
+		// 2. 待检查注入的依赖的BeanDefinition
 		RootBeanDefinition bd = (RootBeanDefinition) bdHolder.getBeanDefinition();
 
+		// 3. 尝试从待检查注入BeanDefinitionHolder中是否存在的字段或形参的名字
 		AutowireCandidateQualifier qualifier = bd.getQualifier(type.getName());
 		if (qualifier == null) {
 			qualifier = bd.getQualifier(ClassUtils.getShortName(type));
 		}
 		if (qualifier == null) {
 			// First, check annotation on qualified element, if any
+			// 1. 首先，检查合格元素上的注释（如果有）-- 肯定有,因为前面已经通过isQualifier()检查过annotation是不是@QUalifier注解
 			Annotation targetAnnotation = getQualifiedElementAnnotation(bd, type);
 			// Then, check annotation on factory method, if applicable
 			if (targetAnnotation == null) {
+				// 2. 然后，检查工厂方法的注释（如果适用）
 				targetAnnotation = getFactoryMethodAnnotation(bd, type);
 			}
 			if (targetAnnotation == null) {

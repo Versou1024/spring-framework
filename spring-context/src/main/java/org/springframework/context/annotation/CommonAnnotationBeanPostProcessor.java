@@ -153,6 +153,9 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 		postProcessBeforeDestruction() 将会调用单例Bean的@PreDestroy方法
 	 */
 
+	// 类似:支持@Autowrite注解的AutowritedAnnotationBeanPostProcessor
+	// 这个 CommonAnnotationBeanPostProcessor 是用来处理 @Resource 注解的
+
 	@Nullable
 	private static final Class<? extends Annotation> webServiceRefClass;
 

@@ -45,6 +45,10 @@ public interface ApplicationContextInitializer<C extends ConfigurableApplication
 	// 。例如，针对上下文环境注册属性源或激活配置文件。请参阅ContextLoader和FrameworkServlet支持以分别声明“contextInitializerClasses”上下文参数和初始化参数。
 	// 鼓励ApplicationContextInitializer处理器检测 Spring 的Ordered接口是否已实现或是否存在Order注解，并在调用之前对实例进行相应的排序
 
+
+	// ApplicationContextInitializer是Spring框架原有的概念,
+	// 这个类的主要目的就是在 ConfigurableApplicationContext类型（或者子类型）的ApplicationContext进行刷新refresh之前，
+	// 允许我们对ConfigurableApplicationContext的实例做进一步的设置或者处理。
 	/**
 	 * Initialize the given application context.
 	 * @param applicationContext the application to configure

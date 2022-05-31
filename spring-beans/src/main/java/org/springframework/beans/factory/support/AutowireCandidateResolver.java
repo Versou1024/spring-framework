@@ -53,6 +53,7 @@ public interface AutowireCandidateResolver {
 	default boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
 		return bdHolder.getBeanDefinition().isAutowireCandidate();
 	}
+	// 判断给定的bean定义是否允许被依赖注入（bean定义的默认值都是true）
 
 	/**
 	 * Determine whether the given descriptor is effectively required.
@@ -66,6 +67,7 @@ public interface AutowireCandidateResolver {
 	default boolean isRequired(DependencyDescriptor descriptor) {
 		return descriptor.isRequired();
 	}
+	// 给定的descriptor是否是必须的~~~
 
 	/**
 	 * Determine whether the given descriptor declares a qualifier beyond the type
@@ -78,6 +80,7 @@ public interface AutowireCandidateResolver {
 	 * @see org.springframework.beans.factory.annotation.QualifierAnnotationAutowireCandidateResolver#hasQualifier
 	 */
 	default boolean hasQualifier(DependencyDescriptor descriptor) {
+		//  @since 5.1 此方法出现得非常的晚
 		return false;
 	}
 
@@ -91,6 +94,7 @@ public interface AutowireCandidateResolver {
 	 */
 	@Nullable
 	default Object getSuggestedValue(DependencyDescriptor descriptor) {
+		// 是否给一个建议值 注入的时候~~~QualifierAnnotationAutowireCandidateResolvert有实现
 		return null;
 	}
 
@@ -106,6 +110,8 @@ public interface AutowireCandidateResolver {
 	 */
 	@Nullable
 	default Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, @Nullable String beanName) {
+		// 如果注入点injection point需要的话，就创建一个proxy来作为最终的解决方案ContextAnnotationAutowireCandidateResolver
+		// @since 4.0
 		return null;
 	}
 

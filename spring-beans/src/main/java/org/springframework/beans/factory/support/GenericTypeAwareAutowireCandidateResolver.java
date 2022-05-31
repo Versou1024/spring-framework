@@ -61,8 +61,8 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 
 	@Override
 	public boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
-		// 	isAutowireCandidate() -> return bdHolder.getBeanDefinition().isAutowireCandidate();
-		// 一般默认就是返回true
+		// 1.isAutowireCandidate() -> return bdHolder.getBeanDefinition().isAutowireCandidate();
+		// 检查当前beanDefinition是否被禁止DI依赖注入到其他Bean中去,一般默认就是返回true,允许作为依赖注入
 		if (!super.isAutowireCandidate(bdHolder, descriptor)) {
 			// If explicitly false, do not proceed with any other checks...
 			return false;
@@ -73,6 +73,7 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 		// 2、First, check factory method return type, if applicable
 		// 3、return dependencyType.isAssignableFrom(targetType);
 		// 这个方法官方doc为：Full check for complex generic type match... 带泛型的全检查，而不是简单Class类型的判断
+		// Spring4.0后的泛型依赖注入主要是它来实现的，所以这个类也是Spring4.0后出现的
 		return checkGenericTypeMatch(bdHolder, descriptor);
 	}
 
@@ -81,37 +82,44 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 	 * candidate bean definition.
 	 */
 	protected boolean checkGenericTypeMatch(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
-		// 依赖类型，带泛型
+		// descriptor 依赖注入的目标对象,用来描述需要需要注入依赖的字段或形参
+		// bdHolder 被用来检查是否可以作为注入的依赖,将注入到descriptorr对象中
+
+		// 1. 依赖注入的目标对象,带泛型
+		// 因此支持注入 List<XxxServer>
 		ResolvableType dependencyType = descriptor.getResolvableType();
 		if (dependencyType.getType() instanceof Class) {
-			// 没有泛型，属于Class，就直接返回true
+			// 1.1 依赖注入的目标对象,没有泛型，属于Class，就直接返回true
 			// No generic type -> we know it's a Class type-match, so no need to check again.
 			return true;
 		}
 
-		// 否则就是进行泛型匹配
+		// 2. 否则就是进行泛型匹配
 
-		ResolvableType targetType = null; // 注入对象的类型
+		ResolvableType targetType = null; // 需要注入的字段或者形参的类型
 		boolean cacheType = false; //
-		RootBeanDefinition rbd = null; // 注入对象的BeanDefinition
+		RootBeanDefinition rbd = null; // 准备检查是否可以作为依赖注入的BeanDefinition
 		if (bdHolder.getBeanDefinition() instanceof RootBeanDefinition) {
 			rbd = (RootBeanDefinition) bdHolder.getBeanDefinition();
 		}
 
-		// 下面这个步骤：就是解析注入对象的目标类型，会尝试直接从targetType获取、FactoryMethod的返回值获取、被修饰的BeanDefinition中获取
+		// 2.1 下面这个步骤：就是解析注入对象的目标类型，
+		// 注意: 用来检查如果注入的值是bdHolder,注入到descriptor目标中是否合法
+		// 会尝试直接从targetType获取、FactoryMethod的返回值获取、被修饰的BeanDefinition中获取
 
 		if (rbd != null) {
-			// 注入的依赖的候选者的BeanDefinition即rbd的目标类型
+			// 2.2 注入依赖的目标字段或形参的类型,可从BeanDefinition即rbd的目标类型获取
 			targetType = rbd.targetType;
-			// 首先是，没有指定targetType，那么可能就是FactoryMethod返回值的类型
+			// 2.3 没有指定targetType，那么可能就是FactoryMethod返回值的类型
+			// 即@Bean标注的方法
 			if (targetType == null) {
 				cacheType = true;
 				// First, check factory method return type, if applicable
-				// 然后，检查是否为FactoryMethod，比如@Bean标注的方法注入的类，就是FactoryMethod
+				// 2.4 检查是否为FactoryMethod，比如@Bean标注的方法注入的类，就是FactoryMethod
 				targetType = getReturnTypeForFactoryMethod(rbd, descriptor);
 				if (targetType == null) {
 
-					// 如果即不是直接指定targetType，也不是FactoryMethod，那么就只能够，对rbd进行重新解析BeanDefinition了
+					// 2.5 如果即没有直接指定targetType，也不是FactoryMethod，那么就只能够，对rbd进行重新解析BeanDefinition了
 					RootBeanDefinition dbd = getResolvedDecoratedDefinition(rbd);
 					if (dbd != null) {
 						targetType = dbd.targetType;
@@ -123,13 +131,13 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 			}
 		}
 
-		// 执行到这，如果targetType仍为null，也就是说根据类型解析失败，可能需要根据名字解析出targetType
+		// 2.6 执行到这，如果targetType仍为null，也就是说根据类型解析失败，可能需要根据名字解析出targetType
 
 		if (targetType == null) {
 			// Regular case: straight bean instance, with BeanFactory available.
-			// 常规情况：纯bean实例，可使用BeanFactory。
+			// 2.7 常规情况：纯bean实例，可使用BeanFactory。
 			if (this.beanFactory != null) {
-				// 根据被注入的依赖的字段名获取并注入即可
+				// 2.8 根据目标对象的beanName获取目标对象的类型即可
 				Class<?> beanType = this.beanFactory.getType(bdHolder.getBeanName());
 				if (beanType != null) {
 					targetType = ResolvableType.forClass(ClassUtils.getUserClass(beanType));
@@ -137,16 +145,18 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 			}
 			// Fallback: no BeanFactory set, or no type resolvable through it
 			// -> best-effort match against the target class if applicable.
-			// 解析再次是失败，那就直接获取bean对应的class吧，
+			// 2.9 解析再次是失败，那就直接获取bean对应的class吧
+			//
 			if (targetType == null && rbd != null && rbd.hasBeanClass() && rbd.getFactoryMethodName() == null) {
 				Class<?> beanClass = rbd.getBeanClass();
-				// 非FactoryBean
+				// 2.10 非FactoryBean
 				if (!FactoryBean.class.isAssignableFrom(beanClass)) {
 					targetType = ResolvableType.forClass(ClassUtils.getUserClass(beanClass));
 				}
 			}
 		}
 
+		// 2.11 targetType 还是 null,啥也不说返回null吧
 		if (targetType == null) {
 			return true;
 		}
@@ -162,7 +172,8 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 		}
 		// Full check for complex generic type match...
 		// 全面检查复杂泛型类型匹配。。。
-		// dependencyType:注入的依赖类型；targetType:查找到注入对象的类型
+		// dependencyType:注入的依赖类型；
+		// targetType:查找到注入对象的类型;
 		return dependencyType.isAssignableFrom(targetType);
 	}
 
@@ -189,13 +200,18 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 	protected ResolvableType getReturnTypeForFactoryMethod(RootBeanDefinition rbd, DependencyDescriptor descriptor) {
 		// Should typically be set for any kind of factory method, since the BeanFactory
 		// pre-resolves them before reaching out to the AutowireCandidateResolver...
+		// 1. 检查是否有returnType
 		ResolvableType returnType = rbd.factoryMethodReturnType;
 		if (returnType == null) {
+			// 2. 没有returnType,还得继续检查解析的FactoryMethod
+			// 因为 returnType 可以是懒加载的
 			Method factoryMethod = rbd.getResolvedFactoryMethod();
 			if (factoryMethod != null) {
+				// 3. 解析返回值
 				returnType = ResolvableType.forMethodReturnType(factoryMethod);
 			}
 		}
+		// 2.
 		if (returnType != null) {
 			Class<?> resolvedClass = returnType.resolve();
 			if (resolvedClass != null && descriptor.getDependencyType().isAssignableFrom(resolvedClass)) {
@@ -205,6 +221,7 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 				return returnType;
 			}
 		}
+		// 3. 说明不是说 FactoryMethod
 		return null;
 	}
 

@@ -121,6 +121,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport imp
 	 *
 	 */
 
+	// 循环依赖:
+	// 说明 -- @Transactional使用的是自动代理创建器AbstractAutoProxyCreator，上篇文章详细描述了，它实现了getEarlyBeanReference()方法从而很好的对循环依赖提供了支持
+
 	/**
 	 * Convenience constant for subclasses: Return value for "do not proxy".
 	 * @see #getAdvicesAndAdvisorsForBean

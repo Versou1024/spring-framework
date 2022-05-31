@@ -473,7 +473,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 	@Override
 	@Nullable
-	public Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName) throws BeansException {
+	public Object resolv eDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName) throws BeansException {
 		return resolveDependency(descriptor, requestingBeanName, null, null);
 	}
 
@@ -686,6 +686,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 循环依赖这里说明一点:
 			// 重点在这：比如AnnotationAwareAspectJAutoProxyCreator自动代理创建器此处的postProcessAfterInitialization方法里，会给创建一个代理对象返回
 			// 所以此部分执行完成后，exposedObject **已经是个代理对象**而不再是个原始对象了~~~~ 此时二级缓存里依旧无它，更别提一级缓存了
+
+			// 需要注意的是：@Async的代理对象不是在getEarlyBeanReference()中创建的，是在postProcessAfterInitialization创建的代理
+			// 可以看出@Async的代理它默认并不支持你去循环引用，因为它并没有把代理对象的早期引用提供出来~~~（注意这点和自动代理创建器aop的区别~）
+			// 因此对与:
+			// @Service
+			//public class A implements AInterface {
+			//    @Autowired
+			//    private BInterface b;
+			//    @Async
+			//    @Override
+			//    public void funA() {
+			//    }
+			//}
+
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {

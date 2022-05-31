@@ -141,8 +141,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	// 关注的候选注解：主要就是关注@Autowrited与@Value注解，后续用于过滤
+	// 该处理器支持解析的注解们~~~（这里长度设置为4）  默认支持的是3个（当然你可以自己添加自定义的依赖注入的注解   这点非常强大）
 	private final Set<Class<? extends Annotation>> autowiredAnnotationTypes = new LinkedHashSet<>(4);
 
+	// @Autowired(required = false)这个注解的属性值名称
 	private String requiredParameterName = "required";
 
 	private boolean requiredParameterValue = true;
@@ -159,6 +161,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	private final Map<Class<?>, Constructor<?>[]> candidateConstructorsCache = new ConcurrentHashMap<>(256);
 
 	// 缓存处理过的：beanName->InjectionMetadata
+	// 方法注入、字段filed注入  本文的重中之重
+	// 此处InjectionMetadata这个类非常重要，到了此处@Autowired注解含义已经没有了，完全被准备成这个元数据了  所以方便我们自定义注解的支持~~~优秀
+	// InjectionMetadata持有targetClass、Collection<InjectedElement> injectedElements等两个重要属性
+	// 其中InjectedElement这个抽象类最重要的两个实现为：AutowiredFieldElement和AutowiredMethodElement
 	private final Map<String, InjectionMetadata> injectionMetadataCache = new ConcurrentHashMap<>(256);
 
 
@@ -248,6 +254,8 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		return this.order;
 	}
 
+
+	// bean工厂必须是ConfigurableListableBeanFactory的（此处放心使用，唯独只有SimpleJndiBeanFactory不是它的子类而已~）
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		if (!(beanFactory instanceof ConfigurableListableBeanFactory)) {
@@ -258,6 +266,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	}
 
 
+	// 第一个非常重要的核心方法~~~
+	//它负责1、解析@Autowired等注解然后转换
+	// 2、把注解信息转换为InjectionMetadata然后缓存到上面的injectionMetadataCache里面
+	// postProcessMergedBeanDefinition的执行时机非常早，在doCreateBean()前部分完成bean定义信息的合并
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
 		// MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition
@@ -458,6 +470,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		// 所以最终都是InjectionMetadata去处理~
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
+			//（生路异常处理部分代码）所以事情都委托给了InjectionMetadata 的inject方法
+			// 此处注意InjectionMetadata是会包含多个那啥的~~~(当然可能啥都没有  没有依赖注入的东东)
+			//InjectionMetadata.inject内部查看也十分简单：最终都还是委托给了InjectedElement.inject实例去处理的
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (BeanCreationException ex) {
@@ -534,6 +549,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		return metadata;
 	}
 
+	// 这里我认为是整个依赖注入前期工作的精髓所在，简单粗暴的可以理解为：它把以依赖注入都转换为InjectionMetadata元信息，待后续使用
+	// 这里会处理字段注入、方法注入~~~
+	// 注意：Autowired使用在static字段/方法上、0个入参的方法上（不会报错 只是无效）
+	// 显然方法的访问级别、是否final都是可以正常被注入进来的~~~
 	private InjectionMetadata buildAutowiringMetadata(Class<?> clazz) {
 		// 1. clazz类中是否存在@Autowrited和@Value的注解，没有就返回空，有的话就再去查
 		if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
@@ -544,6 +563,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
 		Class<?> targetClass = clazz;
 
+		// 小细节：这里是个do while循环，所以即使在父类，父父类上依赖注入依旧是好使的（直到Object后停止）
 		do {
 			// 当前元素
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
@@ -596,6 +616,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			});
 
 			// 最终添加到elements中
+			// 小细节：父类的都放在第一位，所以父类是最先完成依赖注入的
 			elements.addAll(0, currElements);
 			// 一直递归处理，包括其superClass
 			targetClass = targetClass.getSuperclass();
@@ -603,6 +624,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		while (targetClass != null && targetClass != Object.class);
 
 		// 转为 InjectionMetadata 的数据
+		// 可见InjectionMetadata就是对clazz和elements的一个包装而已
 		return InjectionMetadata.forElements(elements, clazz);
 	}
 
@@ -704,6 +726,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	 */
 	private class AutowiredFieldElement extends InjectionMetadata.InjectedElement {
 		// 继承 InjectedElement
+		// 这个类继承自静态抽象内部类InjectionMetadata.InjectedElement，并且它还是AutowiredAnnotationBeanPostProcessor的private内部类，体现出非常高的内聚性
 
 		private final boolean required; // 是否必须
 
@@ -749,6 +772,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		@Nullable
 		private Object resolveFieldValue(Field field, Object bean, @Nullable String beanName) {
 			// 1. 创建依赖描述符 -- desc
+			// 每个Field都包装成一个DependencyDescriptor
+			// 如果是Method包装成DependencyDescriptor,毕竟一个方法可以有多个入参
+			// 此处包装成它后，显然和元数据都无关了，只和Field有关了  完全隔离
 			DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
 			desc.setContainingClass(bean.getClass());
 			Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
@@ -763,17 +789,22 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			catch (BeansException ex) {
 				throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
 			}
+			// 缓存处理
 			synchronized (this) {
 				if (!this.cached) {
 					Object cachedFieldValue = null;
 					// value不为null，或者必须要存在required=true
+					// 可以看到value！=null并且required=true才会进行缓存的处理
 					if (value != null || this.required) {
+						// 可以看到缓存的值是上面的DependencyDescriptor对象~~~~
 						cachedFieldValue = desc;
 						// 注册依赖关系
 						registerDependentBeans(beanName, autowiredBeanNames);
+						// autowiredBeanNames里可能会有别名的名称~~~所以size可能大于1
 						if (autowiredBeanNames.size() == 1) {
 							String autowiredBeanName = autowiredBeanNames.iterator().next();
 							// 检查 BeanFactory 中是否包含这个自动注入的 autowiredBeanName,且为字段对应的类型哦
+							// beanFactory.isTypeMatch挺重要的~~~~因为@Autowired是按照类型注入
 							if (beanFactory.containsBean(autowiredBeanName) && beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
 								cachedFieldValue = new ShortcutDependencyDescriptor(desc, autowiredBeanName, field.getType());
 							}

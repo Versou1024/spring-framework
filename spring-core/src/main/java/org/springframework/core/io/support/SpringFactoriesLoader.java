@@ -60,12 +60,15 @@ import org.springframework.util.StringUtils;
  * @since 3.2
  */
 public final class SpringFactoriesLoader {
+	// 这个类在SpringBoot开启自动化配置中被使用到
+
 
 	/**
 	 * The location to look for factories.
 	 * <p>Can be present in multiple JAR files.
 	 */
 	public static final String FACTORIES_RESOURCE_LOCATION = "META-INF/spring.factories";
+	// 默认的加载位置
 
 
 	private static final Log logger = LogFactory.getLog(SpringFactoriesLoader.class);
@@ -95,15 +98,22 @@ public final class SpringFactoriesLoader {
 		if (classLoaderToUse == null) {
 			classLoaderToUse = SpringFactoriesLoader.class.getClassLoader();
 		}
+		// 1. 去 META-INF/spring.factories 找到 factoryType 的全限定名为key时,
+		// 该类的实现类的全限定名的集合即 factoryImplementationNames
 		List<String> factoryImplementationNames = loadFactoryNames(factoryType, classLoaderToUse);
 		if (logger.isTraceEnabled()) {
 			logger.trace("Loaded [" + factoryType.getName() + "] names: " + factoryImplementationNames);
 		}
 		List<T> result = new ArrayList<>(factoryImplementationNames.size());
 		for (String factoryImplementationName : factoryImplementationNames) {
+			// 2. 对 factoryImplementationNames 进行实例化
+			// 可以看见,传递的参数 Class<T> factoryType 为泛型T,返回的是 List<T>
+			// 所以,我们要使用Spring.factories需要注意,key为全限定名,value为key全限定名的子类或实现类的全限定名
 			result.add(instantiateFactory(factoryImplementationName, factoryType, classLoaderToUse));
 		}
+		// 3. 允许排序
 		AnnotationAwareOrderComparator.sort(result);
+		// 返回结果
 		return result;
 	}
 
@@ -118,17 +128,29 @@ public final class SpringFactoriesLoader {
 	 * @see #loadFactories
 	 */
 	public static List<String> loadFactoryNames(Class<?> factoryType, @Nullable ClassLoader classLoader) {
+		// 1. 获取key,因为在 META-INF/spring.factories
 		String factoryTypeName = factoryType.getName();
+		// 2. loadSpringFactories(classLoader) -> 就是获取  META-INF/spring.factories 这个文件的 Map<String, List<String>> 结构
+		// 然后以 factoryType 为 key,获取这个factoryType对应的实现类的名字
+		// 例如在SpringBoot中,有
+		// org.springframework.boot.env.PropertySourceLoader=\
+		//		org.springframework.boot.env.PropertiesPropertySourceLoader,\
+		//		org.springframework.boot.env.YamlPropertySourceLoader
+		// key 就是 PropertySourceLoader
+		// value 就是 [PropertiesPropertySourceLoader,YamlPropertySourceLoader]
+		// PropertiesPropertySourceLoader/YamlPropertySourceLoader是PropertySourceLoader的实现类
 		return loadSpringFactories(classLoader).getOrDefault(factoryTypeName, Collections.emptyList());
 	}
 
 	private static Map<String, List<String>> loadSpringFactories(@Nullable ClassLoader classLoader) {
+		// 1. 缓存是否命中
 		MultiValueMap<String, String> result = cache.get(classLoader);
 		if (result != null) {
 			return result;
 		}
 
 		try {
+			// 2. 缓存未写命中,利用ClassLoader加载 META-INF/spring.factories 文件
 			Enumeration<URL> urls = (classLoader != null ?
 					classLoader.getResources(FACTORIES_RESOURCE_LOCATION) :
 					ClassLoader.getSystemResources(FACTORIES_RESOURCE_LOCATION));
@@ -136,10 +158,13 @@ public final class SpringFactoriesLoader {
 			while (urls.hasMoreElements()) {
 				URL url = urls.nextElement();
 				UrlResource resource = new UrlResource(url);
+				// 2.1 实际上,由于 FACTORIES_RESOURCE_LOCATION 是文件而非目录,因此这里遍历次数等于1
+				// properties 就是 META-INF/spring.factories 文件
 				Properties properties = PropertiesLoaderUtils.loadProperties(resource);
 				for (Map.Entry<?, ?> entry : properties.entrySet()) {
 					String factoryTypeName = ((String) entry.getKey()).trim();
 					for (String factoryImplementationName : StringUtils.commaDelimitedListToStringArray((String) entry.getValue())) {
+						// 2.2 将properties分析,key就是key,value需要做分隔符好,作为数组加入到result的value中
 						result.add(factoryTypeName, factoryImplementationName.trim());
 					}
 				}

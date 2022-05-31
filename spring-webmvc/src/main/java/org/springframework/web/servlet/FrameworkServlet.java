@@ -776,6 +776,9 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * @see ConfigurableApplicationContext#refresh()
 	 */
 	protected void applyInitializers(ConfigurableApplicationContext wac) {
+		// 添加的代码和上面一模一样~
+		// ContextLoader#customizeContext()
+
 		String globalClassNames = getServletContext().getInitParameter(ContextLoader.GLOBAL_INITIALIZER_CLASSES_PARAM);
 		if (globalClassNames != null) {
 			for (String className : StringUtils.tokenizeToStringArray(globalClassNames, INIT_PARAM_DELIMITERS)) {
