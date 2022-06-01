@@ -83,7 +83,7 @@ public @interface RequestMapping {
 	 * @see org.springframework.web.servlet.handler.HandlerMethodMappingNamingStrategy
 	 */
 	String name() default "";
-	//给这个Mapping取一个名字。若不填写，就用HandlerMethodMappingNamingStrategy去按规则生成
+	// 给这个Mapping取一个名字。若不填写，就用HandlerMethodMappingNamingStrategy去按规则生成
 
 	/**
 	 * The primary mapping expressed by this annotation.

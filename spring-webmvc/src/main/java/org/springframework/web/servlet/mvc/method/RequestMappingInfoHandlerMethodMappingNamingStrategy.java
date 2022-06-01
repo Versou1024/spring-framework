@@ -50,6 +50,9 @@ public class RequestMappingInfoHandlerMethodMappingNamingStrategy implements Han
 		}
 		StringBuilder sb = new StringBuilder();
 		String simpleTypeName = handlerMethod.getBeanType().getSimpleName();
+		// 1、拿到类名
+		// 2、遍历每个字母，拿到所有的大写字母
+		// 3、用拿到的大写字母拼接 # 拼接方法名。如：TestController#getFoo()最终结果是：TC#getFoo
 		for (int i = 0; i < simpleTypeName.length(); i++) {
 			if (Character.isUpperCase(simpleTypeName.charAt(i))) {
 				sb.append(simpleTypeName.charAt(i));
@@ -57,6 +60,12 @@ public class RequestMappingInfoHandlerMethodMappingNamingStrategy implements Han
 		}
 		sb.append(SEPARATOR).append(handlerMethod.getMethod().getName());
 		return sb.toString();
+
+		// 简单总结这部分逻辑如下：
+		//
+		// 类上的name值 + ‘#’ + 方法的name值
+		// 类上若没指定，默认值是：类名所有大写字母拼装
+		// 方法上若没指定，默认值是：方法名
 	}
 
 }

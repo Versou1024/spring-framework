@@ -119,6 +119,9 @@ public abstract class AopConfigUtils {
 	}
 
 	public static void forceAutoProxyCreatorToExposeProxy(BeanDefinitionRegistry registry) {
+		// 关于 exposeProxy
+		// 开启事务的注解@EnableTransactionManagement。该注解向容器注入的是自动代理创建器InfrastructureAdvisorAutoProxyCreator，所以exposeProxy = true对它的代理对象都是生效的，
+
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition definition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
 			definition.getPropertyValues().add("exposeProxy", Boolean.TRUE);

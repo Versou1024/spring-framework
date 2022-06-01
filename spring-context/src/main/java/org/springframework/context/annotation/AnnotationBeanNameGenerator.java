@@ -77,6 +77,11 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 
 	@Override
 	public String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry) {
+		// 处理逻辑:
+		//	1. 读取所有注解类型
+		//	2. 遍历所有注解类型，找到所有为Component等所有支持的含有非空value属性的注解
+		//	3. fallback到自己生成beanName
+
 		// 判断是否是AnnotatedBeanDefinition的子类， AnnotatedBeanDefinition是BeanDefinition的一个子类
 		// 显然这个生成器只为AnnotatedBeanDefinition它来自动生成名称
 		if (definition instanceof AnnotatedBeanDefinition) {

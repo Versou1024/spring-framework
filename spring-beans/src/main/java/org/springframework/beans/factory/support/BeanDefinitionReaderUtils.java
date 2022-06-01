@@ -135,6 +135,18 @@ public abstract class BeanDefinitionReaderUtils {
 		// Top-level bean: use plain class name with unique suffix if necessary.
 		// Top-level表示最外层的Bean，也就是说非内部类  这里生成绝对唯一的BeanName~~~~
 		return uniqueBeanName(generatedBeanName, registry);
+
+
+		// 对于它的处理逻辑，可以总结为如下步骤：
+		// 读取待生成Bean实例的类名称（未必是运行时的实际类型）。
+		// 如果类型为空，则判断是否存在parent bean，如果存在，读取parent bean的name + “$child”。
+		// 如果parent bean 为空，那么判断是否存在factory bean ，如存在，factory bean name + “$created”。 到此处前缀生成完毕
+		// 如果前缀为空，直接抛出异常，没有可以定义这个bean的任何依据。
+		// 前缀存在，判断是否为内部bean（innerBean，此处默认为false），如果是，最终为前缀+分隔符+十六进制的hashcode码
+		// 如果是顶级bean（top-level bean ），则判断前缀+数字的bean是否已存在，循环查询，知道查询到没有使用的id为止。处理完成（所以这个生成器肯定能保证Bean定义的唯一性，不会出现Bean name覆盖问题）
+
+		// 显然我们现在几乎不会再使用XmlBeanDefinitionReader，所以粗暴的可以理解为：此名称生成器已经废弃~
+		// 后来想了想其实这句话这么说不妥，毕竟我们使用@ImportResource的时候还是会导入xml文件进来的，因此各位自己感受吧
 	}
 
 	/**

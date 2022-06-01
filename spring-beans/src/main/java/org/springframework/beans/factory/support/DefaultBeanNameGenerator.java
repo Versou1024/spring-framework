@@ -26,6 +26,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
  * @since 2.0.3
  */
 public class DefaultBeanNameGenerator implements BeanNameGenerator {
+	// DefaultBeanNameGenerator 它是用来处理xml资源文件的Bean name生成器
 
 	/**
 	 * A convenient constant for a default {@code DefaultBeanNameGenerator} instance,
