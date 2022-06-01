@@ -67,7 +67,9 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 	@Override
 	public final String[] selectImports(AnnotationMetadata importingClassMetadata) {
 		// 泛型解析器：解析泛型
-		// 例如：public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableAsync> 就实现了当前类，其泛型就是EnableAsync
+		// 例如：
+		// public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableAsync> 就实现了当前类，其泛型就是EnableAsync
+		// public class CachingConfigurationSelector extends AdviceModeImportSelector<EnableCaching> 就实现了当前类，其泛型就是EnableCaching
 		Class<?> annType = GenericTypeResolver.resolveTypeArgument(getClass(), AdviceModeImportSelector.class);
 		Assert.state(annType != null, "Unresolvable type argument for AdviceModeImportSelector");
 		// importingClassMetadata 是配置类ConfigClass上的配置元数据
@@ -79,6 +81,7 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 					annType.getSimpleName(), importingClassMetadata.getClassName()));
 		}
 		// 拿到AdviceMode，最终交给子类，让她自己去实现  决定导入哪个Bean吧
+		// 默认是 AdviceMode.PROXY 动态代理
 		AdviceMode adviceMode = attributes.getEnum(getAdviceModeAttributeName());
 		String[] imports = selectImports(adviceMode); // 交给子类实现
 		if (imports == null) {

@@ -135,6 +135,9 @@ public @interface CacheEvict {
 	 * {@link #key} is not allowed.
 	 */
 	boolean allEntries() default false;
+	// 是否删除缓存内的所有条目。
+	// 默认情况下，仅删除关联键下的值。
+	// 建议不要随便设置为true,否则将导致该cacheNames下所有的entry,即键值对会被清除d
 
 	/**
 	 * Whether the eviction should occur before the method is invoked.
@@ -146,5 +149,10 @@ public @interface CacheEvict {
 	 * only if the invocation did not throw an exception).
 	 */
 	boolean beforeInvocation() default false;
+	// 是否应该在调用方法之前进行驱逐。
+	// 将此属性设置为true ，无论方法结果如何（即，它是否抛出异常）都会导致驱逐发生。
+	// 默认为false ，这意味着仅仅在成功调用注解标注的方法后将进行缓存逐出操作（即仅在调用未引发异常的情况下）。
 
+	// 是否让清理缓存动作在目标方法之前执行，默认是false（在目标方法之后执行）
+	// 注意：若在之后执行的话，目标方法一旦抛出异常了，那缓存就清理不掉了~~~~
 }

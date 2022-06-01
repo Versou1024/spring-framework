@@ -35,6 +35,7 @@ import org.springframework.util.Assert;
  * @param <T> the type of results supplied by this supplier
  */
 public class SingletonSupplier<T> implements Supplier<T> {
+	// 提供器 -- 有一个实例对象,以及一个默认的提供器
 
 	@Nullable
 	private final Supplier<? extends T> instanceSupplier;
@@ -88,17 +89,22 @@ public class SingletonSupplier<T> implements Supplier<T> {
 	@Override
 	@Nullable
 	public T get() {
+		// 1. 如果有单例实例,若非null就直接返回
 		T instance = this.singletonInstance;
 		if (instance == null) {
 			synchronized (this) {
+				// 2. 双重检查
 				instance = this.singletonInstance;
 				if (instance == null) {
+					// 3. 是否 instanceSupplier,有的话,调用get()方法
 					if (this.instanceSupplier != null) {
 						instance = this.instanceSupplier.get();
 					}
+					// 4. 都没有,用默认的吧
 					if (instance == null && this.defaultSupplier != null) {
 						instance = this.defaultSupplier.get();
 					}
+					// 5. 使用完提到singletonInstance
 					this.singletonInstance = instance;
 				}
 			}

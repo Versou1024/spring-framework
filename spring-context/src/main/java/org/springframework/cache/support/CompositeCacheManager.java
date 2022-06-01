@@ -52,9 +52,17 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.cache.concurrent.ConcurrentMapCacheManager#setCacheNames
  */
 public class CompositeCacheManager implements CacheManager, InitializingBean {
+	// CompositeCacheManager主要用于集合多个CacheManager实例，在使用多种缓存容器（比如Redis+EhCache的组合）时特别有用。
 
+
+	//设想这一个场景：当代码中使用@Cacheable注解指定的cacheNames中，却没有这个cacheManagers时
+	// ，执行时便会报错。但是若此时我们使用的是CompositeCacheManager并且设置fallbackToNoOpCache=true，
+	// 那么它就会没找到也最终进入到NoOpCacheManager里面去(用NoOpCache代替~)，此时就相当于禁用掉了缓存，而不抛出相应的异常。
+
+	// 内部聚合管理着一批CacheManager
 	private final List<CacheManager> cacheManagers = new ArrayList<>();
 
+	// 若这个为true，则可以结合NoOpCacheManager实现效果~~~
 	private boolean fallbackToNoOpCache = false;
 
 
@@ -92,6 +100,8 @@ public class CompositeCacheManager implements CacheManager, InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() {
+		// 如果fallbackToNoOpCache=true，那么在这个Bean初始化完成后，也就是在末尾添加一个NoOpCacheManager
+		// 当然fallbackToNoOpCache默认值是false
 		if (this.fallbackToNoOpCache) {
 			this.cacheManagers.add(new NoOpCacheManager());
 		}

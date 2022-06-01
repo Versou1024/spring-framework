@@ -45,7 +45,7 @@ import org.springframework.util.CollectionUtils;
 public abstract class AbstractCachingConfiguration implements ImportAware {
 
 	@Nullable
-	protected AnnotationAttributes enableCaching;
+	protected AnnotationAttributes enableCaching; // @EnableCaching的注解属性
 
 	@Nullable
 	protected Supplier<CacheManager> cacheManager;
@@ -62,6 +62,9 @@ public abstract class AbstractCachingConfiguration implements ImportAware {
 
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
+		// 感知被谁所导入IOC容器的
+
+		// 继承此抽象类前提条件：必须标注@EnableCaching注解~
 		this.enableCaching = AnnotationAttributes.fromMap(
 				importMetadata.getAnnotationAttributes(EnableCaching.class.getName(), false));
 		if (this.enableCaching == null) {
@@ -72,6 +75,9 @@ public abstract class AbstractCachingConfiguration implements ImportAware {
 
 	@Autowired(required = false)
 	void setConfigurers(Collection<CachingConfigurer> configurers) {
+		// 监测用户配置的CachingConfigurer
+		// 注意: 只能配置一个
+
 		if (CollectionUtils.isEmpty(configurers)) {
 			return;
 		}
@@ -82,6 +88,7 @@ public abstract class AbstractCachingConfiguration implements ImportAware {
 					"implemented only once or not at all.");
 		}
 		CachingConfigurer configurer = configurers.iterator().next();
+		// 将 configurer 中的配置 CacheManage\CacheResolver\KeyGenerator\ErrorHandler 提取出来
 		useCachingConfigurer(configurer);
 	}
 

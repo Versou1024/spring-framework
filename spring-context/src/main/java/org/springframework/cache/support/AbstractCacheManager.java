@@ -38,6 +38,9 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public abstract class AbstractCacheManager implements CacheManager, InitializingBean {
+	// 提供给用户或者第三方组件实现扩展的
+	// 比如 常常用的 RedisCacheManger 都会继承 AbstractCacheManager
+	// 主要是提供缓存能力
 
 	private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(16);
 
@@ -59,6 +62,7 @@ public abstract class AbstractCacheManager implements CacheManager, Initializing
 	 * @see #loadCaches()
 	 */
 	public void initializeCaches() {
+		// 1. 子类可加载的Cache集合
 		Collection<? extends Cache> caches = loadCaches();
 
 		synchronized (this.cacheMap) {
@@ -67,9 +71,11 @@ public abstract class AbstractCacheManager implements CacheManager, Initializing
 			Set<String> cacheNames = new LinkedHashSet<>(caches.size());
 			for (Cache cache : caches) {
 				String name = cache.getName();
+				// 2. 存入缓存cacheMap中,name为key,cache为value
 				this.cacheMap.put(name, decorateCache(cache));
 				cacheNames.add(name);
 			}
+			// 3. 设置cacheNames
 			this.cacheNames = Collections.unmodifiableSet(cacheNames);
 		}
 	}
@@ -87,20 +93,26 @@ public abstract class AbstractCacheManager implements CacheManager, Initializing
 	@Override
 	@Nullable
 	public Cache getCache(String name) {
+		// 主要是检查缓存中是否存在指定name的cache
+
 		// Quick check for existing cache...
+		// 1. 缓存是否命中
 		Cache cache = this.cacheMap.get(name);
 		if (cache != null) {
 			return cache;
 		}
 
 		// The provider may support on-demand cache creation...
+		// 2. 缓存未命中时,子类需实现该方法处理未命中的cacheName
 		Cache missingCache = getMissingCache(name);
 		if (missingCache != null) {
 			// Fully synchronize now for missing cache registration
 			synchronized (this.cacheMap) {
+				// 3. 双重检查
 				cache = this.cacheMap.get(name);
 				if (cache == null) {
 					cache = decorateCache(missingCache);
+					// 4. 放入 cacheMap ,并更新 cacheNames
 					this.cacheMap.put(name, cache);
 					updateCacheNames(name);
 				}

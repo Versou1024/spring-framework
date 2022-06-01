@@ -37,6 +37,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface CacheConfig {
+	// @CacheConfig提供了一种在类级别共享公共缓存相关设置的机制
 
 	/**
 	 * Names of the default caches to consider for caching operations defined
@@ -46,6 +47,8 @@ public @interface CacheConfig {
 	 * qualifier value or the bean names of a specific bean definition.
 	 */
 	String[] cacheNames() default {};
+	// 注释类中定义的缓存操作要考虑的默认缓存的名称。
+	// 如果在方法级别设置例如@Cacheable没有设置value或cachenames，则使用此类级别上的@CacheConfig的设置而不是默认的设置。
 
 	/**
 	 * The bean name of the default {@link org.springframework.cache.interceptor.KeyGenerator} to
@@ -55,6 +58,8 @@ public @interface CacheConfig {
 	 * defined for the operation, the value of this key generator is ignored.
 	 */
 	String keyGenerator() default "";
+	// 用于类的默认org.springframework.cache.interceptor.KeyGenerator的 bean 名称。
+	// 如果在方法级别设置例如@Cacheable没有设置keyGenerator，则使用此类级别上的@CacheConfig的设置而不是默认的设置。
 
 	/**
 	 * The bean name of the custom {@link org.springframework.cache.CacheManager} to use to
@@ -65,6 +70,7 @@ public @interface CacheConfig {
 	 * @see org.springframework.cache.interceptor.SimpleCacheResolver
 	 */
 	String cacheManager() default "";
+	// 同上
 
 	/**
 	 * The bean name of the custom {@link org.springframework.cache.interceptor.CacheResolver} to use.
@@ -72,5 +78,6 @@ public @interface CacheConfig {
 	 * instead of the default.
 	 */
 	String cacheResolver() default "";
+	// 同上
 
 }

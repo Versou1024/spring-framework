@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
  */
 public class ConcurrentMapCacheFactoryBean
 		implements FactoryBean<ConcurrentMapCache>, BeanNameAware, InitializingBean {
+	// ConcurrentMapCache 的 FactoryBean
 
 	private String name = "";
 
@@ -86,6 +87,8 @@ public class ConcurrentMapCacheFactoryBean
 
 	@Override
 	public void afterPropertiesSet() {
+		// 初始话 -- 创建 缓存空间,如果有提前设置缓存空间store,那就设置进去
+		// 否则使用默认的 -- new ConcurrentMapCache(this.name, this.allowNullValues)
 		this.cache = (this.store != null ? new ConcurrentMapCache(this.name, this.store, this.allowNullValues) :
 				new ConcurrentMapCache(this.name, this.allowNullValues));
 	}
@@ -94,16 +97,19 @@ public class ConcurrentMapCacheFactoryBean
 	@Override
 	@Nullable
 	public ConcurrentMapCache getObject() {
+		// FactoryBean -- cache
 		return this.cache;
 	}
 
 	@Override
 	public Class<?> getObjectType() {
+		// 类型 -- ConcurrentMapCache
 		return ConcurrentMapCache.class;
 	}
 
 	@Override
 	public boolean isSingleton() {
+		// 单例
 		return true;
 	}
 

@@ -35,8 +35,10 @@ import org.springframework.util.ObjectUtils;
  * @see AnnotatedElementKey
  */
 public abstract class CachedExpressionEvaluator {
+	// 用于 evaluate 和 cache Spel 表达式的共享类。
+	// CachedExpressionEvaluator = Cached + ExpressionEvaluator 提供一个缓存能力
 
-	private final SpelExpressionParser parser;
+	private final SpelExpressionParser parser; // Spel表达式解析器
 
 	private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
@@ -82,6 +84,8 @@ public abstract class CachedExpressionEvaluator {
 	 */
 	protected Expression getExpression(Map<ExpressionKey, Expression> cache,
 			AnnotatedElementKey elementKey, String expression) {
+		// 主要是提供缓存能力
+		// 缓存未命中,将使用 SpelExpressionParser进#parseExpression()
 
 		ExpressionKey expressionKey = createKey(elementKey, expression);
 		Expression expr = cache.get(expressionKey);

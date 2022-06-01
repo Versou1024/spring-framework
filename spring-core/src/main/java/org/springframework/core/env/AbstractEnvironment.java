@@ -240,11 +240,13 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	 * @see #ACTIVE_PROFILES_PROPERTY_NAME
 	 */
 	protected Set<String> doGetActiveProfiles() {
-		// 获取应用配置上的spring.profile.active
+		// 从这里可以知道，API设置的activeProfiles优先级第一，其次才是属性配置（属性源是个很大的概念，希望各位看官能够理解）。
 		synchronized (this.activeProfiles) {
+			// 1. 首先还是看是否手动调用 setActiveProfiles() 创建过当前环境所属配置,没有才去属性文件中看
 			if (this.activeProfiles.isEmpty()) {
 				// 懒加载 - 创建模式
 				// 核心 -- getProperty(ACTIVE_PROFILES_PROPERTY_NAME) -> 依靠 propertyResolver 解析器出查找注册的 spring.profiles.active
+				// 2. 先去属性源中查找是否有 spring.profiles.active 属性值
 				String profiles = getProperty(ACTIVE_PROFILES_PROPERTY_NAME);
 				if (StringUtils.hasText(profiles)) {
 					setActiveProfiles(StringUtils.commaDelimitedListToStringArray(

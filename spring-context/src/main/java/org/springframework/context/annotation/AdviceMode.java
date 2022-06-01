@@ -27,6 +27,9 @@ package org.springframework.context.annotation;
  * @see org.springframework.transaction.annotation.EnableTransactionManagement#mode()
  */
 public enum AdviceMode {
+	// AspectJ静态代理 的高明之处在于 同类调用代理方法 是生效的
+	// 原因就是 AspectJ 是静态代理的
+	// 不是运行时生成一个字节码文件
 
 	/**
 	 * JDK proxy-based advice.

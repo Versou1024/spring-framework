@@ -45,9 +45,12 @@ import org.springframework.util.Assert;
  * @see ConcurrentMapCacheManager
  */
 public class ConcurrentMapCache extends AbstractValueAdaptingCache {
+	// 基于核心 JDK java.util.concurrent包的简单org.springframework.cache.Cache实现。
+	// 对于测试或简单的缓存场景很有用，通常与org.springframework.cache.support.SimpleCacheManager或通过ConcurrentMapCacheManager动态结合。
 
 	private final String name;
 
+	// 缓存
 	private final ConcurrentMap<Object, Object> store;
 
 	@Nullable
@@ -59,6 +62,8 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	 * @param name the name of the cache
 	 */
 	public ConcurrentMapCache(String name) {
+		// 每一个缓存name对应一个缓存空间
+		// 一个缓存空间对应一个ConcurrentHashMap结构
 		this(name, new ConcurrentHashMap<>(256), true);
 	}
 
@@ -121,17 +126,20 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 
 	@Override
 	public final String getName() {
+		// 缓存空间名
 		return this.name;
 	}
 
 	@Override
 	public final ConcurrentMap<Object, Object> getNativeCache() {
+		// 缓存空间
 		return this.store;
 	}
 
 	@Override
 	@Nullable
 	protected Object lookup(Object key) {
+		// 该缓存空间中对应key的value值
 		return this.store.get(key);
 	}
 
@@ -139,6 +147,10 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	@Override
 	@Nullable
 	public <T> T get(Object key, Callable<T> valueLoader) {
+		// 获取缓存空间中指定的key的value值
+
+		// 当缓存空间中不存在指定的key,将调用valueLoader.call()方法
+		// 然后存储起来,然后再获取出来并返回出去
 		return (T) fromStoreValue(this.store.computeIfAbsent(key, k -> {
 			try {
 				return toStoreValue(valueLoader.call());
@@ -151,12 +163,14 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 
 	@Override
 	public void put(Object key, @Nullable Object value) {
+		// 向缓存空间设置键值对
 		this.store.put(key, toStoreValue(value));
 	}
 
 	@Override
 	@Nullable
 	public ValueWrapper putIfAbsent(Object key, @Nullable Object value) {
+		// 当缓存空间不存在指定key时,就设置进去
 		Object existing = this.store.putIfAbsent(key, toStoreValue(value));
 		return toValueWrapper(existing);
 	}
@@ -173,6 +187,7 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 
 	@Override
 	public void clear() {
+		// 清空缓存空间
 		this.store.clear();
 	}
 
@@ -185,6 +200,8 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 
 	@Override
 	protected Object toStoreValue(@Nullable Object userValue) {
+		// 在有序列化器时, 将 userValue 直接序列化为byteArray再存储起来
+		// 没有序列化器, 就直接存储 userValue
 		Object storeValue = super.toStoreValue(userValue);
 		if (this.serialization != null) {
 			try {

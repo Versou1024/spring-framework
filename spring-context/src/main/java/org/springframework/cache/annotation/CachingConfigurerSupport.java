@@ -32,6 +32,8 @@ import org.springframework.lang.Nullable;
  */
 public class CachingConfigurerSupport implements CachingConfigurer {
 
+	// CachingConfigurer的实现，带有空方法，允许子类仅覆盖他们感兴趣的方法。
+
 	@Override
 	@Nullable
 	public CacheManager cacheManager() {

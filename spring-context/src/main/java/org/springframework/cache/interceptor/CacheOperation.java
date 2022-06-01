@@ -32,6 +32,12 @@ import org.springframework.util.Assert;
  * @since 3.1
  */
 public abstract class CacheOperation implements BasicOperation {
+	// Cache操作的配置封装
+
+	// 操作名\cacheNames\key或keyGenerator\cacheManager\cacheResolver\condition
+	// 基本上都是 @CachePut @Cacheable 等的属性值
+
+	// 三大实现类 CacheableOperation\CacheEvictOperation\CachePutOperation
 
 	private final String name;
 
@@ -84,6 +90,7 @@ public abstract class CacheOperation implements BasicOperation {
 	}
 
 	public String getCacheManager() {
+		// 注意 -- 当没有注定CacheManger时,使用哪一个CacheManger勒
 		return this.cacheManager;
 	}
 

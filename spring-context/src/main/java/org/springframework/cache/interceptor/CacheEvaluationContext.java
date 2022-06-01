@@ -43,6 +43,8 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 class CacheEvaluationContext extends MethodBasedEvaluationContext {
+	// 用于 Spring Cache 使用的 EvaluationContext
+	// 扩展一个点 -- 允许添加不信任的变量,如果spel视图访问不信任的变阿玲
 
 	private final Set<String> unavailableVariables = new HashSet<>(1);
 

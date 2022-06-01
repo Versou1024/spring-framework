@@ -35,6 +35,7 @@ import java.lang.reflect.Method;
  * @see org.springframework.cache.annotation.CachingConfigurer
  */
 public class SimpleKeyGenerator implements KeyGenerator {
+	// 简单的缓存key生成器
 
 	@Override
 	public Object generate(Object target, Method method, Object... params) {
@@ -45,15 +46,18 @@ public class SimpleKeyGenerator implements KeyGenerator {
 	 * Generate a key based on the specified parameters.
 	 */
 	public static Object generateKey(Object... params) {
+		// 1. 形参为0,返回SimpleKey.EMPTY
 		if (params.length == 0) {
 			return SimpleKey.EMPTY;
 		}
+		// 2. 形参数量为1,获取第一个非数组形参作为key
 		if (params.length == 1) {
 			Object param = params[0];
 			if (param != null && !param.getClass().isArray()) {
 				return param;
 			}
 		}
+		// 3. 多个形参放入SimpleKey
 		return new SimpleKey(params);
 	}
 

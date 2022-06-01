@@ -29,25 +29,26 @@ import java.lang.reflect.Method;
  * @param <O> the operation type
  */
 public interface CacheOperationInvocationContext<O extends BasicOperation> {
+	// CacheOperation 引用上下文
 
 	/**
 	 * Return the cache operation.
 	 */
-	O getOperation();
+	O getOperation(); // 缓存对应的操作 Operation
 
 	/**
 	 * Return the target instance on which the method was invoked.
 	 */
-	Object getTarget();
+	Object getTarget(); // 目标
 
 	/**
 	 * Return the method which was invoked.
 	 */
-	Method getMethod();
+	Method getMethod(); // 方法
 
 	/**
 	 * Return the argument list used to invoke the method.
 	 */
-	Object[] getArgs();
+	Object[] getArgs(); // 形参
 
 }

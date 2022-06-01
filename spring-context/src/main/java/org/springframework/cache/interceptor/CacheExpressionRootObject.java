@@ -29,6 +29,8 @@ import org.springframework.cache.Cache;
  * @since 3.1
  */
 class CacheExpressionRootObject {
+	// @Cache系列注解中使用的spel表达式的ExpressionContext中设置的rootObject
+	// 持有caches\method\args\target\targetClass
 
 	private final Collection<? extends Cache> caches;
 

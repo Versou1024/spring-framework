@@ -171,6 +171,9 @@ import org.springframework.core.Ordered;
 @Documented
 @Import(CachingConfigurationSelector.class)
 public @interface EnableCaching {
+	// 开启缓存功能
+	// ofCourse,也是用到啦 @Import 方法哦
+	// 经典两个属性 -- proxyTargetClass\mode
 
 	/**
 	 * Indicate whether subclass-based (CGLIB) proxies are to be created as opposed
@@ -184,6 +187,9 @@ public @interface EnableCaching {
 	 * e.g. in tests.
 	 */
 	boolean proxyTargetClass() default false;
+	// 是否代理目标Class
+	// false - jdk
+	// true - cglib
 
 	/**
 	 * Indicate how caching advice should be applied.
@@ -196,6 +202,8 @@ public @interface EnableCaching {
 	 * {@link AdviceMode#ASPECTJ}.
 	 */
 	AdviceMode mode() default AdviceMode.PROXY;
+	// AdviceMode.PROXY -> jdk/cglib
+	// AdviceMode.ASPECTJ ->
 
 	/**
 	 * Indicate the ordering of the execution of the caching advisor

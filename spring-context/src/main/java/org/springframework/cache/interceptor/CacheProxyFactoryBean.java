@@ -48,6 +48,11 @@ import org.springframework.cache.CacheManager;
 @SuppressWarnings("serial")
 public class CacheProxyFactoryBean extends AbstractSingletonProxyFactoryBean
 		implements BeanFactoryAware, SmartInitializingSingleton {
+	// CacheProxyFactoryBean：手动实现Cache功能
+	// 其实ProxyFactoryBean的设计模式在Spring AOP中已经非常不陌生了：【小家Spring】面向切面编程Spring AOP创建代理的方式：ProxyFactoryBean、ProxyFactory、AspectJProxyFactory（JDK Proxy和CGLIB）
+	// 如下截图，Spring内有非常多的xxxProxyFactoryBean的实现：
+	// 如果说把@EnableCaching称为自动模式的话，那使用CacheProxyFactoryBean就完全是手动档。话不多说，此处给个使用Demo就收场了：
+
 
 	private final CacheInterceptor cacheInterceptor = new CacheInterceptor();
 

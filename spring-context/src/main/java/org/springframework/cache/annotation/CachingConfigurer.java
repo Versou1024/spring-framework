@@ -40,6 +40,9 @@ import org.springframework.lang.Nullable;
  * @see CachingConfigurerSupport
  */
 public interface CachingConfigurer {
+	// 提供给用户的配置接口
+	// 会被 AbstractCachingConfiguration#setConfigurers()检查到
+	// AbstractCachingConfiguration 的实现类 ProxyCachingConfiguration是被 @EnableCaching 的 CachingConfigurationSelector 所导入的
 
 	/**
 	 * Return the cache manager bean to use for annotation-driven cache
@@ -65,6 +68,20 @@ public interface CachingConfigurer {
 	 */
 	@Nullable
 	CacheManager cacheManager();
+	// 返回缓存管理器 bean 以用于注释驱动的缓存管理。默认的CacheResolver将使用这个缓存管理器在后台初始化。要对缓存解析进行更细粒度的管理，请考虑直接设置CacheResolver 。
+	//实现必须显式声明@Bean ，例如
+	//	   @Configuration
+	//	   @EnableCaching
+	//	   public class AppConfig extends CachingConfigurerSupport {
+	//	       @Bean // important!
+	//	       @Override
+	//	       public CacheManager cacheManager() {
+	//	           // configure and return CacheManager instance
+	//	       }
+	//	       // ...
+	//	   }
+	//
+	//更完整的例子见EnableCaching 。
 
 	/**
 	 * Return the {@link CacheResolver} bean to use to resolve regular caches for
@@ -90,6 +107,19 @@ public interface CachingConfigurer {
 	 */
 	@Nullable
 	CacheResolver cacheResolver();
+	//返回CacheResolver bean 以用于解析常规缓存以进行注释驱动的缓存管理。这是指定要使用的CacheManager的替代且更强大的选项。
+	//如果同时设置了cacheManager()和#cacheResolver() ，则忽略缓存管理器。
+	//实现必须显式声明@Bean ，例如
+	//	   @Configuration
+	//	   @EnableCaching
+	//	   public class AppConfig extends CachingConfigurerSupport {
+	//	       @Bean // important!
+	//	       @Override
+	//	       public CacheResolver cacheResolver() {
+	//	           // configure and return CacheResolver instance
+	//	       }
+	//	       // ...
+	//	   }
 
 	/**
 	 * Return the key generator bean to use for annotation-driven cache management.
@@ -111,6 +141,17 @@ public interface CachingConfigurer {
 	 */
 	@Nullable
 	KeyGenerator keyGenerator();
+	// 返回键生成器 bean 以用于注释驱动的缓存管理。实现必须显式声明@Bean ，例如
+	//	   @Configuration
+	//	   @EnableCaching
+	//	   public class AppConfig extends CachingConfigurerSupport {
+	//	       @Bean // important!
+	//	       @Override
+	//	       public KeyGenerator keyGenerator() {
+	//	           // configure and return KeyGenerator instance
+	//	       }
+	//	       // ...
+	//	   }
 
 	/**
 	 * Return the {@link CacheErrorHandler} to use to handle cache-related errors.
@@ -134,5 +175,18 @@ public interface CachingConfigurer {
 	 */
 	@Nullable
 	CacheErrorHandler errorHandler();
+	// 返回CacheErrorHandler以用于处理与缓存相关的错误。
+	//默认情况下，使用org.springframework.cache.interceptor.SimpleCacheErrorHandler并简单地将异常抛出回客户端。
+	//实现必须显式声明@Bean ，例如
+	//	   @Configuration
+	//	   @EnableCaching
+	//	   public class AppConfig extends CachingConfigurerSupport {
+	//	       @Bean // important!
+	//	       @Override
+	//	       public CacheErrorHandler errorHandler() {
+	//	           // configure and return CacheErrorHandler instance
+	//	       }
+	//	       // ...
+	//	   }
 
 }

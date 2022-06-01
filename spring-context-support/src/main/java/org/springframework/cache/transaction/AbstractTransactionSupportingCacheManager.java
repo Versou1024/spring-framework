@@ -31,6 +31,7 @@ import org.springframework.cache.support.AbstractCacheManager;
  * @see TransactionAwareCacheManagerProxy
  */
 public abstract class AbstractTransactionSupportingCacheManager extends AbstractCacheManager {
+	// 支持 Spring 管理事务的内置感知的 CacheManager 实现的基类
 
 	private boolean transactionAware = false;
 
@@ -42,6 +43,8 @@ public abstract class AbstractTransactionSupportingCacheManager extends Abstract
 	 * put/evict operation only in the after-commit phase of a successful transaction.
 	 */
 	public void setTransactionAware(boolean transactionAware) {
+		// 设置此 CacheManager 是否应公开事务感知缓存对象
+		// 默认为“假”。将此设置为“true”以将CachePut/CacheEvict操作与正在进行的 Spring 管理的事务同步，仅在成功事务的提交后阶段执行实际的缓存放置/逐出操作
 		this.transactionAware = transactionAware;
 	}
 
@@ -55,6 +58,7 @@ public abstract class AbstractTransactionSupportingCacheManager extends Abstract
 
 	@Override
 	protected Cache decorateCache(Cache cache) {
+		// 对cache进行包装,如果需要在Spring事务成功提交之后执行的话
 		return (isTransactionAware() ? new TransactionAwareCacheDecorator(cache) : cache);
 	}
 

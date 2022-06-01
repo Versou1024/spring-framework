@@ -29,6 +29,8 @@ import org.springframework.lang.Nullable;
  * @see AbstractValueAdaptingCache
  */
 public final class NullValue implements Serializable {
+	// 简单的可序列化类，用作缓存存储的null替换，否则不支持null值。
+	// null存入缓存时,会替换为 NullValue.Instance
 
 	/**
 	 * The canonical representation of a {@code null} replacement, as used by the

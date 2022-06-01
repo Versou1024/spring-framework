@@ -51,6 +51,7 @@ import org.springframework.core.annotation.AliasFor;
 @Inherited
 @Documented
 public @interface CachePut {
+	// 与@Cacheable注解相比，此注解不会导致建议的方法被跳过。
 
 	/**
 	 * Alias for {@link #cacheNames}.

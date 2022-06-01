@@ -47,13 +47,25 @@ import org.springframework.lang.Nullable;
  * @see ConcurrentMapCache
  */
 public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderAware {
+	// ConcurrentMap 对应的 CacheManger
+	// 它的缓存存储是基于内存的，所以它的生命周期是与应用关联的，对于生产级别的大型企业级应用程序，这可能并不是理想的选择，但它用于本地自己测试是个很好的选择。
 
+	// 每个CacheName对应的Cache操作
 	private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(16);
 
 	private boolean dynamic = true;
+	// 静态还是动态的ConcurrentMapCacheManager
+	// 静态的 -- ConcurrentMapCacheManager 管理的 cacheNames 是固定的
+	// 动态的 -- ConcurrentMapCacheManager 管理的 cacheNames 是动态增加的
 
+	// 是否允许value为null
+	// 是的话,虽然ConcurrentHashMap不允许有NULL值,但是可以通过 NULL_OBJ = new Object(); // 表示空的对象
 	private boolean allowNullValues = true;
 
+	// 指定此缓存管理器是存储每个value的副本，还是存储其所有缓存的引用
+	// 影响到ConcurrentMapCache对value值的存储~~~
+	// false表示：存储它自己（引用）
+	// true表示：存储一个副本（对序列化有要求~~~） 很少这么使用~~~
 	private boolean storeByValue = false;
 
 	@Nullable
@@ -65,6 +77,7 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	 * lazily creating cache instances as they are being requested.
 	 */
 	public ConcurrentMapCacheManager() {
+		// 构造一个动态的 ConcurrentMapCacheManager，在请求缓存实例时懒惰地创建它们。
 	}
 
 	/**
@@ -72,6 +85,7 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	 * managing caches for the specified cache names only.
 	 */
 	public ConcurrentMapCacheManager(String... cacheNames) {
+		// 构造一个静态 ConcurrentMapCacheManager，仅管理指定缓存名称的缓存
 		setCacheNames(Arrays.asList(cacheNames));
 	}
 
@@ -85,12 +99,17 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	 */
 	public void setCacheNames(@Nullable Collection<String> cacheNames) {
 		if (cacheNames != null) {
+			// 静态
 			for (String name : cacheNames) {
+				// ❗️❗️❗️
+				// 会为每个 cacheNames 创建属于它的 缓存空间
 				this.cacheMap.put(name, createConcurrentMapCache(name));
 			}
+			// 手动设置了，就不允许在动态创建了
 			this.dynamic = false;
 		}
 		else {
+			// 动态
 			this.dynamic = true;
 		}
 	}
@@ -104,6 +123,8 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	 * if any, to reconfigure them with the new null-value requirement.
 	 */
 	public void setAllowNullValues(boolean allowNullValues) {
+		// 指定是否接受和转换此缓存管理器中所有缓存的null值。
+		// 默认值为“true”，尽管 ConcurrentHashMap 本身不支持null值。内部持有者对象将用于存储用户级null
 		if (allowNullValues != this.allowNullValues) {
 			this.allowNullValues = allowNullValues;
 			// Need to recreate all Cache instances with the new null-value configuration...
@@ -143,6 +164,9 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	 * @since 4.3
 	 */
 	public boolean isStoreByValue() {
+		// 返回此缓存管理器cacheManger是否存储每个条目的副本或所有缓存的引用。
+		// 如果启用了按值存储storeByValue，则任何缓存条目cacheEntry都必须是可序列化的。
+		// 因此需要将
 		return this.storeByValue;
 	}
 
@@ -164,6 +188,9 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	@Override
 	@Nullable
 	public Cache getCache(String name) {
+		// 根据 cacheName 查找 cache
+		// 找不到,就惰性创建即可
+
 		Cache cache = this.cacheMap.get(name);
 		if (cache == null && this.dynamic) {
 			synchronized (this.cacheMap) {
@@ -189,6 +216,7 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	 * @return the ConcurrentMapCache (or a decorator thereof)
 	 */
 	protected Cache createConcurrentMapCache(String name) {
+		// 根据cacheName创建ConcurrentMapCache
 		SerializationDelegate actualSerialization = (isStoreByValue() ? this.serialization : null);
 		return new ConcurrentMapCache(name, new ConcurrentHashMap<>(256), isAllowNullValues(), actualSerialization);
 	}

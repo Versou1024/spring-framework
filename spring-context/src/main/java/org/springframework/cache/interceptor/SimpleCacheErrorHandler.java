@@ -27,6 +27,7 @@ import org.springframework.lang.Nullable;
  * @since 4.1
  */
 public class SimpleCacheErrorHandler implements CacheErrorHandler {
+	// 抛出异常
 
 	@Override
 	public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {

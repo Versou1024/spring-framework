@@ -49,7 +49,7 @@ public abstract class AopConfigUtils {
 	 * The bean name of the internally managed auto-proxy creator.
 	 */
 	public static final String AUTO_PROXY_CREATOR_BEAN_NAME =
-			"org.springframework.aop.config.internalAutoProxyCreator"; // 这是注册自动代理创建器，默认的BeanName（若想覆盖，需要使用这个BeanName）
+			"org.springframework.aop.config.internalAutoProxyCreator"; // 这是注册自动代理创建器时为其默认的BeanName（若想覆盖，需要使用这个BeanName）
 
 	/**
 	 * Stores the auto proxy creator classes in escalation order.
@@ -155,12 +155,13 @@ public abstract class AopConfigUtils {
 		// role是：ROLE_INFRASTRUCTURE属于Spring框架自己使用的Bean
 		// BeanName为：AUTO_PROXY_CREATOR_BEAN_NAME
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(cls);
+		// 一般框架自己的三个的source都是null值
+		beanDefinition.setSource(source);
 		// 此处注意，增加了一个属性：最高优先级执行
-		beanDefinition.setSource(source); // 一般框架自己的三个的source都是null值
-		// 角色为Spring自己使用
 		beanDefinition.getPropertyValues().add("order", Ordered.HIGHEST_PRECEDENCE);
-		// 注册此Bean定义信息
+		// 角色为Spring自己使用
 		beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+		// 注册此Bean定义信息
 		registry.registerBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME, beanDefinition);
 		return beanDefinition;
 	}

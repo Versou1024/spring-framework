@@ -29,6 +29,7 @@ package org.springframework.cache.interceptor;
  */
 @FunctionalInterface
 public interface CacheOperationInvoker {
+	// 函数式接口
 
 	/**
 	 * Invoke the cache operation defined by this instance. Wraps any exception

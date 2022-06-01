@@ -37,8 +37,9 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractCacheResolver implements CacheResolver, InitializingBean {
 
+	// CacheManger 用来存放Cache
 	@Nullable
-	private CacheManager cacheManager;
+	private CacheManager cacheManager; // 注意 -- 可以为空哦
 
 
 	/**
@@ -72,18 +73,26 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 		return this.cacheManager;
 	}
 
+	// 做了一步校验而已~~~CacheManager 必须存在
+	// 这是一个使用技巧哦   自己的在设计框架的框架的时候可以使用~
 	@Override
 	public void afterPropertiesSet()  {
+		// 如果是注入到IOC容器中 -- 就需要检查 CacheManager 是否存在
 		Assert.notNull(this.cacheManager, "CacheManager is required");
 	}
 
 
 	@Override
 	public Collection<? extends Cache> resolveCaches(CacheOperationInvocationContext<?> context) {
+		// 1. 抽象方法 getCacheNames() -> 返回 List<String> cacheNames
+		// cacheNames - 缓存名
 		Collection<String> cacheNames = getCacheNames(context);
 		if (cacheNames == null) {
 			return Collections.emptyList();
 		}
+		// 2. 使用CacheManager根据CacheName查找Cache
+		// 将所有需要指定的Cache加入到result中返回
+		// 根据cacheNames  去CacheManager里面拿到Cache对象， 作为最终的返回
 		Collection<Cache> result = new ArrayList<>(cacheNames.size());
 		for (String cacheName : cacheNames) {
 			Cache cache = getCacheManager().getCache(cacheName);
@@ -105,5 +114,6 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 	 */
 	@Nullable
 	protected abstract Collection<String> getCacheNames(CacheOperationInvocationContext<?> context);
+	// 子类需要实现此抽象方法
 
 }

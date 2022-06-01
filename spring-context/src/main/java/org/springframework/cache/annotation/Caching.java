@@ -38,6 +38,8 @@ import java.lang.annotation.Target;
 @Inherited
 @Documented
 public @interface Caching {
+	// 多个缓存注解（不同或相同类型）的组注解。
+	// 此注解可用作元注解以创建具有属性覆盖的自定义组合注解
 
 	Cacheable[] cacheable() default {};
 

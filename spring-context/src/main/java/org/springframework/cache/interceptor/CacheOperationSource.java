@@ -31,6 +31,8 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public interface CacheOperationSource {
+	// CacheInterceptor使用的接口。
+	// 实现知道如何获取缓存操作属性，无论是从配置、源级别的元数据属性还是其他地方。
 
 	/**
 	 * Determine whether the given class is a candidate for cache operations
@@ -49,6 +51,7 @@ public interface CacheOperationSource {
 	default boolean isCandidateClass(Class<?> targetClass) {
 		return true;
 	}
+	// 确定给定类是否是此CacheOperationSource元数据格式的缓存操作的候选对象。
 
 	/**
 	 * Return the collection of cache operations for this method,
@@ -60,5 +63,6 @@ public interface CacheOperationSource {
 	 */
 	@Nullable
 	Collection<CacheOperation> getCacheOperations(Method method, @Nullable Class<?> targetClass);
+	// 返回此方法的缓存操作集合，如果该方法不包含可缓存的注释，则返回null
 
 }

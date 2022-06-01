@@ -197,6 +197,10 @@ public abstract class AopUtils {
 	 * @see org.springframework.util.ClassUtils#getMostSpecificMethod
 	 */
 	public static Method getMostSpecificMethod(Method method, @Nullable Class<?> targetClass) {
+		// 给定一个可能来自接口的方法，以及当前 AOP 调用中使用的目标类，
+		// 如果有，则找到对应的目标方法。
+		// 例如，该方法可能是IFoo.bar()并且目标类可能是DefaultFoo 。
+		// 在这种情况下，该方法可能返回的是DefaultFoo.bar() 。这使得可以找到该方法的属性
 		// getMostSpecificMethod -> 获取最具体的方法
 
 		// 步骤：避免targetClass是代理类，首先获取userClass，然后借用ClassUtils.getMostSpecificMethod

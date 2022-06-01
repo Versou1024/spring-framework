@@ -46,6 +46,7 @@ import org.springframework.util.MultiValueMap;
  * @since 4.0
  */
 class ConditionEvaluator {
+	// 核心 -- 唯一的运算地方
 
 	/**
 	 * ConditionEvaluator 会在
@@ -65,6 +66,7 @@ class ConditionEvaluator {
 	 * Create a new {@link ConditionEvaluator} instance.
 	 */
 	public ConditionEvaluator(@Nullable BeanDefinitionRegistry registry, @Nullable Environment environment, @Nullable ResourceLoader resourceLoader) {
+		// 这是唯一的构造器
 		// Condition核心一 ：如何创建ConditionContext
 		// 创建 ConditionEvaluator 的同时创建 ConditionContext
 		this.context = new ConditionContextImpl(registry, environment, resourceLoader);
@@ -92,13 +94,14 @@ class ConditionEvaluator {
 		//  Condition核心二：如何检查是否匹配条件的
 		// 返回true表示需要匹配失败，需要跳过
 
-		// 1、不包含注解Conditional返回false
+		// 1、当不包含注解Conditional表示不需要检查,返回false,表示不需要跳过bean的解析或者注册
 		if (metadata == null || !metadata.isAnnotated(Conditional.class.getName())) {
 			return false;
 		}
 
-		// 2、检查阶段处理
+		// 2、检查所属的阶段
 		if (phase == null) {
+			// ConfigurationClassUtils.isConfigurationCandidate((AnnotationMetadata) metadata) 检查是否为配置类[注意配置类是一个宽泛的认知]
 			if (metadata instanceof AnnotationMetadata && ConfigurationClassUtils.isConfigurationCandidate((AnnotationMetadata) metadata)) {
 				// 如果是配置类，是的话，就在解析阶段处理
 				return shouldSkip(metadata, ConfigurationPhase.PARSE_CONFIGURATION);
@@ -120,14 +123,15 @@ class ConditionEvaluator {
 		// 4、支持排序
 		AnnotationAwareOrderComparator.sort(conditions);
 
-		// 5、开始检查
+		// 5、开始检查 -- 每一个Condition
 		for (Condition condition : conditions) {
 			ConfigurationPhase requiredPhase = null;
+			// 6. condition的阶段数必须和形参中的ConfigurationPhase一致,才允许使用
 			if (condition instanceof ConfigurationCondition) {
 				// 获取 Condition 要求
 				requiredPhase = ((ConfigurationCondition) condition).getConfigurationPhase();
 			}
-			// 没有指定Condition执行阶段，或者，就是当前执行阶段
+			// 没有指定Condition执行阶段，或者，就是执行器的requiredPhase要求的阶段就是当前阶段
 			// 这里说明了： ConfigurationCondition 如果有阶段数，就会在指定的阶段处执行
 			// 就可以调用condition
 			if ((requiredPhase == null || requiredPhase == phase) && !condition.matches(this.context, metadata)) {

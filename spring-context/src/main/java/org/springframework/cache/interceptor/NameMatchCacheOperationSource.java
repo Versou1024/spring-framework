@@ -38,6 +38,8 @@ import org.springframework.util.PatternMatchUtils;
  */
 @SuppressWarnings("serial")
 public class NameMatchCacheOperationSource implements CacheOperationSource, Serializable {
+	// 简单CacheOperationSource实现，允许通过注册名称匹配属性
+	// 用的比较少
 
 	/**
 	 * Logger available to subclasses.
@@ -68,6 +70,8 @@ public class NameMatchCacheOperationSource implements CacheOperationSource, Seri
 	 * @param ops operation associated with the method
 	 */
 	public void addCacheMethod(String methodName, Collection<CacheOperation> ops) {
+		// 添加 methodName方法名 -> ops缓存操作
+
 		if (logger.isDebugEnabled()) {
 			logger.debug("Adding method [" + methodName + "] with cache operations [" + ops + "]");
 		}
@@ -78,11 +82,13 @@ public class NameMatchCacheOperationSource implements CacheOperationSource, Seri
 	@Nullable
 	public Collection<CacheOperation> getCacheOperations(Method method, @Nullable Class<?> targetClass) {
 		// look for direct name match
+		// 1. 根据methodName精准去nameMap查询结果
 		String methodName = method.getName();
 		Collection<CacheOperation> ops = this.nameMap.get(methodName);
 
 		if (ops == null) {
 			// Look for most specific name match.
+			// 2. 精准查询失败,使用模糊匹配进行匹配
 			String bestNameMatch = null;
 			for (String mappedName : this.nameMap.keySet()) {
 				if (isMatch(methodName, mappedName)

@@ -31,14 +31,18 @@ import org.springframework.util.function.SingletonSupplier;
  */
 public abstract class AbstractCacheInvoker {
 
+	// 用于调用Cache操作并在发生异常时使用可配置的CacheErrorHandler的基本组件。
+
 	protected SingletonSupplier<CacheErrorHandler> errorHandler;
 
 
 	protected AbstractCacheInvoker() {
+		// 默认会使用 -- SimpleCacheErrorHandler
 		this.errorHandler = SingletonSupplier.of(SimpleCacheErrorHandler::new);
 	}
 
 	protected AbstractCacheInvoker(CacheErrorHandler errorHandler) {
+		// 用户可创建 -- CacheErrorHandler
 		this.errorHandler = SingletonSupplier.of(errorHandler);
 	}
 
@@ -58,6 +62,10 @@ public abstract class AbstractCacheInvoker {
 	public CacheErrorHandler getErrorHandler() {
 		return this.errorHandler.obtain();
 	}
+
+	// 对应Cache的基本操作 - doGet\doPut\doClear\doEvict
+	// 实际操作都是委托为 cache 完成
+	// 重点是将捕获的异常,交给CacheErrorHandler来处理
 
 
 	/**
@@ -96,6 +104,7 @@ public abstract class AbstractCacheInvoker {
 	 * specified {@link Cache} and invoke the error handler if an exception occurs.
 	 */
 	protected void doEvict(Cache cache, Object key, boolean immediate) {
+		// immediate 就是 beforeInvocation 的值
 		try {
 			if (immediate) {
 				cache.evictIfPresent(key);

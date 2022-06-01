@@ -35,11 +35,13 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public class SimpleKey implements Serializable {
+	// 作为  SimpleKeyGenerator 返回的一个简单key
 
 	/**
 	 * An empty key.
 	 */
 	public static final SimpleKey EMPTY = new SimpleKey();
+	// 空key
 
 
 	private final Object[] params;

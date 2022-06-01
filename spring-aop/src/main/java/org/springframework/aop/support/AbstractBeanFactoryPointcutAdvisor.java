@@ -45,7 +45,7 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 	// 在 AbstractPointcutAdvisor 基础上提供扩展感知 BeanFactory 的能力
 	// 因此命名为 AbstractBeanFactoryPointcutAdvisor
 
-	// 因此可以将提供gdviceName，从BeanFactory中获取
+	// 因此可以将用adviceName从BeanFactory中获取
 
 	@Nullable
 	private String adviceBeanName;

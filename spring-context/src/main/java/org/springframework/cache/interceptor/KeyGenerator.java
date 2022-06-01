@@ -29,6 +29,8 @@ import java.lang.reflect.Method;
  */
 @FunctionalInterface
 public interface KeyGenerator {
+	// 生成缓存key
+	// target\method\params
 
 	/**
 	 * Generate a key for the given method and its parameters.

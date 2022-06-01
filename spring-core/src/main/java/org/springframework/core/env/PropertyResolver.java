@@ -35,6 +35,9 @@ public interface PropertyResolver {
 	 * 		获取必要属性getRequiredProperty
 	 * 		解析占位符resolvePlaceholders
 	 * 		是否包含containsProperty
+	 *
+	 * 属性处理器在Spring内建唯一实现类为：PropertySourcesPropertyResolver。
+	 * 需要注意的是，环境抽象Environment关于属性部分的实现，也是委托给PropertySourcesPropertyResolver来处理的~
 	 */
 
 	/**

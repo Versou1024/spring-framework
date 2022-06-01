@@ -33,16 +33,20 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public interface Cache {
+	// 定义通用缓存操作的接口。注意：由于缓存的一般用途，建议实现允许存储空值（例如缓存返回null的方法）
 
 	/**
 	 * Return the cache name.
 	 */
 	String getName();
+	// 缓存名
 
 	/**
 	 * Return the underlying native cache provider.
 	 */
 	Object getNativeCache();
+	// 没被包装的Cache
+	// 返回本地存储的那个。比如ConcurrentMapCache本地就是用的一个ConcurrentMap
 
 	/**
 	 * Return the value to which this cache maps the specified key.
@@ -80,6 +84,7 @@ public interface Cache {
 	 */
 	@Nullable
 	<T> T get(Object key, @Nullable Class<T> type);
+	// 当前cache中key的值,并转为type返回
 
 	/**
 	 * Return the value to which this cache maps the specified key, obtaining
@@ -113,6 +118,7 @@ public interface Cache {
 	 * @see #putIfAbsent(Object, Object)
 	 */
 	void put(Object key, @Nullable Object value);
+	// 存入当前 cache 中
 
 	/**
 	 * Atomically associate the specified value with the specified key in this cache
@@ -143,6 +149,8 @@ public interface Cache {
 	 */
 	@Nullable
 	default ValueWrapper putIfAbsent(Object key, @Nullable Object value) {
+		// 当前cache中不存在这个key时,就添加key-value
+		// 不存在旧值直接put就先去了返回null，否则返回旧值（并且不会把新值put进去）
 		ValueWrapper existingValue = get(key);
 		if (existingValue == null) {
 			put(key, value);
@@ -160,6 +168,7 @@ public interface Cache {
 	 * @see #evictIfPresent(Object)
 	 */
 	void evict(Object key);
+	// 移除这个Key
 
 	/**
 	 * Evict the mapping for this key from this cache if it is present,
@@ -178,6 +187,7 @@ public interface Cache {
 	 * @see #evict(Object)
 	 */
 	default boolean evictIfPresent(Object key) {
+		// 如果存在才移除
 		evict(key);
 		return false;
 	}
@@ -191,6 +201,9 @@ public interface Cache {
 	 * @see #invalidate()
 	 */
 	void clear();
+	// 清空
+	// 通过删除所有映射来清除缓存。
+	//实际清除可能以异步或延迟方式执行，后续查找可能仍会看到条目。例如，事务缓存装饰器可能就是这种情况。使用invalidate()保证立即删除条目。
 
 	/**
 	 * Invalidate the cache through removing all mappings, expecting all
@@ -205,6 +218,9 @@ public interface Cache {
 		clear();
 		return false;
 	}
+	// 通过删除所有映射使缓存无效，期望所有条目对于后续查找立即不可见。
+	// 回报：
+	// true缓存之前已知有映射，则为 true；如果没有，则为false （或者如果无法确定先前是否存在条目）
 
 
 	/**
@@ -212,6 +228,7 @@ public interface Cache {
 	 */
 	@FunctionalInterface
 	interface ValueWrapper {
+		// 函数式接口 -- 仅仅get真实值
 
 		/**
 		 * Return the actual value in the cache.

@@ -34,6 +34,7 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class CompositeCacheOperationSource implements CacheOperationSource, Serializable {
+	// 组合模式 ~~ 不多讲
 
 	private final CacheOperationSource[] cacheOperationSources;
 
@@ -58,6 +59,8 @@ public class CompositeCacheOperationSource implements CacheOperationSource, Seri
 
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {
+		// 1. 直至有一个CacheOperationSource返回true
+
 		for (CacheOperationSource source : this.cacheOperationSources) {
 			if (source.isCandidateClass(targetClass)) {
 				return true;
@@ -69,6 +72,8 @@ public class CompositeCacheOperationSource implements CacheOperationSource, Seri
 	@Override
 	@Nullable
 	public Collection<CacheOperation> getCacheOperations(Method method, @Nullable Class<?> targetClass) {
+		// 1. 将所有CacheOperationSource的结果cacheOperations集中一起返回
+
 		Collection<CacheOperation> ops = null;
 		for (CacheOperationSource source : this.cacheOperationSources) {
 			Collection<CacheOperation> cacheOperations = source.getCacheOperations(method, targetClass);

@@ -46,6 +46,13 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperationSource implements Serializable {
+	// 主要实现超类的AbstractFallbackCacheOperationSource两个接口
+	// 		Collection<CacheOperation> findCacheOperations(Class<?> clazz)
+	//		Collection<CacheOperation> findCacheOperations(Method method)
+	// 以及 CacheOperationSource#isCandidateClass(Class<?> targetClass)方法
+
+	// 委托模式 -- 实际解析工作交给了
+	// SpringCacheAnnotationParser 对四大缓存注解进行解析
 
 	private final boolean publicMethodsOnly;
 
@@ -57,6 +64,7 @@ public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperati
 	 * that carry the {@code Cacheable} and {@code CacheEvict} annotations.
 	 */
 	public AnnotationCacheOperationSource() {
+		// 默认就是只允许公有方法有缓存cache
 		this(true);
 	}
 
@@ -69,6 +77,8 @@ public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperati
 	 */
 	public AnnotationCacheOperationSource(boolean publicMethodsOnly) {
 		this.publicMethodsOnly = publicMethodsOnly;
+		// 默认的注解解析器就是 -- SpringCacheAnnotationParser
+		// ❗️ ❗️ ❗️
 		this.annotationParsers = Collections.singleton(new SpringCacheAnnotationParser());
 	}
 
@@ -105,6 +115,9 @@ public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperati
 
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {
+		// 遍历 annotationParsers#isCandidateClass()
+		// 检查是否为 合格的被解析的class
+
 		for (CacheAnnotationParser parser : this.annotationParsers) {
 			if (parser.isCandidateClass(targetClass)) {
 				return true;
@@ -116,12 +129,14 @@ public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperati
 	@Override
 	@Nullable
 	protected Collection<CacheOperation> findCacheOperations(Class<?> clazz) {
+		// 延迟使用
 		return determineCacheOperations(parser -> parser.parseCacheAnnotations(clazz));
 	}
 
 	@Override
 	@Nullable
 	protected Collection<CacheOperation> findCacheOperations(Method method) {
+		// 延迟使用 -- 调用传入的  parser.parseCacheAnnotations()解析方法
 		return determineCacheOperations(parser -> parser.parseCacheAnnotations(method));
 	}
 
@@ -136,8 +151,13 @@ public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperati
 	 */
 	@Nullable
 	protected Collection<CacheOperation> determineCacheOperations(CacheOperationProvider provider) {
+		// 实际就是遍历 annotationParsers#parseCacheAnnotations()
+		// 将返回结果合并到 Collection<CacheOperation> 中返回
+		// 实际 -- annotationParsers默认只有一个SpringCacheAnnotationParser
+
 		Collection<CacheOperation> ops = null;
 		for (CacheAnnotationParser parser : this.annotationParsers) {
+			// ❗️ ❗️ ❗️ -- 触发parser.parseCacheAnnotations(method|class)
 			Collection<CacheOperation> annOps = provider.getCacheOperations(parser);
 			if (annOps != null) {
 				if (ops == null) {
@@ -188,6 +208,8 @@ public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperati
 	 */
 	@FunctionalInterface
 	protected interface CacheOperationProvider {
+		// 形参是一个 CacheAnnotationParser
+		// 返回的是一个 Collection<CacheOperation>
 
 		/**
 		 * Return the {@link CacheOperation} instance(s) provided by the specified parser.

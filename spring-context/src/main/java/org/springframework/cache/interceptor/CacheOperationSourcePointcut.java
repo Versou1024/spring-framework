@@ -38,12 +38,16 @@ import org.springframework.util.ObjectUtils;
 abstract class CacheOperationSourcePointcut extends StaticMethodMatcherPointcut implements Serializable {
 
 	protected CacheOperationSourcePointcut() {
+		// 构造器 -- 默认设置 CacheOperationSourceClassFilter 类过滤器
 		setClassFilter(new CacheOperationSourceClassFilter());
 	}
 
 
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
+		// 实现 -- 方法过滤器
+		// cas.getCacheOperations(method, targetClass) 只要能从方法上返回CacheOperation的集合,就返回true
+		// 即通过方法过滤器
 		CacheOperationSource cas = getCacheOperationSource();
 		return (cas != null && !CollectionUtils.isEmpty(cas.getCacheOperations(method, targetClass)));
 	}
@@ -85,12 +89,19 @@ abstract class CacheOperationSourcePointcut extends StaticMethodMatcherPointcut 
 	 */
 	private class CacheOperationSourceClassFilter implements ClassFilter {
 
+		// clazz不属于CacheManager
+		// 且通过 CacheOperationSource 判断 clazz 是否为候选类
+		// [类\方法\字段上只要标注有@Cacheable\@CacheEvict\@CachePut\@Caching]
 		@Override
 		public boolean matches(Class<?> clazz) {
+			// 如果你这个类就是一个CacheManager，不切入
 			if (CacheManager.class.isAssignableFrom(clazz)) {
 				return false;
 			}
+			// 获取到当前的缓存属性源~~~getCacheOperationSource()是个抽象方法
 			CacheOperationSource cas = getCacheOperationSource();
+			// 下面一句话解释为：如果方法/类上标注有缓存相关的注解，就切入进取~~
+			// 具体逻辑请参见方法：cas.getCacheOperations();
 			return (cas == null || cas.isCandidateClass(clazz));
 		}
 	}

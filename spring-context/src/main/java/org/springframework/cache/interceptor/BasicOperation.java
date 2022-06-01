@@ -25,6 +25,7 @@ import java.util.Set;
  * @since 4.1
  */
 public interface BasicOperation {
+	// 所有缓存操作都必须实现的基本接口。
 
 	/**
 	 * Return the cache name(s) associated with the operation.
