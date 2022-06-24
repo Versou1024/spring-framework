@@ -41,6 +41,7 @@ import org.springframework.util.Assert;
  * @since 5.0
  */
 public class MappingJackson2SmileHttpMessageConverter extends AbstractJackson2HttpMessageConverter {
+	// 使用ObjectMapper处理
 
 	/**
 	 * Construct a new {@code MappingJackson2SmileHttpMessageConverter} using default configuration

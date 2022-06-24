@@ -197,7 +197,7 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 
 	@Override
 	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
-		// 是否可以读
+		// 是否可以写 -- 序列化出去
 
 		// 1. 检查请求头的accept的mediaType是否对当前消息转换器支持的supportMediaType进行支持
 		if (!canWrite(mediaType)) {
@@ -267,7 +267,10 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 	}
 
 	private Object readJavaType(JavaType javaType, HttpInputMessage inputMessage) throws IOException {
+
+		// 获取请求体
 		MediaType contentType = inputMessage.getHeaders().getContentType();
+		// 获取字符类型
 		Charset charset = getCharset(contentType);
 
 		boolean isUnicode = ENCODINGS.containsKey(charset.name());
@@ -328,8 +331,10 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 		JsonEncoding encoding = getJsonEncoding(contentType);
 
 		OutputStream outputStream = StreamUtils.nonClosing(outputMessage.getBody());
+		// 通过 obejctMapper 拿到底层的 JsonGenerator
 		JsonGenerator generator = this.objectMapper.getFactory().createGenerator(outputStream, encoding);
 		try {
+			// 利用 generator 写前缀
 			writePrefix(generator, object);
 
 			Object value = object;
@@ -337,6 +342,8 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 			FilterProvider filters = null;
 			JavaType javaType = null;
 
+			// 一般都不是的,直接跳过 ~~
+			// 支持aJsonValue注解：此处给value重新赋值啦（并不是原值
 			if (object instanceof MappingJacksonValue) {
 				MappingJacksonValue container = (MappingJacksonValue) object;
 				value = container.getValue();
@@ -347,8 +354,12 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 				javaType = getJavaType(type, null);
 			}
 
+			// 通过objectMapper获取objectWriter -- 定制视图serializationView
+			// 支持aJsonView
 			ObjectWriter objectWriter = (serializationView != null ?
 					this.objectMapper.writerWithView(serializationView) : this.objectMapper.writer());
+			// 定制 filters.javaType
+			//支持aJsonFilter
 			if (filters != null) {
 				objectWriter = objectWriter.with(filters); //
 			}
@@ -358,13 +369,15 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 			SerializationConfig config = objectWriter.getConfig();
 			if (contentType != null && contentType.isCompatibleWith(MediaType.TEXT_EVENT_STREAM) &&
 					config.isEnabled(SerializationFeature.INDENT_OUTPUT)) {
-				objectWriter = objectWriter.with(this.ssePrettyPrinter); // 优美的打印器
+				objectWriter = objectWriter.with(this.ssePrettyPrinter); // 给定优美的打印器
 			}
 			objectWriter.writeValue(generator, value); // 将值写到value
 
 			writeSuffix(generator, object);
 			generator.flush();
 			generator.close();
+
+			// 直至写完
 		}
 		catch (InvalidDefinitionException ex) {
 			throw new HttpMessageConversionException("Type definition error: " + ex.getType(), ex);

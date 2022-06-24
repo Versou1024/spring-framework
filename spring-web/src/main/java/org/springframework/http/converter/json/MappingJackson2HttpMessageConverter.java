@@ -69,6 +69,7 @@ public class MappingJackson2HttpMessageConverter extends AbstractJackson2HttpMes
 	 * provided by {@link Jackson2ObjectMapperBuilder}.
 	 */
 	public MappingJackson2HttpMessageConverter() {
+		// 可以发现 ObjectMapper 是通过 Jackson2ObjectMapperBuilder.json().build() 创建的哦
 		this(Jackson2ObjectMapperBuilder.json().build());
 	}
 
@@ -78,7 +79,9 @@ public class MappingJackson2HttpMessageConverter extends AbstractJackson2HttpMes
 	 * @see Jackson2ObjectMapperBuilder#json()
 	 */
 	public MappingJackson2HttpMessageConverter(ObjectMapper objectMapper) {
-		// 仅仅支持: application/json  application/*+json 两种格式
+		// 仅仅支持: application/json  application/*+json 两种格式 -- 没办法ObjectMapper就是用用来对JSON解析的
+		// ❗️ ❗️ ❗️
+		// 被 org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport.addDefaultHttpMessageConverters() 使用到
 		super(objectMapper, MediaType.APPLICATION_JSON, new MediaType("application", "*+json"));
 	}
 
@@ -108,6 +111,7 @@ public class MappingJackson2HttpMessageConverter extends AbstractJackson2HttpMes
 	@Override
 	protected void writePrefix(JsonGenerator generator, Object object) throws IOException {
 		if (this.jsonPrefix != null) {
+			// 写后缀
 			generator.writeRaw(this.jsonPrefix);
 		}
 	}

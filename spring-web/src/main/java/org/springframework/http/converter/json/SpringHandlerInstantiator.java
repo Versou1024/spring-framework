@@ -55,6 +55,50 @@ import org.springframework.util.Assert;
  * @see HandlerInstantiator
  */
 public class SpringHandlerInstantiator extends HandlerInstantiator {
+	// HandlerInstantiator -- Handler实例化器
+	// SpringHandlerInstantiator -- 在Spring的基础上提供Handler实例化能力
+
+	// 在实际使用中，你完全不必创建自定义Handlerlnstantiator，因为Spring提供的SpringHandlerInstantiator覆写了全部方法。你需要
+	// 做的只需要在Springi配置中将它连接到Jackson2 ObjectMapperBuilder./ObjectMapper里就成。
+
+	//	@Test
+	//	public void fun3() throws Exception {
+	//	    ApplicationContext applicationContext = new AnnotationConfigApplicationContext(HandlerInstantiatorTest.class);
+	//	    ObjectMapper mapper = new ObjectMapper();
+	//	    mapper.setHandlerInstantiator(new SpringHandlerInstantiator(applicationContext.getAutowireCapableBeanFactory()));
+	//	    System.out.println(mapper.writeValueAsString(new Person("YoutBatman", 18)));
+	//	}
+	// 		注意：PersonSerializer并不需要交给容器管理，也能直接`@Autowired`
+	//	class PersonSerializer extends StdSerializer<Person> {
+	//	    @Autowired
+	//	    ApplicationContext applicationContext; // 虽然没有交给IOC容器管理,但是SpringHandlerInstantiator使用的是AutowireCapableBeanFactory完成自动装配的哦
+	//	    ...
+	//	}
+
+
+	// 所以这样是ok的哦
+	// 使用Jackson2 ObjectMapperBuilder构建
+	// 虽然上面直接构建ObjectMapper也不算复杂，但是需要使用者了解SpringHandlerInstantiator这个API，
+	// 所以建议使用 Jackson2ObjectMapperBuilder，它能让代码变得如此优雅：[❗❗️❗️ 我们会发现 Jackson2ObjectMapperBuilder 默认在用户没有设置 HandlerInstantiator 时使用️ SpringHandlerInstantiator]
+	//		  public void fun4()throws Exception
+	//		  ApplicationContext applicationContext new AnnotationConfigApplicationContext(HandlerInstantiatorTest
+	//
+	//		  ObjectMapper mapper Jackson20bjectMapperBuilder.json()
+	//		      applicationContext(applicationContext)
+	//		      build ()
+	//		  System.out.println(mapper.writeValueAsString (new Person("YoutBatman",18)));
+	//		  }
+	//可以看到，我们只需要设置我们熟悉的API applicationContext而完全不用关心HandlerInstantiator。这样子我们这样使用便可：
+	// 		  @JsonSerialize(using PersonSerializer.class)
+	// 		  public class Person{
+	// 		  		private String name;
+	// 		  		private Integer age;
+	// 		  }
+	// 		  //PersonSerializer不用显示交给Spring容器，内部的aAutowired，/@Value将会生效
+	// 		  class PersonSerializer extends StdSerializer<Person>{
+	// 		   		@Autowired
+	// 		   		ApplicationContext applicationContext;
+	// 		   }
 
 	private final AutowireCapableBeanFactory beanFactory;
 
@@ -64,6 +108,8 @@ public class SpringHandlerInstantiator extends HandlerInstantiator {
 	 * @param beanFactory the target BeanFactory
 	 */
 	public SpringHandlerInstantiator(AutowireCapableBeanFactory beanFactory) {
+		// 唯一构造函数 -- 必须提供BeanFactory,
+		// why 0-- 因为是Handler的实例化,需要介入IOC容器
 		Assert.notNull(beanFactory, "BeanFactory must not be null");
 		this.beanFactory = beanFactory;
 	}
@@ -72,7 +118,9 @@ public class SpringHandlerInstantiator extends HandlerInstantiator {
 	@Override
 	public JsonDeserializer<?> deserializerInstance(DeserializationConfig config,
 			Annotated annotated, Class<?> implClass) {
-
+		// 关于beanFactory.createBean（）方法一句话说明：它帮你创建Class类型的实例，该实例内可以随意使用Spring容器内的Bean，
+		// 但它自己并不放进容器内。
+		//（注意: BeanFactory是AutowireCapableBeanFactory的）
 		return (JsonDeserializer<?>) this.beanFactory.createBean(implClass);
 	}
 

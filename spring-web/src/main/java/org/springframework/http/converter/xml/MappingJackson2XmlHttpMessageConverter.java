@@ -43,6 +43,7 @@ import org.springframework.util.Assert;
  * @since 4.1
  */
 public class MappingJackson2XmlHttpMessageConverter extends AbstractJackson2HttpMessageConverter {
+	// 使用ObjectMapper处理 xml 格式
 
 	/**
 	 * Construct a new {@code MappingJackson2XmlHttpMessageConverter} using default configuration
@@ -59,6 +60,9 @@ public class MappingJackson2XmlHttpMessageConverter extends AbstractJackson2Http
 	 * @see Jackson2ObjectMapperBuilder#xml()
 	 */
 	public MappingJackson2XmlHttpMessageConverter(ObjectMapper objectMapper) {
+		// 不难看出支持的MediaType如下
+
+		// application/xml		text/xml 	application/*+xml
 		super(objectMapper, new MediaType("application", "xml", StandardCharsets.UTF_8),
 				new MediaType("text", "xml", StandardCharsets.UTF_8),
 				new MediaType("application", "*+xml", StandardCharsets.UTF_8));

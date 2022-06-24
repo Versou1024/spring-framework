@@ -458,6 +458,8 @@ public @interface Configuration {
 	 * behaviorally equivalent to removing the {@code @Configuration} stereotype.
 	 * @since 5.2
 	 */
-	boolean proxyBeanMethods() default true;
+	boolean proxyBeanMethods() default true; // 代理@Bean标注的方法
+	// 指定是否应该代理@Bean方法以强制执行 bean 生命周期行为,例如即使在用户代码中直接调用@Bean方法的情况下也返回共享的单例 bean 实例。
+	// 此功能需要方法拦截，通过运行时生成的 CGLIB 子类实现，该子类具有配置类及其方法不允许声明final等限制。
 
 }

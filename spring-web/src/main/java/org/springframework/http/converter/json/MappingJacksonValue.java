@@ -36,14 +36,16 @@ import org.springframework.lang.Nullable;
  * @since 4.1
  */
 public class MappingJacksonValue {
+	// POJO 的简单持有者，可通过 MappingJackson2HttpMessageConverter 以及要传递给转换器的进一步序列化指令进行序列化。
+	// 用户可以继承当前类 -- 已告诉 MappingJackson2HttpMessageConverter 转换使用我配置好的 value/serializationView/filters
 
-	private Object value;
+	private Object value; // 要序列化的给定的POJO实例对象
 
 	@Nullable
-	private Class<?> serializationView;
+	private Class<?> serializationView; // 序列化的视图
 
 	@Nullable
-	private FilterProvider filters;
+	private FilterProvider filters; // 虚拟化的过滤器
 
 
 	/**
@@ -51,6 +53,7 @@ public class MappingJacksonValue {
 	 * @param value the Object to be serialized
 	 */
 	public MappingJacksonValue(Object value) {
+		// 唯一构造函数
 		this.value = value;
 	}
 

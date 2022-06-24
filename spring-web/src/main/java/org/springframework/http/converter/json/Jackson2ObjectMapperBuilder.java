@@ -105,24 +105,47 @@ import org.springframework.util.xml.StaxUtils;
  */
 public class Jackson2ObjectMapperBuilder {
 
+	// 建议在Springweb环境下使用 Jackson2ObjectMapperBuilder 来构造 ObjectMapper 而不是通过 new ObjectMapper()
+
+	// 默认特点
+	//	使用Jackson2 ObjectMapperBuilder构建ObjectMapper有如下默认特点：
+	//	禁用特征
+	//		MapperFeature：#DEFAULT_VIEW_INCLUSION特征被disabled：也就是说只有标注有@JsonView注解的属性才会被序列化进视图里，没有此注解的属性将被忽略
+	//		DeserializationFeature#FAIL_ON UNKNOWN_PROPERTIES特征被disabled：也就是说反序列化时遇到不认识的属性也不会抛错（这个属性蛮重要：这就是为何前端多传了N多属性但是spring-web却不抛错的根本原因）
+	//	自动注册通用模块（前提是classpath下存在对应的类）
+	//		jackson-datatype.-jdk8：建议pom里默认导入相关jar
+	//		jackson-datatype-jsr310：建议pom里默认导入相关jar
+	//		jackson-datatype-joda：按需（不建议默认导入）
+	//		jackson一module-kotlin：按需（不建议默认导入）
+	// 说明：可以看到jackson一module-parameter一names这个模块spring-web并没有默认导入，so如果你的JDK版本是以上时，此模
+	// 块我也强烈建议你默认导入（当然喽，这个你得手动进行注册才能生效~）。
+
 	private static volatile boolean kotlinWarningLogged = false;
 
 	private final Log logger = HttpLogging.forLogName(getClass());
 
+	// 混合 key->目标类,value->被适配过去的注解
 	private final Map<Class<?>, Class<?>> mixIns = new LinkedHashMap<>();
 
+	// 反序列化/序列化指定类型
 	private final Map<Class<?>, JsonSerializer<?>> serializers = new LinkedHashMap<>();
 
 	private final Map<Class<?>, JsonDeserializer<?>> deserializers = new LinkedHashMap<>();
 
+	// 可见性级别配置
+	// PropertyAccessor 操作级别(Getter/IsGetter/Setter/Creator/Field)
+	// Visibility 对应的可见性(NONE/ANY/DEFAULT/PUBLIC_KEY/NON_PRIVATE等)
 	private final Map<PropertyAccessor, JsonAutoDetect.Visibility> visibilities = new LinkedHashMap<>();
 
+	// 功能开启情况
 	private final Map<Object, Boolean> features = new LinkedHashMap<>();
 
 	private boolean createXmlMapper = false;
 
 	@Nullable
 	private JsonFactory factory;
+
+	// DateFormate/Locale/TimeZone
 
 	@Nullable
 	private DateFormat dateFormat;
@@ -133,9 +156,11 @@ public class Jackson2ObjectMapperBuilder {
 	@Nullable
 	private TimeZone timeZone;
 
+	// 注解内省器
 	@Nullable
 	private AnnotationIntrospector annotationIntrospector;
 
+	// 属性名发现器
 	@Nullable
 	private PropertyNamingStrategy propertyNamingStrategy;
 
@@ -145,29 +170,42 @@ public class Jackson2ObjectMapperBuilder {
 	@Nullable
 	private JsonInclude.Include serializationInclusion;
 
+	// 属性过滤器
 	@Nullable
 	private FilterProvider filters;
 
+	// 额外扩展注册的Module
 	@Nullable
 	private List<Module> modules;
 
+	// 额外扩展注册的Module的classes
 	@Nullable
 	private Class<? extends Module>[] moduleClasses;
 
+	//该类默认并不会通过ServiceLoader方式去找到模块们
+	//若是true：便会调用ObjectMapper，findModules这个方法通过SPI方式自动去找
+	//我倒建议：手动控制比较好，所以这里默认值是false是很合理的
 	private boolean findModulesViaServiceLoader = false;
 
 	private boolean findWellKnownModules = true;
 
 	private ClassLoader moduleClassLoader = getClass().getClassLoader();
 
+	// ❗️❗️❗️
+	// HandlerInstantiator接口Spring给出了唯一实现实例：SpringHandlerInstantiator
+	// 这是整合Spring的重点，下面会详细介绍它
 	@Nullable
 	private HandlerInstantiator handlerInstantiator;
 
+	// spring上下文
 	@Nullable
 	private ApplicationContext applicationContext;
 
 	@Nullable
 	private Boolean defaultUseWrapper;
+
+	// 下面都是系列builder方法 -- 不过多阐述
+
 
 
 	/**
@@ -630,6 +668,7 @@ public class Jackson2ObjectMapperBuilder {
 		return this;
 	}
 
+	// 构建方法 build()
 
 	/**
 	 * Build a new {@link ObjectMapper} instance.
@@ -646,9 +685,11 @@ public class Jackson2ObjectMapperBuilder {
 					new XmlObjectMapperInitializer().create(this.defaultUseWrapper, this.factory) :
 					new XmlObjectMapperInitializer().create(this.factory));
 		}
+		// 99%的情况都是JsonMapper哦
 		else {
 			mapper = (this.factory != null ? new ObjectMapper(this.factory) : new ObjectMapper());
 		}
+		// 将buidler中设置好的各种配置设置进去
 		configure(mapper);
 		return (T) mapper;
 	}
@@ -662,26 +703,34 @@ public class Jackson2ObjectMapperBuilder {
 		Assert.notNull(objectMapper, "ObjectMapper must not be null");
 
 		MultiValueMap<Object, Module> modulesToRegister = new LinkedMultiValueMap<>();
+		// 特别注意：findModulesViaServiceLoader和findWellKnownModules是互的，不能同时生效，使用时请务必注意
 		if (this.findModulesViaServiceLoader) {
+			// 通过SPI查找
 			ObjectMapper.findModules(this.moduleClassLoader).forEach(module -> registerModule(module, modulesToRegister));
 		}
 		else if (this.findWellKnownModules) {
+			// 注册常见的module,前提是用户导入了相关的jar包
 			registerWellKnownModulesIfAvailable(modulesToRegister);
 		}
 
+		// 注入用户手动注册到builder中的module
 		if (this.modules != null) {
 			this.modules.forEach(module -> registerModule(module, modulesToRegister));
 		}
+		// 用户也可以是注入builder中moudle的class,交给BeanUtils来实例化
 		if (this.moduleClasses != null) {
 			for (Class<? extends Module> moduleClass : this.moduleClasses) {
 				registerModule(BeanUtils.instantiateClass(moduleClass), modulesToRegister);
 			}
 		}
+		// 完成最终的注册modules
 		List<Module> modules = new ArrayList<>();
 		for (List<Module> nestedModules : modulesToRegister.values()) {
 			modules.addAll(nestedModules);
 		}
 		objectMapper.registerModules(modules);
+
+		// ObjectMapper中常见组件的设置
 
 		if (this.dateFormat != null) {
 			objectMapper.setDateFormat(this.dateFormat);
@@ -712,6 +761,8 @@ public class Jackson2ObjectMapperBuilder {
 
 		this.mixIns.forEach(objectMapper::addMixIn);
 
+		//由此可见：你配置的序列化器、反序列化器最终都是通过模块的方式注册进去的
+		//所有的序列化器一次性通过一个SimpleModule注册进去
 		if (!this.serializers.isEmpty() || !this.deserializers.isEmpty()) {
 			SimpleModule module = new SimpleModule();
 			addSerializers(module);
@@ -721,9 +772,17 @@ public class Jackson2ObjectMapperBuilder {
 
 		this.visibilities.forEach(objectMapper::setVisibility);
 
+		//定制默认的特征们（Spring内置动作，此方法为orivate，子类复写不了）
+		//做你没指定对应的Featrue的话，默认禁用掉MapperFeature.DEFAULT VIEW INCLUSION
+		//和DeserializationFeature.FAIL ON UNKNOWN PROPERTIES
 		customizeDefaultFeatures(objectMapper);
 		this.features.forEach((feature, enabled) -> configureFeature(objectMapper, feature, enabled));
-
+		// ❗️❗️❗️
+		// 绝大部分情况下，使用SpringHandlerInstantiator就够了
+		// 它的特点：能够使用Spring容器里面的Bean，从而达到和Spring深度整合的目的
+		//  该API是理解Jackson整合进Spring容器的切入点，问下会详细介绍
+		//  当然它的前提条件是：this.applicationContext！=null喽
+		// 而`applicationContext`是怎么来的？就是通过set方法设置进来的呗
 		if (this.handlerInstantiator != null) {
 			objectMapper.setHandlerInstantiator(this.handlerInstantiator);
 		}
@@ -731,6 +790,14 @@ public class Jackson2ObjectMapperBuilder {
 			objectMapper.setHandlerInstantiator(
 					new SpringHandlerInstantiator(this.applicationContext.getAutowireCapableBeanFactory()));
 		}
+
+		// 最为重要的build（）方法核心源码如上，其配置ObjectMapper的步骤总结如下：
+		//	1.注册Module们：包括WellKnownModules以及通过Builder配置进来的Modules们
+		//		1.默认会注册那4大WellKnownModules，前提是classpath下存在对应的类
+		//	2.注册所有的自定义的序列化器/反序列化器们（通过一个SimpleModule完成注册）
+		//		1.因为通过Module模块把序列化器放进去是唯一方式（另一种方式是使用注解@JsonSerialize方式，不过那是局部生效）
+		//	3.让自定义的特征值生效（含Springl的默认处理逻辑）
+		//	4.使用SpringHandlerInstantiator和Spring容器进行深度整合（当然这不是必须的）
 	}
 
 	private void registerModule(Module module, MultiValueMap<Object, Module> modulesToRegister) {
@@ -746,6 +813,8 @@ public class Jackson2ObjectMapperBuilder {
 	// Any change to this method should be also applied to spring-jms and spring-messaging
 	// MappingJackson2MessageConverter default constructors
 	private void customizeDefaultFeatures(ObjectMapper objectMapper) {
+		// 如果用户没有特别的对以下两个功能开启
+		// Spring将特别的将ObjectMapper中的 -- DEFAULT_VIEW_INCLUSION\FAIL_ON_UNKNOWN_PROPERTIES 两个feature关闭
 		if (!this.features.containsKey(MapperFeature.DEFAULT_VIEW_INCLUSION)) {
 			configureFeature(objectMapper, MapperFeature.DEFAULT_VIEW_INCLUSION, false);
 		}
@@ -789,6 +858,15 @@ public class Jackson2ObjectMapperBuilder {
 
 	@SuppressWarnings("unchecked")
 	private void registerWellKnownModulesIfAvailable(MultiValueMap<Object, Module> modulesToRegister) {
+		// 根据类路径检查用户是否导入了对应的class的jar包
+		// 比如用户导入了 com.fasterxml.jackson.datatype.jdk8.Jdk8Module 那么就允许向ObjectMapper中注入Jdk8Module
+		// 这样构造函数就可以在不使用@JsonCreator和@JsonProperty时即可反序列上去
+		// 一共有4中额外扩展的module
+		// Jdk8Module
+		// JavaTimeModule
+		// JodaModule
+		// KotlinModule
+
 		try {
 			Class<? extends Module> jdk8ModuleClass = (Class<? extends Module>)
 					ClassUtils.forName("com.fasterxml.jackson.datatype.jdk8.Jdk8Module", this.moduleClassLoader);
@@ -842,12 +920,14 @@ public class Jackson2ObjectMapperBuilder {
 
 
 	// Convenience factory methods
+	// 工厂方法 --
 
 	/**
 	 * Obtain a {@link Jackson2ObjectMapperBuilder} instance in order to
 	 * build a regular JSON {@link ObjectMapper} instance.
 	 */
 	public static Jackson2ObjectMapperBuilder json() {
+		// 最常见的方法构造方法 -- 直接使用默认值创建一个builder,然后可以对builder中配置后调用build()
 		return new Jackson2ObjectMapperBuilder();
 	}
 

@@ -972,9 +972,11 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 		}
 
 		if (jackson2Present) {
+			// MappingJackson2HttpMessageConverter 的创建过程 -- Here
+			// 利用 Jackson2ObjectMapperBuilder.json().build()的能力
 			Jackson2ObjectMapperBuilder builder = Jackson2ObjectMapperBuilder.json();
 			if (this.applicationContext != null) {
-				builder.applicationContext(this.applicationContext);
+				builder.applicationContext(this.applicationContext); // 已经提前设置了 applicationContext 哦
 			}
 			messageConverters.add(new MappingJackson2HttpMessageConverter(builder.build()));
 		}

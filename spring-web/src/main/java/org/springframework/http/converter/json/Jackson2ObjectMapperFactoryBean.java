@@ -148,6 +148,43 @@ import org.springframework.lang.Nullable;
 public class Jackson2ObjectMapperFactoryBean implements FactoryBean<ObjectMapper>, BeanClassLoaderAware,
 		ApplicationContextAware, InitializingBean {
 
+	// 顾名思义它是一个FactoryBean，用于构建一个ObjectMapper的实例并且放进Spring容器，
+	// 它内部的核心构建逻辑依赖于Jackson2ObjectMapperBuilder去实现。
+	// Spring提供Jackson2 ObjectMapperFactoryBean的意义在于：若你想向容器内放一个ObjectMapper实例，建议你使用它而不是自己全手动去完成。
+
+	// 使用方式如下 -- 可以在Configuration配置类中,使用@Bean来对Spring内置的FactoryBean进行调用
+	// 我们先new出来FactoryBean,然后向里面设置DateFormat,然后返回这个FactoryBean
+	// 实例化之前 -- 会对Aware进行感知,比比如向Jackson2ObjectMapperFactoryBean.setApplicationContext()
+	// 在实例化的时候 -- 实际上就是用 @Bean的方法进行实例化
+	// 实例化之后就会 -- 回调用 afterPropertiesSet() -> 然后在@Bean方法中设置的配置信息会生效的,然后创建出一个ObjectMapper作为成员field
+	// public class Jackson2ObjectMapperFactoryBeanTest {
+	//
+	//    @Bean
+	//    public Jackson2ObjectMapperFactoryBean objectMapper() {
+	//        Jackson2ObjectMapperFactoryBean objectMapper = new Jackson2ObjectMapperFactoryBean();
+	//        objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
+	//        return objectMapper;
+	//    }
+	//
+	//    @Test
+	//    public void fun1() throws JsonProcessingException {
+	//        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(Jackson2ObjectMapperFactoryBeanTest.class);
+	//
+	//        ObjectMapper mapper = applicationContext.getBean(ObjectMapper.class);
+	//        System.out.println(mapper.writeValueAsString(new Date()));
+	//    }
+	//}
+
+
+	// Spring下使用ObjectMapper的正确姿势
+	//	关于在Spring：环境下使用ObjectMapper你务必需要先知道的几个注意事项：
+	//		1.Jackson仅存在于spring一web下，root容器和此无关
+	//			1.关于Spring的父子容器概念，望读者可自行找相关文章了解
+	//		2.虽然JSON的序列化/反序列化默认使用Jackson，但是容器内并没有ObjectMapper实例
+	//			1.父、子容器均木有ObjectMapper：实例Bean
+	//		3.Jackson2ObjectMapperFactoryBean该API在spring-web里并没有被使用过（xml驱动的除外），它是spring-web留给使用者和Spring容器整合的一个便捷工具
+	//			1.Spring MVC里均是通过Jackson2ObjectMapperBuilder.json().build()构建的，而非从容器内获取
+
 	private final Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
 
 	@Nullable
@@ -453,12 +490,16 @@ public class Jackson2ObjectMapperFactoryBean implements FactoryBean<ObjectMapper
 	 */
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) {
+		// ❗️❗️❗️
+		// builder中需要手动注入的applicationContext已经被自动注入
 		this.builder.applicationContext(applicationContext);
 	}
 
 
 	@Override
 	public void afterPropertiesSet() {
+		// Jackson2ObjectMapperFactoryBean 初始化动作
+		//
 		if (this.objectMapper != null) {
 			this.builder.configure(this.objectMapper);
 		}
@@ -483,6 +524,7 @@ public class Jackson2ObjectMapperFactoryBean implements FactoryBean<ObjectMapper
 
 	@Override
 	public boolean isSingleton() {
+		// 单例
 		return true;
 	}
 
