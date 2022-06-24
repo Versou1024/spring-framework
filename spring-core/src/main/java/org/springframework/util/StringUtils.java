@@ -1310,6 +1310,7 @@ public abstract class StringUtils {
 	 * @return an array of strings, or the empty array in case of empty input
 	 */
 	public static String[] commaDelimitedListToStringArray(@Nullable String str) {
+		// 逗号分隔列表到字符串数组
 		return delimitedListToStringArray(str, ",");
 	}
 

@@ -45,6 +45,9 @@ import org.springframework.util.ResourceUtils;
  * @see PropertiesLoaderSupport
  */
 public abstract class PropertiesLoaderUtils {
+	// 工具类 -- 和加载Properties有关
+	// 1. loadProperties(Resource): 能够将Resource资源文件转换为Properties这种键值对
+
 
 	private static final String XML_FILE_EXTENSION = ".xml";
 
@@ -118,6 +121,7 @@ public abstract class PropertiesLoaderUtils {
 	 * @see #fillProperties(java.util.Properties, Resource)
 	 */
 	public static Properties loadProperties(Resource resource) throws IOException {
+		// 从给定资源加载属性（采用 ISO-8859-1 编码）
 		Properties props = new Properties();
 		fillProperties(props, resource);
 		return props;
@@ -130,6 +134,7 @@ public abstract class PropertiesLoaderUtils {
 	 * @throws IOException if loading failed
 	 */
 	public static void fillProperties(Properties props, Resource resource) throws IOException {
+		// 使用输入流填充到Properties中
 		try (InputStream is = resource.getInputStream()) {
 			String filename = resource.getFilename();
 			if (filename != null && filename.endsWith(XML_FILE_EXTENSION)) {

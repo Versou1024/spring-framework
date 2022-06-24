@@ -61,6 +61,9 @@ import org.springframework.util.StringUtils;
  */
 public final class SpringFactoriesLoader {
 	// 这个类在SpringBoot开启自动化配置中被使用到
+	// SpringFactoriesLoader这个类本身是final,不可以继承的
+	// 同时所有的方法都是静态方法
+	// 内环缓存cache也是静态不可变的
 
 
 	/**
@@ -73,8 +76,9 @@ public final class SpringFactoriesLoader {
 
 	private static final Log logger = LogFactory.getLog(SpringFactoriesLoader.class);
 
+	// key为ClassLoader
+	// value为ClassLoader加载的spring.factories中key和values
 	private static final Map<ClassLoader, MultiValueMap<String, String>> cache = new ConcurrentReferenceHashMap<>();
-
 
 	private SpringFactoriesLoader() {
 	}
@@ -93,13 +97,18 @@ public final class SpringFactoriesLoader {
 	 * @see #loadFactoryNames
 	 */
 	public static <T> List<T> loadFactories(Class<T> factoryType, @Nullable ClassLoader classLoader) {
+		// 相比于 loadFactoryNames()
+		// 该方法会:
+		// 使用给定的类加载器从"META-INF/spring.factories"[[加载和实例化]]给定类型的工厂实现。
+		// 返回的工厂通过AnnotationAwareOrderComparator进行排序
+
 		Assert.notNull(factoryType, "'factoryType' must not be null");
 		ClassLoader classLoaderToUse = classLoader;
 		if (classLoaderToUse == null) {
 			classLoaderToUse = SpringFactoriesLoader.class.getClassLoader();
 		}
-		// 1. 去 META-INF/spring.factories 找到 factoryType 的全限定名为key时,
-		// 该类的实现类的全限定名的集合即 factoryImplementationNames
+		// 1. 去 META-INF/spring.factories 找到 factoryType 全限定名作为key时,
+		// 想应的 values集合即 factoryImplementationNames -- [一般这个values集合都是全限定类型 -- 因为需要类加载器加载这个类,因此必须是全限定类名]
 		List<String> factoryImplementationNames = loadFactoryNames(factoryType, classLoaderToUse);
 		if (logger.isTraceEnabled()) {
 			logger.trace("Loaded [" + factoryType.getName() + "] names: " + factoryImplementationNames);
@@ -128,7 +137,8 @@ public final class SpringFactoriesLoader {
 	 * @see #loadFactories
 	 */
 	public static List<String> loadFactoryNames(Class<?> factoryType, @Nullable ClassLoader classLoader) {
-		// 1. 获取key,因为在 META-INF/spring.factories
+		// 1. 获取key
+		// 因为在 META-INF/spring.factories 中的key都是某个factoryType的全名
 		String factoryTypeName = factoryType.getName();
 		// 2. loadSpringFactories(classLoader) -> 就是获取  META-INF/spring.factories 这个文件的 Map<String, List<String>> 结构
 		// 然后以 factoryType 为 key,获取这个factoryType对应的实现类的名字
@@ -151,24 +161,34 @@ public final class SpringFactoriesLoader {
 
 		try {
 			// 2. 缓存未写命中,利用ClassLoader加载 META-INF/spring.factories 文件
+			// ClassLoader加载资源文件 -- 有一个特点:是可以加载出jar中的class或者资源文件
+			// 因此SpringFactoriesLoader是专门用来帮助加载jar包中需要注入到ioc容器中的工具 --
+			// ❗️❗️❗️
+			// 		a: jar包需要通过一个外部注解类似@EnableXxx
+			// 		b: @EnableXxx注解上使用@Import({XxxxImportSelector.class})
+			// 		C: XxxxImportSelector可以实现DeferredImportSelector,然后再String[] selectImports(AnnotationMetadata annotationMetadata)
+			// 		d: 调用SpringFactoriesLoader.loadFactoryNames()加载出jar包中spring.factories下指定key需要加载到ioc容器的全限定类名集合
 			Enumeration<URL> urls = (classLoader != null ?
 					classLoader.getResources(FACTORIES_RESOURCE_LOCATION) :
 					ClassLoader.getSystemResources(FACTORIES_RESOURCE_LOCATION));
+			// 3. 这里是加载出整个项目中每个jar包里面的 spring.factories -- 前提是:属于当前ClassLoader可访问的路径
 			result = new LinkedMultiValueMap<>();
 			while (urls.hasMoreElements()) {
 				URL url = urls.nextElement();
+				// 3.0 遍历当前的spring.factories文件 -> 转换为 UrlResource
 				UrlResource resource = new UrlResource(url);
-				// 2.1 实际上,由于 FACTORIES_RESOURCE_LOCATION 是文件而非目录,因此这里遍历次数等于1
-				// properties 就是 META-INF/spring.factories 文件
+				// 3.1 将resource转换为我们的properties文件 -- 方便获取属性
 				Properties properties = PropertiesLoaderUtils.loadProperties(resource);
+				// 3.2 获取META-INF/spring.factories对应的properties文件中的键值对
 				for (Map.Entry<?, ?> entry : properties.entrySet()) {
 					String factoryTypeName = ((String) entry.getKey()).trim();
 					for (String factoryImplementationName : StringUtils.commaDelimitedListToStringArray((String) entry.getValue())) {
-						// 2.2 将properties分析,key就是key,value需要做分隔符好,作为数组加入到result的value中
+						// 3.3 将properties分析,key就是key,value需要做分隔符后,作为数组加入到result的value中
 						result.add(factoryTypeName, factoryImplementationName.trim());
 					}
 				}
 			}
+			// 4. 最终加入到缓存中去
 			cache.put(classLoader, result);
 			return result;
 		}
