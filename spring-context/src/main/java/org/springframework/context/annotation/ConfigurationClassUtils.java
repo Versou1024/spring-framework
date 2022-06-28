@@ -84,20 +84,29 @@ abstract class ConfigurationClassUtils {
 	 * @return whether the candidate qualifies as (any kind of) configuration class
 	 */
 	public static boolean checkConfigurationClassCandidate(BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
-		// 获取Bean的ClassName
+		// 检查给定的 bean 定义是否是配置类的候选者
+		
+		// 1. 获取Bean的ClassName
+		// 如果bean没有指定ClassName,而且有FactoryMethodName -- 说明是配置类中@Bean引入的类
+		// 这种类不认为是配置类,直接返回false
+		
 		String className = beanDef.getBeanClassName();
 		if (className == null || beanDef.getFactoryMethodName() != null) {
 			return false;
 		}
+		
+		// 2. 获取className上的注解元数据信息
 
 		AnnotationMetadata metadata;
-		// 如果已经属于AnnotatedBeanDefinition，就直接获取注解Metadata
+		// 2.1 如果已经属于AnnotatedBeanDefinition，就直接从beanDef获取注解Metadata
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
 			// Can reuse the pre-parsed metadata from the given BeanDefinition...
 			metadata = ((AnnotatedBeanDefinition) beanDef).getMetadata();
 		}
-		// 如果属于 AbstractBeanDefinition 分支的BeanDefinition，就可能需要
+		// 2.2 如果属于 AbstractBeanDefinition 分支的BeanDefinition
+		// 就检查是否有实现BeanFactoryPostProcessor/BeanPostProcessor/AopInfrastructureBean/EventListenerFactory
+		// 实现以上接口等不能认为是配置类,
 		else if (beanDef instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) beanDef).hasBeanClass()) {
 			// Check already loaded Class if present...
 			// since we possibly can't even load the class file for this Class.
@@ -110,9 +119,10 @@ abstract class ConfigurationClassUtils {
 			}
 			metadata = AnnotationMetadata.introspect(beanClass);
 		}
+		// 2.3 普通的BeanDefinition,直接用MetadataReaderFactory为className获取注解元信息metadata
 		else {
 			try {
-				// 为当前className元数据的Reader
+				// 为当前className元数据创建Reader
 				MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(className);
 				// 获取注解元数据
 				metadata = metadataReader.getAnnotationMetadata();
@@ -126,24 +136,30 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
-		// 以上步骤的最终目的：就是获取 AnnotationMetadata
+		// 3. 根据元注解metadata做一些判断,是否为配置类
+		// 如果是配置类,是FULL还是LITE模式的
+		//		a: full模式就是必须有@Configuration注解,且proxyBeanMethods属性为true
+		//		b: lite模式就是带有：@Component @ComponentScan @Import @ImportResource，或者类中方法有@Bean、或者@Configuration的proxyDemo属性为false，都是lite模式，也认为是配置类，返回true
+		// 如果不是配置类,就返回false
 
-		// 从注解元数据上获取Configuration注解的属性
+		// 3.1 注解元数据上获取Configuration注解的属性
 		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
-			// proxyBeanMethods 属性为true，就是FULL模式
+			// 3.1.1 proxyBeanMethods 属性为true，就是FULL模式
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
-		else if (config != null || isConfigurationCandidate(metadata)) {
-			// 否则，即有Configuration注解同时proxyBeanMethods为false，否则不是配置类，但是里面有@Bean标注的方法，都可以就认为是LITE模式
+		else if (config != null || isConfigurationCandidate(metadata)) { // ❗️❗️❗️ -- 检查是否为lite模式的配置类
+			// 3.1.2 否则，检查是否为lite模式的配置类 -- 是的话也导入进来
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
 		else {
-			// 不符合配置类直接返回false
+			// 3.1.3 不符合LITE/FULL的配置类直接返回false
 			return false;
 		}
+		// 3.1.4 因此:只要有CONFIGURATION_CLASS_ATTRIBUTE属性就认为已经是被解析的配置类
+		
+		// 4. 把Order排序属性提取出来,存入属性中
 
-		// It's a full or lite configuration candidate... Let's determine the order value, if any.
 		// 这是一个full或者lite配置候选class，接下来决定其order属性，前提有的话
 		Integer order = getOrder(metadata);
 		if (order != null) {

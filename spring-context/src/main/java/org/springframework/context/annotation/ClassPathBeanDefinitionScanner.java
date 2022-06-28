@@ -62,15 +62,25 @@ import org.springframework.util.PatternMatchUtils;
  */
 public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateComponentProvider {
 
+	// bean定义信息的注册表
+	// 在指定类路径下扫描的符号资格的类都将加入到注册表中
 	private final BeanDefinitionRegistry registry;
 
+	// 默认需要使用的BeanDefinition模板 -- 也就是说@ComponentScan扫描的bean都会使用这个模板
+	// 比如可以根据@ComponentScan的lazyInit设置懒加载属性
 	private BeanDefinitionDefaults beanDefinitionDefaults = new BeanDefinitionDefaults();
 
+	// 用来配置类路径中扫描的class作为BeanDefinition注入到ioc容器后
+	// autowireCandidatePatterns用来根据beanName判断是否可以依赖注入到其他类中
 	@Nullable
 	private String[] autowireCandidatePatterns;
 
+	// bean命名器 --> 比如@Bean\@Component等导入ioc容器的bean名字
+	// 默认是:  AnnotationBeanNameGenerator.INSTANCE
+	// 可以在@ComponentScan中通过nameGenerator指定
 	private BeanNameGenerator beanNameGenerator = AnnotationBeanNameGenerator.INSTANCE;
 
+	// 与@ComponentScan的scopedProxy属性有关哦
 	private ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
 
 	private boolean includeAnnotationConfig = true;
@@ -163,12 +173,14 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		this.registry = registry;
 
+		// ❗️❗️❗️
 		// 当然我们也可以设置为false，比如@ComponentScan里就可以设置为false，只扫描指定的注解/类等等
+		// 但是非常不建议这样做 --> 我们就是需要默认的Filters去帮助我们过滤出@Configuration\@Component\@Controller\@Service等类
 		if (useDefaultFilters) {
 			// 没有指定的情况下，默认就是true
 			registerDefaultFilters();
 		}
-		// 设置environment -- 因为这里是ClassPath下的BEanDefinition的解析，因此需要environment配合
+		// 设置environment -- 因为这里是ClassPath下的BeanDefinition的解析，因此需要environment配合
 		setEnvironment(environment);
 		// 设置资源Loader，可以帮助加载xml配置文件、加载.class文件
 		setResourceLoader(resourceLoader);
@@ -278,35 +290,37 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		// beanDefinitions 用于装载扫描到的Bean
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
-			// 这个是重点，会把该包下面所有有资格的Bean都扫描进去。Spring5的处理方式不一样哦~
+			// 1. 这个是重点，会把该包下面所有有资格的Bean都扫描进去。Spring5的处理方式不一样哦~
+			// 有资格指的是[假设在默认情况下,没有设置额外的includeFilter以及excludeFilter]:
+			//  a: 在basePackage下的class文件,对应的类上有@Component以及其派生注解如@Controller/@Service这种
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 			for (BeanDefinition candidate : candidates) {
-				// 扫描到所有的Bean之后就是开始解析Bean里面的一些基本信息，或配置一些基本信息
-				// 解析@Scope、@Lazy、@Role、@DependsOn等、设置BeanName、
+				// 2.1 resolveScopeMetadate()很简单的就是去解析@Scope
+				// ❗️❗️❗️没有@Scope注解,也会返回一个空构造的ScopeMetadata -> scopeName默认是单例的\proxyMode默认是无代理模式
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
-				candidate.setScope(scopeMetadata.getScopeName()); // 解析生效的范围，并将scope name设置进去
-				// 生成Bean的名称，默认为首字母小写
+				candidate.setScope(scopeMetadata.getScopeName());
+				// 2.2 生成Bean的名称，有注解比如@Component的value值,就先用注解,不行就采用默认为首字母小写
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
-				// 此处为扫描的Bean，为ScannedGenericBeanDefinition，所以肯定为true
-				// 因此进来if代码块，执行postProcessBeanDefinition（对Bean定义信息做）如下详解
-				// 注意：只是添加些默认的Bean定义信息，并不是执行后置处理器~~~
+				// 2.3 此处扫描的Bean为ScannedGenericBeanDefinition，所以肯定为true, 因此进来if代码块，
 				if (candidate instanceof AbstractBeanDefinition) {
-					// 进行BeanDefinition的处理，添加一些默认信息，从beanDefinitionDefaults复制一些默认信息到解析出的BEanDefinition中
-					// 可以忽略，因为乜有设置 BeanDefinitionDefault 值
+					// 对BeanDefinition处理，添加默认信息，从beanDefinitionDefaults复制一些默认信息到解析出的BEanDefinition中
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
-				// 显然，此处也是true，也是完善比如Bean上的一些注解信息：
-				// 比如@Lazy、@Primary、@DependsOn、@Role、@Description 、@Role注解用于Bean的分类分组，没有太大的作用
+				// 2.4 显然，此处也是true，也是完善Bean上的一些注解信息：
 				if (candidate instanceof AnnotatedBeanDefinition) {
+					// 处理常见的注解: @Lazy @Primary @DependsOn @Role @Description
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
-				// 检查bean
-				// 例如dao包（一般配置的basePakage是这个）下的类是符合mybaits要求的则向spring IOC容器中注册它的BeanDefinition  所以这步检查第三方Bean的时候有必要检查一下
+				// 2.5 检查bean -- 比如注册表中已有对应的beanName且两个BeanDefinition不兼容,就会报错误
 				if (checkCandidate(beanName, candidate)) {
+					// 2.5.1 构建BeanDefinitionHolder
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+					// 为啥需要执行: applyScopedProxyMode()
+					// ❗️❗️❗️ 因为下面就要注册到BeanDefinitionRegistry中啦,如果Scope的ProxyMode不是NO,就需要创建代理的BeanDefinition哦
 					definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
-					// 注意 注意 注意：这里已经把Bean注册进去工厂了，所以 doScan()方法不接收返回值，也是没有任何问题的。
+					// ❗️❗️❗️注意 注意 注意：
+					// 这里已经把Bean注册进去工厂了，所以 doScan()方法不接收返回值，也是没有任何问题的。
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}
@@ -327,6 +341,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		beanDefinition.applyDefaults(this.beanDefinitionDefaults);
 		// 自动依赖注入 匹配路径（此处为null，不进来）
 		if (this.autowireCandidatePatterns != null) {
+			// 设置此 bean 是否是自动装配到其他 bean 的候选对象
 			beanDefinition.setAutowireCandidate(PatternMatchUtils.simpleMatch(this.autowireCandidatePatterns, beanName));
 		}
 	}
@@ -355,9 +370,13 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * bean definition has been found for the specified name
 	 */
 	protected boolean checkCandidate(String beanName, BeanDefinition beanDefinition) throws IllegalStateException {
+		// 检查给定候选的 bean 名称，确定相应的 bean 定义是否需要注册或与现有定义冲突。
+		
+		// 1. 注册表registry不存在对应beanName,返回true
 		if (!this.registry.containsBeanDefinition(beanName)) {
 			return true;
 		}
+		// 2. 如果registry有同名beanName的bean,而两者都不兼容 -- 抛出异常
 		BeanDefinition existingDef = this.registry.getBeanDefinition(beanName);
 		BeanDefinition originatingDef = existingDef.getOriginatingBeanDefinition();
 		if (originatingDef != null) {
@@ -383,6 +402,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * new definition to be skipped in favor of the existing definition
 	 */
 	protected boolean isCompatible(BeanDefinition newDefinition, BeanDefinition existingDefinition) {
+		// 检查两个BeanDefinition是否可以兼容
 		return (!(existingDefinition instanceof ScannedGenericBeanDefinition) ||  // explicitly registered overriding bean
 				(newDefinition.getSource() != null && newDefinition.getSource().equals(existingDefinition.getSource())) ||  // scanned same file twice
 				newDefinition.equals(existingDefinition));  // scanned equivalent class twice

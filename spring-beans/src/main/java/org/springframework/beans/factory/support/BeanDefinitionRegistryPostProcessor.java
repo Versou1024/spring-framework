@@ -34,9 +34,11 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 	/*
 	 * postProcessBeanDefinitionRegistry和postProcessBeanFactory方法
 	 * 两者都存在于BeanDefinitionRegistryPostProcessor接口中，表明其既可以自定义BeanDefinition并注册进容器中也可以对beanFactory的修改
-	 *		那为什么逻辑要先执行postProcessBeanDefinitionRegistry然后在执行postProcessBeanFactory呢？
+	 *		那为什么逻辑要先执行postProcessBeanDefinitionRegistry然后在执行postProcessBeanFactory呢？ 
+	 * 			{先执行的证明} -> PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) 源代码
 	 *		因为postProcessBeanDefinitionRegistry是用来创建bean定义的，而postProcessBeanFactory是修改BeanFactory，
-	 * 当然postProcessBeanFactory也可以修改bean定义的。为了保证在修改之前所有的bean定义的都存在，所以优先执行postProcessBeanDefinitionRegistry。如不是以上顺序，会出先再修改某个bean定义的报错，因为此bean定义的还没有被创建
+	 * 当然postProcessBeanFactory也可以修改bean定义的。为了保证在修改之前所有的bean定义的都存在，所以优先执行postProcessBeanDefinitionRegistry。
+	 * 如不是以上顺序，会出先再修改某个bean定义的报错，因为此bean定义的还没有被创建
 	 */
 
 	/**

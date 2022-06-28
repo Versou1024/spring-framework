@@ -61,6 +61,11 @@ import org.springframework.beans.BeansException;
  */
 @FunctionalInterface
 public interface BeanFactoryPostProcessor {
+	// 在AbstractApplicationContext中的刷新refresh()容器的方法中
+	// prepareBeanFactory(beanFactory) 准备好bean工厂后
+	// 就会调用
+	// invokeBeanFactoryPostProcessors(beanFactory) -- 触发BeanFactory的增强处理器的逻辑postProcessBeanFactory()哦
+	// 比如可以向BeanFactory中添加扫描到的BeanDefinition信息
 
 	/**
 	 * Modify the application context's internal bean factory after its standard

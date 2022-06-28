@@ -51,6 +51,7 @@ import org.springframework.util.ObjectUtils;
  * @see java.util.Arrays#sort(Object[], java.util.Comparator)
  */
 public class OrderComparator implements Comparator<Object> {
+	// 他有一个实现类就是 AnnotationAwareOrderComparator -> 对注解@Order进行了感知
 
 	/**
 	 * Shared default instance of {@code OrderComparator}.
@@ -78,16 +79,22 @@ public class OrderComparator implements Comparator<Object> {
 		// 比较排序的优先级
 		// 1、首先PriorityOrdered优先级比高
 		// 2、都是PriorityOrdered时，或都不是PriorityOrdered时，通过比较order值
+		
 		boolean p1 = (o1 instanceof PriorityOrdered);
 		boolean p2 = (o2 instanceof PriorityOrdered);
+		// p1为true,p2为false,返回-1,表示不需要交换位置即允许p1在p2前面
+		// 说明: PriorityOrdered的优先级最高
 		if (p1 && !p2) {
-			return -1; // -1 表示 o1的优先级比o2高
+			return -1;
 		}
 		else if (p2 && !p1) {
 			return 1;
 		}
-
-		int i1 = getOrder(o1, sourceProvider); // sourceProvider 一般为null
+		// sourceProvider 一般为空
+		// getOrder(Object)
+		//  a:实现Ordered接口时，返回指定的order值
+		// 	b:没有实现Ordered接口时，默认就是最低优先级
+		int i1 = getOrder(o1, sourceProvider);
 		int i2 = getOrder(o2, sourceProvider);
 		return Integer.compare(i1, i2);
 	}

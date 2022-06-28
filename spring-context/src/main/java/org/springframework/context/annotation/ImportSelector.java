@@ -59,6 +59,9 @@ import org.springframework.lang.Nullable;
  * @see Configuration
  */
 public interface ImportSelector {
+	// ImportSelector#selectImports() 会在扫描到配置类时,检查到有@Import注解,且使用的是ImportSelector,就会立即执行该方法
+	// 而且返回的String[]在最终会被加入到BeanDefinitionRegistry中,还会去检查每个String对应的类是否又是一个新的配置类,是的话,就会
+	// 继续递归处理
 
 	/**
 	 * Select and return the names of which class(es) should be imported based on
@@ -81,5 +84,6 @@ public interface ImportSelector {
 	default Predicate<String> getExclusionFilter() {
 		return null;
 	}
+	// 允许指定一个Filter用来过滤不需要加到的全限定类名
 
 }

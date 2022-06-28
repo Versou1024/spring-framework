@@ -58,6 +58,9 @@ public class AnnotationTypeFilter extends AbstractTypeHierarchyTraversingFilter 
 	 * @param annotationType the annotation type to match
 	 */
 	public AnnotationTypeFilter(Class<? extends Annotation> annotationType) {
+		// 常用的 -- 仅仅传入一个注解的class
+		// ❗️❗️❗️
+		// 默认是考虑匹配到元注解上\超类上\非接口上
 		this(annotationType, true, false);
 	}
 
@@ -77,8 +80,10 @@ public class AnnotationTypeFilter extends AbstractTypeHierarchyTraversingFilter 
 	 * @param considerMetaAnnotations whether to also match on meta-annotations
 	 * @param considerInterfaces whether to also match interfaces
 	 */
-	public AnnotationTypeFilter(
-			Class<? extends Annotation> annotationType, boolean considerMetaAnnotations, boolean considerInterfaces) {
+	public AnnotationTypeFilter(Class<? extends Annotation> annotationType, boolean considerMetaAnnotations, boolean considerInterfaces) {
+		// annotationType - 要匹配的注解类型
+		// considerMetaAnnotations - 是否考虑匹配到匹配元注释上
+		// considerInterfaces — 是否也考虑匹配接口
 
 		super(annotationType.isAnnotationPresent(Inherited.class), considerInterfaces);
 		this.annotationType = annotationType;
@@ -96,6 +101,8 @@ public class AnnotationTypeFilter extends AbstractTypeHierarchyTraversingFilter 
 
 	@Override
 	protected boolean matchSelf(MetadataReader metadataReader) {
+		// 是否可以当前类直接匹配对应注解 或者
+		// considerMetaAnnotations为true时,能够直接匹配上元注解信息
 		AnnotationMetadata metadata = metadataReader.getAnnotationMetadata();
 		return metadata.hasAnnotation(this.annotationType.getName()) ||
 				(this.considerMetaAnnotations && metadata.hasMetaAnnotation(this.annotationType.getName()));
@@ -104,20 +111,24 @@ public class AnnotationTypeFilter extends AbstractTypeHierarchyTraversingFilter 
 	@Override
 	@Nullable
 	protected Boolean matchSuperClass(String superClassName) {
+		// 如何匹配超类
 		return hasAnnotation(superClassName);
 	}
 
 	@Override
 	@Nullable
 	protected Boolean matchInterface(String interfaceName) {
+		// 如何匹配接口
 		return hasAnnotation(interfaceName);
 	}
 
 	@Nullable
 	protected Boolean hasAnnotation(String typeName) {
+		// 1. 超类为Object则不会匹配
 		if (Object.class.getName().equals(typeName)) {
 			return false;
 		}
+		// 2. 接口或超类为java中的class,就要求匹配的注解也是以java中存在,否则不匹配
 		else if (typeName.startsWith("java")) {
 			if (!this.annotationType.getName().startsWith("java")) {
 				// Standard Java types do not have non-standard annotations on them ->
@@ -125,6 +136,7 @@ public class AnnotationTypeFilter extends AbstractTypeHierarchyTraversingFilter 
 				return false;
 			}
 			try {
+				// 3.检查类上是否有指定的注解
 				Class<?> clazz = ClassUtils.forName(typeName, getClass().getClassLoader());
 				return ((this.considerMetaAnnotations ? AnnotationUtils.getAnnotation(clazz, this.annotationType) :
 						clazz.getAnnotation(this.annotationType)) != null);

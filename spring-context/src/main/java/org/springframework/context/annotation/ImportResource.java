@@ -53,7 +53,10 @@ import org.springframework.core.annotation.AliasFor;
 @Target(ElementType.TYPE)
 @Documented
 public @interface ImportResource {
-
+	// 指示一个或多个包含要导入的 bean 定义的资源
+	// 与@Import一样，此注解提供类似于 Spring XML 中的<import/>元素的功能。它通常在设计@Configuration类以由AnnotationConfigApplicationContext引导时使用，但仍然需要一些 XML 功能，例如命名空间
+	
+	
 	/**
 	 * Alias for {@link #locations}.
 	 * @see #locations

@@ -37,5 +37,5 @@ public interface BeanNameGenerator {
 	// definition 被生成名字的BeanDefinition实例；registry 生成名字后注册进的BeanDefinitionRegistry。
 	// BeanNameGenerator有两个实现版本，DefaultBeanNameGenerator和AnnotationBeanNameGenerator。
 	// 		DefaultBeanNameGenerator是给资源文件加载bean时使用（BeanDefinitionReader中使用）；
-	// 		AnnotationBeanNameGenerator是为了处理注解生成bean name的情况。
+	// 		AnnotationBeanNameGenerator是为了处理注解比如@Bean标注的方法生成bean name的情况。
 }

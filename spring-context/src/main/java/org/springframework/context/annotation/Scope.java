@@ -62,6 +62,7 @@ import org.springframework.core.annotation.AliasFor;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Scope {
+	// 范围注解
 
 	/**
 	 * Alias for {@link #scopeName}.
@@ -69,6 +70,9 @@ public @interface Scope {
 	 */
 	@AliasFor("scopeName")
 	String value() default "";
+	// 范围的别名
+	// 用户可以自己定义Scope,然后注册到Context上,即 scopeName + XxxScope.class 的形式
+	// 这里就是指定对应的使用的Scope的名字
 
 	/**
 	 * Specifies the name of the scope to use for the annotated component/bean.
@@ -94,5 +98,7 @@ public @interface Scope {
 	 * @see ScopedProxyMode
 	 */
 	ScopedProxyMode proxyMode() default ScopedProxyMode.DEFAULT;
+	// 指定是否应将组件配置为作用域代理，如果是，则代理应基于接口还是基于子类。
+	// 默认为ScopedProxyMode.DEFAULT ，这通常表示不应创建范围代理，除非在组件扫描指令级别配置了不同的默认值。
 
 }

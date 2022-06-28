@@ -39,6 +39,8 @@ import org.springframework.lang.Nullable;
  * @since 2.5
  */
 public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilter {
+	// 遍历层次结构的类型过滤器 -- 模板方法
+	// 此过滤器很有用。所采用的算法使用成功快速策略：如果在任何时候声明匹配，则不执行进一步处理。
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -57,18 +59,21 @@ public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilte
 	public boolean match(MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory)
 			throws IOException {
 
-		// This method optimizes avoiding unnecessary creation of ClassReaders
-		// as well as visiting over those readers.
+		// 此方法优化了避免不必要的 ClassReader 创建以及访问这些阅读器。
+		// 1. 直接检查类本身是否可以匹配 -- 比如 AnnotationTypeFilter 就需要使用到这里
 		if (matchSelf(metadataReader)) {
 			return true;
 		}
+		// 2. 获取出ClassMeta后检查是否可以匹配ClassName的名字 -- 比如 AssignTypeFilter 就需要这个
 		ClassMetadata metadata = metadataReader.getClassMetadata();
 		if (matchClassName(metadata.getClassName())) {
 			return true;
 		}
 
+		// 3. 是否考虑继承体系上的超类是否匹配哦
 		if (this.considerInherited) {
 			String superClassName = metadata.getSuperClassName();
+			// 3.1 考虑继承体系的话,检查非空超类是否匹配
 			if (superClassName != null) {
 				// Optimization to avoid creating ClassReader for super class.
 				Boolean superClassMatch = matchSuperClass(superClassName);
@@ -78,7 +83,7 @@ public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilte
 					}
 				}
 				else {
-					// Need to read super class to determine a match...
+					// 递归吧 -- 检查其超类的超类是否满足哦
 					try {
 						if (match(metadata.getSuperClassName(), metadataReaderFactory)) {
 							return true;
@@ -94,6 +99,7 @@ public abstract class AbstractTypeHierarchyTraversingFilter implements TypeFilte
 			}
 		}
 
+		// 是否考虑其继承体系上的接口是否匹配 -- 步骤类上,不过多阐述~~
 		if (this.considerInterfaces) {
 			for (String ifc : metadata.getInterfaceNames()) {
 				// Optimization to avoid creating ClassReader for super class

@@ -150,27 +150,43 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 
 
+	// 当前Bean的Class
+	// 1. 普通的就是当前Bean本身的class
+	// 2. 特殊的,比如有使用@Scope(proxyMode=ScopedProxyMode.TARGET_CLASS),那么实际的beanClass反而是在ScopedProxyUtils创建的ScopedProxyFactoryBean
+	// 3. @Bean的方法的beanClass时static静态修饰和的,那么beanClass就是配置类configClass的内省class
 	@Nullable
 	private volatile Object beanClass;
 
+	
+	// 设置的scope的名字
+	// 一般情况没有使用@Scope的时候就是默认传递的单例模式
 	@Nullable
 	private String scope = SCOPE_DEFAULT;
 
 	private boolean abstractFlag = false;
 
+	// 是否延迟初始化
+	// 和@Lazy有关/@ComponentScanLazy
 	@Nullable
-	private Boolean lazyInit; // 是否延迟初始化
+	private Boolean lazyInit;
 
 	private int autowireMode = AUTOWIRE_NO; // 自动配置模式 -- 不是懒加载
 
 	private int dependencyCheck = DEPENDENCY_CHECK_NONE; // 默认不进行懒加载
 
+	// 当前Bean依赖的其他的Class
+	// 和@DependsOn
 	@Nullable
-	private String[] dependsOn; // 当前Bean依赖的其他的Class
+	private String[] dependsOn; 
 
-	private boolean autowireCandidate = true; // 默认是为自动装配的候选者
+	// 是否可以做依赖注入的候选类
+	// 默认都是自动装配的候选者
+	// 1. @Bean导入的BeanDefinition是可以通过autowireCandidate属性控制的
+	private boolean autowireCandidate = true; 
 
-	private boolean primary = false; // 默认不是为自动装配的主要者 - 默认为false
+	// 默认不是为自动装配的主要者 - 默认为false 
+	// 和@Primary有关
+	private boolean primary = false; 
 
 
 	//用于记录Qualifier，对应子元素qualifier=======这个字段有必要解释一下
@@ -190,27 +206,37 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	private boolean nonPublicAccessAllowed = true; // 是否允许访问非public方法和属性，应用于构造函数、工厂方法、init、destroy方法的解析 默认是true，表示啥都可以访问
 
+	// 指定是在宽松模式下解析构造函数（ true ，这是默认值）
+	// 还是切换到严格解析（在转换参数时所有匹配的模棱两可的构造函数的情况下抛出异常，而宽松模式将使用具有 'closest 的构造函数' 类型匹配）。
 	private boolean lenientConstructorResolution = true; // 是否以一种宽松的模式解析构造函数，默认为true（宽松和严格体现在类型匹配上）
 
+	// 工厂类名（注意是String类型，不是Class类型） 对应bean属性factory-method
+	// 只有@Bean方法为非静态的情况才有这个值
 	@Nullable
-	private String factoryBeanName; //工厂类名（注意是String类型，不是Class类型） 对应bean属性factory-method
+	private String factoryBeanName;
 
+	// 工厂方法名（注意是String类型，不是Method类型）
 	@Nullable
-	private String factoryMethodName; //工厂方法名（注意是String类型，不是Method类型）
+	private String factoryMethodName; 
 
 	@Nullable
 	private ConstructorArgumentValues constructorArgumentValues; // 记录构造函数注入属性，对应bean属性constructor-arg
 
+	// Bean属性的名称以及对应的值，这里不会存放构造函数相关的参数值，只会存放通过setter注入的依赖
 	@Nullable
-	private MutablePropertyValues propertyValues; //Bean属性的名称以及对应的值，这里不会存放构造函数相关的参数值，只会存放通过setter注入的依赖
+	private MutablePropertyValues propertyValues; 
 
 	private MethodOverrides methodOverrides = new MethodOverrides(); //方法重写的持有者，记录lookup-method、replaced-method元素、@Lookup等
 
+	// 对象初始化的方法名
+	// 1. 比如@Bean的initMethod属性值
 	@Nullable
-	private String initMethodName; // 初始化方法名
+	private String initMethodName;
 
+	// 对象被销毁的方法名
+	// 1. 比如@Bean的destroyMethod属性值
 	@Nullable
-	private String destroyMethodName; // 销毁方法名
+	private String destroyMethodName; 
 
 	private boolean enforceInitMethod = true; // 是否强制init
 
@@ -220,13 +246,21 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	// 创建AOP时候为true
 	private boolean synthetic = false;
 
-	private int role = BeanDefinition.ROLE_APPLICATION; //Bean的角色，为用户自定义Bean
+	// Bean的角色，为用户自定义Bean --
+	// 和@Role有关
+	private int role = BeanDefinition.ROLE_APPLICATION;
 
+	// Bean的描述信息
+	// 和@Description有关
 	@Nullable
-	private String description;// Bean的描述信息
+	private String description;
 
+	//  bean 定义来自的资源,这个Bean哪儿来的
+	// 1.在通过扫描basePackage下所有的.class文件时创建的BeanDefinition对应都是UrlResource -> 指向class文件
+	// 2.而在使用@Scope(proxyMode=ScopedProxyMode.TARGET_CLASS)代理出来的RootBeanDefinition的Resource是BeanDefinitionResource -> 指向被代理的BeanDefinition
+	// 3.@Bean的方法来源就是对应ConfigurationClass的resource来源
 	@Nullable
-	private Resource resource; // 这个Bean哪儿来的，即从那个resource中.class文件加载
+	private Resource resource; 
 
 
 	/**

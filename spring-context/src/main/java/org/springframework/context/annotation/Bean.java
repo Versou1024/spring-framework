@@ -227,6 +227,8 @@ public @interface Bean {
 	 */
 	@AliasFor("name")
 	String[] value() default {};
+	// name属性中，如果有多个值，那么第一个name就是beanName，剩余下的beanName的别名 
+	// 而如果不给定name属性,name方法名首字母小写后就将作为beanName使用,且无别名
 
 	/**
 	 * The name of this bean, or if several names, a primary bean name plus aliases.
@@ -253,6 +255,8 @@ public @interface Bean {
 	 */
 	@Deprecated
 	Autowire autowire() default Autowire.NO;
+	// note: 已弃用
+	// 从 5.1 开始，因为@Bean的工厂方法参数解析和@Autowired处理取代了基于名称/类型的 bean 属性注入
 
 	/**
 	 * Is this bean a candidate for getting autowired into some other bean?
@@ -261,6 +265,7 @@ public @interface Bean {
 	 * @since 5.1
 	 */
 	boolean autowireCandidate() default true;
+	// 这个 bean 是否可以自动装配到其他 bean 中 -- 默认为true
 
 	/**
 	 * The optional name of a method to call on the bean instance during initialization.
@@ -271,6 +276,7 @@ public @interface Bean {
 	 * @see org.springframework.context.ConfigurableApplicationContext#refresh()
 	 */
 	String initMethod() default "";
+	// 在初始化期间调用 bean 实例的方法的可选名称。不常用，因为可以直接在 Bean 注释方法的主体内以编程方式调用该方法。
 
 	/**
 	 * The optional name of a method to call on the bean instance upon closing the
@@ -300,5 +306,6 @@ public @interface Bean {
 	 * @see org.springframework.context.ConfigurableApplicationContext#close()
 	 */
 	String destroyMethod() default AbstractBeanDefinition.INFER_METHOD;
+	// 在关闭应用程序上下文时调用 bean 实例的方法的可选名称，例如 JDBC DataSource实现上的close()方法或 Hibernate SessionFactory对象。该方法必须没有参数，但可以抛出任何异常。
 
 }

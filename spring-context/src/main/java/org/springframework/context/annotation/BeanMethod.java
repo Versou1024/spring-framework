@@ -32,8 +32,10 @@ import org.springframework.core.type.MethodMetadata;
  * @see ConfigurationClassBeanDefinitionReader
  */
 final class BeanMethod extends ConfigurationMethod {
-
+	// 用于描述配置类中的@Bean的方法
+	
 	public BeanMethod(MethodMetadata metadata, ConfigurationClass configurationClass) {
+		// 封装有 @Bean标注的method的元数据即metadata / @Bean方法所在的配置类即configurationClass
 		super(metadata, configurationClass);
 	}
 

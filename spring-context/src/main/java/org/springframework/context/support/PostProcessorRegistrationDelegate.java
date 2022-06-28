@@ -54,6 +54,14 @@ final class PostProcessorRegistrationDelegate {
 
 
 	public static void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
+		// 逻辑:
+		// 首先指定 BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry()
+		// 执行的优先级: 形参传递进来的beanFactoryPostProcessors > spring容器中的带有PriorityOrdered接口的BeanDefinitionRegistryPostProcessor
+		// > spring容器中的带有Ordered接口的BeanDefinitionRegistryPostProcessor > spring容器中的实现了@Order/@Proprity接口的的BeanDefinitionRegistryPostProcessor
+		// > spring容器中的实现了无特殊情况的的BeanDefinitionRegistryPostProcessor
+		// 同样:按照上面的优先级执行 BeanFactoryPostProcessor#postProcessBeanFactory()
+		// note: 注意一下,对于同样级别的,比如都是用@Order接口且value值大小一样时,执行顺序是不定的
+		
 
 		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
 		// 首先引用 BeanDefinitionRegistryPostProcessors 的实现类
@@ -68,8 +76,8 @@ final class PostProcessorRegistrationDelegate {
 			List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>(); // 常规的BeanFactoryPostProcessor集合
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>(); // 特殊的BeanDefinitionRegistryPostProcessor集合
 
-			// 已有的注册的beanFactoryPostProcessors -- 这里通常是用户手动提供的一些，优先级横哦啊
-			// 这里是我们自己的set进去的，若没set，这里就是空(若是Sprng容器里的，下面会处理，见下面)
+			// 已有的注册的beanFactoryPostProcessors -- 这里通常是用户手动提供的一些，优先级高
+			// 这里是我们自己的set进去的，若没set，这里就是空(若是Spring容器里的，下面会处理，见下面)
 			// 从此处可以看出，我们手动set进去的，最最最最优先执行的
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
 				// 检查已注册的BeanFactoryProcessors中是否有特殊的BeanDefinitionRegistryPostProcessor
@@ -80,8 +88,7 @@ final class PostProcessorRegistrationDelegate {
 					// 执行完之后，然后把它缓冲起来了，放在了registryProcessors里，因为后续还有一个 BeanDefinitionRegistryPostProcessor#postProcessBeanFactory 需要执行
 					registryProcessor.postProcessBeanDefinitionRegistry(registry);
 					registryProcessors.add(registryProcessor);
-				}
-				else {
+				} else {
 					// 缓冲起来常规的处理器
 					regularPostProcessors.add(postProcessor);
 				}
@@ -91,7 +98,8 @@ final class PostProcessorRegistrationDelegate {
 			// uninitialized to let the bean factory post-processors apply to them!
 			// Separate between BeanDefinitionRegistryPostProcessors that implement
 			// PriorityOrdered, Ordered, and the rest.
-			// 前面执行完，提前通过形参注入的PostProcessor
+			// 前面执行完提前通过形参注入的PostProcessor中的BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry(registry)方法
+			// 然后存入到regularPostProcessors/registryProcessors容器中 --> 后续再统一执行,但因为他们在首部所以也会比Spring容器里的BeanFactoryPostProcessor执行的早哦
 			// 接下来，就是去执行Spring容器里面的一些PostProcessor了。他们顺序doc里也写得很清楚：
 			// 先执行实现了PriorityOrdered接口的，然后是Ordered接口的，最后执行剩下的
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
@@ -112,9 +120,10 @@ final class PostProcessorRegistrationDelegate {
 			}
 			// 排序
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
-			// 注册到已经执行的总的registryProcessors
+			// 将从Spring容器中找到的有PriorityOrdered接口的currentRegistryProcessors注册到待执行的总的registryProcessors的尾部
 			registryProcessors.addAll(currentRegistryProcessors);
-			// 核心 --- 开始引用
+			// registryProcessors 是 BeanDefinitionRegistryPostProcessor 
+			// 同样的Spring容器中的BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry()也需要立即去执行掉
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 			// 清空
 			currentRegistryProcessors.clear();
@@ -132,7 +141,8 @@ final class PostProcessorRegistrationDelegate {
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
 			registryProcessors.addAll(currentRegistryProcessors);
 			// 核心 --- 开始引用
-			// 这个方法很简单，就是吧currentRegistryProcessors里面所有的处理器for循环一个个的执行掉(本处只有ConfigurationClassPostProcessor，详见我的另一篇专门博文讲解)
+			// 这个方法很简单，就是吧currentRegistryProcessors中的BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry()
+			// 里面所有的处理器for循环一个个的执行掉(本处只有ConfigurationClassPostProcessor，详见我的另一篇专门博文讲解)
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 			// 此处把当前持有的执行对象给清空了，需要注意。以方便装载后续执行的处理器们
 			currentRegistryProcessors.clear();
@@ -145,7 +155,7 @@ final class PostProcessorRegistrationDelegate {
 				postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 				for (String ppName : postProcessorNames) {
 					if (!processedBeans.contains(ppName)) {
-						// 没有实现任何接口的
+						// 没有实现任何接口的BeanDefinitionRegistryPostProcessor
 						currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
 						processedBeans.add(ppName);
 						reiterate = true;
@@ -165,9 +175,7 @@ final class PostProcessorRegistrationDelegate {
 			// 我们当前环境regularPostProcessors长度为0.registryProcessors有一个解析@Configuration的处理器
 			invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
 			invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
-		}
-
-		else {
+		} else {
 			// Invoke factory processors registered with the context instance.
 			// 若是普通的Bean工厂，就直接执行set进来的后置处理器即可（因为容器里就没有其它Bean定义了）
 			invokeBeanFactoryPostProcessors(beanFactoryPostProcessors, beanFactory);
@@ -193,14 +201,11 @@ final class PostProcessorRegistrationDelegate {
 			if (processedBeans.contains(ppName)) {
 				// skip - already processed in first phase above
 				// 跳过 - 第一阶段已经处理过的bean
-			}
-			else if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+			} else if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
 				priorityOrderedPostProcessors.add(beanFactory.getBean(ppName, BeanFactoryPostProcessor.class));
-			}
-			else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+			} else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
 				orderedPostProcessorNames.add(ppName);
-			}
-			else {
+			} else {
 				nonOrderedPostProcessorNames.add(ppName);
 			}
 		}
@@ -235,7 +240,6 @@ final class PostProcessorRegistrationDelegate {
 		//完成了@Configuration配置文件的解析，并且把扫描到的、配置的Bean定义信息都加载进容器里
 		//Full模式下，完成了对@Configuration配置文件的加强，使得管理Bean依赖关系更加的方便了
 	}
-
 
 
 	public static void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
@@ -335,6 +339,13 @@ final class PostProcessorRegistrationDelegate {
 		// 查找比较器
 		Comparator<Object> comparatorToUse = null;
 		if (beanFactory instanceof DefaultListableBeanFactory) {
+			// 实际上在注解Spring中获取的是AnnotationAwareOrderComparator.INSTANCE
+			// 源码展示:
+			// 创建 AnnotatedBeanDefinitionReader 中调用 AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry)
+			// 将触发下面两行代码
+			// if (!(beanFactory.getDependencyComparator() instanceof AnnotationAwareOrderComparator)) {
+			//		beanFactory.setDependencyComparator(AnnotationAwareOrderComparator.INSTANCE);
+			//	}
 			comparatorToUse = ((DefaultListableBeanFactory) beanFactory).getDependencyComparator();
 		}
 		if (comparatorToUse == null) {

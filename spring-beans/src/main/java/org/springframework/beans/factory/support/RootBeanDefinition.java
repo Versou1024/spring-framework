@@ -71,6 +71,10 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	 * Bean的class对象
 	 */
 
+	
+	// 被装饰的BeanDefinition的Holder
+	// 比如在使用@Scope(proxyMode=ScopedProxyMode.TARGET_CLASS),那么就会为本来的BeanDefinition代理一个RootBeanDefinition
+	// 而代理出来的RootBeanDefinition的decoratedDefinition就是被代理的BEanDefinition
 	@Nullable
 	private BeanDefinitionHolder decoratedDefinition;
 
@@ -82,10 +86,10 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	boolean allowCaching = true;
 
+	// 1. 指定@Bean的方法是否为唯一的
 	boolean isFactoryMethodUnique;
 
 	// 拥有很多包级别的字段，用于同一个Package下，通常是在abstractBeanFactory中使用
-
 	@Nullable
 	volatile ResolvableType targetType; //缓存ResolvableType，表明RootBeanDefinition存储哪个类的信息
 
@@ -402,6 +406,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	 * Specify a factory method name that refers to a non-overloaded method.
 	 */
 	public void setUniqueFactoryMethodName(String name) {
+		// 设置独一无二FactoryMethod的名字，即@Bean的方法名
 		Assert.hasText(name, "Factory method name must not be empty");
 		setFactoryMethodName(name);
 		this.isFactoryMethodUnique = true;

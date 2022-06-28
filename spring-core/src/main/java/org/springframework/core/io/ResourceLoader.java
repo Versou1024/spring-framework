@@ -40,8 +40,9 @@ import org.springframework.util.ResourceUtils;
  * @see org.springframework.context.ResourceLoaderAware
  */
 public interface ResourceLoader {
-	/**
-	 * Spring框架为了更方便的获取资源，尽量弱化程序员对各个Resource接口的实现类的感知（那么多实现类要程序员去记忆，其实也是不小的一个工作量），因此定义了另一个ResourceLoader接口。
+	/*
+	 * Spring框架为了更方便的获取资源，尽量弱化程序员对各个Resource接口的实现类的感知（那么多实现类要程序员去记忆，其实也是不小的一个工作量），
+	 * 因此定义了另一个ResourceLoader接口。
 	 *
 	 * 其中 getResource 用于返回Resource的某种实现类，其中会使用 ResourcePatternResolver 来帮忙做解析判断
 	 */
@@ -70,6 +71,10 @@ public interface ResourceLoader {
 	 * @see Resource#getInputStream()
 	 */
 	Resource getResource(String location);
+	// 返回指定资源位置的资源句柄。
+	// 必须支持完全限定的 URL，例如“file:C:/test.dat”。
+	// 必须支持类路径伪 URL，例如“classpath:test.dat”。
+	// 应该支持相对文件路径，例如“WEB-INF/test.dat”。 （这将是特定于实现的，通常由 ApplicationContext 实现提供。）
 
 	/**
 	 * Expose the ClassLoader used by this ResourceLoader.
@@ -83,5 +88,6 @@ public interface ResourceLoader {
 	 */
 	@Nullable
 	ClassLoader getClassLoader();
+	// 公开此 ResourceLoader 使用的 ClassLoader
 
 }

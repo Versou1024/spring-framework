@@ -29,6 +29,8 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
  * @see org.springframework.aop.scope.ScopedProxyUtils#createScopedProxy
  */
 final class ScopedProxyCreator {
+	// Scoped的代理类的创建器
+	// 核心工作:委托给ScopedProxyUtils执行
 
 	private ScopedProxyCreator() {
 	}

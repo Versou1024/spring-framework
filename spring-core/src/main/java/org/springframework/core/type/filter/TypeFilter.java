@@ -32,6 +32,13 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
  */
 @FunctionalInterface
 public interface TypeFilter {
+	// 搭配@ComponentScan的@Filter的type使用
+	// 一般都是: -- 
+	// FilterType.ANNOTATION 对应 AnnotationTypeFilter
+	// FilterType.ASSIGNABLE_TYPE 对应 AssignableTypeFilter
+	// FilterType.ASPECTJ 对应 AspectJTypeFilter
+	// FilterType.REGEX 对应 RegexPatternTypeFilter
+	
 
 	/**
 	 * Determine whether this filter matches for the class described by
@@ -44,5 +51,6 @@ public interface TypeFilter {
 	 */
 	boolean match(MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory)
 			throws IOException;
+	// metadataReader – 目标类的元数据阅读器
 
 }

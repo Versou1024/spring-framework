@@ -94,45 +94,43 @@ class ConditionEvaluator {
 		//  Condition核心二：如何检查是否匹配条件的
 		// 返回true表示需要匹配失败，需要跳过
 
-		// 1、当不包含注解Conditional表示不需要检查,返回false,表示不需要跳过bean的解析或者注册
+		// 1、当不包含注解@Conditional表示不需要检查,返回false,表示不需要跳过bean的解析或者注册
 		if (metadata == null || !metadata.isAnnotated(Conditional.class.getName())) {
 			return false;
 		}
 
-		// 2、检查所属的阶段
+		// 2、当没有传递需要检查的阶段即phase为null -> 需要推测出阶段phase后重新执行shouldSkip()方法
 		if (phase == null) {
-			// ConfigurationClassUtils.isConfigurationCandidate((AnnotationMetadata) metadata) 检查是否为配置类[注意配置类是一个宽泛的认知]
 			if (metadata instanceof AnnotationMetadata && ConfigurationClassUtils.isConfigurationCandidate((AnnotationMetadata) metadata)) {
-				// 如果是配置类，是的话，就在解析阶段处理
+				// 2.1 如果是配置类，就在解析阶段处理
 				return shouldSkip(metadata, ConfigurationPhase.PARSE_CONFIGURATION);
 			}
-			// 如果不是配置类，就在注册Bean的时候监测
+			// 2.2 如果不是配置类，就在注册Bean的时候监测
 			return shouldSkip(metadata, ConfigurationPhase.REGISTER_BEAN);
 		}
 
-		// 3、获取所有@Condition的value值 [注意：conditionClasses]
+		// 3、获取所有@Condition的value值并实例化为对应的Condition存入conditions
 		List<Condition> conditions = new ArrayList<>();
 		for (String[] conditionClasses : getConditionClasses(metadata)) {
 			for (String conditionClass : conditionClasses) {
-				// 使用类加载器，加载Condition的实现类
+				// 3.1 使用类加载器，加载Condition的实现类
 				Condition condition = getCondition(conditionClass, this.context.getClassLoader());
 				conditions.add(condition);
 			}
 		}
 
-		// 4、支持排序
+		// 4、支持排序 -- 对conditions排序 -- 排序规则 PriorityOrdered接口 > Ordered接口 + @Order + @Priority > 无
 		AnnotationAwareOrderComparator.sort(conditions);
 
 		// 5、开始检查 -- 每一个Condition
 		for (Condition condition : conditions) {
 			ConfigurationPhase requiredPhase = null;
-			// 6. condition的阶段数必须和形参中的ConfigurationPhase一致,才允许使用
+			// 6. 对于ConfigurationCondition的阶段数必须和形参中的ConfigurationPhase一致,才允许使用
 			if (condition instanceof ConfigurationCondition) {
 				// 获取 Condition 要求
 				requiredPhase = ((ConfigurationCondition) condition).getConfigurationPhase();
 			}
-			// 没有指定Condition执行阶段，或者，就是执行器的requiredPhase要求的阶段就是当前阶段
-			// 这里说明了： ConfigurationCondition 如果有阶段数，就会在指定的阶段处执行
+			// 7. 对于ConfigurationCondition必须阶段数相等,而普通的Condition则直接执行
 			// 就可以调用condition
 			if ((requiredPhase == null || requiredPhase == phase) && !condition.matches(this.context, metadata)) {
 				return true;
@@ -144,6 +142,8 @@ class ConditionEvaluator {
 
 	@SuppressWarnings("unchecked")
 	private List<String[]> getConditionClasses(AnnotatedTypeMetadata metadata) {
+		// 获取类上所有的@Conditional注解的value值
+		
 		MultiValueMap<String, Object> attributes = metadata.getAllAnnotationAttributes(Conditional.class.getName(), true);
 		Object values = (attributes != null ? attributes.get("value") : null);
 		return (List<String[]>) (values != null ? values : Collections.emptyList());

@@ -34,14 +34,16 @@ import org.springframework.util.ConcurrentReferenceHashMap;
  * @see javax.annotation.Priority
  */
 public abstract class OrderUtils {
+	// 根据对象类型声明确定对象顺序的通用实用程序。处理 Spring 的Order注释以及javax.annotation.Priority
 
 	/** Cache marker for a non-annotated Class. */
-	private static final Object NOT_ANNOTATED = new Object();
+	private static final Object NOT_ANNOTATED = new Object(); // 标记对象 -- 表示没有对应的缓存
 
 	private static final String JAVAX_PRIORITY_ANNOTATION = "javax.annotation.Priority";
 
 	/** Cache for @Order value (or NOT_ANNOTATED marker) per Class. */
 	private static final Map<AnnotatedElement, Object> orderCache = new ConcurrentReferenceHashMap<>(64);
+	// 全局缓存
 
 
 	/**
@@ -97,10 +99,14 @@ public abstract class OrderUtils {
 		if (!(element instanceof Class)) {
 			return findOrder(annotations);
 		}
+		// 2. 缓存命中,强转后返回 -- 强转的原因
+		// 无@Order注解时存储的是NOT_ANNOTATED,有@Order注解时存储的是对应的Integer
+		// 因为Map结构不允许存储null值,就只能使用标记对象Object类型的NOT_ANNOTATED
 		Object cached = orderCache.get(element);
 		if (cached != null) {
 			return (cached instanceof Integer ? (Integer) cached : null);
 		}
+		// 3. 缓存未命中,尝试findOrder(annotations),并存入缓存
 		Integer result = findOrder(annotations);
 		orderCache.put(element, result != null ? result : NOT_ANNOTATED);
 		return result;
@@ -108,10 +114,14 @@ public abstract class OrderUtils {
 
 	@Nullable
 	private static Integer findOrder(MergedAnnotations annotations) {
+		// @Order注解 > @Priority 的优先级
+		
+		// 1. 获取其中的@Order接口
 		MergedAnnotation<Order> orderAnnotation = annotations.get(Order.class);
 		if (orderAnnotation.isPresent()) {
 			return orderAnnotation.getInt(MergedAnnotation.VALUE);
 		}
+		// 2. 获取其中的@javax.annotation.Priority注解
 		MergedAnnotation<?> priorityAnnotation = annotations.get(JAVAX_PRIORITY_ANNOTATION);
 		if (priorityAnnotation.isPresent()) {
 			return priorityAnnotation.getInt(MergedAnnotation.VALUE);

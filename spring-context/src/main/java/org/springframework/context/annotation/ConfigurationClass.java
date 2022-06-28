@@ -48,26 +48,34 @@ import org.springframework.util.ClassUtils;
  */
 final class ConfigurationClass {
 	/**
-	 * 用于承载解析@Configuration配置的类的相关信息
+	 * 用于承载解析配置类的相关信息
 	 * ConfigurationClass代表一个配置类，它内部维护了一些已经解析好的但是还没有被加入进Bean定义信息的原始信息，有必要做如下解释：
 	 */
 
 	private final AnnotationMetadata metadata; // 注解元数据
 
-	private final Resource resource;
+	private final Resource resource; // 
 
 	@Nullable
 	private String beanName; // 配置类的bean名字
 
-	private final Set<ConfigurationClass> importedBy = new LinkedHashSet<>(1); // 被当前配置类导入的配置类
+	// 被当前配置类导入的配置类
+	// 比如 类A 通过 @Import 最终导入了 类B
+	// 那么 创建类B的 ConfigurationClass 就会传入 类A 到 importedBy 中
+	// 因此类B的ConfigurationClass的importedBy中有个类A的ConfigurationClass -- 表示类A是被类B导入的
+	private final Set<ConfigurationClass> importedBy = new LinkedHashSet<>(1);
 
-	private final Set<BeanMethod> beanMethods = new LinkedHashSet<>();  // 存储当前配置类中的带有@Bean的方法
+	// 存储当前配置类中的带有@Bean的方法
+	private final Set<BeanMethod> beanMethods = new LinkedHashSet<>(); 
 
-	private final Map<String, Class<? extends BeanDefinitionReader>> importedResources = new LinkedHashMap<>(); // 当前配置类上@ImportResource导入的资源名、对应的阅读器
+	// 当前配置类上@ImportResource的locations属性经过占位符解析的值 -> @ImportResource中reader属性对应的阅读器
+	private final Map<String, Class<? extends BeanDefinitionReader>> importedResources = new LinkedHashMap<>();
 
-	private final Map<ImportBeanDefinitionRegistrar, AnnotationMetadata> importBeanDefinitionRegistrars = new LinkedHashMap<>(); // 当前配置类的ImportBeanDefinitionRegistrar的实现
+	// 当前配置类的元注解@Import上有ImportBeanDefinitionRegistrar的实现类就加入到here
+	private final Map<ImportBeanDefinitionRegistrar, AnnotationMetadata> importBeanDefinitionRegistrars = new LinkedHashMap<>();
 
-	final Set<String> skippedBeanMethods = new HashSet<>(); // 存储当前配置类中需要跳过的BeanMethod的方法名
+	// 存储当前配置类中需要跳过的BeanMethod的方法名
+	final Set<String> skippedBeanMethods = new HashSet<>();
 
 
 	/**
@@ -226,6 +234,7 @@ final class ConfigurationClass {
 
 	@Override
 	public boolean equals(@Nullable Object other) {
+		// 配置类是否相等的依据就是 -- 配置类的类名是否相等
 		return (this == other || (other instanceof ConfigurationClass &&
 				getMetadata().getClassName().equals(((ConfigurationClass) other).getMetadata().getClassName())));
 	}

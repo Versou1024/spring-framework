@@ -45,6 +45,8 @@ import org.springframework.lang.Nullable;
  * @see javax.annotation.Priority
  */
 public class AnnotationAwareOrderComparator extends OrderComparator {
+	// AnnotationAwareOrderComparator是OrderComparator的扩展，
+	// 它支持 Spring 的org.springframework.core.Ordered接口以及@Order和@Priority注释， Ordered实例提供的顺序值覆盖静态定义的注释值（如果有）。
 
 	/**
 	 * Shared default instance of {@code AnnotationAwareOrderComparator}.
@@ -61,17 +63,24 @@ public class AnnotationAwareOrderComparator extends OrderComparator {
 	@Override
 	@Nullable
 	protected Integer findOrder(Object obj) {
+		// 重写: findOrder()方法 -> 主要是扩展查找@Order注解
+		
+		// 1. 实现了Ordered接口,就以Ordered接口为主
 		Integer order = super.findOrder(obj);
 		if (order != null) {
 			return order;
 		}
+		// 2. 没有实现Ordered接口,就查看是否有@Order/@Priority注解的value值
 		return findOrderFromAnnotation(obj);
 	}
 
 	@Nullable
 	private Integer findOrderFromAnnotation(Object obj) {
+		
+		// 1. 获取obj的注解annotations
 		AnnotatedElement element = (obj instanceof AnnotatedElement ? (AnnotatedElement) obj : obj.getClass());
 		MergedAnnotations annotations = MergedAnnotations.from(element, SearchStrategy.TYPE_HIERARCHY);
+		// 2. 利用OrderUtils从annotations尝试获取@Order/@Priority注解的value值
 		Integer order = OrderUtils.getOrderFromAnnotations(element, annotations);
 		if (order == null && obj instanceof DecoratingProxy) {
 			return findOrderFromAnnotation(((DecoratingProxy) obj).getDecoratedClass());

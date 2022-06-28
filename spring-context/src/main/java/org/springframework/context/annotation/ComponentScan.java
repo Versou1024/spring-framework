@@ -98,6 +98,9 @@ public @interface ComponentScan {
 	 * @see FullyQualifiedAnnotationBeanNameGenerator
 	 */
 	Class<? extends BeanNameGenerator> nameGenerator() default BeanNameGenerator.class;
+	// 用于命名 Spring 容器中检测到的组件的BeanNameGenerator类
+	// BeanNameGenerator接口本身的默认值表示用于处理此@ComponentScan注释的扫描器应使用其继承的bean 名称生成器，
+	// 例如默认AnnotationBeanNameGenerator或在引导时提供给应用程序上下文的任何自定义实例。
 
 	/**
 	 * The {@link ScopeMetadataResolver} to be used for resolving the scope of detected components.
@@ -113,6 +116,7 @@ public @interface ComponentScan {
 	 * @see ClassPathBeanDefinitionScanner#setScopedProxyMode(ScopedProxyMode)
 	 */
 	ScopedProxyMode scopedProxy() default ScopedProxyMode.DEFAULT;
+	// 指示是否应为检测到的组件生成代理，这在以代理样式方式使用范围时可能是必需的。
 
 	/**
 	 * Controls the class files eligible for component detection.
@@ -126,6 +130,8 @@ public @interface ComponentScan {
 	 * {@code @Repository}, {@code @Service}, or {@code @Controller} should be enabled.
 	 */
 	boolean useDefaultFilters() default true;
+	// 指示是否应启用使用@Component @Repository 、 @Service或@Controller注释的类的自动检测
+	// 默认为true,建议不要修改这个值
 
 	/**
 	 * Specifies which types are eligible for component scanning.
@@ -138,12 +144,15 @@ public @interface ComponentScan {
 	 * @see #useDefaultFilters()
 	 */
 	Filter[] includeFilters() default {};
+	// 指定哪些类型适合组件扫描
+	// 进一步将候选组件集从basePackages中的所有内容缩小到与给定过滤器或过滤器匹配的基本包中的所有内容。
 
 	/**
 	 * Specifies which types are not eligible for component scanning.
 	 * @see #resourcePattern
 	 */
 	Filter[] excludeFilters() default {};
+	// 指定哪些类型不适合组件扫描。
 
 	/**
 	 * Specify whether scanned beans should be registered for lazy initialization.
@@ -151,6 +160,7 @@ public @interface ComponentScan {
 	 * @since 4.1
 	 */
 	boolean lazyInit() default false;
+	// 指定是否应为延迟初始化注册扫描的 bean。
 
 
 	/**
@@ -168,6 +178,17 @@ public @interface ComponentScan {
 		 * @see #pattern
 		 */
 		FilterType type() default FilterType.ANNOTATION;
+		// 要使用的过滤器类型
+		// 用作过滤器的类。
+		// 下表解释了如何根据type属性的配置值来解释类。
+		// 	FilterType  	类解释为
+		//	ANNOTATION		注释本身
+		//	ASSIGNABLE_TYPE	检测到的组件应分配给的类型
+		//	CUSTOM			TypeFilter的实现
+		// 当指定多个类时，将应用OR逻辑——例如，“包含使用@Foo OR @Bar注释的类型”。
+		// 自定义TypeFilters可以选择实现以下任何Aware接口，并且它们各自的方法将在match之前被调用：
+		//		EnvironmentAware/BeanFactoryAware/BeanClassLoaderAware/ResourceLoaderAware
+		//  允许指定零类，但不会影响组件扫描。
 
 		/**
 		 * Alias for {@link #classes}.
@@ -208,6 +229,10 @@ public @interface ComponentScan {
 		 */
 		@AliasFor("value")
 		Class<?>[] classes() default {};
+		// 当type设置为ANNOTATION ，这是一个注解的class.
+		// 如果type设置为ASSIGNABLE_TYPE ，这是一个需要继承了指定的Class哦
+		// 其余type不生效
+		
 
 		/**
 		 * The pattern (or patterns) to use for the filter, as an alternative
@@ -220,6 +245,9 @@ public @interface ComponentScan {
 		 * @see #classes
 		 */
 		String[] pattern() default {};
+		// 当type设置为ASPECTJ ，这是一个 AspectJ 类型模式表达式。
+		// 如果type设置为REGEX ，这是一个用于匹配完全限定类名的正则表达式模式。
+		// 其余type不生效
 
 	}
 

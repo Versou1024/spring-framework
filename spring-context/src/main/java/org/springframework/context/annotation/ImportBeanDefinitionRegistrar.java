@@ -16,6 +16,7 @@
 
 package org.springframework.context.annotation;
 
+import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.beans.factory.support.BeanNameGenerator;
@@ -59,6 +60,14 @@ import org.springframework.core.type.AnnotationMetadata;
  * @see Configuration
  */
 public interface ImportBeanDefinitionRegistrar {
+	// 在处理@Configuration 类时，由注册附加bean 定义的类型实现的Configuration 。在需要或必须在 bean 定义级别（相对于@Bean方法/实例级别）操作时很有用。
+	// 与@Configuration和ImportSelector一起，这种类型的类可以提供给Import注解（或者也可以从ImportSelector返回）。
+	// ImportBeanDefinitionRegistrar可以实现以下任何Aware接口，它们各自的方法将在registerBeanDefinitions之前调用：
+	//	EnvironmentAware/BeanFactoryAware/BeanClassLoaderAware/ResourceLoaderAware
+	// 或者，该类可以提供具有以下一种或多种支持的参数类型的单个构造函数：Environment/BeanFactory/ClassLoader/ResourceLoader
+	
+	// ImportBeanDefinitionRegistrar#registerBeanDefinitions() 的执行时机 比 ImportSelector#selectImports() 晚
+	// 但是比 DeferredImportSelector#selectImports() 执行早
 
 	/**
 	 * Register bean definitions as necessary based on the given annotation metadata of

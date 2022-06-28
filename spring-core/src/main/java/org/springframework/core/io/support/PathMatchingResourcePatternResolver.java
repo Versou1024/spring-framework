@@ -183,7 +183,8 @@ import org.springframework.util.StringUtils;
 public class PathMatchingResourcePatternResolver implements ResourcePatternResolver {
 	/**
 	 * 该实现类是本文的重中之重。
-	 * 它是基于模式匹配的，默认使用org.springframework.util.AntPathMatcher进行路径匹配，它除了支持ResourceLoader支持的前缀外，还额外支持classpath*:用于加载所有匹配的类路径Resource
+	 * 它是基于模式匹配的，默认使用org.springframework.util.AntPathMatcher进行路径匹配
+	 * 它除了支持ResourceLoader支持的前缀外，还额外支持classpath*:用于加载所有匹配的类路径Resource
 	 */
 
 	private static final Log logger = LogFactory.getLog(PathMatchingResourcePatternResolver.class);
@@ -281,27 +282,23 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	@Override
 	public Resource[] getResources(String locationPattern) throws IOException {
 		Assert.notNull(locationPattern, "Location pattern must not be null");
-		// locationPattern 是否以 classPath*: 开头
+		// 1. locationPattern 是以 classPath*: 开头
 		if (locationPattern.startsWith(CLASSPATH_ALL_URL_PREFIX)) {
-			// a class path resource (multiple resources for same name possible)
-			// 去掉 前缀 classPath*:，然后判断是否为路径匹配，返回false，就表明是一个绝对路径
+			// 1.1 去掉前缀classPath*:xx的前缀classPath*，然后判断xx是否为Ant风格的路径匹配，是的话,返回true,然后按照Ant风格去匹配Class文件
 			if (getPathMatcher().isPattern(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()))) {
 				// a class path resource pattern
 				// ClassPath的资源匹配
 				return findPathMatchingResources(locationPattern);
 			}
+			// 1.2 指定的locationPattern不是ant风格的,是具体的某个Class -- 精准匹配
 			else {
-				// all class path resources with the given name
-				// 所有ClassPath资源通过精确的name
 				return findAllClassPathResources(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()));
 			}
 		}
-		// 不是
+		// 2. locationPattern 不是以 classPath*: 开头
 		else {
-			// Generally only look for a pattern after a prefix here,
-			// and on Tomcat only after the "*/" separator for its "war:" protocol.
-			int prefixEnd = (locationPattern.startsWith("war:") ? locationPattern.indexOf("*/") + 1 :
-					locationPattern.indexOf(':') + 1);
+			// 2.1 是否以war:开头,是的话就截取*/之后的,否则截取:之后的
+			int prefixEnd = (locationPattern.startsWith("war:") ? locationPattern.indexOf("*/") + 1 : locationPattern.indexOf(':') + 1);
 			if (getPathMatcher().isPattern(locationPattern.substring(prefixEnd))) {
 				// a file pattern
 				return findPathMatchingResources(locationPattern);
@@ -343,6 +340,9 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * @since 4.1.1
 	 */
 	protected Set<Resource> doFindAllClassPathResources(String path) throws IOException {
+		// 通过ClassLoader加载目录path下的所有的class文件 
+		// 然后转换为UrlResource假日到返回的结果集中
+		
 		Set<Resource> result = new LinkedHashSet<>(16);
 		ClassLoader cl = getClassLoader();
 		Enumeration<URL> resourceUrls = (cl != null ? cl.getResources(path) : ClassLoader.getSystemResources(path));
@@ -367,6 +367,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * @see org.springframework.core.io.Resource
 	 */
 	protected Resource convertClassLoaderURL(URL url) {
+		// 将URL->URLResource
 		return new UrlResource(url);
 	}
 
@@ -502,8 +503,12 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * @see org.springframework.util.PathMatcher
 	 */
 	protected Resource[] findPathMatchingResources(String locationPattern) throws IOException {
-		String rootDirPath = determineRootDir(locationPattern);
-		String subPattern = locationPattern.substring(rootDirPath.length());
+		// 通过 Ant 样式的 PathMatcher 查找与给定位置模式匹配的所有资源。
+		// 支持 jar 文件和 zip 文件以及文件系统中的资源。
+		
+		// 1. 从Ant样式的locationPattern获取rootDirPath根路径
+		String rootDirPath = determineRootDir(locationPattern); // 根路径
+		String subPattern = locationPattern.substring(rootDirPath.length()); // 根据路径下的指定的Class文件名
 		Resource[] rootDirResources = getResources(rootDirPath);
 		Set<Resource> result = new LinkedHashSet<>(16);
 		for (Resource rootDirResource : rootDirResources) {
@@ -516,12 +521,15 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 				}
 				rootDirResource = new UrlResource(rootDirUrl);
 			}
+			// 通用 JBoss VFS 资源的 URL 协议：“vfs”
 			if (rootDirUrl.getProtocol().startsWith(ResourceUtils.URL_PROTOCOL_VFS)) {
 				result.addAll(VfsResourceMatchingDelegate.findMatchingResources(rootDirUrl, subPattern, getPathMatcher()));
 			}
+			// 确定给定的 URL 是否指向 jar 文件中的资源。即具有协议“jar”、“war”、“zip”、“vfszip”或“wsjar
 			else if (ResourceUtils.isJarURL(rootDirUrl) || isJarResource(rootDirResource)) {
 				result.addAll(doFindPathMatchingJarResources(rootDirResource, rootDirUrl, subPattern));
 			}
+			// 其余情况
 			else {
 				result.addAll(doFindPathMatchingFileResources(rootDirResource, subPattern));
 			}
@@ -545,14 +553,22 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * @see #retrieveMatchingFiles
 	 */
 	protected String determineRootDir(String location) {
-		int prefixEnd = location.indexOf(':') + 1;
-		int rootDirEnd = location.length();
+		// 确定给定位置的根目录。
+		// 用于确定文件匹配的起点，将根目录位置解析为java.io.File并将其传递给retrieveMatchingFiles ，并将位置的其余部分作为模式。
+		// 例如，将为模式“/WEB-INF/*.xml”返回“/WEB-INF/”。
+		int prefixEnd = location.indexOf(':') + 1; // 前缀的位置
+		int rootDirEnd = location.length(); // 根路径的最后位置
+		// 截取从 前缀的末尾位置到根路径的最后位置号
+		// 比如: jar:com/xylink/website/da.java
+		// 那么 prefixEnd 就是 4 即 jar: 
+		// 那么 rootDirEnd 就是 website/da.java 中的最后一个"/"位置
 		while (rootDirEnd > prefixEnd && getPathMatcher().isPattern(location.substring(prefixEnd, rootDirEnd))) {
 			rootDirEnd = location.lastIndexOf('/', rootDirEnd - 2) + 1;
 		}
 		if (rootDirEnd == 0) {
 			rootDirEnd = prefixEnd;
 		}
+		// 截取出根路径
 		return location.substring(0, rootDirEnd);
 	}
 

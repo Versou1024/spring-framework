@@ -37,6 +37,7 @@ public class BeanMetadataAttributeAccessor extends AttributeAccessorSupport impl
 	 * 即实现额外属性和源数据的整合
 	 */
 
+	// 1. 对于@Bean修饰的方法其source就是对应工厂方法的MethodMetadata
 	@Nullable
 	private Object source;
 
@@ -46,10 +47,10 @@ public class BeanMetadataAttributeAccessor extends AttributeAccessorSupport impl
 	 * <p>The exact type of the object will depend on the configuration mechanism used.
 	 */
 	public void setSource(@Nullable Object source) {
-		/**
-		 * 	 * 分析: 该接口仅仅定义了一个getSource方法, 该方法用于返回一个source源,
-		 * 	 * 其实就是返回一个Class文件在磁盘中的绝对路径而已, 在Spring中, BeanDefinition是间接的实现了这个接口的,
-		 * 	 * 从而返回的是在BeanDefinition中定义的类的绝对路径，用来加载BeanDefinition的.class文件
+		/*
+		 * 分析: 该接口仅仅定义了一个getSource方法, 该方法用于返回一个source源,
+		 * 其实就是返回一个Class文件在磁盘中的绝对路径而已, 在Spring中, BeanDefinition是间接的实现了这个接口的,
+		 * 从而返回的是在BeanDefinition中定义的类的绝对路径，用来加载BeanDefinition的.class文件
 		 */
 		this.source = source;
 	}

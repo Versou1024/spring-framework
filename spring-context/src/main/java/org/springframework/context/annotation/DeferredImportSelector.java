@@ -36,6 +36,10 @@ import org.springframework.lang.Nullable;
  * @since 4.0
  */
 public interface DeferredImportSelector extends ImportSelector {
+	// DeferredImportSelector pk ImportSelector 
+	// ImportSelector#selectImports() 会在扫描到配置类时,检查到有@Import注解,且使用的是ImportSelector,就会立即执行该方法
+	// DeferredImportSelector#selectImports() 类上检查到时候的是DeferredImportSelector,并不会立即执行,而是会交给deferredImportSelectorHandler.handler()延迟执行
+	// 直到将所有的配置类/组件类都给加载到BeanDefinition中完毕之后,才会使用deferredImportSelectorHandler.process()处理前面提前存储好的DeferredImportSelector#selectImports()
 
 	/**
 	 * Return a specific import group.

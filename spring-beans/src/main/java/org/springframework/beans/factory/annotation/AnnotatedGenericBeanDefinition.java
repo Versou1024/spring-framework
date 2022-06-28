@@ -42,7 +42,7 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implements AnnotatedBeanDefinition {
-	/**
+	/*
 	 * 配置类的BeanDefinition用AnnotatedGenericBeanDefinition来表示:
 	 * 即
 	 * @Configuration
@@ -63,6 +63,7 @@ public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implem
 	 *
 	 */
 
+	// 
 	private final AnnotationMetadata metadata;
 
 	@Nullable

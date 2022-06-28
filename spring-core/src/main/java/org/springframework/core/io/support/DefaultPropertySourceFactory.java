@@ -34,6 +34,7 @@ public class DefaultPropertySourceFactory implements PropertySourceFactory {
 
 	@Override
 	public PropertySource<?> createPropertySource(@Nullable String name, EncodedResource resource) throws IOException {
+		// 直接创建 PropertySource -> 传入定义的资源名字/以及编码资源即可
 		return (name != null ? new ResourcePropertySource(name, resource) : new ResourcePropertySource(resource));
 	}
 

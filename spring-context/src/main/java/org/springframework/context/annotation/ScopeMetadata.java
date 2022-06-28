@@ -33,11 +33,12 @@ import org.springframework.util.Assert;
  * @see ScopedProxyMode
  */
 public class ScopeMetadata {
-
+	// @Scope的元数据
 	// 封装对应的 scope name 以及 scoped proxy mode
 
+	// 默认是单例 -- 因此如果@Scope的value值为空的,默认就会生效
 	private String scopeName = BeanDefinition.SCOPE_SINGLETON;
-
+	// 默认是无代理 -- 因此如果@Scope的ScopedProxyMode值为DEFAULT的,默认就会生效
 	private ScopedProxyMode scopedProxyMode = ScopedProxyMode.NO;
 
 

@@ -37,7 +37,11 @@ import org.springframework.util.Assert;
  * @see org.springframework.context.annotation.Scope
  */
 public class AnnotationScopeMetadataResolver implements ScopeMetadataResolver {
+	// 一个ScopeMetadataResolver实现，默认情况下检查 bean 类上是否存在 Spring 的@Scope注释。
+	// 检查的注释的确切类型可通过setScopeAnnotationType(Class)进行配置。
 
+	// 	默认的ScopedProxyMode就是NO -- 既不需要作用域代理
+	
 	private final ScopedProxyMode defaultProxyMode;
 
 	protected Class<? extends Annotation> scopeAnnotationType = Scope.class;
@@ -49,7 +53,7 @@ public class AnnotationScopeMetadataResolver implements ScopeMetadataResolver {
 	 * @see ScopedProxyMode#NO
 	 */
 	public AnnotationScopeMetadataResolver() {
-		this.defaultProxyMode = ScopedProxyMode.NO;
+		this.defaultProxyMode = ScopedProxyMode.NO; 
 	}
 
 	/**
@@ -78,22 +82,24 @@ public class AnnotationScopeMetadataResolver implements ScopeMetadataResolver {
 	public ScopeMetadata resolveScopeMetadata(BeanDefinition definition) {
 		// 常用的Scope解析器
 		ScopeMetadata metadata = new ScopeMetadata();
-		// AnnotationScopeMetadataResolver 就是用来解析注解的AnnotatedBeanDefinition
+		// 0. AnnotationScopeMetadataResolver 就是用来解析注解的AnnotatedBeanDefinition
 		if (definition instanceof AnnotatedBeanDefinition) {
 			AnnotatedBeanDefinition annDef = (AnnotatedBeanDefinition) definition;
-			// 检查是否有@Scope注解
+			// 1. 检查是否有@Scope注解
 			AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(annDef.getMetadata(), this.scopeAnnotationType);
 			if (attributes != null) {
-				// 获取 value 属性
+				// 2. 设置Scope的名字/Scope的代理模式
 				metadata.setScopeName(attributes.getString("value"));
 				ScopedProxyMode proxyMode = attributes.getEnum("proxyMode");
 				if (proxyMode == ScopedProxyMode.DEFAULT) {
 					proxyMode = this.defaultProxyMode;
 				}
-				// 设置 scopeMeta 中的 代理模式
 				metadata.setScopedProxyMode(proxyMode);
 			}
 		}
+		// ❗️❗️❗️
+		// note: 如果没有使用@Scope注解,那么返回的ScopeMetadata的空构造器中不难发现
+		// scopeName默认是单例的\proxyMode默认是无代理模式
 		return metadata;
 	}
 

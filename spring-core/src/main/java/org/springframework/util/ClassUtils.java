@@ -244,6 +244,8 @@ public abstract class ClassUtils {
 	 */
 	public static Class<?> forName(String name, @Nullable ClassLoader classLoader)
 			throws ClassNotFoundException, LinkageError {
+		// Class.forName()的替换，它还返回基元（例如“int”）和数组类名称（例如“String[]”）的类实例。
+		// 此外，它还能够解析Java源代码风格的内部类名（例如“java.lang.Thread.State”而不是“java.lang.Thread$State”）
 
 		Assert.notNull(name, "Name must not be null");
 

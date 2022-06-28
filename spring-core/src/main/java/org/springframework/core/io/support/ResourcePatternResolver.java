@@ -76,6 +76,6 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * @throws IOException in case of I/O errors
 	 */
 	Resource[] getResources(String locationPattern) throws IOException;
-	// 一个locationPattern是可以匹配多个资源的 -- 扩展支持Pattern、Ant风格
+	// 一个locationPattern是一个目录或者正则的是可以匹配多个资源的 -- 扩展支持Pattern、Ant风格
 
 }

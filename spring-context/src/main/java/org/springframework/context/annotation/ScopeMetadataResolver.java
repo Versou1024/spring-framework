@@ -27,6 +27,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
  */
 @FunctionalInterface
 public interface ScopeMetadataResolver {
+	// 用于解析 bean 定义范围的策略接口。
 
 	/**
 	 * Resolve the {@link ScopeMetadata} appropriate to the supplied
@@ -41,5 +42,6 @@ public interface ScopeMetadataResolver {
 	 * @return the relevant scope metadata; never {@code null}
 	 */
 	ScopeMetadata resolveScopeMetadata(BeanDefinition definition);
+	// 解析适合于提供的 bean definition的ScopeMetadata 
 
 }

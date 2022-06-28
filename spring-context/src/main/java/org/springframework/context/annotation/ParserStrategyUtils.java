@@ -57,12 +57,15 @@ abstract class ParserStrategyUtils {
 
 		Assert.notNull(clazz, "Class must not be null");
 		Assert.isAssignable(assignableTo, clazz);
+		// 1. 接口无法实例化
 		if (clazz.isInterface()) {
 			throw new BeanInstantiationException(clazz, "Specified class is an interface");
 		}
+		// 2. 利用ClassLoader加载并实例化指定的T
 		ClassLoader classLoader = (registry instanceof ConfigurableBeanFactory ?
 				((ConfigurableBeanFactory) registry).getBeanClassLoader() : resourceLoader.getClassLoader());
 		T instance = (T) createInstance(clazz, environment, resourceLoader, registry, classLoader);
+		// 3. 将几大感知接口执行 -> BeanClassLoaderAware/BeanFactoryAware/EnvironmentAware/ResourceLoaderAware
 		ParserStrategyUtils.invokeAwareMethods(instance, environment, resourceLoader, registry, classLoader);
 		return instance;
 	}
@@ -70,11 +73,13 @@ abstract class ParserStrategyUtils {
 	private static Object createInstance(Class<?> clazz, Environment environment,
 			ResourceLoader resourceLoader, BeanDefinitionRegistry registry,
 			@Nullable ClassLoader classLoader) {
-
+		
+		// 1. 获取所有构造器
 		Constructor<?>[] constructors = clazz.getDeclaredConstructors();
 		if (constructors.length == 1 && constructors[0].getParameterCount() > 0) {
 			try {
 				Constructor<?> constructor = constructors[0];
+				// 2. 解析形参
 				Object[] args = resolveArgs(constructor.getParameterTypes(),
 						environment, resourceLoader, registry, classLoader);
 				return BeanUtils.instantiateClass(constructor, args);
@@ -89,6 +94,7 @@ abstract class ParserStrategyUtils {
 	private static Object[] resolveArgs(Class<?>[] parameterTypes,
 			Environment environment, ResourceLoader resourceLoader,
 			BeanDefinitionRegistry registry, @Nullable ClassLoader classLoader) {
+			// 解析构造器的参数,是否为Environment/ResourceLoader/BeanFactory/ClassLoader 中的一种
 
 			Object[] parameters = new Object[parameterTypes.length];
 			for (int i = 0; i < parameterTypes.length; i++) {
@@ -102,6 +108,7 @@ abstract class ParserStrategyUtils {
 	private static Object resolveParameter(Class<?> parameterType,
 			Environment environment, ResourceLoader resourceLoader,
 			BeanDefinitionRegistry registry, @Nullable ClassLoader classLoader) {
+		// 形参只能是: Environment/ResourceLoader/BeanFactory/ClassLoader 
 
 		if (parameterType == Environment.class) {
 			return environment;

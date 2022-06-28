@@ -83,10 +83,10 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 		//	3. fallback到自己生成beanName
 
 		// 判断是否是AnnotatedBeanDefinition的子类， AnnotatedBeanDefinition是BeanDefinition的一个子类
-		// 显然这个生成器只为AnnotatedBeanDefinition它来自动生成名称
+		// 1. 显然这个生成器只为AnnotatedBeanDefinition它来自动生成名称
 		if (definition instanceof AnnotatedBeanDefinition) {
 			// determineBeanNameFromAnnotation这个方法简而言之，就是看你的注解有没有标注value值，例如@Component、@Bean等等可以向ioc容器注入Bean的注解，
-			// 若指定了就以指定的为准，支持的所有注解：上面已经说明了~~~
+			// 2. 若指定了就以指定的为准，支持的所有注解：上面已经说明了~~~
 			// 此处若配置了多个注解且都指定了value值，但发现value值有不同的，就抛出异常了~~~~~
 			String beanName = determineBeanNameFromAnnotation((AnnotatedBeanDefinition) definition);
 			if (StringUtils.hasText(beanName)) {
@@ -94,8 +94,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 				return beanName;
 			}
 		}
-		// Fallback: generate a unique default bean name.
-		// 若没指定，交给默认生成器来生成吧~~~
+		// 3. 若没指定，交给默认生成器来生成吧~~~
 		return buildDefaultBeanName(definition, registry);
 	}
 
@@ -106,6 +105,8 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	 */
 	@Nullable
 	protected String determineBeanNameFromAnnotation(AnnotatedBeanDefinition annotatedDef) {
+		// 从注解中获取BeanName,比如@Component的value值指定的name
+		
 		// 获取注解元数据
 		AnnotationMetadata amd = annotatedDef.getMetadata();
 		// 获取所有注解的全限定类名
@@ -119,8 +120,8 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 					Set<String> result = amd.getMetaAnnotationTypes(key);
 					return (result.isEmpty() ? Collections.emptySet() : result);
 				});
+				// 检查是否为@Component注解,且有value属性值,
 				if (isStereotypeWithNameValue(type, metaTypes, attributes)) {
-					// 获取@Component注解的value属性值
 					Object value = attributes.get("value");
 					if (value instanceof String) {
 						String strVal = (String) value;
@@ -146,8 +147,8 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	 * @param attributes the map of attributes for the given annotation
 	 * @return whether the annotation qualifies as a stereotype with component name
 	 */
-	protected boolean isStereotypeWithNameValue(String annotationType,
-			Set<String> metaAnnotationTypes, @Nullable Map<String, Object> attributes) {
+	protected boolean isStereotypeWithNameValue(String annotationType, Set<String> metaAnnotationTypes, @Nullable Map<String, Object> attributes) {
+		// 目的:检查给定的注解是否是允许通过注解value()建议组件名称的构造型
 
 		// 本身就是Component注解、或者其元注解有Component注解、获取注解权限丁类名有javax.annotation.ManagedBean
 		boolean isStereotype = annotationType.equals(COMPONENT_ANNOTATION_CLASSNAME) ||
@@ -155,6 +156,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 				annotationType.equals("javax.annotation.ManagedBean") ||
 				annotationType.equals("javax.inject.Named");
 
+		// 如果是上面的情况,就检查是否有value属性
 		return (isStereotype && attributes != null && attributes.containsKey("value"));
 	}
 

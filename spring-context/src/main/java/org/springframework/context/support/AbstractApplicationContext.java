@@ -506,9 +506,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 	@Override
 	public void addBeanFactoryPostProcessor(BeanFactoryPostProcessor postProcessor) {
 		Assert.notNull(postProcessor, "BeanFactoryPostProcessor must not be null");
-		// AbstractApplicationContext的子类在调用refresh()之前，即对BeanFactoryPostProcessor调用之前，
+		// AbstractApplicationContext的子类在调用refresh()的invokeBeanFactoryPostProcessors()之前，即对BeanFactoryPostProcessor调用之前，
 		// 执行这个addBeanFactoryPostProcessor，就可以提前注入BeanFactoryPostProcessor
 		// 从后续的 PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors 可以看出来beanFactoryPostProcessors执行优先级是很高的哦
+		
+		// 比如可以在 refresh()的invokeBeanFactoryPostProcessors() 前一个钩子方法 postProcessBeanFactory(beanFactory) 去执行
 		this.beanFactoryPostProcessors.add(postProcessor);
 	}
 
