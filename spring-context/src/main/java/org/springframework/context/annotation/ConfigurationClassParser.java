@@ -316,14 +316,17 @@ class ConfigurationClassParser {
 		// 注意：它是一个LinkedHashMap，所以是有序的  这点还比较重要~~~~和bean定义信息息息相关
 		// 需要被处理的配置类configClass已经被分析处理，将它记录到已处理配置类记录
 		// 最后解析完，放入到已经解析的configurationClasses中，后面会被加载到BeanDefinition上
-		// 最后: 
+		// 一般至少包括: 
 		// 0.初始化BeanFactoryRegistry中配置类也会加载到这里
 		// 1.ComponentScan扫描的组件包中的配置类也会被加入到这里哦
 		// 2.@Import中SelectImport类导入的配置类也会加入到这里哦
 		// 3.配置类的内部配置类也会被加入到这里
-		// 但是note: @Import中除SelectImport外的情况导入的配置类还不会被加入到这里,@Bean导入的配置类也不会被加入到这里
+		// 4.在this.deferredImportSelectorHandler.process()执行之后,通过DeferredImportSelector导入的配置类也会加载进来 -- 但是其所在位置,一定上面三个的后面
+		// 因此SpringBoot中通过AutoConfigurationImportSelector这个DeferredImportSelector导入spring.factories都比项目中的优先级低哦
+		// 但是note: @Import中的BeanDefinitionRegistryImport外的情况导入的配置类还不会被加入到这里,@Bean导入的配置类也不会被加入到这里
 		// 需要在外部继续运算才可以哦
 		this.configurationClasses.put(configClass, configClass);
+		// configurationClasses 中的配置类的顺序也是极其重要的 -- 影响到后续配置类的BeanDefinition的注册顺序问题
 	}
 
 	/**
@@ -1024,9 +1027,9 @@ class ConfigurationClassParser {
 					DeferredImportSelectorGroupingHandler handler = new DeferredImportSelectorGroupingHandler();
 					// 支持排序
 					deferredImports.sort(DEFERRED_IMPORT_COMPARATOR);
-					// 遍历向DeferredImportSelectorGroupingHandler注册
+					// 遍历向DeferredImportSelectorGroupingHandler注册每个deferredImports
 					deferredImports.forEach(handler::register);
-					//处理分组导入
+					// 处理分组导入
 					handler.processGroupImports();
 				}
 			}
@@ -1038,36 +1041,45 @@ class ConfigurationClassParser {
 
 
 	private class DeferredImportSelectorGroupingHandler {
-		// key为的group，value为DeferredImportSelectorGrouping[封装对象，持有group与对应分组的DeferredImportSelector]
-
+		
+		// key为的group，value为DeferredImportSelectorGrouping[封装对象，持有group与对应分组的DeferredImportSelector的list集合]
+		// 对于没有group的DeferredImportSelector其key就是本身,
 		private final Map<Object, DeferredImportSelectorGrouping> groupings = new LinkedHashMap<>();
 
+		// key为DeferredImportSelector的配置类的AnnotationMetadata,value就是配置类
 		private final Map<AnnotationMetadata, ConfigurationClass> configurationClasses = new HashMap<>();
 
 		public void register(DeferredImportSelectorHolder deferredImport) {
-			// 注册操作：
-			// 获取DeferredImportSelector对应的分组对象
+			// 向Handler注册deferredImportSelector操作：
+			
+			// 1. 获取DeferredImportSelector对应的分组对象
 			Class<? extends Group> group = deferredImport.getImportSelector().getImportGroup();
-			// 创建分组Object对象，并存入groupings中
+			// 2. 查看group对应的DeferredImportSelectorGrouping,如果group为null,那就以deferredImport本身作为key
+			// 返回对应分组的grouping
 			DeferredImportSelectorGrouping grouping = this.groupings.computeIfAbsent((group != null ? group : deferredImport), key -> new DeferredImportSelectorGrouping(createGroup(group)));
-			// 向grouping分组中添加这个deferredImport
+			// 3. 向grouping分组中添加这个deferredImport
 			grouping.add(deferredImport);
-			// 存储对应的注解元数据与配置类
+			// 4. 存储对应的注解元数据与配置类
 			this.configurationClasses.put(deferredImport.getConfigurationClass().getMetadata(), deferredImport.getConfigurationClass());
 		}
 
 		public void processGroupImports() {
-			// 获取每一个分组
+			// 1. 从groupings中获取每一个分组对应的DeferredImportSelectorGrouping [持有该分组下的所有的DeferredImportSelector集合]
 			for (DeferredImportSelectorGrouping grouping : this.groupings.values()) {
-				// 获取分组中的候选者Filter
+				// 2. 获取分组中的候选者Filter
+				// 简单说: 将DEFAULT_EXCLUSION_FILTER和grouping的deferredImportSelector的集合每一个的getExclusionFilter()的过滤器做一个Or联合
 				Predicate<String> exclusionFilter = grouping.getCandidateFilter();
-				// 获取当前分组注册的所有的DeferredImportSelector
+				// 3. 获取当前分组注册的所有的DeferredImportSelector
 				// 获取到当前分组grouping想要注入的class封装的entry，进行遍历即可
+				// ❗️❗️❗️grouping.getImports() 将触发 DeferredImportSelector.Group#process()和selectImports()两个方法
+				// 返回当前分组按照其逻辑处理完当前分组下所有的DeferredImportSelector后，就可以通过其selectImports返回当前分组想要提供给Spring的DeferredImportSelector
 				grouping.getImports().forEach(entry -> {
-					// 根据 AnnotatedMetadata 查找对应的 configurationClass
+					// 4. 获取导入DeferredImportSelector对应的配置类
 					ConfigurationClass configurationClass = this.configurationClasses.get(entry.getMetadata());
 					try {
-						// 最终还是回归到：processImports的处理哦
+						// ❗️❗️❗️
+						// 5. 最终递归回到：processImports的处理哦
+						// processImports()的逻辑已经讲过这里不再啰嗦
 						processImports(configurationClass, asSourceClass(configurationClass, exclusionFilter),
 								Collections.singleton(asSourceClass(entry.getImportClassName(), exclusionFilter)),
 								exclusionFilter, false);
@@ -1138,19 +1150,26 @@ class ConfigurationClassParser {
 		 * @return each import with its associated configuration class
 		 */
 		public Iterable<Group.Entry> getImports() {
-			// 遍历 deferredImports 数组，即对整个Group中的deferredImport调用process
+			// ❗️❗️❗️
+			
+			// 1. 遍历 deferredImports 数组，即对整个Group中的deferredImport调用process
 			for (DeferredImportSelectorHolder deferredImport : this.deferredImports) {
-				// 调用 group 的 process 方法
-				// 将 配置类的元注解 以及 当前分组的importSelector 进行处理
+				// 2. 调用groupE#process()方法
+				// 将配置类的元注解以及当前分组下遍历到的deferredImport进行处理
+				// ❗️❗️❗️
+				// 可以发现: DeferredImportSelector.Group#process()允许对配置类和DeferredImportSelector进行一下额外的处理
+				// 然后再去执行 DeferredImportSelector#selectImports()
 				this.group.process(deferredImport.getConfigurationClass().getMetadata(), deferredImport.getImportSelector());
 			}
-			// 然后调用 group 的 selectImports
-			// 当前分组按照其逻辑处理完所有的分组下的DeferredImportSelector后，就可以通过其selectImports获取当前分组想要提供给Spring的类
-			// Group.Entry 就封装有用户想要提供给SPring的配置类以及其余信息
+			// 3. 然后调用 group 的 selectImports
+			// 当前分组按照其逻辑处理完当前分组下所有的DeferredImportSelector后，就可以通过其selectImports获取当前分组想要提供给Spring的DeferredImportSelector
+			// 返回的 Group.Entry 就封装有用户想要提供DeferredImportSelector以及对应的配置类
 			return this.group.selectImports();
 		}
 
 		public Predicate<String> getCandidateFilter() {
+			// 将DEFAULT_EXCLUSION_FILTER和deferredImports中getExclusionFilter()的过滤器做一个Or联合
+			
 			Predicate<String> mergedFilter = DEFAULT_EXCLUSION_FILTER;
 			for (DeferredImportSelectorHolder deferredImport : this.deferredImports) {
 				Predicate<String> selectorFilter = deferredImport.getImportSelector().getExclusionFilter();

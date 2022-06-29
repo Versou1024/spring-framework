@@ -63,7 +63,9 @@ public interface DeferredImportSelector extends ImportSelector {
 		 * Process the {@link AnnotationMetadata} of the importing @{@link Configuration}
 		 * class using the specified {@link DeferredImportSelector}.
 		 */
-		// AnnotationMetadata：配置类的注解元信息；DeferredImportSelector：属于当前分组的selector
+		// AnnotationMetadata：配置类的注解元信息；
+		// DeferredImportSelector：属于当前分组的selector
+		// 允许进行一下额外的处理 -- 在 DeferredImportSelector#selectImports() 执行之前
 		void process(AnnotationMetadata metadata, DeferredImportSelector selector);
 
 		/**
@@ -71,6 +73,8 @@ public interface DeferredImportSelector extends ImportSelector {
 		 * for this group.
 		 */
 		Iterable<Entry> selectImports();
+		// 当对应分组下的所有的DeferredImportSelector在分组group.process()执行完后,就执行当前方法即group.selectImports()
+		// 即当前对应分组最终决定需要使用的DeferredImportSelector的entry项
 
 
 		/**
@@ -78,9 +82,12 @@ public interface DeferredImportSelector extends ImportSelector {
 		 * {@link Configuration} class and the class name to import.
 		 */
 		class Entry {
+			// HashMap中的entry项
 
+			// key就是@Import为DeferredImportSelector注解的配置类的AnnotationMetadata
 			private final AnnotationMetadata metadata;
 
+			// value为@Import导入的DeferredImportSelector的class名字
 			private final String importClassName;
 
 			public Entry(AnnotationMetadata metadata, String importClassName) {
