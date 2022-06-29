@@ -26,6 +26,8 @@ package org.springframework.cglib.core;
  * @since 5.2
  */
 public class ClassLoaderAwareGeneratorStrategy extends DefaultGeneratorStrategy {
+	// CGLIB GeneratorStrategy 对应的生成器策略在类生成时将应用程序ClassLoader公开为当前线程上下文ClassLoader。 
+	// Spring 的ASM变体中的ASM ClassWriter在进行通用超类解析时会选择它。
 
 	private final ClassLoader classLoader;
 

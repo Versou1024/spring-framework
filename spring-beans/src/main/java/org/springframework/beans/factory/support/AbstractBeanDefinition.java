@@ -58,7 +58,7 @@ import org.springframework.util.StringUtils;
 @SuppressWarnings("serial")
 public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccessor implements BeanDefinition, Cloneable {
 	/*
-	 * 完整的BeanDefinition类，考虑了GenericBeanDefinition、RootBeanDefinition和ChildBeanDefinition的共同属性。
+	 * 完整的具体的成熟的抽象的BeanDefinition类，分解出其三大子类GenericBeanDefinition、RootBeanDefinition和ChildBeanDefinition的共同属性。
 	 * autowire常量与AutowireCapableBeanFactory接口中定义的常量匹配。
 	 *
 	 * AbstractBeanDefinition的主要功能就是实现BeanDefinition中的方法, 并在方法要求的常量上定义应该拥有的属性,
@@ -153,7 +153,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	// 当前Bean的Class
 	// 1. 普通的就是当前Bean本身的class
 	// 2. 特殊的,比如有使用@Scope(proxyMode=ScopedProxyMode.TARGET_CLASS),那么实际的beanClass反而是在ScopedProxyUtils创建的ScopedProxyFactoryBean
-	// 3. @Bean的方法的beanClass时static静态修饰和的,那么beanClass就是配置类configClass的内省class
+	// 3. @Bean的方法是静态修饰时,那么beanClass就是配置类configClass的内省class或者是configClass的class全限定类名 
+	// 4. @Bean的方法是非静态修饰时,那么beanClass就是空的哦 -- 但是后面会补充上去 
 	@Nullable
 	private volatile Object beanClass;
 
@@ -522,6 +523,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 */
 	@Nullable
 	public Class<?> resolveBeanClass(@Nullable ClassLoader classLoader) throws ClassNotFoundException {
+		// 确定被包装的 bean 的类，必要时从指定的类名解析它。当使用已解析的 bean 类调用时，还将从其名称中重新加载指定的类
 		String className = getBeanClassName();
 		if (className == null) {
 			return null;

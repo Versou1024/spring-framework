@@ -86,7 +86,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	boolean allowCaching = true;
 
-	// 1. 指定@Bean的方法是否为唯一的
+	// 1. 指定@Bean的工厂方法是否为唯一的
 	boolean isFactoryMethodUnique;
 
 	// 拥有很多包级别的字段，用于同一个Package下，通常是在abstractBeanFactory中使用

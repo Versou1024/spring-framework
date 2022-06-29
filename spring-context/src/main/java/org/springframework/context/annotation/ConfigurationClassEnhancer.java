@@ -71,16 +71,23 @@ import org.springframework.util.ReflectionUtils;
  * @see ConfigurationClassPostProcessor
  */
 class ConfigurationClassEnhancer {
+	// ❗️❗️❗️
+	// 通过生成与 Spring 容器交互以尊重@Bean方法的 bean 范围语义的 CGLIB 子类来增强Configuration类。
+	// 每个这样@Bean方法都将在生成的代理子类中被覆盖，只有在容器实际请求构造一个新实例时才委托给实际的@Bean方法实现。
+	// 否则，对此类@Bean方法的调用将作为对容器的引用，通过名称获取相应的bean
 
 	// The callbacks to use. Note that these callbacks must be stateless.
+	// 提前创建好的要使用的回调。请注意，这些回调必须是无状态的。
 	private static final Callback[] CALLBACKS = new Callback[] {
 			new BeanMethodInterceptor(),
 			new BeanFactoryAwareMethodInterceptor(),
 			NoOp.INSTANCE
 	};
 
+	// 将CALLBACKS全部提前存入到CallbackFilter中
 	private static final ConditionalCallbackFilter CALLBACK_FILTER = new ConditionalCallbackFilter(CALLBACKS);
 
+	// 在FULL配置类中会额外添加一个BeanFactory的字段,形参名就是BEAN_FACTORY_FIELD
 	private static final String BEAN_FACTORY_FIELD = "$$beanFactory";
 
 
@@ -95,6 +102,9 @@ class ConfigurationClassEnhancer {
 	 * @return the enhanced subclass
 	 */
 	public Class<?> enhance(Class<?> configClass, @Nullable ClassLoader classLoader) {
+		// 加载指定的类并生成它的 CGLIB 子类，该子类配备能够尊重范围和其他 bean 语义的容器感知回调。
+		
+		// 1. 是否实现 EnhancedConfiguration 接口 -- 忽略
 		if (EnhancedConfiguration.class.isAssignableFrom(configClass)) {
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format("Ignoring request to enhance %s as it has " +
@@ -106,11 +116,14 @@ class ConfigurationClassEnhancer {
 			}
 			return configClass;
 		}
+		// 2. 生成代理类
 		Class<?> enhancedClass = createClass(newEnhancer(configClass, classLoader));
 		if (logger.isTraceEnabled()) {
 			logger.trace(String.format("Successfully enhanced %s; enhanced class name is: %s",
 					configClass.getName(), enhancedClass.getName()));
 		}
+		// 3. 返回代理类的class
+		// 而实际代理类已经被加载到内存中去啦
 		return enhancedClass;
 	}
 
@@ -118,12 +131,14 @@ class ConfigurationClassEnhancer {
 	 * Creates a new CGLIB {@link Enhancer} instance.
 	 */
 	private Enhancer newEnhancer(Class<?> configSuperClass, @Nullable ClassLoader classLoader) {
+		// 创建一个新的 CGLIB Enhancer实例。
+		
 		Enhancer enhancer = new Enhancer();
-		enhancer.setSuperclass(configSuperClass);
-		enhancer.setInterfaces(new Class<?>[] {EnhancedConfiguration.class});
+		enhancer.setSuperclass(configSuperClass); // 超类 -- FULL配置类
+		enhancer.setInterfaces(new Class<?>[] {EnhancedConfiguration.class}); // 扩展的接口 -- 继承BeanFactoryAware
 		enhancer.setUseFactory(false);
-		enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
-		enhancer.setStrategy(new BeanFactoryAwareGeneratorStrategy(classLoader));
+		enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE); // 生成的Class命名策略
+		enhancer.setStrategy(new BeanFactoryAwareGeneratorStrategy(classLoader)); // 主要是添加一个 public BeanFactory $$beanFactory = null; 的字段
 		enhancer.setCallbackFilter(CALLBACK_FILTER);
 		enhancer.setCallbackTypes(CALLBACK_FILTER.getCallbackTypes());
 		return enhancer;
@@ -134,9 +149,9 @@ class ConfigurationClassEnhancer {
 	 * ensuring that callbacks are registered for the new subclass.
 	 */
 	private Class<?> createClass(Enhancer enhancer) {
+		// 使用增强器enhancer生成超类的子类，确保为新子类注册回调Callbacks。
+		
 		Class<?> subclass = enhancer.createClass();
-		// Registering callbacks statically (as opposed to thread-local)
-		// is critical for usage in an OSGi environment (SPR-5932)...
 		Enhancer.registerStaticCallbacks(subclass, CALLBACKS);
 		return subclass;
 	}
@@ -154,6 +169,9 @@ class ConfigurationClassEnhancer {
 	 * packages (i.e. user code).
 	 */
 	public interface EnhancedConfiguration extends BeanFactoryAware {
+		// 由所有FULL配置类的CGLIB子类实现的标记接口。
+		// 通过检查候选类是否已经可以分配给它，例如已经被增强，从而促进enhance的幂等行为。
+		// 还扩展了BeanFactoryAware ，因为所有被代理的FULL配置类都需要访问创建它们的BeanFactory 。
 	}
 
 
@@ -162,6 +180,7 @@ class ConfigurationClassEnhancer {
 	 * @see ConditionalCallbackFilter
 	 */
 	private interface ConditionalCallback extends Callback {
+		// 条件Callback 
 
 		boolean isMatch(Method candidateMethod);
 	}
@@ -172,11 +191,16 @@ class ConfigurationClassEnhancer {
 	 * that they are defined via {@link ConditionalCallback}.
 	 */
 	private static class ConditionalCallbackFilter implements CallbackFilter {
+		// 一个CallbackFilter -- 用来过滤Callback是否执行
+		// 它按照通过ConfigurationClassEnhancer.ConditionalCallback定义的顺序询问Callbacks来工作。
+		// 当前类在创建Enhancer使用到
 
+		// 代理类中所有的Callbacks
 		private final Callback[] callbacks;
 
+		// Callback的类型
 		private final Class<?>[] callbackTypes;
-
+		
 		public ConditionalCallbackFilter(Callback[] callbacks) {
 			this.callbacks = callbacks;
 			this.callbackTypes = new Class<?>[callbacks.length];
@@ -185,14 +209,19 @@ class ConfigurationClassEnhancer {
 			}
 		}
 
+		// CallbackFilter的核心方法 -- 检查哪一个callback接受指定的method
 		@Override
 		public int accept(Method method) {
 			for (int i = 0; i < this.callbacks.length; i++) {
 				Callback callback = this.callbacks[i];
+				// 1. 自定义的callback如果实现了ConditionalCallback接口,就调用其isMatch(method)检查方法是否匹配
+				// 如果匹配就返回对应的callback的索引位置啊
+				// 好处 -- Callback只需要实现ConditionalCallback,任何重写isMatch()在自己的逻辑中判断自己需要拦截的方法
 				if (!(callback instanceof ConditionalCallback) || ((ConditionalCallback) callback).isMatch(method)) {
 					return i;
 				}
 			}
+			// 抛出
 			throw new IllegalStateException("No callback available for method " + method.getName());
 		}
 
@@ -209,6 +238,9 @@ class ConfigurationClassEnhancer {
 	 */
 	private static class BeanFactoryAwareGeneratorStrategy extends
 			ClassLoaderAwareGeneratorStrategy {
+		// 主要是重写transform()方法
+		// 在 transformer 中重写 end_class() 方法 -> 指定生成一个 public BeanFactory $$beanFactory = null 的字段
+		// 主要是搭配 FULL配置类的代理类将实现EnhancedConfiguration接口做准备 -> 接受 BeanFactoryAware 接口
 
 		public BeanFactoryAwareGeneratorStrategy(@Nullable ClassLoader classLoader) {
 			super(classLoader);
@@ -235,7 +267,9 @@ class ConfigurationClassEnhancer {
 	 * @see EnhancedConfiguration
 	 */
 	private static class BeanFactoryAwareMethodInterceptor implements MethodInterceptor, ConditionalCallback {
+		// 拦截对FULL配置类的代理类的任何BeanFactoryAware.setBeanFactory(BeanFactory)的调用，以记录BeanFactory 。
 
+		// MethodInterceptor 增强器
 		@Override
 		@Nullable
 		public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
@@ -253,6 +287,8 @@ class ConfigurationClassEnhancer {
 
 		@Override
 		public boolean isMatch(Method candidateMethod) {
+			// ❗️❗️❗️
+			// 必须匹配到是setBeanFactory()方法
 			return isSetBeanFactory(candidateMethod);
 		}
 
@@ -272,6 +308,7 @@ class ConfigurationClassEnhancer {
 	 * @see ConfigurationClassEnhancer
 	 */
 	private static class BeanMethodInterceptor implements MethodInterceptor, ConditionalCallback {
+		// 拦截任何有@Bean的方法的调用 -- 以确保正确处理bean语义,例如scope/aop
 
 		/**
 		 * Enhance a {@link Bean @Bean} method to check the supplied BeanFactory for the
@@ -283,11 +320,14 @@ class ConfigurationClassEnhancer {
 		@Nullable
 		public Object intercept(Object enhancedConfigInstance, Method beanMethod, Object[] beanMethodArgs,
 					MethodProxy cglibMethodProxy) throws Throwable {
+			// 增强@Bean方法以检查提供的 BeanFactory 是否存在此 bean 对象。
 
+			// 1. 通过上面创建Enhancer可知,增强的代理配置类有实现BeanFactoryAware接口,并且有一个BeanFactory字段,字段名就是BEAN_FACTORY_FIELD
 			ConfigurableBeanFactory beanFactory = getBeanFactory(enhancedConfigInstance);
+			// 2. 确定@Bean注解的方法的beanName
 			String beanName = BeanAnnotationHelper.determineBeanNameFor(beanMethod);
 
-			// Determine whether this bean is a scoped-proxy
+			// 3. 确定此 bean 是否是作用域代理 -- 如果需要Scope代理,获取对应的beanName
 			if (BeanAnnotationHelper.isScopedProxy(beanMethod)) {
 				String scopedBeanName = ScopedProxyCreator.getTargetBeanName(beanName);
 				if (beanFactory.isCurrentlyInCreation(scopedBeanName)) {
@@ -302,18 +342,35 @@ class ConfigurationClassEnhancer {
 			// proxy that intercepts calls to getObject() and returns any cached bean instance.
 			// This ensures that the semantics of calling a FactoryBean from within @Bean methods
 			// is the same as that of referring to a FactoryBean within XML. See SPR-6602.
+			// 要处理 bean 间方法引用的情况，我们必须显式检查容器中是否有已缓存的实例。
+			// 首先，检查请求的 bean 是否是 FactoryBean。如果是这样，则创建一个子类代理来拦截对 getObject() 的调用并返回任何缓存的 bean 实例。这
+			// 确保了在 @Bean 方法中调用 FactoryBean 的语义与在 XML 中引用 FactoryBean 的语义相同。见 SPR-6602。
+			// 忽略~~~
+			// 源码只有一行: (beanFactory.containsBean(beanName) && !beanFactory.isCurrentlyInCreation(beanName))
 			if (factoryContainsBean(beanFactory, BeanFactory.FACTORY_BEAN_PREFIX + beanName) &&
 					factoryContainsBean(beanFactory, beanName)) {
 				Object factoryBean = beanFactory.getBean(BeanFactory.FACTORY_BEAN_PREFIX + beanName);
 				if (factoryBean instanceof ScopedProxyFactoryBean) {
 					// Scoped proxy factory beans are a special case and should not be further proxied
-				}
-				else {
-					// It is a candidate FactoryBean - go ahead with enhancement
+					// Scoped 代理工厂 bean 是一种特殊情况，不应进一步代理
+				} else {
+					// factoryBean是候选 FactoryBean - 继续增强
 					return enhanceFactoryBean(factoryBean, beanMethod.getReturnType(), beanFactory, beanName);
 				}
 			}
 
+			// ❗️❗️❗️
+			// 如果容器是想调用@bean注解的方法来实例化然后注册bean（即通过 getBean() 调用）->
+			// 那么就调用超类即Full配置类的实际方法来帮助创建 bean 实例。
+			// isCurrentlyInvokedFactoryMethod(beanMethod) -- 就是检查当前ioc容器创建的bean是否就是@Bean方法导入的
+			// 比如 ioc 容器要创建@Bean对应的user对象,就需要调用user()方法来返回User
+			// @Configuration
+			// class ConfigClass{
+			//	@Bean
+			//	 public User user(){
+			//		return new user();
+			//	}
+			// }
 			if (isCurrentlyInvokedFactoryMethod(beanMethod)) {
 				// The factory is calling the bean method in order to instantiate and register the bean
 				// (i.e. via a getBean() call) -> invoke the super implementation of the method to actually
@@ -328,29 +385,56 @@ class ConfigurationClassEnhancer {
 									"these container lifecycle issues; see @Bean javadoc for complete details.",
 							beanMethod.getDeclaringClass().getSimpleName(), beanMethod.getName()));
 				}
+				// 直接调用超类即Full配置类的@Bean的方法即可
 				return cglibMethodProxy.invokeSuper(enhancedConfigInstance, beanMethodArgs);
 			}
+			
+			// ❗️❗️❗️
+			// 而对于,当前ioc容器创建的bean是一个@Bean工厂方法,其中调用了另一个@Bean方法,为了保证bean对象在ioc的的唯一值
+			// 调用的另一个@Bean方法不应该被直接调用,而是尝试从ioc中拿出来
+			// 比如: ioc容器在创建car对象时,会调用car()方法试图返回car(),但在car()中有调用user()方法 -> 由于user()也是被@Bean注解的
+			// 那么就不应该直接去直接user(),而是去看ioc容器有没有对应以及使用user()创建好的user()对象
+			// @Configuration
+			// class ConfigClass{
+			//	@Bean
+			//	 public User user(){
+			//		return new user();
+			//	}
+			//  @Bean Car car(){
+			//  	return new Car(user());
+			//  }
+			// }
 
 			return resolveBeanReference(beanMethod, beanMethodArgs, beanFactory, beanName);
 		}
 
+		// 解析Bean的引用问题
+		// 以上面为例:创建car的bean,引用到user() -> 使得这里进入,并且beanName=user
+		// beanMethod就是user()\beanMethodArgs为空
 		private Object resolveBeanReference(Method beanMethod, Object[] beanMethodArgs,
 				ConfigurableBeanFactory beanFactory, String beanName) {
 
-			// The user (i.e. not the factory) is requesting this bean through a call to
-			// the bean method, direct or indirect. The bean may have already been marked
-			// as 'in creation' in certain autowiring scenarios; if so, temporarily set
-			// the in-creation status to false in order to avoid an exception.
+			// 用户（即不是ioc）通过直接或间接调用 bean 方法来请求此 bean。
+			// 在某些自动装配场景中，bean 可能已经被标记为“正在创建中”；
+			// 如果是这样，暂时将创建状态设置为 false 以避免异常
 			boolean alreadyInCreation = beanFactory.isCurrentlyInCreation(beanName);
 			try {
+				// 如果user已经在创建中
 				if (alreadyInCreation) {
+					// 将其user控制为不在创建中
 					beanFactory.setCurrentlyInCreation(beanName, false);
 				}
+				// 对应的方法是否有形参
 				boolean useArgs = !ObjectUtils.isEmpty(beanMethodArgs);
+				// 使用了形参,并且@Bean方法导入的bean是单例的
 				if (useArgs && beanFactory.isSingleton(beanName)) {
 					// Stubbed null arguments just for reference purposes,
 					// expecting them to be autowired for regular singleton references?
 					// A safe assumption since @Bean singleton arguments cannot be optional...
+					// 仅用于引用的目的的存在空参数，期望它们为常规单例引用自动装配？
+					// 一个安全的假设，因为 @Bean 方法的单例参数不能是可选的......
+					// ❗️❗️❗️ why: 也就是说如果引用的@Bean方法有形参,而你调用的时候传入的形参有null值,那说明就不应该使用参数
+					// 因为@Bena的方法的形参应该都是有值的,它的形参也是@Autowrite进来的哦,你都传一个null就说明你这是想从ioc容器中取出来
 					for (Object arg : beanMethodArgs) {
 						if (arg == null) {
 							useArgs = false;
@@ -358,8 +442,10 @@ class ConfigurationClassEnhancer {
 						}
 					}
 				}
+				// 从BeanFactory中拿去对应的user对象
 				Object beanInstance = (useArgs ? beanFactory.getBean(beanName, beanMethodArgs) :
 						beanFactory.getBean(beanName));
+				// 取出来的bean对象和@Bean方法的user()返回值类型不一样 [有问题]
 				if (!ClassUtils.isAssignableValue(beanMethod.getReturnType(), beanInstance)) {
 					// Detect package-protected NullBean instance through equals(null) check
 					if (beanInstance.equals(null)) {
@@ -386,11 +472,13 @@ class ConfigurationClassEnhancer {
 						throw new IllegalStateException(msg);
 					}
 				}
+				// 拿到当前正在创建对象的工厂方法,也就是上面car()方法,注册一下依赖关系,依旧是 car的bean 依赖 user的bean
 				Method currentlyInvoked = SimpleInstantiationStrategy.getCurrentlyInvokedFactoryMethod();
 				if (currentlyInvoked != null) {
 					String outerBeanName = BeanAnnotationHelper.determineBeanNameFor(currentlyInvoked);
 					beanFactory.registerDependentBean(beanName, outerBeanName);
 				}
+				// 返回提前通过user()创建好加入到ioc容器中的user对象给car(User user)使用
 				return beanInstance;
 			}
 			finally {
@@ -402,11 +490,16 @@ class ConfigurationClassEnhancer {
 
 		@Override
 		public boolean isMatch(Method candidateMethod) {
+			// 可以拦截的方法 -- 非Object声明的方法,并且不属于setBeanFactory()方法\并且被@Bean将方法注释啦
+			// 则当前Callback也就是MethodInterceptor的Interceptor()方法将会被执行哦
 			return (candidateMethod.getDeclaringClass() != Object.class &&
 					!BeanFactoryAwareMethodInterceptor.isSetBeanFactory(candidateMethod) &&
 					BeanAnnotationHelper.isBeanAnnotated(candidateMethod));
 		}
 
+		// 无法直接调用getBeanFactory()
+		// 因为FULL配置类本身没有BeanFactory字段,是Cglib帮忙创建的一个字段
+		// 所以只可以反射拉取
 		private ConfigurableBeanFactory getBeanFactory(Object enhancedConfigInstance) {
 			Field field = ReflectionUtils.findField(enhancedConfigInstance.getClass(), BEAN_FACTORY_FIELD);
 			Assert.state(field != null, "Unable to find generated bean factory field");

@@ -262,7 +262,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			// Simply call processConfigurationClasses lazily at this point then.
 			processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
 		}
-
+		// 增强配置类
 		enhanceConfigurationClasses(beanFactory);
 		// ❗️❗️❗️有一个点: 导入了 ImportAwareBeanPostProcessor
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
@@ -432,28 +432,49 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 * @see ConfigurationClassEnhancer
 	 */
 	public void enhanceConfigurationClasses(ConfigurableListableBeanFactory beanFactory) {
+		// 对 BeanFactory 进行后处理以搜索配置类 BeanDefinitions；然后通过ConfigurationClassEnhancer增强任何候选者。候选状态由 BeanDefinition 属性元数据确定
+		
+		// 1. 首先需要知道一点: 那就是AbstractApplicationContext中执行BeanFactoryPostProcessor时
+		// BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry执行的优先级比BeanFactoryPostProcessor#postProcessBeanFactory高
+		// 也就意味着: processConfigBeanDefinitions 比 enhanceConfigurationClasses 执行更早
+		// 也就意味着项目中所有的组件类/配置类/@Import/@ImportResource/@Bean等都已经被加入到BeanDefinitionRegistry中
+		// 因此: 通过去BeanFactory中遍历所有BeanDefinition,查看是否有ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE即可确认当前BeanDefinition是否为配置类哦
 		Map<String, AbstractBeanDefinition> configBeanDefs = new LinkedHashMap<>();
 		for (String beanName : beanFactory.getBeanDefinitionNames()) {
+			// 1.1 遍历到配置类 -- 及持有属性ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE可以是FULL/LITE模式
 			BeanDefinition beanDef = beanFactory.getBeanDefinition(beanName);
 			Object configClassAttr = beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE);
 			AnnotationMetadata annotationMetadata = null;
 			MethodMetadata methodMetadata = null;
+			// 1.2 是否属于AnnotatedBeanDefinition -- 一般只有其实现类只有
+			// 	a:ScannedGenericBeanDefinition -- @ComponentScan扫描到的 -- 同时属于AbstractBeanDefinition
+			// 	b:ConfigurationClassBeanDefinition -- 配置类使用的BeanDefinition
+			// 	c:AnnotatedGenericBeanDefinition -- @Bean的方法 -- 同时属于AbstractBeanDefinition
 			if (beanDef instanceof AnnotatedBeanDefinition) {
 				AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) beanDef;
 				annotationMetadata = annotatedBeanDefinition.getMetadata();
 				methodMetadata = annotatedBeanDefinition.getFactoryMethodMetadata();
 			}
+			// 1.3 触发情况
+			//  a: beanDef属于配置类并且beanDef是AbstractBeanDefinition -- 配置类上面锁的b也会进入的
+			//	b: beanDef属于AnnotatedBeanDefinition,同时属于AbstractBeanDefinition -- 上面说的1.2中a和c都是正确的
 			if ((configClassAttr != null || methodMetadata != null) && beanDef instanceof AbstractBeanDefinition) {
-				// Configuration class (full or lite) or a configuration-derived @Bean method
-				// -> eagerly resolve bean class at this point, unless it's a 'lite' configuration
-				// or component class without @Bean methods.
+				// 配置类（FULL或LITE）或配置类派生的@Bean方法 -> 此时急切解析bean类，除非它是没有@Bean方法的简单组件类或者是“Lite”配置类。
 				AbstractBeanDefinition abd = (AbstractBeanDefinition) beanDef;
+				// 不具备BeanClass -- 源码: this.beanClass instanceof Class
+				// 即BeanDefinition中的beanClass是String还是Class的 -> 是String就会进入下面这里
 				if (!abd.hasBeanClass()) {
+					// 是否为lite配置类,并且不包含@Bean的方法
 					boolean liteConfigurationCandidateWithoutBeanMethods =
 							(ConfigurationClassUtils.CONFIGURATION_CLASS_LITE.equals(configClassAttr) &&
 								annotationMetadata != null && !ConfigurationClassUtils.hasBeanMethods(annotationMetadata));
 					if (!liteConfigurationCandidateWithoutBeanMethods) {
 						try {
+							// a:不是Lite配置类
+							// b:是Lite配置类,但是有@Bean修饰的方法
+							// c:是Lite配置类,但是annotationMetadata不为空
+							// resolveBeanClass()源码主要是:  ClassUtils.forName(className, classLoader);
+							// 将对应的Class加载到内存中,并设置到beanClass上
 							abd.resolveBeanClass(this.beanClassLoader);
 						}
 						catch (Throwable ex) {
@@ -463,6 +484,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 					}
 				}
 			}
+			// 1.4 FULL配置类,存入configBeanDefs中
 			if (ConfigurationClassUtils.CONFIGURATION_CLASS_FULL.equals(configClassAttr)) {
 				if (!(beanDef instanceof AbstractBeanDefinition)) {
 					throw new BeanDefinitionStoreException("Cannot enhance @Configuration bean definition '" +
@@ -477,18 +499,20 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 				configBeanDefs.put(beanName, (AbstractBeanDefinition) beanDef);
 			}
 		}
+		// 没有FULL配置类,不需要做Enhance强制操作
 		if (configBeanDefs.isEmpty()) {
-			// nothing to enhance -> return immediately
 			return;
 		}
 
+		// 有FULL配置类,拿到FULL配置类的BeanDefinition
 		ConfigurationClassEnhancer enhancer = new ConfigurationClassEnhancer();
 		for (Map.Entry<String, AbstractBeanDefinition> entry : configBeanDefs.entrySet()) {
 			AbstractBeanDefinition beanDef = entry.getValue();
-			// If a @Configuration class gets proxied, always proxy the target class
+			// 如果@Configuration类希望被代理，那么总是代理目标类
 			beanDef.setAttribute(AutoProxyUtils.PRESERVE_TARGET_CLASS_ATTRIBUTE, Boolean.TRUE);
-			// Set enhanced subclass of the user-specified bean class
+			// 获取用户指定FULL配置类的Class -- 即被代理类
 			Class<?> configClass = beanDef.getBeanClass();
+			// 开始代理对FULL配置类configClass进行代理增强
 			Class<?> enhancedClass = enhancer.enhance(configClass, this.beanClassLoader);
 			if (configClass != enhancedClass) {
 				if (logger.isTraceEnabled()) {

@@ -316,8 +316,13 @@ class ConfigurationClassParser {
 		// 注意：它是一个LinkedHashMap，所以是有序的  这点还比较重要~~~~和bean定义信息息息相关
 		// 需要被处理的配置类configClass已经被分析处理，将它记录到已处理配置类记录
 		// 最后解析完，放入到已经解析的configurationClasses中，后面会被加载到BeanDefinition上
-		// 大致阐述一下:配置类的加载顺序
-		// 启动类 -> 启动类所在package下的
+		// 最后: 
+		// 0.初始化BeanFactoryRegistry中配置类也会加载到这里
+		// 1.ComponentScan扫描的组件包中的配置类也会被加入到这里哦
+		// 2.@Import中SelectImport类导入的配置类也会加入到这里哦
+		// 3.配置类的内部配置类也会被加入到这里
+		// 但是note: @Import中除SelectImport外的情况导入的配置类还不会被加入到这里,@Bean导入的配置类也不会被加入到这里
+		// 需要在外部继续运算才可以哦
 		this.configurationClasses.put(configClass, configClass);
 	}
 
@@ -407,7 +412,7 @@ class ConfigurationClassParser {
 		if (!componentScans.isEmpty() && !this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
 			for (AnnotationAttributes componentScan : componentScans) {
 				// 扫描@ComponentScan下需要加载的BeanDefinition -> 一般都是@Component注解或者其派生注解标注的组件类
-				// note：@ComponentScan下需要加载的BeanDefinition，都会被提前加载到BeanDefinition中
+				// note：@ComponentScan下需要加载的BeanDefinition，都会被提前加载到BeanDefinitionRegistry中
 				Set<BeanDefinitionHolder> scannedBeanDefinitions = this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
 				// 这一步非常重要：如果被@ComponentScan扫描的Bean，还是属于配置类，那就继续调用本类的parse方法，进行递归解析==============
 				for (BeanDefinitionHolder holder : scannedBeanDefinitions) {

@@ -31,6 +31,7 @@ import org.springframework.util.ConcurrentReferenceHashMap;
  * @since 3.1
  */
 abstract class BeanAnnotationHelper {
+	// 用于处理@Bean注解方法的帮助类
 
 	private static final Map<Method, String> beanNameCache = new ConcurrentReferenceHashMap<>();
 
@@ -42,29 +43,31 @@ abstract class BeanAnnotationHelper {
 	}
 
 	public static String determineBeanNameFor(Method beanMethod) {
+		// 1. 先看缓存
 		String beanName = beanNameCache.get(beanMethod);
 		if (beanName == null) {
-			// By default, the bean name is the name of the @Bean-annotated method
+			// 2. 默认情况下，bean 名称是 @Bean 注解的方法的名称
 			beanName = beanMethod.getName();
-			// Check to see if the user has explicitly set a custom bean name...
-			AnnotationAttributes bean =
-					AnnotatedElementUtils.findMergedAnnotationAttributes(beanMethod, Bean.class, false, false);
+			// 3. 检查用户是否明确设置了自定义 bean 名称... 即@Bean(name="CustomBeanName")
+			AnnotationAttributes bean = AnnotatedElementUtils.findMergedAnnotationAttributes(beanMethod, Bean.class, false, false);
 			if (bean != null) {
 				String[] names = bean.getStringArray("name");
 				if (names.length > 0) {
 					beanName = names[0];
 				}
 			}
+			// 4. 加入到缓存中
 			beanNameCache.put(beanMethod, beanName);
 		}
 		return beanName;
 	}
 
 	public static boolean isScopedProxy(Method beanMethod) {
+		// 1. 检查缓存
 		Boolean scopedProxy = scopedProxyCache.get(beanMethod);
 		if (scopedProxy == null) {
-			AnnotationAttributes scope =
-					AnnotatedElementUtils.findMergedAnnotationAttributes(beanMethod, Scope.class, false, false);
+			// 2. 查看是否有@Scope注解,并且其中proxyMode是否非NO
+			AnnotationAttributes scope = AnnotatedElementUtils.findMergedAnnotationAttributes(beanMethod, Scope.class, false, false);
 			scopedProxy = (scope != null && scope.getEnum("proxyMode") != ScopedProxyMode.NO);
 			scopedProxyCache.put(beanMethod, scopedProxy);
 		}

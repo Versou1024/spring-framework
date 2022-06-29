@@ -198,9 +198,11 @@ class ConfigurationClassBeanDefinitionReader {
 	 * Register the {@link Configuration} class itself as a bean definition.
 	 */
 	private void registerBeanDefinitionForImportedConfigurationClass(ConfigurationClass configClass) {
+		// 将配置类本身注册为BeanDefinition
 		
 		// 1. 创建 AnnotatedGenericBeanDefinition 定义信息
 		AnnotationMetadata metadata = configClass.getMetadata();
+		// 构造器中包含对beanClass的设置哦
 		AnnotatedGenericBeanDefinition configBeanDef = new AnnotatedGenericBeanDefinition(metadata);
 
 		// 2. 解析出@Scope对应的ScopeMetadata,然后设置到configBeanDef的scopeName上
@@ -515,6 +517,8 @@ class ConfigurationClassBeanDefinitionReader {
 		private final String derivedBeanName;
 
 		public ConfigurationClassBeanDefinition(ConfigurationClass configClass, MethodMetadata beanMethodMetadata, String derivedBeanName) {
+			// 注意: 不会设置beanClass
+			
 			// @Bean方法所属的配置类的AnnotationMetadata
 			this.annotationMetadata = configClass.getMetadata();
 			// @Bean方法的工厂方法的元数据MethodMetadata

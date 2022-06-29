@@ -40,11 +40,16 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 public class GenericBeanDefinition extends AbstractBeanDefinition {
 	/**
-	 * 通用BeanDefinition实现，避免RootBeanDefinition中的setParentName无效，直接抛出异常
+	 * 通用BeanDefinition实现，可以灵活的设置parentName
+	 * 不同于使用 RootBeanDefinition / ChildBeanDefinition，其中父/子关系恰好是预先确定的。
+	 * 
+	 * 具有两个实现类:
+	 * AnnotatedGenericBeanDefinition -- 对应配置类
+	 * ScannedGenericBeanDefinition -- 对应@ComponentScan扫描到的
 	 */
 
 	@Nullable
-	private String parentName;
+	private String parentName; // 注意parentName是可以为空的哦
 
 
 	/**

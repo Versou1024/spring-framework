@@ -47,10 +47,27 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class ScannedGenericBeanDefinition extends GenericBeanDefinition implements AnnotatedBeanDefinition {
-	/**
-	 * 更多见：https://juejin.cn/post/6862259842799632391
-	 * 用@Bean声明的Bean的BeanDefinition用ConfigurationClassBeanDefinition来表示。
+	/*
+	 * 配置类的BeanDefinition就是用AnnotatedGenericBeanDefinition来表示:
+	 * 即
+	 * @Configuration
+	 * @ComponentScan
+	 * public class AppConfig {
+	 * 		@Bean
+	 * 		public User createUser(){}
+	 * }
+	 *
+	 * @Service
+	 * public class AuthorService {
+	 * }
+	 *
+	 * 代码中：
+	 * AppConfig是AnnotatedGenericBeanDefinition
+	 * AuthorService是通过@Component扫描到的，就是ScannedGenericBeanDefinition
+	 * User是配置类里面通过@Bean加入的，就是ConfigurationClassBeanDefinition
+	 *
 	 */
+
 
 	private final AnnotationMetadata metadata; // 源码很简单，就是多了一个属性：private final AnnotationMetadata metadata用来存储扫描进来的Bean的一些注解信息
 
@@ -63,6 +80,8 @@ public class ScannedGenericBeanDefinition extends GenericBeanDefinition implemen
 	public ScannedGenericBeanDefinition(MetadataReader metadataReader) {
 		Assert.notNull(metadataReader, "MetadataReader must not be null");
 		this.metadata = metadataReader.getAnnotationMetadata();
+		// ❗️❗️❗️
+		// 注意:任何通过@ComponentScan扫描的组件类的BeanDefinition都会有beanClassName的哦
 		setBeanClassName(this.metadata.getClassName());
 		setResource(metadataReader.getResource());
 	}

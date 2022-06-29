@@ -41,7 +41,7 @@ public interface AnnotatedBeanDefinition extends BeanDefinition {
 	 * for this bean definition's bean class.
 	 * @return the annotation metadata object (never {@code null})
 	 */
-	AnnotationMetadata getMetadata();
+	AnnotationMetadata getMetadata(); // 此 bean 定义的 bean 类的注解元数据
 
 	/**
 	 * Obtain metadata for this bean definition's factory method, if any.
@@ -49,6 +49,6 @@ public interface AnnotatedBeanDefinition extends BeanDefinition {
 	 * @since 4.1.1
 	 */
 	@Nullable
-	MethodMetadata getFactoryMethodMetadata();
+	MethodMetadata getFactoryMethodMetadata(); // 获取此 bean 定义的工厂方法的元数据（如果有）。
 
 }

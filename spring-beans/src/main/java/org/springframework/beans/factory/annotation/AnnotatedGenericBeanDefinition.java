@@ -43,7 +43,7 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implements AnnotatedBeanDefinition {
 	/*
-	 * 配置类的BeanDefinition用AnnotatedGenericBeanDefinition来表示:
+	 * 配置类的BeanDefinition就是用AnnotatedGenericBeanDefinition来表示:
 	 * 即
 	 * @Configuration
 	 * @ComponentScan
@@ -60,6 +60,7 @@ public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implem
 	 * AppConfig是AnnotatedGenericBeanDefinition
 	 * AuthorService是通过@Component扫描到的，就是ScannedGenericBeanDefinition
 	 * User是配置类里面通过@Bean加入的，就是ConfigurationClassBeanDefinition
+	 * 有一个特点就是 -- 都实现了 AnnotatedBeanDefinition 接口
 	 *
 	 */
 
@@ -75,6 +76,7 @@ public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implem
 	 * @param beanClass the loaded bean class
 	 */
 	public AnnotatedGenericBeanDefinition(Class<?> beanClass) {
+		// 都会设置beanClass
 		setBeanClass(beanClass);
 		this.metadata = AnnotationMetadata.introspect(beanClass);
 	}
@@ -91,6 +93,7 @@ public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implem
 	 */
 	public AnnotatedGenericBeanDefinition(AnnotationMetadata metadata) {
 		Assert.notNull(metadata, "AnnotationMetadata must not be null");
+		// 都会设置beanClass
 		if (metadata instanceof StandardAnnotationMetadata) {
 			setBeanClass(((StandardAnnotationMetadata) metadata).getIntrospectedClass());
 		}
