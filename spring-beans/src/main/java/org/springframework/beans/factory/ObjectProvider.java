@@ -39,6 +39,12 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.annotation.Autowired
  */
 public interface ObjectProvider<T> extends ObjectFactory<T>, Iterable<T> {
+	// 同样是在Spring 4.3版本中，不仅隐式的注入了单构造参数的属性。还引入了ObjectProvider接口。
+	// ObjectProvider接口是ObjectFactory接口的扩展，专门为注入点设计的，可以让注入变得更加宽松和更具有可选项。
+	// 那么什么时候使用ObjectProvider接口？
+	// 如果构造器待注入参数的Bean为空或有多个时，便是ObjectProvider发挥作用的时候了。
+	// 如果注入实例为空时，使用ObjectProvider则避免了强依赖导致的依赖对象不存在异常；
+	// 如果有多个实例，ObjectProvider的方法会根据Bean实现的Ordered接口或@Order注解指定的先后顺序获取一个Bean。从而了提供了一个更加宽松的依赖注入方式。
 
 	/**
 	 * Return an instance (possibly shared or independent) of the object
@@ -51,7 +57,8 @@ public interface ObjectProvider<T> extends ObjectFactory<T>, Iterable<T> {
 	 * @see #getObject()
 	 */
 	T getObject(Object... args) throws BeansException;
-
+	// 返回此工厂管理的对象的实例（可能是共享的或独立的）。
+	
 	/**
 	 * Return an instance (possibly shared or independent) of the object
 	 * managed by this factory.
@@ -61,6 +68,8 @@ public interface ObjectProvider<T> extends ObjectFactory<T>, Iterable<T> {
 	 */
 	@Nullable
 	T getIfAvailable() throws BeansException;
+	// 返回此工厂管理的对象的实例（可能是共享的或独立的）。
+	// return： bean的实例，如果不可用，则为null
 
 	/**
 	 * Return an instance (possibly shared or independent) of the object
@@ -77,6 +86,9 @@ public interface ObjectProvider<T> extends ObjectFactory<T>, Iterable<T> {
 		T dependency = getIfAvailable();
 		return (dependency != null ? dependency : defaultSupplier.get());
 	}
+	// 返回此工厂管理的对象的实例（可能是共享的或独立的）。
+	// 参数: defaultSupplier – 如果工厂中不存在默认对象，则回调用于提供默认对象
+	// 回报： bean 的实例，或提供的默认对象（如果没有此类 bean 可用）
 
 	/**
 	 * Consume an instance (possibly shared or independent) of the object
