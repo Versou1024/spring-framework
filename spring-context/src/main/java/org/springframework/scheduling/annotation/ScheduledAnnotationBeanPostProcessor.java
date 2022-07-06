@@ -106,54 +106,54 @@ public class ScheduledAnnotationBeanPostProcessor
 		implements ScheduledTaskHolder, MergedBeanDefinitionPostProcessor, DestructionAwareBeanPostProcessor,
 		Ordered, EmbeddedValueResolverAware, BeanNameAware, BeanFactoryAware, ApplicationContextAware,
 		SmartInitializingSingleton, ApplicationListener<ContextRefreshedEvent>, DisposableBean {
+	// ScheduledAnnotationBeanPostProcessor = Scheduled Annotation BeanPostProcessor
 
-	// 首先：非常震撼的是，它实现的接口非常的多。还好的是，大部分接口我们都很熟悉了。
+	// 首先：非常震撼的是，它实现的接口非常的多。还好的是，大部分接口我们都很熟悉了
 	// MergedBeanDefinitionPostProcessor：它是个BeanPostProcessor
 	// DestructionAwareBeanPostProcessor：在销毁此Bean的时候，会调用对应方法
 	// SmartInitializingSingleton：它会在所有的单例Bean都完成了初始化后，调用这个接口的方法
 	// EmbeddedValueResolverAware, BeanNameAware, BeanFactoryAware, ApplicationContextAware：都是些感知接口
 	// DisposableBean：该Bean销毁的时候会调用
 	// ApplicationListener<ContextRefreshedEvent>：监听容器的`ContextRefreshedEvent`事件
-	// ScheduledTaskHolder：维护本地的ScheduledTask实例
+	// ScheduledTaskHolder：维护本地的ScheduledTask实例(暴露本地的scheduled tasks的通用接口)
 
-	/**
-	 * The default name of the {@link TaskScheduler} bean to pick up: {@value}.
-	 * <p>Note that the initial lookup happens by type; this is just the fallback
-	 * in case of multiple scheduler beans found in the context.
-	 * @since 4.2
-	 */
+
+	// 类似:AsyncExecutionAspectSupport中当@Async没有指定executor，并且用户没有配置AsyncConfigurer时，出现多个taskExecutor将寻找bean名字为"taskExecutor"
+	// 先找唯一类型的TaskScheduler，有多个时，回退到名称为"taskScheduler"且类型为Executor的
+	// 二者不同的是: 一个是"taskExecutor",一个是"taskScheduler"
 	public static final String DEFAULT_TASK_SCHEDULER_BEAN_NAME = "taskScheduler";
-	// 看着注释就知道，和@Async的默认处理一样~~~~先找唯一类型的TaskScheduler，有多个时，回退到名称为"taskScheduler"。且类型为Executor的
 
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	// ScheduledTaskRegistrar：ScheduledTask注册中心，ScheduledTaskHolder接口的一个重要的实现类，维护了程序中所有配置的ScheduledTask
-	// 内部会处理调取器得工作，因此我建议先移步，看看这个类得具体分析
+	// ScheduledTaskRegistrar：全局的ScheduledTask注册中心，
+	// ScheduledTaskHolder接口的一个重要的实现类，维护了程序中所有配置的ScheduledTask
+	// 内部会处理调取器如何工作，因此我建议先移步，看看这个类得具体分析
 	private final ScheduledTaskRegistrar registrar;
 
 	// 调度器（若我们没有配置，它是null的）
 	@Nullable
 	private Object scheduler;
 
-	// 这些都是Awire感知接口注入进来的~~
+	// 下面都是Aware感知接口注入进来的~~
+	
 	@Nullable
-	private StringValueResolver embeddedValueResolver;
+	private StringValueResolver embeddedValueResolver; // 解析${}资源占位符
 
 	@Nullable
-	private String beanName;
+	private String beanName; // 当前bean的名字
 
 	@Nullable
-	private BeanFactory beanFactory;
+	private BeanFactory beanFactory; // bean工厂
 
 	@Nullable
-	private ApplicationContext applicationContext;
+	private ApplicationContext applicationContext; // ApplicationContext上下文
 
-	// 缓存，没有被标注注解的class们
-	// 这有个技巧，使用了newSetFromMap，自然而然的这个set也就成了一个线程安全的set
+	// nonAnnotatedClasses属性用来缓存
+	// 没有标注@Scheduled注解的类，防止从父去扫描（毕竟可能有多个容器，可能有重复扫描的现象）
 	private final Set<Class<?>> nonAnnotatedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>(64));
 
-	// 缓存对应的Bean上  里面对应的 ScheduledTask任务。可议有多个哦~~
+	// 缓存对应的Bean上 ~~ 里面对应的 ScheduledTask任务。可议有多个哦~~
 	// 注意：此处使用了IdentityHashMap
 	private final Map<Object, Set<ScheduledTask>> scheduledTasks = new IdentityHashMap<>(16);
 
@@ -233,16 +233,25 @@ public class ScheduledAnnotationBeanPostProcessor
 
 	@Override
 	public void afterSingletonsInstantiated() {
-		// Remove resolved singleton classes from cache
-		// 所有单例都被实例化之后调用，那么说明已经将所有的定时任务给扫描结束了
-		// 因此将nonAnnotatedClasses可以清空了
+		// 注意: 另一个核心方法: postProcessAfterInitialization()的执行实际会比afterSingletonsInstantiated()早的多
+		// 因为: 在ApplicationContext中加载完所有的BeanDefinition后,会去初始化单例的Bean,这个期间BeanPostProcessor#afterSingletonsInstantiated()
+		// 就会在Bean的初始化之后生效,而afterSingletonsInstantiated()需要等到所有的单例bean被注册完后生效
+		
+		// afterSingletonsInstantiated() -> 检查是否有使用@Schduled注解启动周期异步任务,有的话,就将其注册到ScheduledTaskRegistrar中
+		// 				note: 不同于@Async需要构建代理对象,因为@Scheduled注解标注的方法,是自动的周期性的触发,不需要人为触发
+		// afterSingletonsInstantiated() ->  在注册完所有的周期异步Task后,就需要开始处理ScheduledTaskRegistrar,将已经注册的Task都加入到task调度器中 -> 执行run起来哦
+		
+		// 执行时机: 所有单例bean都被实例化之后调用，那么说明已经将所有的定时任务给扫描结束
+		
+		// 1. 已经扫描完所有的@Scheduled标注的周期方法
+		// nonAnnotatedClasses就可以清空
 		this.nonAnnotatedClasses.clear();
 
-		// 在容器内运行，ApplicationContext都不会为null
+		// 2. 在容器内运行，ApplicationContext都不会为null
 		if (this.applicationContext == null) {
-			// Not running in an ApplicationContext -> register tasks early...
-			// 定时任务扫描完了，就需要将任务注册起来了
-			// 如果不是在ApplicationContext下运行的，那么就应该提前注册这些任务
+			// 3. 定时任务扫描完了，且已经注册到ScheduledTaskRegistrar
+			// 但是任务Task还不一定被运行起来啦,因为注册到ScheduledTaskRegistrar中时可能没有TaskScheduler调度器
+			// 调用 ScheduledTaskRegistrar.afterPropertiesSet()方法来检查有没有注册但没有加入到调度器中运行的Task,有的话,使用默认的调度器开始调度哦
 			finishRegistration();
 		}
 	}
@@ -257,37 +266,37 @@ public class ScheduledAnnotationBeanPostProcessor
 			// giving other ContextRefreshedEvent listeners a chance to perform
 			// their work at the same time (e.g. Spring Batch's job registration).
 			// 为其他ContextRefreshedEvent侦听器提供同时执行其工作的机会（例如，Spring批量工作注册）
+			// ❗️❗️❗️
 			finishRegistration();
 		}
 	}
 
 	private void finishRegistration() {
+		// 1. 如果setScheduler了，就以调用者指定的为准~~~
+		// 一般没有
 		if (this.scheduler != null) {
-			// 如果setScheduler了，就以调用者指定的为准~~~
 			this.registrar.setScheduler(this.scheduler);
 		}
 
-		// 这里继续厉害了：从容器中找到所有的接口`SchedulingConfigurer`的实现类（我们可议通过实现它定制化scheduler）
+		// 2. 这里继续厉害了：从容器中找到所有的接口`SchedulingConfigurer`的实现类（我们可议通过实现它定制化scheduler）
 		if (this.beanFactory instanceof ListableBeanFactory) {
 			Map<String, SchedulingConfigurer> beans = ((ListableBeanFactory) this.beanFactory).getBeansOfType(SchedulingConfigurer.class);
 			List<SchedulingConfigurer> configurers = new ArrayList<>(beans.values());
 			AnnotationAwareOrderComparator.sort(configurers);
-			// 同@Async只允许设置一个不一样的是，这里每个都会让它生效
-			// 但是平时使用，我们自顶一个类足矣~~
+			// 2.1 不同于@Async只允许设置一个AsyncConfigurer
+			// @Scheduled但是平时使用，我们一般一个类足矣~~
 			for (SchedulingConfigurer configurer : configurers) {
-				// 遍历所有的SchedulingConfigurer，将registrar传递过去允许用户进行定制化操作
+				// 2.1.1 遍历所有的SchedulingConfigurer，将registrar传递过去允许用户进行定制化操作
 				configurer.configureTasks(this.registrar);
 			}
 		}
 
-		// 至于task是怎么注册进registor的，请带回看`postProcessAfterInitialization`这个方法的实现
-		// 有任务并且registrar.getScheduler() == null，那就去容器里找来试试~~~ 【说明前面用户没有setScheduler，就需要从ioc容器中获取】
+		// 3. 至于task是怎么注册进registrar的，请带回看`postProcessAfterInitialization`这个方法的实现
+		// 有task但是registrar.getScheduler()的调度器为空，那就尝试去容器里找一个调度器使用试试~~~ 【说明前面用户没有setScheduler，就需要从ioc容器中获取】
 		if (this.registrar.hasTasks() && this.registrar.getScheduler() == null) {
-			// 注册中心有定时任务tasks，并且由调用度scheduler，就可以进行提交定时任务了
 			Assert.state(this.beanFactory != null, "BeanFactory must be set to find scheduler by type");
 			try {
-				// Search for TaskScheduler bean...
-				// 查找TaskScheduler类型的调度器
+				// 3.1 查找TaskScheduler类型的调度器
 				this.registrar.setTaskScheduler(resolveSchedulerBean(this.beanFactory, TaskScheduler.class, false));
 			}
 			catch (NoUniqueBeanDefinitionException ex) {
@@ -296,7 +305,7 @@ public class ScheduledAnnotationBeanPostProcessor
 							ex.getMessage());
 				}
 				try {
-					// 有多个Bean时，就需要通过name进行一下唯一性确定
+					// 3.2 有多个BTaskScheduler类型的bean时，就需要通过name进行一下唯一性确定
 					this.registrar.setTaskScheduler(resolveSchedulerBean(this.beanFactory, TaskScheduler.class, true));
 				}
 				catch (NoSuchBeanDefinitionException ex2) {
@@ -317,7 +326,7 @@ public class ScheduledAnnotationBeanPostProcessor
 				// Search for ScheduledExecutorService bean next...
 				try {
 					// 没有找到任何一个TaskExecutor的Bean
-					// 那么就降级去查找ScheduledExecutorService类型的调度器
+					// 3.3 那么就降级去查找ScheduledExecutorService类型的调度器
 					this.registrar.setScheduler(resolveSchedulerBean(this.beanFactory, ScheduledExecutorService.class, false));
 				}
 				catch (NoUniqueBeanDefinitionException ex2) {
@@ -327,7 +336,7 @@ public class ScheduledAnnotationBeanPostProcessor
 					}
 					try {
 						// 查找ScheduledExecutorService类型的调度器不是唯一的
-						// 再降级，去查找ScheduledExecutorService类并且名字唯一的调度器
+						// 3.3再降级，去查找ScheduledExecutorService类并且名字唯一的调度器
 						this.registrar.setScheduler(resolveSchedulerBean(this.beanFactory, ScheduledExecutorService.class, true));
 					}
 					catch (NoSuchBeanDefinitionException ex3) {
@@ -351,80 +360,88 @@ public class ScheduledAnnotationBeanPostProcessor
 			}
 		}
 
+		// ❗️❗️❗️
 		// 调用registrar的afterPropertiesSet()方法
+		// 当经过上述步骤,还没有TaskScheduler被注册,下面就会自动创建一个默认的使用哦
 		this.registrar.afterPropertiesSet();
 	}
 
 	// 从容器中去找一个Scheduler调度器
 	private <T> T resolveSchedulerBean(BeanFactory beanFactory, Class<T> schedulerType, boolean byName) {
-		// 若按名字去查找，那就按照名字找
+		// 1. 若按名字和类型去查找
 		if (byName) {
+			// 1.1 根据类型schedulerType和beanName="taskScheduler"去查找
 			T scheduler = beanFactory.getBean(DEFAULT_TASK_SCHEDULER_BEAN_NAME, schedulerType);
-			// 这个处理非常非常有意思，就是说倘若找到了你可以在任意地方直接@Autowired这个Bean了，可以拿这个共用Scheduler来调度我们自己的任务啦~~
+			// 1.2 注册依赖关系：beanName 依赖调度器 DEFAULT_TASK_SCHEDULER_BEAN_NAME
 			if (this.beanName != null && this.beanFactory instanceof ConfigurableBeanFactory) {
-				// 注册依赖关系：beanName 依赖调度器 DEFAULT_TASK_SCHEDULER_BEAN_NAME
 				((ConfigurableBeanFactory) this.beanFactory).registerDependentBean(DEFAULT_TASK_SCHEDULER_BEAN_NAME, this.beanName);
 			}
 			return scheduler;
 		}
-		// 按照schedulerType该类型的名字匹配resolveNamedBean  底层依赖：getBeanNamesForType
+		// 2. 仅仅按照schedulerType类型匹配
 		else if (beanFactory instanceof AutowireCapableBeanFactory) {
 			NamedBeanHolder<T> holder = ((AutowireCapableBeanFactory) beanFactory).resolveNamedBean(schedulerType);
+			// 2.1 注册依赖关系：
 			if (this.beanName != null && beanFactory instanceof ConfigurableBeanFactory) {
-				// 注册依赖关系：
 				((ConfigurableBeanFactory) beanFactory).registerDependentBean(holder.getBeanName(), this.beanName);
 			}
 			return holder.getBeanInstance();
 		}
-		// 按照类型找
+		// 3. 按照类型找
 		else {
 			return beanFactory.getBean(schedulerType);
 		}
 	}
 
 
+	// 忽略 ~~
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
 	}
 
+	// 忽略 ~~
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) {
 		return bean;
 	}
 
+	// ❗️❗️❗️ -> 
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
 		// 初始化之后回调
 
-		// 忽略aop框架中的bean、taskSchduler的bean、ScheduledExecutorService的bean
+		// 1. 忽略aop框架中的bean、TaskScheduler的bean、ScheduledExecutorService的bean
+		// 这种bean是不能注册周期任务的
 		if (bean instanceof AopInfrastructureBean || bean instanceof TaskScheduler || bean instanceof ScheduledExecutorService) {
-			// Ignore AOP infrastructure such as scoped proxies.
 			return bean;
 		}
 
-		// 拿到目标类型（因为此类有可能已经被代理过）
+		// 2. 拿到目标类型（因为此类有可能已经被代理过）
 		Class<?> targetClass = AopProxyUtils.ultimateTargetClass(bean);
-		// 这里对没有标注注解的类做了一个缓存，防止从父去扫描（毕竟可能有多个容器，可能有重复扫描的现象）
-		// AnnotationUtils.isCandidateClass(targetClass, Arrays.asList(Scheduled.class, Schedules.class)) 检查targetClass中类上、方法上、字段上是否有@Scheduled注解
+		
+		// 2.1 
+		// nonAnnotatedClasses属性对没有标注@Scheduled注解的类做了一个缓存，防止从父去扫描（毕竟可能有多个容器，可能有重复扫描的现象）
+		// isCandidateClass(targetClass, Arrays.asList(Scheduled.class, Schedules.class)) 检查targetClass中类上、方法上、字段上是否有@Scheduled注解
 		if (!this.nonAnnotatedClasses.contains(targetClass) && AnnotationUtils.isCandidateClass(targetClass, Arrays.asList(Scheduled.class, Schedules.class))) {
-			// 如下：主要用到了MethodIntrospector.selectMethods  这个内省方法工具类的这个g工具方法，去找指定Class里面，符合条件的方法们
+			// 2.2 已经确定这个beanClass上有对应的@Scheduled注解和@Schedules注解
+			// 接下来需要确定哪些method上有这个个注解哦
 			Map<Method, Set<Scheduled>> annotatedMethods = MethodIntrospector.selectMethods(targetClass,
 					(MethodIntrospector.MetadataLookup<Set<Scheduled>>) method -> {
-						// 找到方法上有@Scheduled的认可
+						// 2.2.1 找到方法上有@Scheduled的
 						Set<Scheduled> scheduledMethods = AnnotatedElementUtils.getMergedRepeatableAnnotations(method, Scheduled.class, Schedules.class);
 						return (!scheduledMethods.isEmpty() ? scheduledMethods : null);
 					});
+			// 2.3 beanClass中所有的方法都没有使用@Scheduled注解 -> 即没有周期性异步任务
 			if (annotatedMethods.isEmpty()) {
-				// 没有指定注解的方法，将其加入缓存中nonAnnotatedClasses
+				// 2.3.1 没有指定注解的方法，将其加入缓存中nonAnnotatedClasses -> 标记为没有@Scheduled注解
 				this.nonAnnotatedClasses.add(targetClass);
 				if (logger.isTraceEnabled()) {
 					logger.trace("No @Scheduled annotations found on bean class: " + targetClass);
 				}
 			}
-			// 此处相当于已经找到了对应的注解方法~~~
+			// 2.4 beanClass中有部分方法使用@Scheduled注解 -> 即有周期性异步任务
 			else {
-				// Non-empty set of methods
-				// 这里有一个双重遍历。因为一个方法上，可能重复标注多个这样的注解~~~~~
+				// 这里有一个双重遍历。因为一个方法上，可能重复标注多个@Scheduled注解 ~~~~~
 				// 所以最终遍历出来后，就交给processScheduled(scheduled, method, bean)去处理了 -- 核心，注意每个Method上可以有多个@Scheduled注解因此需要进行遍历哈
 				annotatedMethods.forEach((method, scheduledMethods) -> scheduledMethods.forEach(scheduled -> processScheduled(scheduled, method, bean)));
 				if (logger.isTraceEnabled()) {
@@ -433,6 +450,7 @@ public class ScheduledAnnotationBeanPostProcessor
 				}
 			}
 		}
+		// 3. 不会对bean做代理
 		return bean;
 	}
 
@@ -444,31 +462,36 @@ public class ScheduledAnnotationBeanPostProcessor
 	 * @see #createRunnable(Object, Method)
 	 */
 	protected void processScheduled(Scheduled scheduled, Method method, Object bean) {
+		// ❗️❗️❗️ 该方法 -- 用来处理指定bean上的指定method的@Scheduled
+		// 如何处理?
+		
 		try {
-			// 创建可执行runnable方法
+			// 1. 创建可执行runnable方法
 			Runnable runnable = createRunnable(bean, method);
 			boolean processedSchedule = false;
 			String errorMessage = "Exactly one of the 'cron', 'fixedDelay(String)', or 'fixedRate(String)' attributes is required";
 
-			// 装载任务，这里长度定为4，因为Spring认为标注4个注解还不够你用的？
+			// 2. 装载任务，这里长度定为4
+			// @Scheduled注解有4种指定定时任务的方式: 包括 cron\fixedRate\fixedDelay
 			Set<ScheduledTask> tasks = new LinkedHashSet<>(4);
-
-			// Determine initial delay
-			// 计算出延时多长时间执行 initialDelayString 支持占位符如：@Scheduled(fixedDelayString = "${time.fixedDelay}")
-			// 这段话得意思是，最终拿到一个initialDelay值~~~~~Long型的
+			
+			// 3. 计算出延时多长时间执行 initialDelayString 支持占位符如：@Scheduled(fixedDelayString = "${time.fixedDelay}")
+			
+			// 3.1 拿到initialDelay的long值
 			long initialDelay = scheduled.initialDelay();
+			// 3.2 拿到initialDelayString的string值
 			String initialDelayString = scheduled.initialDelayString();
 			if (StringUtils.hasText(initialDelayString)) {
 				Assert.isTrue(initialDelay < 0, "Specify 'initialDelay' or 'initialDelayString', not both");
+				// 3.3 先解析initialDelayString的占位符
 				if (this.embeddedValueResolver != null) {
-					// 先解析initialDelayString中的#{}
 					initialDelayString = this.embeddedValueResolver.resolveStringValue(initialDelayString);
 				}
+				// 3.4 解析完后initialDelayString不为空,调用parseDelayAsLong(initialDelayString)解析为long值,且替换initialDelay的属性值
+				// ❗️❗️❗️ initialDelayString 优先级比 initialDelay 高，因为这里一旦initialDelayString解析成功就会导致initialDelay被占用
 				if (StringUtils.hasLength(initialDelayString)) {
 					try {
-						// 然后解析为Long值
 						initialDelay = parseDelayAsLong(initialDelayString);
-						// initialDelayString 优先级比 initialDelay 高，因为这里一旦initialDelayString解析成功就会导致initialDelay被占用
 					}
 					catch (RuntimeException ex) {
 						throw new IllegalArgumentException(
@@ -477,8 +500,7 @@ public class ScheduledAnnotationBeanPostProcessor
 				}
 			}
 
-			// Check cron expression
-			// 解析cron
+			// 4. 用同样的手法解析cron
 			String cron = scheduled.cron();
 			if (StringUtils.hasText(cron)) {
 				String zone = scheduled.zone();
@@ -497,23 +519,30 @@ public class ScheduledAnnotationBeanPostProcessor
 						else {
 							timeZone = TimeZone.getDefault();
 						}
-						// 这个相当于，如果配置了cron，它就是一个task了，就可以吧任务注册进registrar里面了
-						// 这里面的处理是。如果已经有调度器taskScheduler了，那就立马准备执行了
+						// 4.1 如果配置了cron，就会生成一个CronTask了，就可以把任务注册进registrar里面了
+						// 这里面的处理是 -- 如果已经有调度器taskScheduler了，那就可以立马准备执行了
 						tasks.add(this.registrar.scheduleCronTask(new CronTask(runnable, new CronTrigger(cron, timeZone))));
 					}
 				}
 			}
 
-			// At this point we don't need to differentiate between initial delay set or not anymore
+			// 在这一点上，我们不再需要区分初始延迟与否
+			// 5. note: initialDelay/initialDelayString 仅仅对Cron属性对应的CronTask有影响哦
 			if (initialDelay < 0) {
 				initialDelay = 0;
 			}
+			
+			// 下面注意:
+			// 注意:
+			// a:同时使用 fixedDelay 和 fixedDelayString 将会创建两个 FixedDelayTask
+			// b:同时使用 fixedRate 和 fixedRateString 将会创建两个 FixedDelayTask
 
-			// Check fixed delay
+			// 6. 检查 fixedDelay
 			long fixedDelay = scheduled.fixedDelay();
 			if (fixedDelay >= 0) {
 				Assert.isTrue(!processedSchedule, errorMessage);
 				processedSchedule = true;
+				// 6.1 fixedDelay 属性将创建 FixedDelayTask
 				tasks.add(this.registrar.scheduleFixedDelayTask(new FixedDelayTask(runnable, fixedDelay, initialDelay)));
 			}
 			String fixedDelayString = scheduled.fixedDelayString();
@@ -531,11 +560,12 @@ public class ScheduledAnnotationBeanPostProcessor
 						throw new IllegalArgumentException(
 								"Invalid fixedDelayString value \"" + fixedDelayString + "\" - cannot parse into long");
 					}
+					// 6.2  fixedDelayString 属性将创建 FixedDelayTask
 					tasks.add(this.registrar.scheduleFixedDelayTask(new FixedDelayTask(runnable, fixedDelay, initialDelay)));
 				}
 			}
 
-			// Check fixed rate
+			// 7. 检查 fixedRate 
 			long fixedRate = scheduled.fixedRate();
 			if (fixedRate >= 0) {
 				Assert.isTrue(!processedSchedule, errorMessage);
@@ -561,10 +591,10 @@ public class ScheduledAnnotationBeanPostProcessor
 				}
 			}
 
-			// Check whether we had any attribute set
+			// 8. 检查我们是否设置了任何属性 忽略~~
 			Assert.isTrue(processedSchedule, errorMessage);
 
-			// Finally register the scheduled tasks
+			// 9. 最后注册当前类中的计划任务scheduledTasks
 			synchronized (this.scheduledTasks) {
 				// 以bean作为key，以bean中所有的定时方法作为value
 				Set<ScheduledTask> regTasks = this.scheduledTasks.computeIfAbsent(bean, key -> new LinkedHashSet<>(4));
@@ -588,14 +618,37 @@ public class ScheduledAnnotationBeanPostProcessor
 	 */
 	protected Runnable createRunnable(Object target, Method method) {
 		// 为指定target的method创建Runnable方法
-		// 标注此注解的方法必须是无参的方法
+		
+		// 1. 标注@Scheduled注解的方法必须是无参的方法
 		Assert.isTrue(method.getParameterCount() == 0, "Only no-arg methods may be annotated with @Scheduled");
 		Method invocableMethod = AopUtils.selectInvocableMethod(method, target.getClass());
-		// ScheduledMethodRunnable的run()方法就是简单的利用反射执行方法
+		// 2. ScheduledMethodRunnable的run()方法就是简单的利用反射执行方法
 		return new ScheduledMethodRunnable(target, invocableMethod);
 	}
 
 	private static long parseDelayAsLong(String value) throws RuntimeException {
+		// ❗️❗️❗️
+		// 支持: 当value带有第一个字符是P或者p时 -> 会被Duration.parse(value).toMillis()解析哦
+		// 将从诸如PnDTnHnMn.nS类的文本字符串中获取Duration [n表示数字]
+		// 规则:
+		// a:字符串以可选符号开头，由ASCII负号或正号表示。如果为负，则整个周期都被否定。
+		// b:接下来是大写或小写的ASCII 字母“P”。
+		// c:然后有四个部分，每个部分由一个数字和一个后缀组成。这些部分具有“D”、“H”、“M”和“S”的 ASCII 后缀，表示天、小时、分钟和秒，接受大写或小写。后缀必须按顺序出现。
+		// d:ASCII 字母“T”必须出现在小时、分钟或秒部分的第一次出现（如果有）之前。
+		// e:必须存在四个部分中的至少一个，
+		// f:如果存在“T”，则必须在“T”之后至少有一个部分。
+		// g:每个部分的数字部分必须由一个或多个 ASCII 数字组成。该数字可以以 ASCII 负号或正号为前缀。天数、小时数和分钟数必须解析为long 。
+		// 秒数必须解析为带有可选分数的long整数。小数点可以是点或逗号。小数部分可能有 0 到 9 个数字
+		// Examples:
+		//          "PT20.345S" -- parses as "20.345 seconds"
+		//          "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
+		//          "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
+		//          "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
+		//          "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
+		//          "P-6H3M"    -- parses as "-6 hours and +3 minutes"
+		//          "-P6H3M"    -- parses as "-6 hours and -3 minutes"
+		//          "-P-6H+3M"  -- parses as "+6 hours and -3 minutes"
+		//       
 		if (value.length() > 1 && (isP(value.charAt(0)) || isP(value.charAt(1)))) {
 			return Duration.parse(value).toMillis();
 		}
@@ -627,7 +680,7 @@ public class ScheduledAnnotationBeanPostProcessor
 
 	@Override
 	public void postProcessBeforeDestruction(Object bean, String beanName) {
-		// 销毁之前，将注册到scheduledTasks全部清空，并且取消
+		// ❗️销毁之前，将注册到scheduledTasks全部清空，并且取消
 		Set<ScheduledTask> tasks;
 		synchronized (this.scheduledTasks) {
 			tasks = this.scheduledTasks.remove(bean);

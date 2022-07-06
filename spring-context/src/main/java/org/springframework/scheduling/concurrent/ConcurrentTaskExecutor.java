@@ -79,8 +79,10 @@ public class ConcurrentTaskExecutor implements AsyncListenableTaskExecutor, Sche
 		}
 	}
 
+	// 线程池
 	private Executor concurrentExecutor;
 
+	// 
 	private TaskExecutorAdapter adaptedExecutor;
 
 

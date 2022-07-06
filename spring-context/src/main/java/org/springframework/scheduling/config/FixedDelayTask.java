@@ -25,7 +25,7 @@ package org.springframework.scheduling.config;
  * @see ScheduledTaskRegistrar#addFixedDelayTask(IntervalTask)
  */
 public class FixedDelayTask extends IntervalTask {
-	// 标识性
+	// 标识性 - FixedDelay Task
 
 
 	/**

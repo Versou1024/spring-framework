@@ -65,6 +65,8 @@ import org.springframework.util.ErrorHandler;
  * @see ThreadPoolTaskScheduler
  */
 public class ConcurrentTaskScheduler extends ConcurrentTaskExecutor implements TaskScheduler {
+	// 被ScheduledTaskRegistrar作为默认调度器,将所有扫描到的Task通过 schedule()\scheduleAtFixRate()\scheduleWithFixedDelay()等方法
+	// 来调度相关的如 TriggerTask CronTask FixedRateTask FixedDelayTask
 
 	@Nullable
 	private static Class<?> managedScheduledExecutorServiceClass;
@@ -84,6 +86,7 @@ public class ConcurrentTaskScheduler extends ConcurrentTaskExecutor implements T
 
 	private ScheduledExecutorService scheduledExecutor;
 
+	// 企业并发调度器 -- 默认为false
 	private boolean enterpriseConcurrentScheduler = false;
 
 	@Nullable

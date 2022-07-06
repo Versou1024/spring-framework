@@ -207,6 +207,6 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 @Import(SchedulingConfiguration.class)
 @Documented
 public @interface EnableScheduling {
-	// 开启
+	// 开启 -- 异步定时操作
 
 }

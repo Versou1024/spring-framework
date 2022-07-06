@@ -27,8 +27,11 @@ import org.springframework.util.Assert;
  * @since 3.2
  */
 public class Task {
-	// task
+	// 所在Package: org.springframework.scheduling.config
+	
+	// Task超类
 
+	// 持有运行的任务Runnable
 	private final Runnable runnable;
 
 

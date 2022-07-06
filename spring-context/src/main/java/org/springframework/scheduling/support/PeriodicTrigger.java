@@ -45,14 +45,23 @@ import org.springframework.util.Assert;
  * @since 3.0
  */
 public class PeriodicTrigger implements Trigger {
+	// Trigger的作用: 计算任务下一次的触发时间
+	// PeriodicTrigger = Periodic Trigger 定期触发 -> 主要是为 FixedRateTask 和 FixedDelayTask 计算任务下一次的触发时间
+	
 
-	private final long period; // long类型，表示间隔时长，注意在fixedRate与fixedDelay两种模式下的不同含义
+	// long类型，表示间隔时长，注意在fixedRate与fixedDelay两种模式下的不同含义
+	private final long period;
 
-	private final TimeUnit timeUnit; // TimeUnit类型，表示间隔时长的单位，如毫秒等；默认是毫秒
+	// TimeUnit类型，表示间隔时长的单位，如毫秒等；默认是毫秒
+	private final TimeUnit timeUnit;
 
-	private volatile long initialDelay = 0; // long类型，表示启动任务后间隔多长时间开始执行第一次任务
+	// long类型，表示启动后任务间隔多长时间开始执行第一次任务
+	private volatile long initialDelay = 0; 
 
-	private volatile boolean fixedRate = false; //  boolean类型，表示是否是fixedRate，为True时是fixedRate，否则是fixedDelay，默认为False
+	//  boolean类型，表示是否是fixedRate，
+	//  True是fixedRate
+	//  False是fixedDelay，
+	private volatile boolean fixedRate = false; 
 
 
 	/**
@@ -131,18 +140,26 @@ public class PeriodicTrigger implements Trigger {
 	 */
 	@Override
 	public Date nextExecutionTime(TriggerContext triggerContext) {
+		// 实现Trigger的核心方法 -> 如何计算下一次任务的执行时机
+		
+		// 0. 从TriggerContext获取上一次任务的相关时间节点
+		// 上一次预定执行的开始时间
 		Date lastExecution = triggerContext.lastScheduledExecutionTime();
+		// 上一次实际执行的结束时间
 		Date lastCompletion = triggerContext.lastCompletionTime();
-		// task还未开始第一次执行，没有上一次执行记录
+		
+		// 2. task还未开始第一次执行，没有上一次执行记录
 		if (lastExecution == null || lastCompletion == null) {
-			// 初始化的执行时间：当前时间+initialDelay即可
+			// 2.1 初始化的执行时间：当前时间+initialDelay即可
 			return new Date(System.currentTimeMillis() + this.initialDelay);
 		}
+		// 3. fixedRate 模式
 		if (this.fixedRate) {
-			// fixedRate是两次任务开始时间的间隔 -- 因此取预定执行时间
+			// fixedRate是两次任务开始时间的间隔 -- 因此取预定开始执行时间
 			return new Date(lastExecution.getTime() + this.period);
 		}
-		// fixedRate是上一次任务结束时间到下一次任务的开始时间的间隔 -- 因此取预定执行时间
+		// 4. fixedDelay 模式
+		// fixedRate是上一次任务结束时间到下一次任务的开始时间的间隔 -- 因此取实际执行结束的时间
 		return new Date(lastCompletion.getTime() + this.period);
 	}
 

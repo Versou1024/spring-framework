@@ -32,6 +32,11 @@ import org.springframework.util.ReflectionUtils;
  * @see org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor
  */
 public class ScheduledMethodRunnable implements Runnable {
+	// ScheduledMethodRunnable = ScheduledMethod TO Runnable
+	// 意思就是: 将某个bean上的使用@Scheduled的方法 适配为 Runnable
+	// why -> 因为每个@Scheduled的任务都将被作为一个Task丢到TaskScheduler中执行 --> 执行的前提就是你必须是一个Runnable
+	
+	// MethodInvokingRunnable的变体旨在用于处理无参数计划的方法
 
 	private final Object target;
 
@@ -79,7 +84,7 @@ public class ScheduledMethodRunnable implements Runnable {
 
 	@Override
 	public void run() {
-		// 反射执行 target 的method
+		// 很明显 -> 反射执行bean中的带有@Scheduled的方法
 		try {
 			ReflectionUtils.makeAccessible(this.method);
 			this.method.invoke(this.target);

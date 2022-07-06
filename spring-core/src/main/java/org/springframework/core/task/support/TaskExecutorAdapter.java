@@ -44,6 +44,7 @@ import org.springframework.util.concurrent.ListenableFutureTask;
  * @see java.util.concurrent.Executors
  */
 public class TaskExecutorAdapter implements AsyncListenableTaskExecutor {
+	// 将 java的Executor 适配为 Spring的AsyncListenableTaskExecutor
 
 	private final Executor concurrentExecutor;
 

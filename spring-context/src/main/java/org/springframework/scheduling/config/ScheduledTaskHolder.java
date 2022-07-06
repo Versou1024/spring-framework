@@ -27,7 +27,8 @@ import java.util.Set;
  * @see org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor
  */
 public interface ScheduledTaskHolder {
-
+	// 暴露本地的scheduled tasks的通用接口
+	
 	/**
 	 * Return an overview of the tasks that have been scheduled by this instance.
 	 */

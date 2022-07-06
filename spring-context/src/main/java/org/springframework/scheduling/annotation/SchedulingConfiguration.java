@@ -38,7 +38,9 @@ import org.springframework.scheduling.config.TaskManagementConfigUtils;
 @Configuration
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class SchedulingConfiguration {
-	// 导入配置类
+	// SchedulingConfiguration = Scheduling Configuration 周期性任务配置好]
+	
+	// 指定配置类的BeanName为org.springframework.context.annotation.internalScheduledAnnotationProcessor
 	@Bean(name = TaskManagementConfigUtils.SCHEDULED_ANNOTATION_PROCESSOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public ScheduledAnnotationBeanPostProcessor scheduledAnnotationProcessor() {

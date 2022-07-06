@@ -55,6 +55,16 @@ import org.springframework.util.StringUtils;
  * @see CronTrigger
  */
 public class CronSequenceGenerator {
+	// Crontab 模式 的日期序列生成器，允许客户端指定序列匹配的模式。
+	// 该模式是六个以空格分隔的单个字段的列表：表示秒、分钟、小时、日、月、工作日。月份和工作日名称可以作为英文名称的前三个字母。
+	// 示例模式：
+	// 		"0 0 * * * *" = the top of every hour of every day.
+	// 		"*/10 * * * * *" = 每过10s
+	// 		"0 0 8-10 * * *" = 每天的 08:00:00 09:00:00 10:00:00 整时触发
+	// 		"0 0 6,19 * * *" = 每天的 06:00:00 19:00:00 整时触发
+	// 		"0 0/30 8-10 * * *" = 8:00, 8:30, 9:00, 9:30, 10:00 and 10:30 每天
+	// 		"0 0 9-17 * * MON-FRI" = MON-FRI这个几个月的每天9-17点整时触发
+	// 		"0 0 0 25 12 ?" = every Christmas Day at midnight
 
 	private final String expression;
 

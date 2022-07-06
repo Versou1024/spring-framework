@@ -32,9 +32,11 @@ import org.springframework.lang.Nullable;
  */
 public final class ScheduledTask {
 	// 适配器：兼容所有的Task
+	// 五大Task -> TriggerTask\CronTask\IntervalTask\FixedRateTask\FixedDelayTask
 
 	private final Task task;
 
+	// future 是在 task调度器即 taskScheduler.schedule(task.getRunnable(), task.getTrigger()) 后返回出来的
 	@Nullable
 	volatile ScheduledFuture<?> future;
 
@@ -57,6 +59,9 @@ public final class ScheduledTask {
 	 * Trigger cancellation of this scheduled task.
 	 */
 	public void cancel() {
+		// ScheduledTask 可以随时取消傲
+		// 本质调用 Future.cancel()方法
+		
 		ScheduledFuture<?> future = this.future;
 		if (future != null) {
 			future.cancel(true);

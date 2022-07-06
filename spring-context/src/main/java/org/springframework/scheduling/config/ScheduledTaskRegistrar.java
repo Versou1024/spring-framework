@@ -56,8 +56,11 @@ import org.springframework.util.CollectionUtils;
  * @see org.springframework.scheduling.annotation.SchedulingConfigurer
  */
 public class ScheduledTaskRegistrar implements ScheduledTaskHolder, InitializingBean, DisposableBean {
-	// @since 3.0 它在Spring3.0就有了
-	// 这里面又有一个重要的接口：我们可议通过扩展实现此接口，来定制化属于自己的ScheduledTaskRegistrar 下文会有详细介绍
+	// 位于: org.springframework.scheduling.config
+	// 版本: 3.0 
+	
+	// 实现 ScheduledTaskHolder 接口：
+	// 我们可议通过扩展实现此接口，来定制化属于自己的ScheduledTaskRegistrar 下文会有详细介绍
 	// 它实现了InitializingBean和DisposableBean，所以我们也可以把它放进容器里面
 
 	/**
@@ -73,6 +76,12 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 
 
 	// 任务调度器 -- 可以向其中注册定时任务
+	// 1. 用户通过实现SchedulingConfigurer.configureTasks(ScheduledTaskRegistrar)允许向ScheduledTaskRegistrar.setTaskScheduler()定制调度器
+	// 2. 去ioc容器中查找
+	// 		2.1 从ioc容器查找一个TaskScheduler的bean使用,如果恰好只有一个，直接返回
+	// 			2.1.1 在2.1如果有多个TaskScheduler，就去查找一个beanName为“taskScheduler”，beanType为TaskScheduler的bean，找不到就报错啦
+	// 			2.1.2 在2.2如果没有找到任何TaskScheduler的bean，那就去查找ScheduledExecutorService类型的一个bean，如果有多个bean，同样通过beanName=”taskScheduler“进行过滤
+	// 3. 在ScheduledTaskRegistrar.afterPropertiesSet()中如果发现还没有设置过TaskScheduler，就使用默认的ConcurrentTaskScheduler作为TaskScheduler，并且本地的Executor设置为newSingleThreadScheduledExecutor()
 	@Nullable
 	private TaskScheduler taskScheduler;
 
@@ -81,29 +90,44 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	private ScheduledExecutorService localExecutor;
 
 	// 对任务进行分类 管理
+	// 含义: 在ScheduledAnnotatedBeanPostProcessor.postProcessAfterInitialization()->processScheduled()方法中，需要将从@Scheduled标注的方法中
+	// 处理得到的Task[CronTask等等]注册到ScheduledTaskRegistrar中
+	// 但是如果ScheduledTaskRegistrar.taskScheduler任务调度器为空，不好意思，无法立即执行，就先存放在unresolvedTasks字段以及各自对应的triggerTasks/cronTasks等字段中，
+	// 待后续当前类的afterPropertiesSet()中去统一处理未完成的任务
+	// afterPropertiesSet()中发现没有任务调度器时会兜底创建一个ConcurrentTaskScheduler来处理
 
+
+	// 一次性任务,到时就执行
 	@Nullable
 	private List<TriggerTask> triggerTasks;
 
+	// Cron表达式的周期任务tasks
 	@Nullable
 	private List<CronTask> cronTasks;
 
+	// 固定Rate的tasks
 	@Nullable
 	private List<IntervalTask> fixedRateTasks;
 
+	// 固定Delay延迟的周期tasks
 	@Nullable
 	private List<IntervalTask> fixedDelayTasks;
 
+	// 未解决的任务
 	private final Map<Task, ScheduledTask> unresolvedTasks = new HashMap<>(16);
 
+	// 计划的任务 -> 上面的triggerTasks/cronTasks/fixedRateTasks/fixedDelayTasks最终都会转换为ScheduledTask哦
 	private final Set<ScheduledTask> scheduledTasks = new LinkedHashSet<>(16);
 
-
+	
+	// 没有构造器
+	
 	/**
 	 * Set the {@link TaskScheduler} to register scheduled tasks with.
 	 */
 	public void setTaskScheduler(TaskScheduler taskScheduler) {
-		// 调用者可以自己指定一个TaskScheduler
+		// 规则:
+		//
 		Assert.notNull(taskScheduler, "TaskScheduler must not be null");
 		this.taskScheduler = taskScheduler;
 	}
@@ -114,6 +138,8 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 * {@code TaskScheduler}.
 	 */
 	public void setScheduler(@Nullable Object scheduler) {
+		// 设置调度器对象
+		
 		if (scheduler == null) {
 			this.taskScheduler = null;
 		}
@@ -355,6 +381,7 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 */
 	@Override
 	public void afterPropertiesSet() {
+		// ❗️❗️❗️
 		// 核心 -- 开始将定时任务注册到调度器中
 		scheduleTasks();
 	}
@@ -365,29 +392,45 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 */
 	@SuppressWarnings("deprecation")
 	protected void scheduleTasks() {
+		// 关于TaskScheduler的设置时机如下:
+		// 1. 用户通过实现SchedulingConfigurer.configureTasks(ScheduledTaskRegistrar)允许向ScheduledTaskRegistrar.setTaskScheduler()定制调度器
+		// 2. 如果没有在1中去完成,就去ioc容器中查找
+		// 		2.1 从ioc容器查找一个TaskScheduler的bean使用,如果恰好只有一个，直接返回
+		// 			2.1.1 在2.1如果有多个TaskScheduler，就去查找一个beanName为“taskScheduler”，beanType为TaskScheduler的bean，找不到就报错啦
+		// 			2.1.2 在2.2如果没有找到任何TaskScheduler的bean，那就去查找ScheduledExecutorService类型的一个bean，如果有多个bean，同样通过beanName=”taskScheduler“进行过滤
+		// 3. 如果在2中去ioc中也找不到,那就会在ScheduledTaskRegistrar.afterPropertiesSet()中如果发现还没有设置过TaskScheduler，就使用默认的ConcurrentTaskScheduler作为TaskScheduler，并且本地的Executor设置为newSingleThreadScheduledExecutor()
+
+		// 1. 还是没有调度器就使用默认的ConcurrentTaskScheduler，
+		// 并且本地的线程池即执行器使用一个newSingleThreadScheduledExecutor()单例的线程池啦 -- 
+		// ❗️❗️❗️ newSingleThreadScheduledExecutor -> 导致一个问题:因此如果同一个时刻有10个任务启动,就会出现争夺在这个线程池资源的问题哦
 		if (this.taskScheduler == null) {
-			// 还是没有调度器，就只能做一个newSingleThreadScheduledExecutor()单例的线程池啦 -- 所以为了并发，我们一般都是需要配置这个TaskExecutor的
 			this.localExecutor = Executors.newSingleThreadScheduledExecutor();
 			this.taskScheduler = new ConcurrentTaskScheduler(this.localExecutor);
 		}
-		// 下面几步：将各种tasks转换为ScheduledTask后加入到scheduledTasks集合中
+		// 2. 下面几步：将各种之前注册但未加入到调度器中的tasks转换为ScheduledTask后加入到scheduledTasks集合中
+		// 然后再 scheduleTriggerTask()/scheduleCronTask()/scheduleFixedRateTask()/scheduleFixedDelayTask()
+		// 就会发现taskScheduler不为空,从而将tasks转为ScheduledTask后加入到调度器中去执行哦
 		if (this.triggerTasks != null) {
 			for (TriggerTask task : this.triggerTasks) {
+				// 2.1 scheduleTriggerTask() 将 TriggerTask 适配为 ScheduledTask
 				addScheduledTask(scheduleTriggerTask(task));
 			}
 		}
 		if (this.cronTasks != null) {
 			for (CronTask task : this.cronTasks) {
+				// 2.1 scheduleCronTask() 将 CronTask 适配为 ScheduledTask
 				addScheduledTask(scheduleCronTask(task));
 			}
 		}
 		if (this.fixedRateTasks != null) {
 			for (IntervalTask task : this.fixedRateTasks) {
+				// 2.1 scheduleFixedRateTask() 将 IntervalTask 适配为 ScheduledTask
 				addScheduledTask(scheduleFixedRateTask(task));
 			}
 		}
 		if (this.fixedDelayTasks != null) {
 			for (IntervalTask task : this.fixedDelayTasks) {
+				// 2.1 scheduleFixedDelayTask() 将 IntervalTask 适配为 ScheduledTask
 				addScheduledTask(scheduleFixedDelayTask(task));
 			}
 		}
@@ -409,6 +452,10 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 */
 	@Nullable
 	public ScheduledTask scheduleTriggerTask(TriggerTask task) {
+		
+		// 1. 
+		// 
+		
 		ScheduledTask scheduledTask = this.unresolvedTasks.remove(task);
 		boolean newTask = false;
 		if (scheduledTask == null) {
@@ -434,19 +481,27 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 */
 	@Nullable
 	public ScheduledTask scheduleCronTask(CronTask task) {
+		// 该方法的执行：
+		//	第一次：当在ScheduledAnnotationBeanPostProcessor.processScheduled()时如果有@Scheduled的cron属性就会触发当前方法
+		//		99%的情况由于没有注册TaskScheduler，导致注册的CronTask不能被加入到调度器中，只能放入unresolvedTasks与cronTasks中
+		//	第二次：当在ScheduledTaskRegistrar.afterPropertiesSet()被调用是会触发这里的scheduleTriggerTask(TriggerTask task)
+		//		此刻TaskScheduler必定是存在，即使用户没有注册，也会使用默认的ConcurrentTaskScheduler，然后这个时候从unresolvedTasks.remove(task)
+		//		就可以返回对应的ScheduledTask，并将其加入到ConcurrentTaskScheduler.schedule()调度起来哦
+		
 		ScheduledTask scheduledTask = this.unresolvedTasks.remove(task);
 		boolean newTask = false;
+		// 1.这是一个新的任务CronTask，将标记为newTask设为true,并封装为ScheduledTask
 		if (scheduledTask == null) {
-			// 这是一个新的任务Task，即newTask为null
 			scheduledTask = new ScheduledTask(task);
 			newTask = true;
 		}
+		// 2. 调度器不为空，就直接调用调度的schedule方法执行 -> 并获取一个Future设置到ScheduledTask中
 		if (this.taskScheduler != null) {
-			// 调度器不为空，就直接调用调度的schedule方法执行
 			scheduledTask.future = this.taskScheduler.schedule(task.getRunnable(), task.getTrigger());
 		}
+		// 3. 如果暂时没有调度器，就先加入到cronTasks中，并将其加入中缓存到unresolvedTasks
+		// 在后续的 ScheduledTaskRegistratr.afterPropertiesSet()中会触发
 		else {
-			// 如果暂时没有调度器，就先加入到cronTasks中，并将其加入中缓存到unresolvedTasks
 			addCronTask(task);
 			this.unresolvedTasks.put(task, scheduledTask);
 		}
@@ -478,6 +533,8 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 */
 	@Nullable
 	public ScheduledTask scheduleFixedRateTask(FixedRateTask task) {
+		// 和ScheduledTask scheduleCronTask(CronTask task)同样的逻辑，忽略~~
+		
 		ScheduledTask scheduledTask = this.unresolvedTasks.remove(task);
 		boolean newTask = false;
 		if (scheduledTask == null) {
@@ -494,7 +551,7 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 			}
 		}
 		else {
-			// 没有调度器，就预先添加到FixedRateTask结合中
+			// 没有调度器，就预先添加到FixedRateTask集合以及unresolvedTasks集合中
 			addFixedRateTask(task);
 			this.unresolvedTasks.put(task, scheduledTask);
 		}
@@ -527,6 +584,8 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 	 */
 	@Nullable
 	public ScheduledTask scheduleFixedDelayTask(FixedDelayTask task) {
+		// 和ScheduledTask scheduleCronTask(CronTask task)同样的逻辑，忽略~~
+		
 		ScheduledTask scheduledTask = this.unresolvedTasks.remove(task);
 		boolean newTask = false;
 		if (scheduledTask == null) {
@@ -536,12 +595,10 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 		if (this.taskScheduler != null) {
 			if (task.getInitialDelay() > 0) {
 				Date startTime = new Date(System.currentTimeMillis() + task.getInitialDelay());
-				scheduledTask.future =
-						this.taskScheduler.scheduleWithFixedDelay(task.getRunnable(), startTime, task.getInterval());
+				scheduledTask.future = this.taskScheduler.scheduleWithFixedDelay(task.getRunnable(), startTime, task.getInterval());
 			}
 			else {
-				scheduledTask.future =
-						this.taskScheduler.scheduleWithFixedDelay(task.getRunnable(), task.getInterval());
+				scheduledTask.future = this.taskScheduler.scheduleWithFixedDelay(task.getRunnable(), task.getInterval());
 			}
 		}
 		else {

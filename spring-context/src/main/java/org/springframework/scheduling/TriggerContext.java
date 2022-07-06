@@ -28,13 +28,16 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public interface TriggerContext {
+	// TriggerContext = Trigger Context
 
 	/**
 	 * Return the last <i>scheduled</i> execution time of the task,
 	 * or {@code null} if not scheduled before.
 	 */
 	@Nullable
-	Date lastScheduledExecutionTime(); // 上次预定执行时间
+	Date lastScheduledExecutionTime();
+	// 上次预定执行时间
+	// fixedRate是两次任务开始时间的间隔 -- 因此取这里的预定开始执行时间
 
 	/**
 	 * Return the last <i>actual</i> execution time of the task,
@@ -48,6 +51,8 @@ public interface TriggerContext {
 	 * or {@code null} if not scheduled before.
 	 */
 	@Nullable
-	Date lastCompletionTime(); // 上次执行结束时间
+	Date lastCompletionTime(); 
+	// 上次执行结束时间
+	// fixedRate是上一次任务结束时间到下一次任务的开始时间的间隔 -- 因此取实际执行结束的时间
 
 }

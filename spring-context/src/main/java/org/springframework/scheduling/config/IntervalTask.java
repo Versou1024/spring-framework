@@ -27,10 +27,15 @@ package org.springframework.scheduling.config;
  * @see ScheduledTaskRegistrar#addFixedDelayTask(IntervalTask)
  */
 public class IntervalTask extends Task {
-	// 继承Task，扩展执行间隔和延迟
+	// IntervalTask = Interval Task -> 带有执行间隔的Task
+	// 其子类包括:
+	// 	FixedRateTask: 上一次任务开始时间和下一次任务开始时间作为执行间隔
+	//  FixedDelayTask: 上一次任务结束后到下一次任务开始作为执行间隔
 
+	// 间隔
 	private final long interval;
 
+	// 第一次任务执行前的延迟时间
 	private final long initialDelay;
 
 
