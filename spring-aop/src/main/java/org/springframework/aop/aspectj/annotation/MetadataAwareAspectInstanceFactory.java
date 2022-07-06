@@ -34,7 +34,8 @@ import org.springframework.lang.Nullable;
  */
 public interface MetadataAwareAspectInstanceFactory extends AspectInstanceFactory {
 
-	// AspectInstanceFactory的子接口。提供了获取AspectMetadata的方法
+	// MetadataAwareAspectInstanceFactory =  Metadata + Aware + AspectInstance + Factory 
+	// AspectInstanceFactory的子接口。提供获取AspectMetadata的方法
 	// 实现类：
 	// SimpleMetadataAwareAspectInstanceFactory
 	// SingletonMetadataAwareAspectInstanceFactory 已经直接关联到AspectMetadata，所以直接return即可。

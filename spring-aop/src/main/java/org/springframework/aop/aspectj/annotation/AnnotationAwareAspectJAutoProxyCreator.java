@@ -48,16 +48,23 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorAutoProxyCreator {
-	// 首先AnnotationAwareAspectJAutoProxyCreator它是AspectJAwareAdvisorAutoProxyCreator的子类。
-	// 然后从名字中可议看出，它和注解有关。
+	
+	// 注入时机:
+	// 在使用@EnableAspectJAutoProxy注解后,将向BeanDefinitionRegistry注册表中注入AnnotationAwareAspectJAutoProxyCreator的BeanDefinition
+	
+	// 作用:
+	// 属于AspectJAwareAdvisorAutoProxyCreator的子类。是一个自动代理创建器帮助我们创建使用了AspectJ的代理
 	// 因此其实我们的@EnableAspectJAutoProxy它导入的就是这个自动代理创建器去帮我们创建和AspectJ相关的代理对象的。【即AOP生效的地方】
 	// 这也是我们当下使用最为广泛的方式~
 
+	// 很显然，它还支持我们自定义一个正则的模版
+	//并在isEligibleAspectBean()该方法使用此正则模板，从而决定使用哪些Adviso的bean可以被使用
 	@Nullable
 	private List<Pattern> includePatterns;
 
+	// ❗️❗️❗️ -- 实际上 AspectJAdvisorFactory 才是最最重要的东西 -> 没有它,这个自动代理创建器甚至都无法生效
 	// 唯一实现类：ReflectiveAspectJAdvisorFactory -- AspectJ切面类工厂
-	// 作用：基于@Aspect时,创建Spring AOP的Advice
+	// 作用：查找出@Aspect的切面类时,为其中的所有的AspectJ注解标注的通知方法创建Spring AOP的Advice或者Advisor
 	// 里面会对标注这些注解Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class的方法进行排序
 	// 然后把他们都变成Advisor( getAdvisors()方法 )
 	@Nullable
@@ -91,8 +98,14 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 	// 此处一定要记得调用：super.initBeanFactory(beanFactory);
 	@Override
 	protected void initBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+		// initBeanFactory 发生在顶级超类 AbstractAdvisorAutoProxyCreator#setBeanFactor()中 -> 也就是在bean的实例化之后,在初始化\初始化前置BeanPostProcessor之前
+		// 就会知道被触发哦
+		
+		// ❗️❗️❗️
 		super.initBeanFactory(beanFactory);
 		if (this.aspectJAdvisorFactory == null) {
+			// 1. ❗️❗️❗️❗️❗️❗️
+			// 创建了 ReflectiveAspectJAdvisorFactory
 			this.aspectJAdvisorFactory = new ReflectiveAspectJAdvisorFactory(beanFactory); // 常用的默认aspectJAdvisorFactory
 		}
 		this.aspectJAdvisorsBuilder = new BeanFactoryAspectJAdvisorsBuilderAdapter(beanFactory, this.aspectJAdvisorFactory); // 常用的默认的aspectJAdvisorsBuilder
@@ -103,12 +116,13 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 	// 然后，然后自己又通过aspectJAdvisorsBuilder.buildAspectJAdvisors()  解析@Aspect的方法得到一些Advisor
 	@Override
 	protected List<Advisor> findCandidateAdvisors() {
-		// Add all the Spring advisors found according to superclass rules.
-		// 超类 AbstractAdvisorAutoProxyCreator#findCandidateAdvisors 从BeanFactory中获取Advisor的步骤也是需要的
+		
+		// 1. 超类 AbstractAdvisorAutoProxyCreator#findCandidateAdvisors 利用BeanFactoryAdvisorRetrievalHelper从BeanFactory中获取合格的Advisor类型出俩
+		// 也就说允许用户直接向Spring的ioc容器注入的原生的Advisor -> 是可以在这一步提取出来的
 		List<Advisor> advisors = super.findCandidateAdvisors();
-		// Build Advisors for all AspectJ aspects in the bean factory.
 		if (this.aspectJAdvisorsBuilder != null) {
-			// 而子类 AnnotationAwareAspectJAutoProxyCreator#findCandidateAdvisors 主要是从BeanFactory中找到使用AspectJ表达式的bean，并包装为advisor
+			// 2. 子类 AnnotationAwareAspectJAutoProxyCreator#findCandidateAdvisors[注解感知] 在用户定义的原生的Advisor的基础上
+			// 去BeanFactory中找到使用@Aspect的切面类,然后找到其中有AspectJ注解的通知方法，并包装为advisor
 			advisors.addAll(this.aspectJAdvisorsBuilder.buildAspectJAdvisors());
 		}
 		return advisors;
@@ -116,16 +130,8 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 
 	@Override
 	protected boolean isInfrastructureClass(Class<?> beanClass) {
-		// Previously we setProxyTargetClass(true) in the constructor, but that has too
-		// broad an impact. Instead we now override isInfrastructureClass to avoid proxying
-		// aspects. I'm not entirely happy with that as there is no good reason not
-		// to advise aspects, except that it causes advice invocation to go through a
-		// proxy, and if the aspect implements e.g the Ordered interface it will be
-		// proxied by that interface and fail at runtime as the advice method is not
-		// defined on the interface. We could potentially relax the restriction about
-		// not advising aspects in the future.
-		// 在父类的基础上添加一种类型
-		// 加了一种类型：如果该Bean自己本身就是一个@Aspect， 那也认为是基础代理，不要切了
+		// 在父类的isInfrastructureClass()校验规则额外扩展以下:
+		// 就是如果该Bean自己本身就是一个@Aspect， 那也认为是属于AOP框架的,不应该被代理
 		return (super.isInfrastructureClass(beanClass) ||
 				(this.aspectJAdvisorFactory != null && this.aspectJAdvisorFactory.isAspect(beanClass)));
 	}
@@ -137,11 +143,17 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 	 * then one of the patterns must match.
 	 */
 	protected boolean isEligibleAspectBean(String beanName) {
-		// 拿传入的正则模版进行匹配（没传就返回true，所有的Advisor都会生效）
+		// ❗️❗️❗️
+		// 当 BeanFactoryAspectJAdvisorsBuilderAdapter.buildAspectJAdvisors()从BeanFactory中寻找@Aspect的切面类,并转换出切面类中的通知增强方法Advice时
+		// 第一步就会间接调用这里的 isEligibleAspectBean() 来检查这个bean是否有资格作为Advisor,所以即使一个@Aspect标注的切面类只要在这里无法匹配上正则表达式
+		// 那也只能是被放弃,无法继续对这个切面类处理
+		
+		// 1. 拿传入的正则模版进行匹配（没传就返回true，所有的Advisor都会生效）
 		if (this.includePatterns == null) {
 			return true;
 		}
 		else {
+			// 2. 如果满足includePatterns的正则就返回ture,表示当前的Advisor会生效
 			for (Pattern pattern : this.includePatterns) {
 				if (pattern.matcher(beanName).matches()) {
 					return true;

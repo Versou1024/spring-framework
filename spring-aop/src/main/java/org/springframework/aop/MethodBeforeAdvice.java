@@ -29,6 +29,7 @@ import org.springframework.lang.Nullable;
  * @see ThrowsAdvice
  */
 public interface MethodBeforeAdvice extends BeforeAdvice {
+	// 在调用方法之前调用的通知。此类建议不能阻止方法调用继续进行，除非它们抛出 Throwabl
 
 	/**
 	 * Callback before a given method is invoked.

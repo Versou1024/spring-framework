@@ -36,7 +36,9 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class MethodBeforeAdviceInterceptor implements MethodInterceptor, BeforeAdvice, Serializable {
+	// 适配器 -- 实现了BeforeAdvice和MethodInterceptor两个方法
 
+	// 持有被适配对象: MethodBeforeAdvice
 	private final MethodBeforeAdvice advice;
 
 

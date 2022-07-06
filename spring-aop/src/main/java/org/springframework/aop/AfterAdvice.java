@@ -27,5 +27,8 @@ import org.aopalliance.aop.Advice;
  * @see BeforeAdvice
  */
 public interface AfterAdvice extends Advice {
-	// 后置通知
+	// 后置通知 -- 标记性接口
+	// 有多种后置通知
+	// 		ThrowsAdvice -- 抛出异常后的后置通知
+	// 		AfterReturningAdvice -- 返回值之后的后置通知
 }

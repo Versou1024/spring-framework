@@ -33,6 +33,8 @@ import org.springframework.util.ConcurrentReferenceHashMap;
  * @see #newInstance(Class, boolean)
  */
 public class SpringObjenesis implements Objenesis {
+	// ObjenesisStd / ObjenesisBase的 Spring 特定变体
+	// 提供基于Class键而不是类名的缓存，并允许选择性地使用缓存。
 
 	/**
 	 * System property that instructs Spring to ignore Objenesis, not even attempting

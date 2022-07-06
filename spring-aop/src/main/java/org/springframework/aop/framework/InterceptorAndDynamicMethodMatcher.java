@@ -27,6 +27,8 @@ import org.springframework.aop.MethodMatcher;
  * @author Rod Johnson
  */
 class InterceptorAndDynamicMethodMatcher {
+	// 内部框架使用的类
+	// 板顶一个需要指定的MethodInterceptor,以及一个动态匹配的MethodMathcher
 
 	final MethodInterceptor interceptor;
 

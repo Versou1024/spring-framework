@@ -44,16 +44,18 @@ import org.springframework.aop.SpringProxy;
  * @see AdvisedSupport#setInterfaces
  */
 public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
-	/**
-	 *
-	 */
+	
+	// DefaultAopProxyFactory 起到一个委托或者门面或者中介模式
+	// 具体的创建AOP的功能是过户给 JDK的JdkDynamicAopProxy 或 CGLIB的ObjenesisCglibAopProxy
 
 	private static final long serialVersionUID = 7930414337282325166L;
 
 
 	@Override
 	public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
-		// config是优化，或者config是代理目标类，或者接口数为0，或者接口数仅仅一个，且为SpringProxy接口
+		// 1. config中optimize默认是false
+		// 或者config指定代理目标类
+		// 或者代理的目标对象接口数为0，或者接口数仅仅一个，且为SpringProxy接口
 		if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
 			// 获取目标Class
 			Class<?> targetClass = config.getTargetClass();
@@ -61,7 +63,7 @@ public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
 				throw new AopConfigException("TargetSource cannot determine target class: " +
 						"Either an interface or a target is required for proxy creation.");
 			}
-			// 倘若目标Class本身就是个接口，或者它已经是个JDK得代理类（Proxy的子类。所有的JDK代理类都是此类的子类），那还是用JDK的动态代理吧
+			// 2. 但是目标Class本身就是个接口，或者它已经是个JDK得代理类（Proxy的子类。所有的JDK代理类都是此类的子类），那还是用JDK的动态代理吧
 			if (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) {
 				// targetClass是接口，或者targetClass已经是JDK代理的
 				// 将config传过去给JDKDynamicAopProxy

@@ -36,7 +36,7 @@ import org.springframework.lang.Nullable;
 public interface TargetSource extends TargetClassAware {
 	/*
 	 * 封装target目标类，用于对外统一被代理的目标对象
-	 *  getTargetClass、getTarget、isStatic、releaseTarget
+	 * getTargetClass、getTarget、isStatic、releaseTarget
 	 */
 
 	/**

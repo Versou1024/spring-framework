@@ -45,8 +45,9 @@ import org.springframework.util.ReflectionUtils;
  * @since 2.0
  * @see PersistenceExceptionTranslator
  */
-public class PersistenceExceptionTranslationInterceptor
-		implements MethodInterceptor, BeanFactoryAware, InitializingBean {
+public class PersistenceExceptionTranslationInterceptor implements MethodInterceptor, BeanFactoryAware, InitializingBean {
+	// 委托给给定的PersistenceExceptionTranslator以将抛出的 RuntimeException 转换为 Spring 的 DataAccessException 层次结构（如果适用）。
+	// 如果在目标方法上声明了有问题的 RuntimeException，它总是按原样传播（不应用翻译）。
 
 	@Nullable
 	private volatile PersistenceExceptionTranslator persistenceExceptionTranslator;
@@ -139,18 +140,24 @@ public class PersistenceExceptionTranslationInterceptor
 			return mi.proceed();
 		}
 		catch (RuntimeException ex) {
-			// Let it throw raw if the type of the exception is on the throws clause of the method.
+			// 1.如果异常的类型在方法的 throws 子句中，则让它抛出 raw。
+			//  ReflectionUtils.declaresException()确定给定方法是否显式声明给定异常或其超类之一，这意味着该类型的异常可以在反射调用中按原样传播
+			// 即方法上的声明的异常可以按照原样抛出
 			if (!this.alwaysTranslate && ReflectionUtils.declaresException(mi.getMethod(), ex.getClass())) {
 				throw ex;
 			}
+			// 2. 修改异常信息
 			else {
 				PersistenceExceptionTranslator translator = this.persistenceExceptionTranslator;
 				if (translator == null) {
 					Assert.state(this.beanFactory != null,
 							"Cannot use PersistenceExceptionTranslator autodetection without ListableBeanFactory");
+					// 2.1 没有直接set PersistenceExceptionTranslator
+					// 从BeanFactory中获取所有的翻译器,并组合为链式的ChainedPersistenceExceptionTranslator后返回
 					translator = detectPersistenceExceptionTranslators(this.beanFactory);
 					this.persistenceExceptionTranslator = translator;
 				}
+				// 2.2 尝试转换
 				throw DataAccessUtils.translateIfNecessary(ex, translator);
 			}
 		}
@@ -164,9 +171,16 @@ public class PersistenceExceptionTranslationInterceptor
 	 * @see ChainedPersistenceExceptionTranslator
 	 */
 	protected PersistenceExceptionTranslator detectPersistenceExceptionTranslators(ListableBeanFactory bf) {
-		// Find all translators, being careful not to activate FactoryBeans.
+		
+		// 1. 检测给定 BeanFactory 中的所有 PersistenceExceptionTranslators。
+		// 注意两个形参: 
+		// includeNonSingletons – 是否也包括原型和其他Scppe作用域的bean,还是仅仅仅包括单例（也适用于 FactoryBeans）
+		// allowEagerInit – 是否初始化由 FactoryBeans（或通过带有“factory-bean”引用的工厂方法）创建的惰性初始化单例和对象以进行类型检查。
+		// 请注意，FactoryBeans 需要立即初始化以确定它们的类型：因此请注意，为此标志传递“true”将初始化 FactoryBeans 和“factory-bean”引用。
 		Map<String, PersistenceExceptionTranslator> pets = BeanFactoryUtils.beansOfTypeIncludingAncestors(
 				bf, PersistenceExceptionTranslator.class, false, false);
+		
+		// 2. 将所有的翻译器组合到链式的ChainedPersistenceExceptionTranslator上
 		ChainedPersistenceExceptionTranslator cpet = new ChainedPersistenceExceptionTranslator();
 		for (PersistenceExceptionTranslator pet : pets.values()) {
 			cpet.addDelegate(pet);

@@ -56,7 +56,10 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class PersistenceExceptionTranslationPostProcessor extends AbstractBeanFactoryAwareAdvisingPostProcessor {
+	// easy~~ 
 
+	// ❗️❗️❗️: 指定使用的注解为 @Repository
+	// 因此所有的@Repository类的方法都会被PersistenceExceptionTranslationAdvisor切面匹配到哦
 	private Class<? extends Annotation> repositoryAnnotationType = Repository.class;
 
 

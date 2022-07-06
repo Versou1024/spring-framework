@@ -49,6 +49,7 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class AbstractBeanFactoryBasedTargetSource implements TargetSource, BeanFactoryAware, Serializable {
 	// 基于BeanFactory工厂的targetSource
+	// 很明显这里管理的是target的BeanName -> 从BeanFactory中获取对应的bean
 
 	/** use serialVersionUID from Spring 1.2.7 for interoperability. */
 	private static final long serialVersionUID = -4721607536018568393L;
@@ -107,7 +108,7 @@ public abstract class AbstractBeanFactoryBasedTargetSource implements TargetSour
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		if (this.targetBeanName == null) {
-			// targetNameweinull就error
+			// targetName为null就error
 			throw new IllegalStateException("Property 'targetBeanName' is required");
 		}
 		this.beanFactory = beanFactory;

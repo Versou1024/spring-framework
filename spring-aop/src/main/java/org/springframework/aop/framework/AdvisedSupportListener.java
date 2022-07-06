@@ -25,6 +25,9 @@ package org.springframework.aop.framework;
  * @see ProxyCreatorSupport#addListener
  */
 public interface AdvisedSupportListener {
+	// 在ProxyCreatorSupport对象上注册的侦听器 允许在active即创建和update即更新advice时接收回调。
+	// 提供给外部用户的接口 -- spring内部暂无使用
+	// AdvisedSupportListener = AdvisedSupport Listener
 
 	/**
 	 * Invoked when the first proxy is created.

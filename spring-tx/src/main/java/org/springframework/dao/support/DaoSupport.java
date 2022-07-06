@@ -33,6 +33,8 @@ import org.springframework.beans.factory.InitializingBean;
  * @see org.springframework.jdbc.core.support.JdbcDaoSupport
  */
 public abstract class DaoSupport implements InitializingBean {
+	// DAO 的通用基类，定义 DAO 初始化的模板方法 -- 比如Mybatis中Mapper接口注解和xml扫描都是交给这里的afterPropertiesSet()来处理的
+	// 有一个核心就是: 实现了 InitializingBean
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -40,11 +42,11 @@ public abstract class DaoSupport implements InitializingBean {
 
 	@Override
 	public final void afterPropertiesSet() throws IllegalArgumentException, BeanInitializationException {
-		// Let abstract subclasses check their configuration.
+		// 1. 让抽象子类检查它们的配置。
 		checkDaoConfig();
 
-		// Let concrete implementations initialize themselves.
 		try {
+			// 让具体的实现自己初始化。
 			initDao();
 		}
 		catch (Exception ex) {

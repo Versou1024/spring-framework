@@ -280,7 +280,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * <p>By default, only the BeanFactoryAware interface is ignored.
 	 * For further types to ignore, invoke this method for each type.
 	 * @see org.springframework.beans.factory.BeanFactoryAware
-	 * @see org.springframework.context.ApplicationContextAware
 	 */
 	public void ignoreDependencyInterface(Class<?> ifc) {
 		this.ignoredDependencyInterfaces.add(ifc);
@@ -473,7 +472,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 	@Override
 	@Nullable
-	public Object resolv eDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName) throws BeansException {
+	public Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName) throws BeansException {
 		return resolveDependency(descriptor, requestingBeanName, null, null);
 	}
 
@@ -2103,6 +2102,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}, getAccessControlContext());
 		}
 		else {
+			// 比如:	BeanNameAware/BeanClassLoaderAware/BeanFactoryAware
 			invokeAwareMethods(beanName, bean);
 		}
 
@@ -2111,7 +2111,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (mbd == null || !mbd.isSynthetic()) {
 			// 2. postProcessBeforeInitialization：执行初始化的前置处理。基本上也是执行一些Aware的注入。
 			// —>1. InitDestroyAnnotationBeanPostProcessor在这里会执行@PostConstruct标记的方法
-			// —>2. ApplicationContextAwareProcessor/ServletContextAwareProcessor会实现感知接口的注入
+			// —>2. ApplicationContextAwareProcessor/ServletContextAwareProcessor会实现感知接口的注入 -> 比如EnvironmentAware等等
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
@@ -2138,6 +2138,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	}
 
 	private void invokeAwareMethods(String beanName, Object bean) {
+		// 重要哦
 		if (bean instanceof Aware) {
 			if (bean instanceof BeanNameAware) {
 				((BeanNameAware) bean).setBeanName(beanName);

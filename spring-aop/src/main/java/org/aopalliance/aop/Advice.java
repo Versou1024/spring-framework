@@ -25,5 +25,6 @@ package org.aopalliance.aop;
  */
 public interface Advice {
 	// 通知标记接口
+	// 其具体实现 -- 可以是任何类型的建议，例如拦截器
 
 }

@@ -69,10 +69,10 @@ public abstract class AutoProxyUtils {
 	 * @return whether the given bean should be proxied with its target class
 	 */
 	public static boolean shouldProxyTargetClass(ConfigurableListableBeanFactory beanFactory, @Nullable String beanName) {
-		// 判断该beanName是否应该被代理
-		// `AbstractAutoProxyCreator`里就有判断是否能够被代理。  如果能够被代理，那就采用CGLIB的代理方式了
-		// 往里setAttr,目前只有`ConfigurationClassPostProcessor`对config配置类进行增强的时候
-
+		// 判断该beanName是否应该被Cglib代理,如果返回false,表示应该使用JDK代理
+		
+		// 1. 要求beanName对应的BeanDefinition中有属性"preserveTargetClass"值为false
+		// 即bean自己希望使用cglib代理
 		if (beanName != null && beanFactory.containsBeanDefinition(beanName)) {
 			BeanDefinition bd = beanFactory.getBeanDefinition(beanName);
 			return Boolean.TRUE.equals(bd.getAttribute(PRESERVE_TARGET_CLASS_ATTRIBUTE));
@@ -116,7 +116,7 @@ public abstract class AutoProxyUtils {
 	 */
 	static void exposeTargetClass(ConfigurableListableBeanFactory beanFactory, @Nullable String beanName, Class<?> targetClass) {
 		// AbstractAutoProxyCreator 与 AbstractBeanFactoryAwareAdvisingPostProcessor 作为两个AOP代理创建者
-		// 一旦为某一个类创建AOP，那么就需要调用 exposeTargetClass 将 targetClass 作为属性存入到AOP代理对象即代理Bean的属性ORIGINAL_TARGET_CLASS_ATTRIBUTE中
+		// 一旦为某一个类创建AOP，那么就需要调用 exposeTargetClass() 将 targetClass 作为属性存入到AOP代理对象的属性ORIGINAL_TARGET_CLASS_ATTRIBUTE中
 		if (beanName != null && beanFactory.containsBeanDefinition(beanName)) {
 			beanFactory.getMergedBeanDefinition(beanName).setAttribute(ORIGINAL_TARGET_CLASS_ATTRIBUTE, targetClass);
 		}
@@ -132,6 +132,8 @@ public abstract class AutoProxyUtils {
 	 * @see AutowireCapableBeanFactory#ORIGINAL_INSTANCE_SUFFIX
 	 */
 	static boolean isOriginalInstance(String beanName, Class<?> beanClass) {
+		// 如果beanName是 beanClass.getName() + ".ORIGINAL" 表示不需要代理,必须使用原始类型的时候,就返回true
+		
 		if (!StringUtils.hasLength(beanName) || beanName.length() !=
 				beanClass.getName().length() + AutowireCapableBeanFactory.ORIGINAL_INSTANCE_SUFFIX.length()) {
 			return false;

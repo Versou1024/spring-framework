@@ -41,6 +41,8 @@ import org.springframework.util.ClassUtils;
  */
 @SuppressWarnings("serial")
 public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFilter, Ordered, Serializable {
+	// 一个简答的 IntroductionAdvisor 实现
+	// 默认还是可以接受任何类型的哦
 
 	private final Advice advice;
 

@@ -39,6 +39,11 @@ public interface AdvisorAdapter {
 	 * AdvisorAdapter 接口允许对Spring AOP框架进行扩展，以允许处理新的Advisors和Advice类型。
 	 * AdvisorAdapter的实现对象可以从定制的建议类型创建AOP联盟拦截器，从而使这些advice类型能够在Spring AOP框架中使用，该框架使用隐蔽的拦截。
 	 * 大多数Spring用户不需要实现这个接口；只有当您需要向Spring引入更多Advisor或Advice类型时，才可以这样做。
+	 * 
+	 * spring的三个内置实现:
+	 * 		AfterReturningAdviceAdapter -- 将AfterReturningAdvice适配为可执行的MethodInterceptor
+	 * 		ThrowsAdviceAdapter -- 将ThrowsAdvice配为可执行的MethodInterceptor
+	 * 		MethodBeforeAdviceAdapter -- 将MethodBeforeAdvice适配为可执行的MethodInterceptor
 	 */
 
 	/**

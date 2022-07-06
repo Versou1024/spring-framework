@@ -83,6 +83,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	// 与@ComponentScan的scopedProxy属性有关哦
 	private ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
 
+	// 指定是否注册注解配置后处理器。
 	private boolean includeAnnotationConfig = true;
 
 

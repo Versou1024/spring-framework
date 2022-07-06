@@ -31,7 +31,7 @@ import org.springframework.util.ObjectUtils;
  * @author Juergen Hoeller
  */
 public final class EmptyTargetSource implements TargetSource, Serializable {
-	// 类名可知，target就是单例的null
+	// 没有target（或仅知道target的Class）时的规范TargetSource ，并且行为仅由接口和顾问提供。
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 3680494563553489691L;
@@ -53,6 +53,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 	 * @see #getTargetClass()
 	 */
 	public static EmptyTargetSource forClass(@Nullable Class<?> targetClass) {
+		// 允许:更新target的class值
 		return forClass(targetClass, true);
 	}
 

@@ -34,9 +34,11 @@ import org.springframework.core.annotation.OrderUtils;
  */
 @SuppressWarnings("serial")
 public class SingletonMetadataAwareAspectInstanceFactory extends SingletonAspectInstanceFactory implements MetadataAwareAspectInstanceFactory, Serializable {
-	/**
-	 * 实现 MetadataAwareAspectInstanceFactory，通过 getAspectInstance() 的实例
-	 */
+	// MetadataAwareAspectInstanceFactory extends AspectInstanceFactory -> 扩展了一个获取AspectMetadata的方法
+	// SingletonAspectInstanceFactory implements AspectInstanceFactory -> 通过传入一个单例的Aspect对象后,确定了如何获取一个AspectJ的Obj实例对象 
+	// SingletonMetadataAwareAspectInstanceFactory extends SingletonAspectInstanceFactory implements MetadataAwareAspectInstanceFactory 
+	// 从继承关系上可以直到,说明其创建Aspect实例的任务是交给当前类的超类SingletonAspectInstanceFactory完成的
+	// 所以SingletonMetadataAwareAspectInstanceFactory的关注点就是MetadataAwareAspectInstanceFactory扩展的获取AspectMetadata的方法
 
 	private final AspectMetadata metadata;
 

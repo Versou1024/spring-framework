@@ -35,7 +35,7 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class SingletonAspectInstanceFactory implements AspectInstanceFactory, Serializable {
 
-	private final Object aspectInstance; // 直接缓存单例的切面类
+	private final Object aspectInstance; // 直接缓存 -- 单例的切面类实例对象
 
 
 	/**

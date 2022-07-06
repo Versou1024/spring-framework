@@ -44,7 +44,7 @@ package org.springframework.aop.framework;
 public interface AopProxyFactory {
 	/*
 	 * AopProxy工厂，用于创建AopProxy的实现类，
-	 * 常见的AopProxy的动态代理就是：CglibAopProxy、JdkDynamicAopProxy两个类
+	 * 常见的AopProxy的动态代理结果就是：CglibAopProxy、JdkDynamicAopProxy两个类
 	 * AopProxyFactory 默认只有一个实现类即 DefaultAopProxyFactory
 	 */
 

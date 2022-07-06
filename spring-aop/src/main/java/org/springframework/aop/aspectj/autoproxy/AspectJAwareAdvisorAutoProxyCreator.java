@@ -45,12 +45,12 @@ import org.springframework.util.ClassUtils;
  */
 @SuppressWarnings("serial")
 public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProxyCreator {
-	// AspectJAwareAdvisorAutoProxyCreator
-	//顾名思义，该类主要来处理AspectJ切面的。这也是当下最流行，也是功能最为强大的一种方式吧~~~
-	//
-	//它对父类，做了如下几点扩展：
+	// ❗️❗️❗️AbstractAdvisorAutoProxyCreator 最重要的子类: AspectJAwareAdvisorAutoProxyCreator
+	// 顾名思义，该类主要来处理AspectJ切面的。这也是当下最流行，也是功能最为强大的一种方式吧~~~
+	// butbut仅仅是重写了sortAdvisors()以及shouldSkip()两个方法二姨
 
-	// 默认的排序器，它就不是根据Order来了，而是根据@Afeter @Before类似的标注来排序
+	// 默认的排序器，它就不是根据Order接口或@Order来排序
+	// 而是根据 @Afeter @Before 类似的标注来排序
 	private static final Comparator<Advisor> DEFAULT_PRECEDENCE_COMPARATOR = new AspectJPrecedenceComparator();
 
 
@@ -72,7 +72,7 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 	 */
 	@Override
 	protected List<Advisor> sortAdvisors(List<Advisor> advisors) {
-		// 核心逻辑：它重写了排序
+		// ❗️ 核心逻辑：它重写对查询出来的advisors排序
 		// 这个排序和`org.aspectj.util`提供的PartialOrder和PartialComparable有关 具体不详叙了
 		// 这块排序算法还是比较复杂的，控制着最终的执行顺序~
 		List<PartiallyComparableAdvisorHolder> partiallyComparableAdvisors = new ArrayList<>(advisors.size());

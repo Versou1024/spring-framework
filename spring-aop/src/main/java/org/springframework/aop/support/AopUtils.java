@@ -91,6 +91,7 @@ public abstract class AopUtils {
 	 * @see ClassUtils#isCglibProxy(Object)
 	 */
 	public static boolean isCglibProxy(@Nullable Object object) {
+		// Spring的Cglib代理特点就是其方法名中含有$$
 		return (object instanceof SpringProxy &&
 				object.getClass().getName().contains(ClassUtils.CGLIB_CLASS_SEPARATOR));
 	}
@@ -146,6 +147,8 @@ public abstract class AopUtils {
 		}
 		return methodToUse;
 	}
+	
+	// is系列检查指定的method是否为equals\toString\finalize\
 
 	/**
 	 * Determine whether the given method is an "equals" method.
@@ -234,20 +237,19 @@ public abstract class AopUtils {
 	 */
 	public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasIntroductions) {
 		Assert.notNull(pc, "Pointcut must not be null");
-		// 首先检查类是否匹配
+		// 1. 首先检查类是否匹配,不匹配立即返回false
 		if (!pc.getClassFilter().matches(targetClass)) {
 			return false;
 		}
 
-		// 然后检查方法是否有匹配的
+		// 2. 检查方法是否有匹配的
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
 		if (methodMatcher == MethodMatcher.TRUE) {
-			// No need to iterate the methods if we're matching any method anyway...
-			// 如果是恒等式true，那就毫无疑问全匹配楼
+			// 2.1 如果是恒等式true，那就毫无疑问全匹配楼
 			return true;
 		}
 
-		//IntroductionAwareMethodMatcher 是MethodMatcher的子类  增加了匹配方法：
+		// 3. IntroductionAwareMethodMatcher 是 MethodMatcher的子类  增加了匹配方法：
 		// boolean matches(Method method, @Nullable Class<?> targetClass, boolean hasIntroductions);
 		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null; // 引介增强比 -- 其中AspectJExpressionPointcut就实现了这个接口
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
@@ -259,7 +261,7 @@ public abstract class AopUtils {
 			classes.add(ClassUtils.getUserClass(targetClass));
 		}
 		classes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
-		// 这里注意：会对类以及接口中所有的方法对MethodMatcher的匹配
+		// 4. 会对类以及接口中所有的方法对MethodMatcher的匹配
 		for (Class<?> clazz : classes) {
 			Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
 			for (Method method : methods) {
@@ -299,9 +301,12 @@ public abstract class AopUtils {
 	public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
 		// 检查advisor是否支持targetClass
 		// 例如：调用classFilter.matches、
+		
+		// 1. IntroductionAdvisor -> 只需要检查是否满足ClassFilter
 		if (advisor instanceof IntroductionAdvisor) {
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
+		// 2. PointcutAdvisor
 		else if (advisor instanceof PointcutAdvisor) {
 			// 一般都是这种情况
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
@@ -325,27 +330,31 @@ public abstract class AopUtils {
 		// 在给定的一组建议(candidateAdvisors)中，返回能够匹配指定类型的建议者列表
 		// 这个方法很总要：在自动代理创建器AbstractAdvisorAutoProxyCreator中，都是这样筛选的能够匹配上此类型的Advisor们~~~
 
+		// 1. Advisor空的,直接返回
 		if (candidateAdvisors.isEmpty()) {
-			// 返回空集合不影响
 			return candidateAdvisors;
 		}
 		// 这里遍历了candidateAdvisors两次   注意这个技巧
-		// 第一次遍历：找出所有的IntroductionAdvisor 类型的，并且canApply的Advisor们
-		List<Advisor> eligibleAdvisors = new ArrayList<>(); // eligible 符合的，正确的
+		
+		// 2. 第一次遍历：找出所有的IntroductionAdvisor类型的，并且canApply的Advisor们
+		List<Advisor> eligibleAdvisors = new ArrayList<>();
 		for (Advisor candidate : candidateAdvisors) {
-			// candidate 一般都不是IntroductionAdvisor
+			// DeclareParentsAdvisor 对应切面类中的@DeclareParents注解的使用的Advisor -- 就是IntroductionAdvisor
+			// 这种Advisor不同于JointPointAdvisor,它只有一个类过滤器 -- 因此只要clazz满足ClassFilter即可 -> 它会对所有的类中的方法作为连接入代理的哦
+			// 对于 DeclareParentsAdvisor的ClassFilter 只要clazz满足@DeclareParents注解的AspectJ语法的value值即可
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
-		// hasIntroductions：如果上面不为空，这里就是true  然后继续便利  吧canApply的找出来
+		// 3. hasIntroductions：如果上面不为空，这里就是true
+		// 然后继续遍历非IntroductionAdvisor的Advisor
 		boolean hasIntroductions = !eligibleAdvisors.isEmpty();
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor) {
 				// already processed
 				continue;
 			}
-			// 非Introduction类型的advisor，直接调用canApply判断
+			// 3.1 非Introduction类型的advisor,那就只能是JoinPointAdvisor啦, 直接调用canApply判断
 			if (canApply(candidate, clazz, hasIntroductions)) {
 				eligibleAdvisors.add(candidate);
 			}
@@ -364,8 +373,8 @@ public abstract class AopUtils {
 	 */
 	@Nullable
 	public static Object invokeJoinpointUsingReflection(@Nullable Object target, Method method, Object[] args) throws Throwable {
+		// 作为 AOP 方法调用的一部分，通过反射调用给定的目标
 
-		// Use reflection to invoke the method.
 		try {
 			ReflectionUtils.makeAccessible(method);
 			// 直接对连接点使用反射的方式进行调用

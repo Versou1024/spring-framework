@@ -26,7 +26,10 @@ import java.lang.reflect.Method;
  */
 @SuppressWarnings("serial")
 final class TrueMethodMatcher implements MethodMatcher, Serializable {
+	// TrueMethodMatcher = True MethodMatcher
+	// 其matches永远返回true
 
+	// 单例模式 -- 饿汉模式
 	public static final TrueMethodMatcher INSTANCE = new TrueMethodMatcher();
 
 

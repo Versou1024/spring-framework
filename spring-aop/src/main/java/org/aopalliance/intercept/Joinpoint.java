@@ -39,7 +39,8 @@ import java.lang.reflect.AccessibleObject;
  */
 public interface Joinpoint {
 	/**
-	 * aop联盟的 Joinpoint 连接点：
+	 * aop联盟的 JoinPoint 连接点：
+	 * 连接点指的是可以被拦截执行的方法
 	 * 主要是proceed()、getThis、getStaticPart
 	 */
 

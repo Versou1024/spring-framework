@@ -42,7 +42,13 @@ package org.aopalliance.intercept;
 @FunctionalInterface
 public interface MethodInterceptor extends Interceptor {
 	/*
-	 *  AspectJ提供的增强接口，定义增强方法：Object invoke(MethodInvocation var1) throws Throwable;
+	 *  aop联盟的AspectJ提供的增强接口，定义增强方法：
+	 * Object invoke(MethodInvocation var1) throws Throwable;
+	 * 
+	 * note: MethodInterceptor 实现了 Advice 标记接口哦
+	 * 
+	 * 注意: 在CglibAopProxy代理对象中的拦截器虽然名字是MethodInterceptor
+	 * 但根本不是这个类,而是接口 MethodInterceptor extends Callback -> 因为Cglib是通过Callback作为增强拦截的哦
 	 */
 
 	/**

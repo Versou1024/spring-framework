@@ -31,8 +31,8 @@ import org.springframework.aop.AfterAdvice;
  * @since 2.0
  */
 @SuppressWarnings("serial")
-public class AspectJAfterThrowingAdvice extends AbstractAspectJAdvice
-		implements MethodInterceptor, AfterAdvice, Serializable {
+public class AspectJAfterThrowingAdvice extends AbstractAspectJAdvice implements MethodInterceptor, AfterAdvice, Serializable {
+	// 将@AfterThrowing注解标注的通知增强方法 -> 适配为 -> SpringAop的MethodInterceptor
 
 	public AspectJAfterThrowingAdvice(
 			Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {

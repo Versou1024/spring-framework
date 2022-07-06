@@ -38,8 +38,8 @@ import org.springframework.lang.Nullable;
  */
 public interface AspectJAdvisorFactory {
 	/*
-	 * 工厂接口：可以创建 Spring AOP Advisors 其带有AspectJ注解语法
-	 * isAspect、valiadate、getAdvisors、getAdvisor、getAdvice
+	 * AspectJAdvisorFactory = AspectJ TO Advisor Factory
+	 * 顾名思义 -- 该工厂接口用来创建Advisors[将带有AspectJ注解语法的方法给转换过去即可]
 	 */
 
 	/**
@@ -53,7 +53,9 @@ public interface AspectJAdvisorFactory {
 	 * @param clazz the supposed annotation-style AspectJ class
 	 * @return whether or not this class is recognized by AspectJ as an aspect class
 	 */
-	boolean isAspect(Class<?> clazz); // 是否有@Aspect注解
+	boolean isAspect(Class<?> clazz); 
+	// 确定一个类是可以被AjTypeSystem识别为一个切面类
+	// 在Spring中经常体现为: 确定一个类clazz是否有@Aspect注解
 
 	/**
 	 * Is the given class a valid AspectJ aspect class?
@@ -64,6 +66,7 @@ public interface AspectJAdvisorFactory {
 	 * (which may or may not be legal, depending on the context)
 	 */
 	void validate(Class<?> aspectClass) throws AopConfigException;
+	// 给定的类是否为有效的AspectJ的切面类
 
 	/**
 	 * Build Spring AOP Advisors for all annotated At-AspectJ methods
@@ -73,6 +76,9 @@ public interface AspectJAdvisorFactory {
 	 * @return a list of advisors for this class
 	 */
 	List<Advisor> getAdvisors(MetadataAwareAspectInstanceFactory aspectInstanceFactory);
+	// 为Aspect切面类中所有声明了连接点的方法区生成Spring AOP的advisor
+	// ❗️❗️❗️ 将AspectJ中的注解的语法 解析 SpringAOP的advisor 来使用
+	// 返回的是 List<Advisor>
 
 	/**
 	 * Build a Spring AOP Advisor for the given AspectJ advice method.
@@ -87,6 +93,7 @@ public interface AspectJAdvisorFactory {
 	@Nullable
 	Advisor getAdvisor(Method candidateAdviceMethod, MetadataAwareAspectInstanceFactory aspectInstanceFactory,
 			int declarationOrder, String aspectName);
+	// 为给定的AspectJ的通知方法构建一个Spring AOP Advisor。
 
 	/**
 	 * Build a Spring AOP Advice for the given AspectJ advice method.
@@ -107,5 +114,6 @@ public interface AspectJAdvisorFactory {
 	@Nullable
 	Advice getAdvice(Method candidateAdviceMethod, AspectJExpressionPointcut expressionPointcut,
 			MetadataAwareAspectInstanceFactory aspectInstanceFactory, int declarationOrder, String aspectName);
+	// 为给定的AspectJ的通知方法构建一个Spring AOP Advice。
 
 }

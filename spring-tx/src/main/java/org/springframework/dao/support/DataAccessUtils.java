@@ -35,6 +35,7 @@ import org.springframework.util.NumberUtils;
  * @since 1.0.2
  */
 public abstract class DataAccessUtils {
+	// 主要是:提供从结果集中如何获取一个对象
 
 	/**
 	 * Return a single result object from the given Collection.
@@ -235,9 +236,11 @@ public abstract class DataAccessUtils {
 	 * @return a translated persistence exception if translation is possible,
 	 * or the raw exception if it is not
 	 */
-	public static RuntimeException translateIfNecessary(
-			RuntimeException rawException, PersistenceExceptionTranslator pet) {
-
+	public static RuntimeException translateIfNecessary(RuntimeException rawException, PersistenceExceptionTranslator pet) {
+		// 如果合适，则返回已翻译的异常，否则按原样返回给定的异常
+		// 目的: 那就是pet可以将rawException翻译为DataAccessException,但是如果无法翻译将返回null
+		// 如果直接使用有可能导致异常丢失,因此需要检查翻译器的返回结果,如果为null,就继续抛出rawException -- 即翻译失败
+		
 		Assert.notNull(pet, "PersistenceExceptionTranslator must not be null");
 		DataAccessException dae = pet.translateExceptionIfPossible(rawException);
 		return (dae != null ? dae : rawException);

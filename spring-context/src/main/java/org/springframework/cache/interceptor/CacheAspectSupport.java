@@ -81,8 +81,7 @@ import org.springframework.util.function.SupplierUtils;
  * @author Stephane Nicoll
  * @since 3.1
  */
-public abstract class CacheAspectSupport extends AbstractCacheInvoker
-		implements BeanFactoryAware, InitializingBean, SmartInitializingSingleton {
+public abstract class CacheAspectSupport extends AbstractCacheInvoker implements BeanFactoryAware, InitializingBean, SmartInitializingSingleton {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 

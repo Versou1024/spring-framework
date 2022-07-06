@@ -40,9 +40,15 @@ import org.springframework.dao.support.PersistenceExceptionTranslator;
  */
 @SuppressWarnings("serial")
 public class PersistenceExceptionTranslationAdvisor extends AbstractPointcutAdvisor {
+	// 用于存储库或DAO层级别的 Spring AOP -- 主要处理:异常转换方面
+	// 即将持久层框架给定的 PersistenceExceptionTranslator 转换为 Spring 的 DataAccessException 层次结构
+	// note: 当然PersistenceExceptionTranslationAdvisor并不是这样使用就完啦,还需要搭配其他组件一般是BeanPostProcessor以此在Bean生成的过程中,构建出代理类来 -- 替换调原始对象
+	// 比如这里搭配 PersistenceExceptionTranslationPostProcessor
 
+	// 拦截器
 	private final PersistenceExceptionTranslationInterceptor advice;
 
+	// 切点
 	private final AnnotationMatchingPointcut pointcut;
 
 
@@ -54,8 +60,9 @@ public class PersistenceExceptionTranslationAdvisor extends AbstractPointcutAdvi
 	public PersistenceExceptionTranslationAdvisor(
 			PersistenceExceptionTranslator persistenceExceptionTranslator,
 			Class<? extends Annotation> repositoryAnnotationType) {
-
+		// repositoryAnnotationType 是需要去检查aop增强的注解 -- 会检查继承习题上的哦
 		this.advice = new PersistenceExceptionTranslationInterceptor(persistenceExceptionTranslator);
+		// note: 这里构建的AnnotationMatchingPointcut,方法过滤器为MethodMatcher.TRUE,类过滤器在继承体系上找指定的注解哦
 		this.pointcut = new AnnotationMatchingPointcut(repositoryAnnotationType, true);
 	}
 

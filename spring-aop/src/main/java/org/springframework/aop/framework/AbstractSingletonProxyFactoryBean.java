@@ -41,20 +41,31 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public abstract class AbstractSingletonProxyFactoryBean extends ProxyConfig
 		implements FactoryBean<Object>, BeanClassLoaderAware, InitializingBean {
+	// 用于生成单例代理对象的FactoryBean类型的便捷超类
+	// 能够管理前置拦截器和后置拦截器（引用，而不是拦截器名称，如ProxyFactoryBean ）并提供一致的接口管理。
 
+	// 目标可以是任何对象，在这种情况下将创建一个 SingletonTargetSource。
+	// 如果它是TargetSource，则不创建包装器TargetSource：
+	// 这允许使用pooling或prototype TargetSource等
 	@Nullable
 	private Object target;
 
+	// 指定被代理的接口集。
+	// 如果未指定（默认），AOP 基础结构通过分析目标target确定哪些接口需要代理，代理目标对象实现的所有接口。
 	@Nullable
 	private Class<?>[] proxyInterfaces;
 
+	// 在隐式事务拦截器之前设置要应用的附加拦截器（或顾问），例如 PerformanceMonitorInterceptor。
+	// 您可以指定任何 AOP Alliance MethodInterceptor 或其他 Spring AOP Advices，以及 Spring AOP Advisors。
 	@Nullable
 	private Object[] preInterceptors;
 
+	// 在隐式事务拦截器之后设置要应用的其他拦截器（或顾问）。
+	//您可以指定任何 AOP Alliance MethodInterceptor 或其他 Spring AOP Advices，以及 Spring AOP Advisors。
 	@Nullable
 	private Object[] postInterceptors;
 
-	/** Default is global AdvisorAdapterRegistry. */
+	// 指定要使用的 AdvisorAdapterRegistry。默认为GlobalAdvisorAdapterRegistry
 	private AdvisorAdapterRegistry advisorAdapterRegistry = GlobalAdvisorAdapterRegistry.getInstance();
 
 	@Nullable
@@ -139,6 +150,8 @@ public abstract class AbstractSingletonProxyFactoryBean extends ProxyConfig
 
 	@Override
 	public void afterPropertiesSet() {
+		// 1. 初始化检查
+		// target必须存在,不能是beanName,加载默认的额proxyClassLoader
 		if (this.target == null) {
 			throw new IllegalArgumentException("Property 'target' is required");
 		}
@@ -149,28 +162,39 @@ public abstract class AbstractSingletonProxyFactoryBean extends ProxyConfig
 			this.proxyClassLoader = ClassUtils.getDefaultClassLoader();
 		}
 
+		// 2. 使用ProxyFactory -> 非常的熟悉 -> 这不就是那个手动编码的生成Proxy代理对象的Proxy工厂
+		// ProxyFactory是只能通过代码硬编码进行编写 一般都是给spring自己使用 -- 比如这里
 		ProxyFactory proxyFactory = new ProxyFactory();
+		
+		 // note: 注意通过
 
+		// 3.1 附加的前置拦截器advisorAdapterRegistry.wrap(interceptor)如果是advice会被包装为DefaultPointcutAdvisor
+		// DefaultPointcutAdvisor 其 POINTCUT.TRUE
 		if (this.preInterceptors != null) {
 			for (Object interceptor : this.preInterceptors) {
 				proxyFactory.addAdvisor(this.advisorAdapterRegistry.wrap(interceptor));
 			}
 		}
 
-		// Add the main interceptor (typically an Advisor).
+		// 3.2 添加主拦截器（通常是advisor）
 		proxyFactory.addAdvisor(this.advisorAdapterRegistry.wrap(createMainInterceptor()));
 
+		// 3.3 附加的后置拦截器
 		if (this.postInterceptors != null) {
 			for (Object interceptor : this.postInterceptors) {
 				proxyFactory.addAdvisor(this.advisorAdapterRegistry.wrap(interceptor));
 			}
 		}
 
+		// 3.4 从当前AbstractSingletonProxyFactoryBean中copy一份ProxyConfig的配置过去
 		proxyFactory.copyFrom(this);
 
+		// 3.5 创建TargetSource并为设置到proxyFactory中
 		TargetSource targetSource = createTargetSource(this.target);
 		proxyFactory.setTargetSource(targetSource);
 
+		
+		// 3.6 设置需要代理的接口哦
 		if (this.proxyInterfaces != null) {
 			proxyFactory.setInterfaces(this.proxyInterfaces);
 		}
@@ -182,8 +206,10 @@ public abstract class AbstractSingletonProxyFactoryBean extends ProxyConfig
 			}
 		}
 
+		// 4. 钩子方法 -> 允许子类去修改proxyFactory
 		postProcessProxyFactory(proxyFactory);
 
+		// 5. 获取代理对象哦
 		this.proxy = proxyFactory.getProxy(this.proxyClassLoader);
 	}
 
@@ -251,5 +277,9 @@ public abstract class AbstractSingletonProxyFactoryBean extends ProxyConfig
 	 * will be applied after this interceptor.
 	 */
 	protected abstract Object createMainInterceptor();
+	// 这个返回的Object一般典型的就是Advisor,当然也可以是Advice[因为后续会使用advisorAdapterRegistry.wrap()对advice包装为Advisor]
+	// 需要子类实现主要的拦截器
+	// 在附加的preInterceptors之后执行
+	// 在附加的postInterceptors之前执行
 
 }

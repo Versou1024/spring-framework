@@ -55,5 +55,9 @@ import org.aopalliance.aop.Advice;
  * @see Joinpoint
  */
 public interface Interceptor extends Advice {
-	// 拦截器直接使用
+	// 拦截器代表一个通用的拦截器。
+	// 通用拦截器可以拦截在基本程序中发生的运行时事件。这些事件通过（具体化）连接点实现。运行时连接点可以是调用、字段访问、异常......
+	// 因此它不用于 BeforeAdvice\AfterAdvice\ThrowsAdvice等等 --> 这些都是有指定拦截场景的语义
+	// 比如BeforeAdvice发生在方法调用前\AfterAdvice发生在方法调用后\ThrowAdvice发生方法抛出异常后才会执行
+	// 而Interceptor则可以在任何拦截场景下进行拦截
 }

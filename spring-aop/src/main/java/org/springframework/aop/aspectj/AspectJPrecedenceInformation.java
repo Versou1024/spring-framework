@@ -41,7 +41,7 @@ public interface AspectJPrecedenceInformation extends Ordered {
 	/**
 	 * Return the name of the aspect (bean) in which the advice was declared.
 	 */
-	String getAspectName();
+	String getAspectName(); // 切面名一般就是@Aspect标注的类的类名
 
 	/**
 	 * Return the declaration order of the advice member within the aspect.

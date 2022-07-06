@@ -31,10 +31,12 @@ import org.springframework.lang.Nullable;
  */
 public interface AopProxy {
 	/*
-	 * 高层Aop代理的策略接口，主要由JDK和Cglib实现，定义了主要方法：
+	 * 生成Aop代理对爱心的策略接口，主要由JDK和Cglib两种策略实现
 	 * Object getProxy()
 	 *
 	 * 主要实现类：CglibAopProxy、JDKDynamicProxy
+	 * 在AopProxyFactory中将根据AdvisedSupport选择上面两个策略之一来生成AopProxy对象
+	 * 然后调用其AopProxy.getProxy()获取代理对象哦
 	 */
 
 	/**

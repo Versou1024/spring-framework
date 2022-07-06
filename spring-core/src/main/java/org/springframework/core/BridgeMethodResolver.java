@@ -66,24 +66,46 @@ public final class BridgeMethodResolver {
 	 * if no more specific one could be found)
 	 */
 	public static Method findBridgedMethod(Method bridgeMethod) {
+		// 桥接方法说明:
+		// 在字节码中，桥接方法会被标记 ACC_BRIDGE 和 ACC_SYNTHETIC
+		// ACC_BRIDGE 用来说明 桥接方法是由 Java 编译器 生成的
+		// ACC_SYNCTHETIC 用来表示 该类成员没有出现在源代码中，而是由编译器生成
+		// 举例: 
+		// public interface Consumer<T> {
+		//    void accept(T t);
+		// }
+		// public class StringConsumer implements Consumer<String> {
+		//    @Override
+		//    public void accept(String s) {
+		//        System.out.println("i consumed " + s);
+		//    }
+		// }
+		// 实际上StringConsumer有两个方法
+		// 第一个: public synctheitc bridge accept(Ljava.lang.Object) V -- 编译器自动生成的桥接方法
+		// 第二个: public accept(Ljava.lang.String) V -- 用户实现的类
+		// 第一个桥接方法中,主要就是检查传递进来的Object是否为String类型,是的话,就回去调用第二个非桥接的方法哦
+		// 其目的就是: 编译器为了让子类有一个与父类的方法签名一致的方法，就在子类自动生成一个与父类的方法签名一致的桥接方法。
+		
+		// 1. 如果不是桥接方法,直接返回即可
 		if (!bridgeMethod.isBridge()) {
 			return bridgeMethod;
 		}
+		// 2. 查看缓存命中
 		Method bridgedMethod = cache.get(bridgeMethod);
 		if (bridgedMethod == null) {
-			// Gather all methods with matching name and parameter size.
+			// 2.1 将对应bridgeMethod的候选方法candidateMethod加入到candidateMethods结合中
 			List<Method> candidateMethods = new ArrayList<>();
-			MethodFilter filter = candidateMethod ->
-					isBridgedCandidateFor(candidateMethod, bridgeMethod);
+			MethodFilter filter = candidateMethod -> isBridgedCandidateFor(candidateMethod, bridgeMethod);
 			ReflectionUtils.doWithMethods(bridgeMethod.getDeclaringClass(), candidateMethods::add, filter);
+			// 2.2 candidateMethods非空,如果有多个急需要进行搜搜
 			if (!candidateMethods.isEmpty()) {
 				bridgedMethod = candidateMethods.size() == 1 ?
 						candidateMethods.get(0) :
 						searchCandidates(candidateMethods, bridgeMethod);
 			}
+			// 2.3 bridgedMethod如果仍然为空,那就是其本身
 			if (bridgedMethod == null) {
-				// A bridge method was passed in but we couldn't find the bridged method.
-				// Let's proceed with the passed-in method and hope for the best...
+				// 2.3.1传入了桥接方法，但我们找不到桥接方法。让我们继续使用传入的方法并希望最好......
 				bridgedMethod = bridgeMethod;
 			}
 			cache.put(bridgeMethod, bridgedMethod);
@@ -98,6 +120,8 @@ public final class BridgeMethodResolver {
 	 * checks and can be used quickly filter for a set of possible matches.
 	 */
 	private static boolean isBridgedCandidateFor(Method candidateMethod, Method bridgeMethod) {
+		// 桥接方法的候选者的条件: 
+		// candidateMethod非桥接方法\不等于搜搜的bridgeMethod\和bridgeMethod同名和同参数数量
 		return (!candidateMethod.isBridge() && !candidateMethod.equals(bridgeMethod) &&
 				candidateMethod.getName().equals(bridgeMethod.getName()) &&
 				candidateMethod.getParameterCount() == bridgeMethod.getParameterCount());
@@ -116,16 +140,20 @@ public final class BridgeMethodResolver {
 		}
 		Method previousMethod = null;
 		boolean sameSig = true;
+		// 遍历候选方法的列表
 		for (Method candidateMethod : candidateMethods) {
+			// 对比桥接方法的泛型类型参数和候选方法是否匹配，如果匹配则直接返回该候选方法。
 			if (isBridgeMethodFor(bridgeMethod, candidateMethod, bridgeMethod.getDeclaringClass())) {
 				return candidateMethod;
 			}
+			// 如果不匹配，则判断所有候选方法的参数列表是否相等。
 			else if (previousMethod != null) {
 				sameSig = sameSig &&
 						Arrays.equals(candidateMethod.getGenericParameterTypes(), previousMethod.getGenericParameterTypes());
 			}
 			previousMethod = candidateMethod;
 		}
+		// 如果所有候选方法的参数列表全相等，则返回第一个候选方法。
 		return (sameSig ? candidateMethods.get(0) : null);
 	}
 

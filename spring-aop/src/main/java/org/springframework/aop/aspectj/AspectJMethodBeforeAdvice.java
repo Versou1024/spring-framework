@@ -31,6 +31,8 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class AspectJMethodBeforeAdvice extends AbstractAspectJAdvice implements MethodBeforeAdvice, Serializable {
+	// 将@Aspec注解标注的切面类中@Before标注的通知方法 -> 转换为SpringAop框架的MethodBeforeAdvice
+	// MethodBeforeAdvice 会被 DefaultAdvisorAdapterRegistry.getInterceptors()或者wrap() 从advice转换为合适的MethodInterceptor
 
 	public AspectJMethodBeforeAdvice(
 			Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {

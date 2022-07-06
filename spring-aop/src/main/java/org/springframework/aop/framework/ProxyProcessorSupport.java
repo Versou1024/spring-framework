@@ -38,7 +38,10 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanClassLoaderAware, AopInfrastructureBean {
-	// 提供为代理创建器提供了一些公共方法实现
+	// ProxyProcessorSupport = Proxy Processor Support
+	// 主要是子类作为BeanPostProcessor等Processor处理器时处理Proxy时提供了一些公共方法实现
+	// 1. 允许按照order排序\可以设置ClassLoader
+	// 2. 检查目标class是否有有接口需要被代理哦
 
 	/**
 	 * This should run after all other processors, so that it can just add
@@ -105,30 +108,30 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	 * @param proxyFactory the ProxyFactory for the bean
 	 */
 	protected void evaluateProxyInterfaces(Class<?> beanClass, ProxyFactory proxyFactory) {
-		// 这是它提供的一个最为核心的方法：这里决定了如果目标类没有实现接口直接就是Cglib代理
-		// 检查给定beanClass上的接口们，并交给proxyFactory处理
+		// ❗️❗️❗️这是它提供的一个最为核心的方法：用于计算beanClass中可以被代理的接口,并设置到ProxyFactory中去
+		
+		// 1. 检查给定beanClass上的接口们，并交给proxyFactory处理
 		Class<?>[] targetInterfaces = ClassUtils.getAllInterfacesForClass(beanClass, getProxyClassLoader());
-		// 标记：是否有存在【合理的】接口~~~
+		// 2. 标记：是否有存在【合理的】接口~~~
 		boolean hasReasonableProxyInterface = false;
 		for (Class<?> ifc : targetInterfaces) {
-			// 只要接口不属于回调接口、且不属于语言groovy、且非空接口
-			if (!isConfigurationCallbackInterface(ifc) && !isInternalLanguageInterface(ifc) &&
-					// 该接口必须还有方法才行，不要忘记了这步判断咯~~~~
-					ifc.getMethods().length > 0) {
-				// 认为有合理接口
+			// 2.1 只要接口不属于回调接口、且不属于语言groovy、且非空接口同时该接口必须还有方法才行，不要忘记了这步判断咯~~~~
+			if (!isConfigurationCallbackInterface(ifc) && !isInternalLanguageInterface(ifc) && ifc.getMethods().length > 0) {
+				// 2.2 认为有合理接口
 				hasReasonableProxyInterface = true;
 				break;
 			}
 		}
+		// 3.1 有合理的接口
 		if (hasReasonableProxyInterface) {
-			// Must allow for introductions; can't just set interfaces to the target's interfaces only.
 			for (Class<?> ifc : targetInterfaces) {
 				// 这里Spring的Doc特别强调了：不能只把合理的接口设置进去，而是都得加入进去
 				proxyFactory.addInterface(ifc);
 			}
 		}
+		// 3.2 没有合理的接口
 		else {
-			// 没有任何接口，表示使用CGLIB得方式去创建代理了~~~~
+			// 3.2.1  没有任何合理的接口，表示使用CGLIB方式去创建代理了~~~~
 			proxyFactory.setProxyTargetClass(true);
 		}
 	}

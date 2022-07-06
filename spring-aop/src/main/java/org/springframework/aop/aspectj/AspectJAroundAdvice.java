@@ -36,6 +36,7 @@ import org.springframework.aop.ProxyMethodInvocation;
  */
 @SuppressWarnings("serial")
 public class AspectJAroundAdvice extends AbstractAspectJAdvice implements MethodInterceptor, Serializable {
+	// 将@Aspec注解标注的切面类中@Around标注的通知方法 -> 转换为SpringAop框架的MethodInterceptor
 
 	public AspectJAroundAdvice(
 			Method aspectJAroundAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
@@ -56,6 +57,7 @@ public class AspectJAroundAdvice extends AbstractAspectJAdvice implements Method
 
 	@Override
 	protected boolean supportsProceedingJoinPoint() {
+		// 注意: @Around是支持使用ProceedingJoinPoint形参的
 		return true;
 	}
 
@@ -65,8 +67,11 @@ public class AspectJAroundAdvice extends AbstractAspectJAdvice implements Method
 			throw new IllegalStateException("MethodInvocation is not a Spring ProxyMethodInvocation: " + mi);
 		}
 		ProxyMethodInvocation pmi = (ProxyMethodInvocation) mi;
+		// 一种特殊的JointPoint -> ProceedingJoinPoint extends JoinPoint
 		ProceedingJoinPoint pjp = lazyGetProceedingJoinPoint(pmi);
+		// ❗️❗️❗️ -> 从pmi待拦截的方法信息中,截取出有用的JoinPointMatch切入点匹配信息是很有关的 -> 具体和参数绑定有关哦
 		JoinPointMatch jpm = getJoinPointMatch(pmi);
+		// 注意:@Around是没有返回值和抛出异常的哦
 		return invokeAdviceMethod(pjp, jpm, null, null);
 	}
 
@@ -78,6 +83,8 @@ public class AspectJAroundAdvice extends AbstractAspectJAdvice implements Method
 	 * @return the ProceedingJoinPoint to make available to advice methods
 	 */
 	protected ProceedingJoinPoint lazyGetProceedingJoinPoint(ProxyMethodInvocation rmi) {
+		// 在@Around中第一个形参可以是当前返回的 ProceedingJoinPoint
+		// MethodInvocationProceedingJoinPoint 是 ProceedingJoinPoint 的实现类哦 ~~ 源码简单,作为了解
 		return new MethodInvocationProceedingJoinPoint(rmi);
 	}
 

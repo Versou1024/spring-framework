@@ -53,28 +53,32 @@ import org.springframework.util.ReflectionUtils;
  * @see DelegatingIntroductionInterceptor
  */
 @SuppressWarnings("serial")
-public class DelegatePerTargetObjectIntroductionInterceptor extends IntroductionInfoSupport
-		implements IntroductionInterceptor {
+public class DelegatePerTargetObjectIntroductionInterceptor extends IntroductionInfoSupport implements IntroductionInterceptor {
+	// 使用场景之一: 当前切面类的上的某个字段使用了@DeclareParents时,就需要为这个切面类多生成一个对应的SpringAop的advice或Advisor
+	// 而使用的就是这里的 DelegatePerTargetObjectIntroductionInterceptor
 
 	/**
 	 * Hold weak references to keys as we don't want to interfere with garbage collection..
 	 */
 	private final Map<Object, Object> delegateMap = new WeakHashMap<>();
 
+	// @DeclareParents注解的defaultImpl属性
 	private Class<?> defaultImplType;
-
+	
+	// 标记有@DeclareParents注解的字段的类型Type 
 	private Class<?> interfaceType;
 
 
 	public DelegatePerTargetObjectIntroductionInterceptor(Class<?> defaultImplType, Class<?> interfaceType) {
+		// @DeclareParents注解的defaultImpl属性 -- 代理类额外实现的接口的需要将方法的调用最终委托给这里的faultImplType使用
 		this.defaultImplType = defaultImplType;
+		// 标记有@DeclareParents注解的字段的类型Type -- 也就是代理类需要额外实现的接口
 		this.interfaceType = interfaceType;
-		// Create a new delegate now (but don't store it in the map).
-		// We do this for two reasons:
-		// 1) to fail early if there is a problem instantiating delegates
-		// 2) to populate the interface map once and once only
+		// 现在根据 defaultImplType 创建一个新委托（但不要将其存储在地图中）。
+		// 我们这样做有两个原因：1）如果在实例化委托时出现问题，则尽早失败 2）仅填充一次接口映射
 		Object delegate = createNewDelegate();
 		implementInterfacesOnObject(delegate);
+		// 抑制 IntroductionInterceptor/DynamicIntroductionAdvice 两个接口
 		suppressInterface(IntroductionInterceptor.class);
 		suppressInterface(DynamicIntroductionAdvice.class);
 	}
@@ -88,22 +92,27 @@ public class DelegatePerTargetObjectIntroductionInterceptor extends Introduction
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 该MethodInterceptor的执行方法
+		
+		// 1. 首先检查方法是否在代理类需要额外实现的接口中
+		// 也就是这个MethodInterceptor委托代理的defaultImplType中是否有这个方法哦
 		if (isMethodOnIntroducedInterface(mi)) {
+			// 1.1 如果需要代理对象额外实现的接口中有声明这个方法
+			// 那么就位每一个代理对象,生成一个委托对象,即使他们都是同一个defaultImplType类型的哦
 			Object delegate = getIntroductionDelegateFor(mi.getThis());
 
-			// Using the following method rather than direct reflection,
-			// we get correct handling of InvocationTargetException
-			// if the introduced method throws an exception.
+			// 1.2 使用以下方法而不是直接反射，如果引入的方法抛出异常，我们可以正确处理 InvocationTargetException。
+			// 简单的就是: 将mi.getMethod()委托给delegate对象完成
 			Object retVal = AopUtils.invokeJoinpointUsingReflection(delegate, mi.getMethod(), mi.getArguments());
 
-			// Massage return value if possible: if the delegate returned itself,
-			// we really want to return the proxy.
+			// 1.3 如果可能的话，返回代理对象吧：如果委托返回自己，我们真的想返回代理。
 			if (retVal == delegate && mi instanceof ProxyMethodInvocation) {
 				retVal = ((ProxyMethodInvocation) mi).getProxy();
 			}
 			return retVal;
 		}
 
+		// 2. 继续处理原始方法
 		return doProceed(mi);
 	}
 
@@ -120,10 +129,18 @@ public class DelegatePerTargetObjectIntroductionInterceptor extends Introduction
 	}
 
 	private Object getIntroductionDelegateFor(Object targetObject) {
+		// 1. 检查缓存delegateMap是否有为targetObject生成的委托对象
 		synchronized (this.delegateMap) {
+			// 1.0 缓存命中
 			if (this.delegateMap.containsKey(targetObject)) {
 				return this.delegateMap.get(targetObject);
 			}
+			// 1.1 根据defaultImplType创建一个新的实例对象就可以
+			// 也就是说 -> ❗️❗️❗️
+			// 一个@DeclareParents可以匹配多个类
+			// 然后为每个类即当前的targetObject去生成一个对应的defaultImplType的实例对象
+			// 因此我们可以知道defaultImplType创建的实例是原型的,@DeclareParents每匹配一个类让其额外实现其他接口,生成一个代理类,那么每个代理类就有
+			// 对应的委托类去帮助实现哦
 			else {
 				Object delegate = createNewDelegate();
 				this.delegateMap.put(targetObject, delegate);
@@ -134,6 +151,7 @@ public class DelegatePerTargetObjectIntroductionInterceptor extends Introduction
 
 	private Object createNewDelegate() {
 		try {
+			// ❗️❗️❗️ defaultImplType 必须空参构造
 			return ReflectionUtils.accessibleConstructor(this.defaultImplType).newInstance();
 		}
 		catch (Throwable ex) {

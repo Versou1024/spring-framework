@@ -71,6 +71,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * status unless overridden from a parent bean definition (if applicable).
 	 */
 	public static final String SCOPE_DEFAULT = "";
+	// 默认Scope名称的常量： "" ，等效于单例状态，除非从父 bean 定义（如果适用）覆盖。
 
 	/**
 	 * Constant that indicates no external autowiring at all.

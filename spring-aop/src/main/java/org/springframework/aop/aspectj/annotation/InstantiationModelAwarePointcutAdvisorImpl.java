@@ -43,14 +43,16 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationModelAwarePointcutAdvisor, AspectJPrecedenceInformation, Serializable {
-	/**
+	/**=
 	 * AspectJPointcutAdvisor 的内部实现。请注意，每个目标方法将有一个此advisor的实例。
 	 */
 
 	private static final Advice EMPTY_ADVICE = new Advice() {};
 
 
-	private final AspectJExpressionPointcut declaredPointcut; // 切入点
+	// AspectJExpression切入点 -> 持有切入点方法的重要信息
+	// 即从@Before\@After\@Around等注解的方法上的重要信息
+	private final AspectJExpressionPointcut declaredPointcut; 
 
 	private final Class<?> declaringClass; // 通知方法所在的类
 
@@ -60,63 +62,97 @@ final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationM
 
 	private transient Method aspectJAdviceMethod; // 通知方法
 
-	private final AspectJAdvisorFactory aspectJAdvisorFactory; // 获取切面类Advisor的工厂
+	private final AspectJAdvisorFactory aspectJAdvisorFactory; // 从AspectJ切面类转换为SpringAOP的Advisor的工厂
 
-	private final MetadataAwareAspectInstanceFactory aspectInstanceFactory; // 获取aspectInstance和aspectMetadata的工厂 -- 切面类工厂
+	private final MetadataAwareAspectInstanceFactory aspectInstanceFactory; // 获取切面类实例aspectInstance和aspectMetadata的工厂 -- 切面类工厂
 
 	private final int declarationOrder; // 指定声明的顺序
 
 	private final String aspectName; // 切面类的名字
 
-	private final Pointcut pointcut;
+	private final Pointcut pointcut; // 最终生效的切入点
 
-	private final boolean lazy;
+	private final boolean lazy; // 当前Advisor是否懒加载其advice
 
+	// 从@Before\@After\@Around等注解的方法中实例化出来的Advice通知
+	// 在创建InstantiationModelAwarePointcutAdvisorImpl对象的时候,对于PerClause为SINGLETON的切面类都会直接被实例化出来
+	// 而其余类型的PerClause的需要在getAdvice()时延迟加载
 	@Nullable
 	private Advice instantiatedAdvice;
 
+	// 是否前置
 	@Nullable
-	private Boolean isBeforeAdvice; // 是否前置
+	private Boolean isBeforeAdvice;
 
+	// 是否后置
 	@Nullable
-	private Boolean isAfterAdvice; // 是否后置
+	private Boolean isAfterAdvice; 
 
 
 	public InstantiationModelAwarePointcutAdvisorImpl(AspectJExpressionPointcut declaredPointcut,
 			Method aspectJAdviceMethod, AspectJAdvisorFactory aspectJAdvisorFactory,
 			MetadataAwareAspectInstanceFactory aspectInstanceFactory, int declarationOrder, String aspectName) {
 
+		// 切入点的方法
+		// 1.即@Pointcut/@Before/@After的value属性相关信息
 		this.declaredPointcut = declaredPointcut;
 		this.declaringClass = aspectJAdviceMethod.getDeclaringClass();
 		this.methodName = aspectJAdviceMethod.getName();
 		this.parameterTypes = aspectJAdviceMethod.getParameterTypes();
+		// 使用AspectJ相关注解的标注的通知增强方法
 		this.aspectJAdviceMethod = aspectJAdviceMethod;
+		// 将aspectJ转为SpringAOP框架中的advisor的公
 		this.aspectJAdvisorFactory = aspectJAdvisorFactory;
+		// 持有切面aspect的实例和元数据的工厂
 		this.aspectInstanceFactory = aspectInstanceFactory;
+		// @Before\@After标注的通知方法的声明顺序
 		this.declarationOrder = declarationOrder;
+		// @Aspect标注的切面类的名字
 		this.aspectName = aspectName;
 
-		// 只要不是PerTarget、PerThis、Within类，那么就是单例的Aspect，说明需要提前实例化，而不是懒加载
+		// 2. 只要不是PerTarget、PerThis、Within类，那么就是单例的Aspect，说明需要提前实例化，而不是懒加载
 		if (aspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) {
-			// Static part of the pointcut is a lazy type.
-			Pointcut preInstantiationPointcut = Pointcuts.union(
-					aspectInstanceFactory.getAspectMetadata().getPerClausePointcut(), this.declaredPointcut);
+			// 2.1 懒加载
+			// aspectInstanceFactory.getAspectMetadata().getPerClausePointcut() 主要AspectJMetadata创建时确定的
+			// 	switch (this.ajType.getPerClause().getKind()) {
+			//			case SINGLETON:
+			//				this.perClausePointcut = Pointcut.TRUE; // 对于PerClause是SINGLETON返回PONITCUT.TRUE
+			//				return;
+			//			case PERTARGET:
+			//			case PERTHIS:
+			//				// PERTARGET和PERTHIS处理方式一样  返回的是AspectJExpressionPointcut
+			//				AspectJExpressionPointcut ajexp = new AspectJExpressionPointcut();
+			//				ajexp.setLocation(aspectClass.getName());
+			//				ajexp.setExpression(findPerClause(aspectClass));
+			//				ajexp.setPointcutDeclarationScope(aspectClass);
+			//				this.perClausePointcut = ajexp;
+			//				return;
+			//			case PERTYPEWITHIN:
+			//				// Works with a type pattern
+			//				// 组成的、合成得切点表达式~~~
+			//				this.perClausePointcut = new ComposablePointcut(new TypePatternClassFilter(findPerClause(aspectClass)));
+			//				return;
+			Pointcut preInstantiationPointcut = Pointcuts.union(aspectInstanceFactory.getAspectMetadata().getPerClausePointcut(), this.declaredPointcut);
 
 			// Make it dynamic: must mutate from pre-instantiation to post-instantiation state.
 			// If it's not a dynamic pointcut, it may be optimized out
 			// by the Spring AOP infrastructure after the first evaluation.
-			this.pointcut = new PerTargetInstantiationModelPointcut(
-					this.declaredPointcut, preInstantiationPointcut, aspectInstanceFactory);
+			this.pointcut = new PerTargetInstantiationModelPointcut(this.declaredPointcut, preInstantiationPointcut, aspectInstanceFactory);
 			this.lazy = true;
 		}
 		else {
-			// A singleton aspect -- 一个单例的Aspect
+			// 2.2 立即加载
 			this.pointcut = this.declaredPointcut;
 			this.lazy = false; // 非懒加载
-			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut); // 为整个@Pointcut生成advice
+			// 2.2 ❗️❗️❗️
+			// 为整个AspectJ注解标注的通知方法生成对应的Advice
+			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut);
 		}
+		
+		// 上面的两种情况 -- 都会导致instantiateAdvice()有不同的表现哦
 	}
 
+	// 实现 InstantiationModelAwarePointCutAdvisor extends PointcutAdvisor 的 isLazy()/getPointcut()/isAdviceInstantiated()方法
 
 	/**
 	 * The pointcut for Spring AOP to use.
@@ -124,24 +160,32 @@ final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationM
 	 */
 	@Override
 	public Pointcut getPointcut() {
+		// 一般而言就是: 使用AspectJ表达式完成的AspectJExpressionPointcut
 		return this.pointcut;
 	}
 
 	@Override
 	public boolean isLazy() {
+		// 一般切面类直接使用功能@Aspect都是非懒加载的
 		return this.lazy;
 	}
 
 	@Override
 	public synchronized boolean isAdviceInstantiated() {
+		// 当lazy为false时候,在构造器中就完成了设置哦
 		return (this.instantiatedAdvice != null);
 	}
+	
+	// 实现Advisor的getAdvice()\isPerInstance()两个接口
 
 	/**
 	 * Lazily instantiate advice if necessary.
 	 */
 	@Override
 	public synchronized Advice getAdvice() {
+		// 1. 当切面类即@Aspect修饰的切面类的Ajtype的PerClause的kind
+		// 是PerTarget、PerThis、Within之一，那么就是懒加载的 -- 懒加载执行 instantiateAdvice(this.declaredPointcut)
+		// 是SINGLETON,
 		if (this.instantiatedAdvice == null) {
 			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut);
 		}
@@ -149,7 +193,8 @@ final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationM
 	}
 
 	private Advice instantiateAdvice(AspectJExpressionPointcut pointcut) {
-		// 核心方法之一：实例化advice
+		// ❗️❗️❗️
+		// 核心方法之一：实例化advice -> 实际为委托给aspectJAdvisorFactory完成
 
 		// 利用 Advisor工厂 开始生产 Advisor
 		// 传入 aspectJAdviceMethod、pointcut、aspectInstanceFactory、declarationOrder、aspectName
@@ -182,6 +227,8 @@ final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationM
 	public AspectJExpressionPointcut getDeclaredPointcut() {
 		return this.declaredPointcut;
 	}
+	
+	//  实现AspectJPrecedenceInformation接口的方法
 
 	@Override
 	public int getOrder() {
@@ -287,14 +334,18 @@ final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationM
 
 		public PerTargetInstantiationModelPointcut(AspectJExpressionPointcut declaredPointcut,
 				Pointcut preInstantiationPointcut, MetadataAwareAspectInstanceFactory aspectInstanceFactory) {
-
+			
+			// AspectJ相关注解的切入点,比如@Before\@After的AspectJExpressionPointcut
 			this.declaredPointcut = declaredPointcut;
+			// 切面类的PerClause的PointCut
 			this.preInstantiationPointcut = preInstantiationPointcut;
 			if (aspectInstanceFactory instanceof LazySingletonAspectInstanceFactoryDecorator) {
 				this.aspectInstanceFactory = (LazySingletonAspectInstanceFactoryDecorator) aspectInstanceFactory;
 			}
 		}
 
+		
+		// 静态方法匹配
 		@Override
 		public boolean matches(Method method, Class<?> targetClass) {
 			// We're either instantiated and matching on declared pointcut,
@@ -303,6 +354,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationM
 					this.preInstantiationPointcut.getMethodMatcher().matches(method, targetClass);
 		}
 
+		// 动态方法匹配
 		@Override
 		public boolean matches(Method method, Class<?> targetClass, Object... args) {
 			// This can match only on declared pointcut.
@@ -310,6 +362,8 @@ final class InstantiationModelAwarePointcutAdvisorImpl implements InstantiationM
 		}
 
 		private boolean isAspectMaterialized() {
+			// 只要不是 LazySingletonAspectInstanceFactoryDecorator
+			// 或者, 是LazySingletonAspectInstanceFactoryDecorator的情况下,已经实例化了AspectInstance
 			return (this.aspectInstanceFactory == null || this.aspectInstanceFactory.isMaterialized());
 		}
 	}

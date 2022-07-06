@@ -134,18 +134,18 @@ public abstract class AopConfigUtils {
 
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 
-		// 这里相当于，如果你自己定义了一个名称为这个的自动代理创建器，那也是ok的（需要注意的是使用工厂方法@Bean的方式定义，这里是会报错的）
+		// 1. 这里相当于，如果你自己定义了一个名称为这个的自动代理创建器，那也是ok的（需要注意的是使用工厂方法@Bean的方式定义，这里是会报错的）
 		// 备注：请尽量不要自定义自动代理创建器，也不要轻易使用低级别的创建器，若你对原理不是非常懂的话，慎重
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
-			// 想要注册的自动代理器如果并不是Spring容器中已经注册的
+			// 1.1 想要注册的自动代理器如果并不是Spring容器中已经注册的
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
-				// 这个处理非常有意思，总之就是`InfrastructureAdvisorAutoProxyCreator`/AspectJAwareAdvisorAutoProxyCreator/AnnotationAwareAspectJAutoProxyCreator的一个逻辑~~~~
+				// 1.1.1 这个处理非常有意思，总之就是`InfrastructureAdvisorAutoProxyCreator`/AspectJAwareAdvisorAutoProxyCreator/AnnotationAwareAspectJAutoProxyCreator的一个逻辑~~~~
 				// （就是防止怕用户注册错了，做了一个容错处理~~~）
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName()); // 容器中已注入的
 				int requiredPriority = findPriorityForClass(cls); // 要求注入的
 				// currentPriority < requiredPriority
-				// 如果当前用户注册进来的Aop代理创建类的级别，是低于我们要求注入的cls的级别的，Spring内部也会对它进行提升成我们要求的那个cls类型
+				// 1.1.2 如果当前用户注册进来的Aop代理创建类的级别，是低于我们要求注入的cls的级别的，Spring内部也会对它进行提升成我们要求的那个cls类型
 				// 这样我符合我们的建议：最好不要自己去使用低级别的自动代理创建器
 				if (currentPriority < requiredPriority) {
 					apcDefinition.setBeanClassName(cls.getName());
@@ -154,17 +154,18 @@ public abstract class AopConfigUtils {
 			return null;
 		}
 
-		// 绝大部分情况下都会走这里，new一个Bean定义信息出来，然后order属性值为HIGHEST_PRECEDENCE
+		// 2. 绝大部分情况下都会走这里，new一个Bean定义信息出来，然后order属性值为HIGHEST_PRECEDENCE
 		// role是：ROLE_INFRASTRUCTURE属于Spring框架自己使用的Bean
 		// BeanName为：AUTO_PROXY_CREATOR_BEAN_NAME
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(cls);
-		// 一般框架自己的三个的source都是null值
+		// 2.1 一般框架自己的三个的source都是null值
 		beanDefinition.setSource(source);
-		// 此处注意，增加了一个属性：最高优先级执行
+		// 2.2 此处注意，增加了一个属性：最高优先级执行
 		beanDefinition.getPropertyValues().add("order", Ordered.HIGHEST_PRECEDENCE);
-		// 角色为Spring自己使用
+		// 2.3 角色为Spring自己使用
 		beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-		// 注册此Bean定义信息
+		
+		// 3.注册此Bean定义信息
 		registry.registerBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME, beanDefinition);
 		return beanDefinition;
 	}

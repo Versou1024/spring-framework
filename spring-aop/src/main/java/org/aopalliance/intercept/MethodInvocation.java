@@ -30,7 +30,7 @@ import java.lang.reflect.Method;
  */
 public interface MethodInvocation extends Invocation {
 	/**
-	 * aop联盟的MethodInvocation继承Invocation，扩展getMethod
+	 * aop联盟的MethodInvocation继承Invocation，扩展getMethod()
 	 */
 
 	/**

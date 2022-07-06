@@ -33,7 +33,8 @@ import org.springframework.lang.Nullable;
  */
 @FunctionalInterface
 public interface PersistenceExceptionTranslator {
-
+	// 允许一致地使用组合的异常翻译功能，而无需强制单个翻译器理解每种可能的异常类型
+	
 	/**
 	 * Translate the given runtime exception thrown by a persistence framework to a
 	 * corresponding exception from Spring's generic
@@ -54,5 +55,7 @@ public interface PersistenceExceptionTranslator {
 	 */
 	@Nullable
 	DataAccessException translateExceptionIfPossible(RuntimeException ex);
+	// 如果可能，将持久性框架抛出的给定运行时异常转换为 Spring 的通用DataAccessException层次结构中的相应异常
+	// 如果翻译器无法立即传递的ex,请抛出null,🙆🏻使得在ChainPersistenceExceptionTranslator能够继续向下遍历后面的翻译器
 
 }

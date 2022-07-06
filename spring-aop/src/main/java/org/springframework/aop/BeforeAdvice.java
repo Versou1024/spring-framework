@@ -28,5 +28,8 @@ import org.aopalliance.aop.Advice;
  * @see AfterAdvice
  */
 public interface BeforeAdvice extends Advice {
-	// 前置通知
+	// 前置通知 -- 标记接口
+	// 实际的前置通知仅包括 
+	// 		MethodBeforeAdvice 方法级别的前置通知
+	// spring不同于aop,它可能还支持构造器\字段设置等级别的前置通知
 }

@@ -34,6 +34,7 @@ import org.springframework.util.Assert;
  * @author Juergen Hoeller
  */
 public abstract class Pointcuts {
+	// 用于匹配 getter 和 setter 的切入点常量，以及用于操作和评估切入点的静态方法。
 
 	/** Pointcut matching all bean property setters, in any class. */
 	public static final Pointcut SETTERS = SetterPointcut.INSTANCE;

@@ -41,7 +41,9 @@ import org.springframework.util.Assert;
  * @see Pointcuts
  */
 public abstract class MethodMatchers {
-
+	// 位于 org.springframework.aop.support package
+	// 原理桶 ClassFilters
+	
 	/**
 	 * Match all methods that <i>either</i> (or both) of the given MethodMatchers matches.
 	 * @param mm1 the first MethodMatcher
@@ -273,6 +275,7 @@ public abstract class MethodMatchers {
 	 */
 	@SuppressWarnings("serial")
 	private static class IntersectionMethodMatcher implements MethodMatcher, Serializable {
+		// 交集的MethodMatcher -> and操作
 
 		protected final MethodMatcher mm1;
 
@@ -290,6 +293,7 @@ public abstract class MethodMatchers {
 			return (this.mm1.matches(method, targetClass) && this.mm2.matches(method, targetClass));
 		}
 
+		// 只要有一个是动态的,那么这个复合的交叉的MethodMatcher也将是动态匹配的哦
 		@Override
 		public boolean isRuntime() {
 			return (this.mm1.isRuntime() || this.mm2.isRuntime());
@@ -297,9 +301,7 @@ public abstract class MethodMatchers {
 
 		@Override
 		public boolean matches(Method method, Class<?> targetClass, Object... args) {
-			// Because a dynamic intersection may be composed of a static and dynamic part,
-			// we must avoid calling the 3-arg matches method on a dynamic matcher, as
-			// it will probably be an unsupported operation.
+			// 因为动态交集可能由静态和动态部分组成，所以我们必须避免在动态匹配器上调用 3-arg 匹配方法，因为它可能是不受支持的操作。
 			boolean aMatches = (this.mm1.isRuntime() ?
 					this.mm1.matches(method, targetClass, args) : this.mm1.matches(method, targetClass));
 			boolean bMatches = (this.mm2.isRuntime() ?

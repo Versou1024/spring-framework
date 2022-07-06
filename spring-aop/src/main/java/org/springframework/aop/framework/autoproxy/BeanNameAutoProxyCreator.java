@@ -45,7 +45,7 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public class BeanNameAutoProxyCreator extends AbstractAutoProxyCreator {
-	// BeanNameAutoProxyCreator 根据beanName判断是否需要做AOP代理
+	// BeanNameAutoProxyCreator 根据beanName判断是否需要做AOP代理 ~~ 简单了解即可
 
 	@Nullable
 	private List<String> beanNames; // 用来判断beanName的bean是否需要做AOP代理
@@ -78,7 +78,7 @@ public class BeanNameAutoProxyCreator extends AbstractAutoProxyCreator {
 	@Override
 	@Nullable
 	protected Object[] getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
-		// 这里面注意一点：BeanNameAutoProxyCreator的此方法并没有去寻找Advisor，所以需要拦截的话
+		// ❗️这里面注意一点：BeanNameAutoProxyCreator的此方法并没有去寻找Advisor，所以需要拦截的话
 		// 只能依靠：setInterceptorNames()来指定拦截器。它是根据名字去Bean容器里取的
 
 		if (this.beanNames != null) {

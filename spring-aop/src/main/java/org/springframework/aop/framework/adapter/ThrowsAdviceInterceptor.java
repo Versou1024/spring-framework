@@ -55,6 +55,7 @@ import org.springframework.util.Assert;
  * @see AfterReturningAdviceInterceptor
  */
 public class ThrowsAdviceInterceptor implements MethodInterceptor, AfterAdvice {
+	// 同时实现了 MethodInterceptor和AfterAdvice接口
 
 	private static final String AFTER_THROWING = "afterThrowing";
 
@@ -65,6 +66,8 @@ public class ThrowsAdviceInterceptor implements MethodInterceptor, AfterAdvice {
 
 	/** Methods on throws advice, keyed by exception class. */
 	private final Map<Class<?>, Method> exceptionHandlerMap = new HashMap<>();
+	// Method - 用来缓存afterThrowing中的拦截方法
+	// Class<?> - 用来缓存拦截方法感兴趣的异常
 
 
 	/**
@@ -73,9 +76,19 @@ public class ThrowsAdviceInterceptor implements MethodInterceptor, AfterAdvice {
 	 * (usually a {@link org.springframework.aop.ThrowsAdvice} implementation)
 	 */
 	public ThrowsAdviceInterceptor(Object throwsAdvice) {
+		// ❗️❗️❗️
 		Assert.notNull(throwsAdvice, "Advice must not be null");
 		this.throwsAdvice = throwsAdvice;
+		// 注意: ThrowsAdvice的方法动态匹配生成的哦
 
+		// 1. 但要求:
+		// 方法名是 -- afterThrowing
+		// 并且为以下格式之一
+		// public void afterThrowing(Exception ex)
+		// public void afterThrowing(RemoteException)
+		// public void afterThrowing(Method method, Object[] args, Object target, Exception ex)
+		// public void afterThrowing(Method method, Object[] args, Object target, ServletException ex)
+		// 可以发现一个就是关心的异常哦 -> 也就是说 method.getParameterTypes()[method.getParameterCount() - 1] 能够获取到 afterThrowing 感兴趣的异常哦
 		Method[] methods = throwsAdvice.getClass().getMethods();
 		for (Method method : methods) {
 			if (method.getName().equals(AFTER_THROWING) &&
@@ -109,11 +122,13 @@ public class ThrowsAdviceInterceptor implements MethodInterceptor, AfterAdvice {
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		try {
+			// 1. 方法正常执行即可
 			return mi.proceed();
 		}
 		catch (Throwable ex) {
-			// 捕获到异常，就触发throwsAdvice
+			// 2. 捕获到异常，就触发throwsAdvice -> 获取对这个异常感兴趣的方法
 			Method handlerMethod = getExceptionHandler(ex);
+			// 3. 触发 ThrowsAdvice 中关心这个异常的afterThrows()方法的执行哦
 			if (handlerMethod != null) {
 				invokeHandlerMethod(mi, ex, handlerMethod);
 			}
@@ -132,6 +147,7 @@ public class ThrowsAdviceInterceptor implements MethodInterceptor, AfterAdvice {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Trying to find handler for exception of type [" + exceptionClass.getName() + "]");
 		}
+		// 1. 精确匹配 -- 递归exception的继承体系
 		Method handler = this.exceptionHandlerMap.get(exceptionClass);
 		while (handler == null && exceptionClass != Throwable.class) {
 			exceptionClass = exceptionClass.getSuperclass();
@@ -144,13 +160,17 @@ public class ThrowsAdviceInterceptor implements MethodInterceptor, AfterAdvice {
 	}
 
 	private void invokeHandlerMethod(MethodInvocation mi, Throwable ex, Method method) throws Throwable {
+		// 执行 ThrowsAdvice中的afterThrowing()方法之前 -> 需要处理形参的值
 		Object[] handlerArgs;
+		// 1. 单个形参 -> 就是传递异常
 		if (method.getParameterCount() == 1) {
 			handlerArgs = new Object[] {ex};
 		}
+		// 2. 四个形参 -> 传递method\args\this\ex
 		else {
 			handlerArgs = new Object[] {mi.getMethod(), mi.getArguments(), mi.getThis(), ex};
 		}
+		// 3. 反射执行
 		try {
 			method.invoke(this.throwsAdvice, handlerArgs);
 		}

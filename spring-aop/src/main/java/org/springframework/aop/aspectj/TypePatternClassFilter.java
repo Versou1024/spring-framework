@@ -34,9 +34,11 @@ import org.springframework.util.StringUtils;
  * @since 2.0
  */
 public class TypePatternClassFilter implements ClassFilter {
+	// Spring AOP ClassFilter 基于使用 AspectJ 类型匹配的类过滤器
 
 	private String typePattern = "";
 
+	// AspectJ类型模式匹配器
 	@Nullable
 	private TypePatternMatcher aspectJTypePatternMatcher;
 
@@ -57,6 +59,7 @@ public class TypePatternClassFilter implements ClassFilter {
 	 * @param typePattern the type pattern that AspectJ weaver should parse
 	 */
 	public TypePatternClassFilter(String typePattern) {
+		// 使用给定的类型模式创建一个完全配置的TypePatternClassFilter 。
 		setTypePattern(typePattern);
 	}
 
@@ -79,6 +82,7 @@ public class TypePatternClassFilter implements ClassFilter {
 	public void setTypePattern(String typePattern) {
 		Assert.notNull(typePattern, "Type pattern must not be null");
 		this.typePattern = typePattern;
+		// 老腰子: 使用PointcutParser
 		this.aspectJTypePatternMatcher =
 				PointcutParser.getPointcutParserSupportingAllPrimitivesAndUsingContextClassloaderForResolution().
 				parseTypePattern(replaceBooleanOperators(typePattern));
@@ -100,6 +104,7 @@ public class TypePatternClassFilter implements ClassFilter {
 	 */
 	@Override
 	public boolean matches(Class<?> clazz) {
+		// 检查类是否匹配
 		Assert.state(this.aspectJTypePatternMatcher != null, "No type pattern has been set");
 		return this.aspectJTypePatternMatcher.matches(clazz);
 	}
@@ -111,6 +116,7 @@ public class TypePatternClassFilter implements ClassFilter {
 	 * <p>This method converts back to {@code &&} for the AspectJ pointcut parser.
 	 */
 	private String replaceBooleanOperators(String pcExpr) {
+		// 替换 and or not 为 && || !
 		String result = StringUtils.replace(pcExpr," and "," && ");
 		result = StringUtils.replace(result, " or ", " || ");
 		return StringUtils.replace(result, " not ", " ! ");

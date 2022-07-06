@@ -37,10 +37,11 @@ import org.springframework.aop.TargetSource;
  */
 public interface Advised extends TargetClassAware {
 	/*
-	 * 被增强的接口：Advised，主要是和AopConfig和Advisor有关
+	 * AOP代理对象实现的接口 -- 就可以持有相应的AOP工厂的Configuration
+	 * 这个Configuration包含interceptors\其他的advice\advisors\代理的接口
 	 * Advised: 包含所有的Advised 和 Advice
 	 * 该接口用于保存一个代理的相关配置。比如保存了这个代理相关的拦截器、通知、增强器等等。
-	 * 所有的代理对象都实现了该接口（我们就能够通过一个代理对象获取这个代理对象怎么被代理出来的相关信息）
+	 * 所有的代理对象都实现了该接口（我们就能够通过将代理对象强转为Advised,然后将可以调用接口下的方法啦哦）
 	 * addAdvice(Advice):void    		添加Advice
 	 * addAdvice(int,Advice):void 		插入到某个位置的Advice
 	 * addAdvisor(Advisor):void 		添加Advisor

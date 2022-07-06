@@ -29,6 +29,10 @@ package org.springframework.aop;
  * @since 1.1.1
  */
 public interface IntroductionInfo {
+	// 提供一个Introduction必须去描述的信息
+	// IntroductionAdvisors必须实现这个接口。如果org.aopalliance.aop.Advice实现了这一点，
+	// 它可以用作没有 IntroductionAdvisor 的IntroductionAdvisor 。
+	// 在这种情况下，建议是自描述的，不仅提供必要的行为，而且描述它引入的接口。
 
 	/**
 	 * Return the additional interfaces introduced by this Advisor or Advice.

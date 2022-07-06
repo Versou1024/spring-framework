@@ -43,6 +43,8 @@ import org.springframework.util.ClassUtils;
  */
 @SuppressWarnings("serial")
 public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInstanceFactory, Serializable {
+	// 由 Spring BeanFactory支持的org.springframework.aop.aspectj.AspectInstanceFactory实现。
+	// 请注意，如果使用原型，这可能会实例化多次，这可能不会给出您期望的语义。使用LazySingletonAspectInstanceFactoryDecorator来包装它以确保只返回一个新Aspect
 
 	private final BeanFactory beanFactory;
 
@@ -100,7 +102,7 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 
 	@Override
 	public AspectMetadata getAspectMetadata() {
-		return this.aspectMetadata; // 获取切面元数据，aspectMetadadta
+		return this.aspectMetadata; // 获取切面元数据，aspectMetaddata
 	}
 
 	@Override

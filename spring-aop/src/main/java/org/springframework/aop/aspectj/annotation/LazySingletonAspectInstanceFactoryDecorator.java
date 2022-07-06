@@ -30,9 +30,13 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class LazySingletonAspectInstanceFactoryDecorator implements MetadataAwareAspectInstanceFactory, Serializable {
+	// 装饰器模式
+	// 该类使得 MetadataAwareAspectInstanceFactory 仅仅实例化一次
+	// 如何保证仅仅实例化一次的哦
 
 	private final MetadataAwareAspectInstanceFactory maaif;
 
+	// 用于缓存加载出来的aspectClass
 	@Nullable
 	private volatile Object materialized;
 

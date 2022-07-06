@@ -48,7 +48,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	/*
 	实例化前后的增强处理即：
 	postProcessBeforeInstantiation：
-		实例化之前执行。给调用者一个机会，返回一个代理对象（相当于可以摆脱Spring的束缚，可以自定义实例化逻辑).
+		实例化之前执行。给调用者一个机会，返回一个代理对象（相当于可以摆脱Spring的束缚，可以自定义实例化逻辑) -- ❗️❗️❗️
 		若返回null，则不影响Spring流程，继续后续Spring的逻辑。
 		但若返回不为null，就最后面都仅仅只执行 BeanPostProcessor#postProcessAfterInitialization 初始化后置增强 这一个回调方法后就立即结束Spring的管理
 

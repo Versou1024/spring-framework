@@ -38,7 +38,7 @@ import org.springframework.util.ReflectionUtils;
 @SuppressWarnings("serial")
 class ObjenesisCglibAopProxy extends CglibAopProxy {
 	/**
-	 * 基于对象的CglibAopProxy扩展，用于创建代理实例，而无需调用类的构造函数。从Spring 4开始默认使用。
+	 * 基于Cglib的AopProxy代理对象扩展，用于创建代理实例，而无需调用类的构造函数。从Spring 4开始默认使用。
 	 * Objenesis它专门用来创建对象，即使你没有空的构造函数，都木有问题~~ 可谓非常的强大，它不使用构造方法创建Java对象，所以即使你有空的构造方法，也是不会执行的。
 	 */
 

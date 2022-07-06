@@ -36,10 +36,8 @@ import org.springframework.util.ObjectUtils;
  * @see org.springframework.aop.framework.AdvisedSupport#setTarget(Object)
  */
 public class SingletonTargetSource implements TargetSource, Serializable {
-	/**
-	 * TargetSource的单例对象target
-	 * 简单封装一个：Object target
-	 */
+	// 包含给定对象的TargetSource接口的实现
+	// 这是 Spring AOP 框架使用的 TargetSource 接口的默认实现。通常不需要在应用程序代码中创建此类的对象。
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 9031246629662423738L;

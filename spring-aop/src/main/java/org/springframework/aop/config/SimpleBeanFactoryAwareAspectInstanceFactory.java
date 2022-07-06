@@ -36,9 +36,11 @@ import org.springframework.util.ClassUtils;
 public class SimpleBeanFactoryAwareAspectInstanceFactory implements AspectInstanceFactory, BeanFactoryAware {
 	// 从BeanFactory根据AspectJBeanName即切面bean名字，进行选择即可
 
+	// 切面类的Bean的名字 -> 去
 	@Nullable
 	private String aspectBeanName;
 
+	
 	@Nullable
 	private BeanFactory beanFactory;
 

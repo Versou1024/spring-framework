@@ -55,7 +55,7 @@ public abstract class AopProxyUtils {
 	 */
 	@Nullable
 	public static Object getSingletonTarget(Object candidate) {
-		// 获取 SingletonTargetSource 包装 candidate
+		// 获取给定代理后面的单例目标对象（如果有）
 		if (candidate instanceof Advised) {
 			TargetSource targetSource = ((Advised) candidate).getTargetSource();
 			if (targetSource instanceof SingletonTargetSource) {
@@ -76,14 +76,19 @@ public abstract class AopProxyUtils {
 	 * @see Advised#getTargetSource()
 	 */
 	public static Class<?> ultimateTargetClass(Object candidate) {
-		// 获取最终的TargetClass
+		// ultimateTargetClass方法 -- 用来获取最终的TargetClass
+		// candidate 是AdvisedSupport包括其子类对象 []
+		// 即使在多层的嵌套的代理中 -- 也会去找到其中最底层的目标对象哦
+		
 		Assert.notNull(candidate, "Candidate object must not be null");
 		Object current = candidate;
 		Class<?> result = null;
+		// 1. 当前遍历的current实现了TargetClassAware -- 提供了目标类的获取
 		while (current instanceof TargetClassAware) {
 			result = ((TargetClassAware) current).getTargetClass();
 			current = getSingletonTarget(current);
 		}
+		// 2. 没有通过面的targetClassAware获取到result,那就通过去在Cglib代理的情况下获取超类或直接接口
 		if (result == null) {
 			result = (AopUtils.isCglibProxy(candidate) ? candidate.getClass().getSuperclass() : candidate.getClass());
 		}
@@ -120,33 +125,33 @@ public abstract class AopProxyUtils {
 	 * @see DecoratingProxy
 	 */
 	static Class<?>[] completeProxiedInterfaces(AdvisedSupport advised, boolean decoratingProxy) {
-		// 获取目标target完全暴露的接口 -- 实现的接口、或者target本身为接口、或者target为jdk代理类实现的接口
+		// 计算目标target完全暴露的接口 -- 实现的接口、或者target本身为接口、或者target为jdk代理类实现的接口
 		// 如果没有实现SpringProxy、Advised、DecoratingProxy接口，就额外添加进去
 
 
+		// 1. advised 中提前设置的需要暴露的接口
 		Class<?>[] specifiedInterfaces = advised.getProxiedInterfaces();
 		if (specifiedInterfaces.length == 0) {
-			// No user-specified interfaces: check whether target class is an interface.
-			// 目标target没有实现接口，就需要检查target是否本身为接口
+			// 2. 目标target没有实现接口，就需要检查target是否本身为接口
 			Class<?> targetClass = advised.getTargetClass();
 			if (targetClass != null) {
 				if (targetClass.isInterface()) {
-					// targetClass已经是接口，就set进入
+					// 2.1 targetClass已经是接口，就set进入
 					advised.setInterfaces(targetClass);
 				}
 				else if (Proxy.isProxyClass(targetClass)) {
-					// 或者targetClass已经是JDK代理，那么就获取这个JDK代理的
+					// 2.2 或者targetClass已经是JDK代理，那么就获取这个JDK代理的
 					advised.setInterfaces(targetClass.getInterfaces());
 				}
-				// 然后再次获取
+				// 2.3 然后再次获取
 				specifiedInterfaces = advised.getProxiedInterfaces();
 			}
 		}
-		// 没有SpringProxy接口，addSpringProxy就为true
+		// 3. 没有SpringProxy接口，addSpringProxy就为true
 		boolean addSpringProxy = !advised.isInterfaceProxied(SpringProxy.class);
-		// 没有Advised接口，addAdvised就为true
+		// 4. 没有Advised接口，且ProxyConfig标记为非透明的,那么addAdvised就为true
 		boolean addAdvised = !advised.isOpaque() && !advised.isInterfaceProxied(Advised.class);
-		// 没有DecoratingProxy接口，addDecoratingProxy就位true
+		// 5. 没有DecoratingProxy接口，addDecoratingProxy就位true
 		boolean addDecoratingProxy = (decoratingProxy && !advised.isInterfaceProxied(DecoratingProxy.class));
 		int nonUserIfcCount = 0;
 		if (addSpringProxy) {
@@ -217,7 +222,7 @@ public abstract class AopProxyUtils {
 	 * Check equality of the proxied interfaces behind the given AdvisedSupport objects.
 	 */
 	public static boolean equalsProxiedInterfaces(AdvisedSupport a, AdvisedSupport b) {
-		// 判断它哥俩的接口是否相同
+		// 判断它哥俩的代理的接口是否相同
 		return Arrays.equals(a.getProxiedInterfaces(), b.getProxiedInterfaces());
 	}
 
@@ -225,7 +230,7 @@ public abstract class AopProxyUtils {
 	 * Check equality of the advisors behind the given AdvisedSupport objects.
 	 */
 	public static boolean equalsAdvisors(AdvisedSupport a, AdvisedSupport b) {
-		// 判断它哥俩的增强器（Advisor）是否相同
+		// 判断它哥俩的使用的增强器（Advisor）是否相同
 		return Arrays.equals(a.getAdvisors(), b.getAdvisors());
 	}
 
@@ -243,25 +248,27 @@ public abstract class AopProxyUtils {
 		if (ObjectUtils.isEmpty(arguments)) {
 			return new Object[0];
 		}
-		// 主要是处理变体参数
+		// 1. 主要是处理变可变参数
 		if (method.isVarArgs()) {
 			if (method.getParameterCount() == arguments.length) {
 				Class<?>[] paramTypes = method.getParameterTypes();
 				int varargIndex = paramTypes.length - 1;
-				// 这里是利用变体参数varArgs是在形参列表最后一个
+				// 1.1 这里是利用变体参数varArgs是在形参列表最后一个的性质
 				Class<?> varargType = paramTypes[varargIndex];
+				// 1.2 当传递过个变体参数时,那么传递就是一个数组
 				if (varargType.isArray()) {
 					Object varargArray = arguments[varargIndex];
-					// 如果传递的MethodProxy不是varargType的实例，就需要处理
+					// 1.3 如果传递的MethodProxy不是varargType的实例，就需要处理
 					if (varargArray instanceof Object[] && !varargType.isInstance(varargArray)) {
 						Object[] newArguments = new Object[arguments.length];
-						// 先把非变体的参数给copy过来
+						// 1.4 先把给定参数arguments中的非变体的参数给copy到新的newArguments
 						System.arraycopy(arguments, 0, newArguments, 0, varargIndex);
+						// 1.5 获取变体参数的数组元素类型
 						Class<?> targetElementType = varargType.getComponentType();
 						int varargLength = Array.getLength(varargArray);
 						Object newVarargArray = Array.newInstance(targetElementType, varargLength);
 						System.arraycopy(varargArray, 0, newVarargArray, 0, varargLength);
-						// 然后替换最后一个变体参数即可
+						// 1.6 然后替换最后一个变体参数即可
 						newArguments[varargIndex] = newVarargArray;
 						return newArguments;
 					}

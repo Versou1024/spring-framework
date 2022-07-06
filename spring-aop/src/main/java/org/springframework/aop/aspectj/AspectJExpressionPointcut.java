@@ -84,32 +84,70 @@ import org.springframework.util.StringUtils;
 @SuppressWarnings("serial")
 public class AspectJExpressionPointcut extends AbstractExpressionPointcut implements ClassFilter, IntroductionAwareMethodMatcher, BeanFactoryAware {
 	/**
-	 * 依赖于Aspecj组件的功能，完成ClassFilter类过滤、MethodMatcher方法匹配的功能； 【注意：IntroductionAwareMethodMatcher就是MethodMatcher】
+	 * 依赖于AspectJ组件的功能，完成ClassFilter类过滤、MethodMatcher方法匹配的功能； 
+	 * 【注意：IntroductionAwareMethodMatcher就是MethodMatcher】
 	 * 它的创建是需要有对应的 AspectJ 的aop表达式完成的，然后根据aop表达式做ClassFilter和MethodMatcher的匹配能力
 	 */
 
+	// AspectJ支持的表达式类型可以通过类org.aspectj.weaver.tools.PointcutPrimitive查看，
+	// Spring AOP并没有支持所有AspectJ表达式类型，而是选择了其中最实用的一些进行了支持。具体可以查看org.springframework.aop.aspectj.AspectJExpressionPointcut。
 	private static final Set<PointcutPrimitive> SUPPORTED_PRIMITIVES = new HashSet<>();
 
 	static {
-		// Spring支持的AspecJ的那些语法：如下
-		//Spring AOP支持的AspectJ表达式概览：
-		//
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.EXECUTION);		//execution: 匹配方法执行的切入点。Spring AOP主要使用的切点标识符。
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.ARGS);				//args: 匹配参数是给定类型的连接点。(方法入参是给定类型的方法)
+		// note: https://blog.csdn.net/buzhimingyue/article/details/106071059
+		// Spring支持的AspectJ的那些语法：如下
+		// Spring AOP支持的AspectJ表达式概览：
+
+		//execution: 匹配方法执行的切入点。Spring AOP主要使用的切点标识符。
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.EXECUTION);		
+		//args: 匹配参数是给定类型的连接点。(方法入参是给定类型的方法)
+		// args匹配指定参数类型和指定参数数量的方法,与包名和类名无关。
+		// args pk execution: 
+		// args匹配的是 运行时 传递给方法的参数类型
+		// 使用“args(参数类型列表)”匹配当前执行的方法传入的参数为指定类型的执行方法；
+		// 注意是匹配传入的参数类型，不是匹配方法签名的参数类型；参数类型列表中的参数必须是类型全限定名，通配符不支持；
+		// args属于动态切入点，这种切入点开销非常大，非特殊情况最好不要使用；
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.ARGS);			
 		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.REFERENCE);
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.THIS);	//this: 限制匹配是给定类型的实例的bean引用(Spring AOP proxy)的连接点。(代理类是给定类型的类的所有方法)
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.TARGET);//target: 限制匹配是给定类型的实例的目标对象(被代理对象)的连接点。(目标对象是给定类型的类的所有方法)
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.WITHIN);//within: 限制匹配在特定类型内的连接点。(给定class的所有方法)
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.AT_ANNOTATION);		//@annotation: 匹配连接点的subject有给定注解的连接点。(方法上有给定注解的方法)
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.AT_WITHIN);		//@within: 匹配有给定注解的类型的连接点。(class上有给定注解的class的所有方法)
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.AT_ARGS);		//@args: 匹配实际传递的参数的运行时类型有给定的注解的连接点。(方法入参上有给定注解)
-		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.AT_TARGET);		//@target: 匹配有给定注解的执行对象的class的连接点。(目标对象class上有给定注解的类的所有方法)
+		// this: 限制匹配是给定类型的实例的bean引用(Spring AOP proxy)的连接点。(代理类是给定类型的类的所有方法)
+		// this指向代理对象 -- JDK代理时，指向接口和代理类proxy / cglib代理时，指向接口和子类(不使用proxy)。
+		// 使用“this(类型全限定名)”匹配当前AOP代理对象类型的执行方法；注意是AOP代理对象的类型匹配，这样就可能包括引入接口方法也可以匹配；注意this中使用的表达式必须是类型全限定名，不支持通配符；
+		// 模式 描述
+		// this(cn.javass.spring.chapter6.service.IPointcutService) 当前AOP对象实现了 IPointcutService接口的任何方法
+		// this(cn.javass.spring.chapter6.service.IIntroductionService) 当前AOP对象实现了 IIntroductionService接口的任何方法,也可能是引入接口
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.THIS);			
+		// target: 限制匹配是给定类型的实例的目标对象(被代理对象)的连接点。(目标对象是给定类型的类的所有方法)
+		// 使用“target(类型全限定名)”匹配当前目标对象类型的执行方法；注意是目标对象的类型匹配，这样就不包括引入接口也类型匹配；注意target中使用的表达式必须是类型全限定名，不支持通配符；
+		// target(cn.javass.spring.chapter6.service.IPointcutService) 当前目标对象（非AOP对象）实现了 IPointcutService接口的任何方法
+		// target(cn.javass.spring.chapter6.service.IIntroductionService) 当前目标对象（非AOP对象） 实现了IIntroductionService 接口的任何方法,不可能是引入接口
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.TARGET);			
+		// within: 匹配在指定类型内的连接点。(即指定class的所有方法)
+		// within与execution相比，粒度更大，仅能实现到包和接口、类级别。而execution可以精确到方法的返回值，参数个数、修饰符、参数类型等
+		// within(cn.javass..*) cn.javass包及子包下的任何方法执行
+		// within(cn.javass..IPointcutService+) cn.javass包或所有子包下IPointcutService类型及子类型的任何方法
+		// within(@cn.javass..Secure *) 持有cn.javass..Secure注解的任何类型的任何方法
+		// 必须是在目标对象上声明这个注解，在接口上声明的对它不起作用
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.WITHIN);
+		// @annotation: 匹配连接点有给定注解的连接点。(方法上有给定注解即可)
+		// 比如: 匹配带有com.chenss.anno.Chenss注解的方法
+		// @Pointcut("@annotation(com.chenss.anno.Chenss)")
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.AT_ANNOTATION);
+		// @within: 匹配有给定注解的类型的连接点。(class上有给定注解, 那么class的所有方法都被拦截,相比于@annotation更加粗粒度)
+		// 就是匹配有指定注解的类中的所有方法个
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.AT_WITHIN);
+		// @args: 匹配实际传递的参数的运行时类型有给定的注解的连接点。(方法入参上有给定注解)
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.AT_ARGS);
+		// @target: 匹配有给定注解的执行对象的class的连接点。(目标对象class上有给定注解的类的所有方法)
+		// 当前目标对象实现了有指定注解的类时,那么指定注解类的所有方法都需要被代理
+		SUPPORTED_PRIMITIVES.add(PointcutPrimitive.AT_TARGET);		
 
 	}
 
 
 	private static final Log logger = LogFactory.getLog(AspectJExpressionPointcut.class);
 
+	// 声明连接点方法的类 -> 连接点的方法比如@Before标注的方法
+	// 就是切面类
 	@Nullable
 	private Class<?> pointcutDeclarationScope;
 
@@ -142,12 +180,15 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 	 * @param paramTypes the parameter types for the pointcut
 	 */
 	public AspectJExpressionPointcut(Class<?> declarationScope, String[] paramNames, Class<?>[] paramTypes) {
+		// 1. declarationScope
 		this.pointcutDeclarationScope = declarationScope;
 		if (paramNames.length != paramTypes.length) {
 			throw new IllegalStateException(
 					"Number of pointcut parameter names must match number of pointcut parameter types");
 		}
+		// 2. 切入点的参数名称
 		this.pointcutParameterNames = paramNames;
+		// 3. 切入点的参数类型
 		this.pointcutParameterTypes = paramTypes;
 	}
 
@@ -198,13 +239,16 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 	 * lazily building the underlying AspectJ pointcut expression.
 	 */
 	private PointcutExpression obtainPointcutExpression() {
+		// 1. 表达式为空,抛出异常
 		if (getExpression() == null) {
 			throw new IllegalStateException("Must set property 'expression' before attempting to match");
 		}
+		// 2. 加载AspectJ表达式 -- PointcutExpression
 		if (this.pointcutExpression == null) {
 			this.pointcutClassLoader = determinePointcutClassLoader();
 			this.pointcutExpression = buildPointcutExpression(this.pointcutClassLoader);
 		}
+		// 3. 返回AspectJ表达式
 		return this.pointcutExpression;
 	}
 
@@ -213,6 +257,8 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 	 */
 	@Nullable
 	private ClassLoader determinePointcutClassLoader() {
+		// 确定使用的ClassLoader,尝试从 BeanFactory - 切面类 - 默认的ClassLoader 中依次获取
+		
 		if (this.beanFactory instanceof ConfigurableBeanFactory) {
 			return ((ConfigurableBeanFactory) this.beanFactory).getBeanClassLoader();
 		}
@@ -226,8 +272,23 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 	 * Build the underlying AspectJ pointcut expression.
 	 */
 	private PointcutExpression buildPointcutExpression(@Nullable ClassLoader classLoader) {
+		// 1. 构建 PointcutParser 解析器 -> 涉及AspectJ的支持
 		PointcutParser parser = initializePointcutParser(classLoader);
+		// 2. 需要从 切入点表达式中 解析出对应的 切入点形参 -> 因此构建同等形参数组大小的PointcutParameter
+		// 举例更加复杂的情况: 
+		// @Before(args(param) && target(bean) && @annotation(secure)",   
+		//        argNames="jp,param,bean,secure")  
+		// public void before5(JoinPoint jp, String param, IPointcutService pointcutService, Secure secure) {  
+		// ……  
+		// }  
+		// 等价于
+		// @Before(args(java.lang.String) && target(xx.yy.IPointcutService) && @annotation(java.xx.secure)",   
+		//        argNames="jp,param,bean,secure")  
+		// public void before5(JoinPoint jp, String param, IPointcutService pointcutService, Secure secure) {  
+		// ……  
+		// }
 		PointcutParameter[] pointcutParameters = new PointcutParameter[this.pointcutParameterNames.length];
+		// 3. 创建 PointcutParameterImpl
 		for (int i = 0; i < pointcutParameters.length; i++) {
 			pointcutParameters[i] = parser.createPointcutParameter(
 					this.pointcutParameterNames[i], this.pointcutParameterTypes[i]);
@@ -246,9 +307,13 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 	 * Initialize the underlying AspectJ pointcut parser.
 	 */
 	private PointcutParser initializePointcutParser(@Nullable ClassLoader classLoader) {
-		// 准备AspectJ的表达式解析器 -- classLoader、支持的aspect类型、注册BeanPointcutDesignatorHandler、
+		// 1. 准备AspectJ的表达式解析器 -- classLoader、支持的aspect类型
 		PointcutParser parser = PointcutParser.getPointcutParserSupportingSpecifiedPrimitivesAndUsingSpecifiedClassLoaderForResolution(SUPPORTED_PRIMITIVES, classLoader);
-		// 初始化一个Pointcut的解析器。我们发现最后一行，新注册了一个BeanPointcutDesignatorHandler  它是准们处理Spring自己支持的bean() 的切点表达式的
+		// 2. 初始化一个Pointcut的解析器。我们发现最后一行，新注册了一个BeanPointcutDesignatorHandler  
+		// 它是允许处理Spring自己支持的bean() 的切点表达式的
+		// 比如
+		// @PointCut(value="bean(*Service)")
+		// 匹配所有以Service命名（id或name）结尾的Bean
 		parser.registerPointcutDesignatorHandler(new BeanPointcutDesignatorHandler());
 		return parser;
 	}
@@ -261,6 +326,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 	 * <p>This method converts back to {@code &&} for the AspectJ pointcut parser.
 	 */
 	private String replaceBooleanOperators(String pcExpr) {
+		// 将Spring中的AspectJ表达式的and\or\not适配为最终的AspectJ框架的&& || !
 		String result = StringUtils.replace(pcExpr, " and ", " && ");
 		result = StringUtils.replace(result, " or ", " || ");
 		result = StringUtils.replace(result, " not ", " ! ");
@@ -275,8 +341,10 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 		return obtainPointcutExpression();
 	}
 
+	// ClassFilter
 	@Override
 	public boolean matches(Class<?> targetClass) {
+		// 使用PointCutExpression.couldMatchJoinPointsInType(targetClass)检查类是否匹配
 		PointcutExpression pointcutExpression = obtainPointcutExpression();
 		try {
 			try {
@@ -297,22 +365,24 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 		return false;
 	}
 
+	// 方法匹配
 	@Override
 	public boolean matches(Method method, Class<?> targetClass, boolean hasIntroductions) {
 		obtainPointcutExpression();
 		ShadowMatch shadowMatch = getTargetShadowMatch(method, targetClass);
-
-		// Special handling for this, target, @this, @target, @annotation
-		// in Spring - we can optimize since we know we have exactly this class,
-		// and there will never be matching subclass at runtime.
+		
+		// 在 Spring 中对 this、target、@this、@target、@annotation 进行特殊处理——我们可以优化，因为我们知道我们完全有这个类，并且在运行时永远不会有匹配的子类。
+		
+		// 1.1 永远匹配
 		if (shadowMatch.alwaysMatches()) {
 			return true;
 		}
+		// 1.2 永远不匹配
 		else if (shadowMatch.neverMatches()) {
 			return false;
 		}
 		else {
-			// the maybe case
+			// 1.3 可能匹配 -> 动态匹配的情况下
 			if (hasIntroductions) {
 				return true;
 			}
@@ -333,6 +403,8 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut implem
 
 	@Override
 	public boolean isRuntime() {
+		// 是否需要动态匹配
+		// 比如AspectJ表达式使用啦 -- args或者@Args
 		return obtainPointcutExpression().mayNeedDynamicTest();
 	}
 

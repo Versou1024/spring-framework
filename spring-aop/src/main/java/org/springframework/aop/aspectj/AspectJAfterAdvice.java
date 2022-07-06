@@ -32,7 +32,8 @@ import org.springframework.aop.AfterAdvice;
  */
 @SuppressWarnings("serial")
 public class AspectJAfterAdvice extends AbstractAspectJAdvice implements MethodInterceptor, AfterAdvice, Serializable {
-	// 将 aspectJ after 转为为 advice 方法
+	// 将@Aspec注解标注的切面类中@After标注的通知方法 -> 转换为SpringAop框架的MethodInterceptor
+
 
 	public AspectJAfterAdvice(Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
 		super(aspectJBeforeAdviceMethod, pointcut, aif);

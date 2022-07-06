@@ -36,6 +36,8 @@ import org.springframework.util.ObjectUtils;
  * @see Pointcuts
  */
 public abstract class ClassFilters {
+	// 位于 org.springframework.aop.support package
+	// 构成ClassFilters的静态实用程序方法。
 
 	/**
 	 * Match all classes that <i>either</i> (or both) of the given ClassFilters matches.
@@ -91,13 +93,16 @@ public abstract class ClassFilters {
 	 */
 	@SuppressWarnings("serial")
 	private static class UnionClassFilter implements ClassFilter, Serializable {
+		// 联合的ClassFilter -- or操作
 
+		// 持有union联合的ClassFilter集合
 		private final ClassFilter[] filters;
 
 		UnionClassFilter(ClassFilter[] filters) {
 			this.filters = filters;
 		}
 
+		// 只要UnionClassFilter中的有一个filter满足matches()方法就返回true
 		@Override
 		public boolean matches(Class<?> clazz) {
 			for (ClassFilter filter : this.filters) {
@@ -132,13 +137,16 @@ public abstract class ClassFilters {
 	 */
 	@SuppressWarnings("serial")
 	private static class IntersectionClassFilter implements ClassFilter, Serializable {
+		// 交集的ClassFilter -- and操作
 
+		// 持有交集的ClassFilter集合
 		private final ClassFilter[] filters;
 
 		IntersectionClassFilter(ClassFilter[] filters) {
 			this.filters = filters;
 		}
 
+		// 只要IntersectionClassFilter中的有一个filter不满足matches()方法就返回false
 		@Override
 		public boolean matches(Class<?> clazz) {
 			for (ClassFilter filter : this.filters) {

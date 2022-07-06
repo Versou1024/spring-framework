@@ -43,8 +43,10 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public class IntroductionInfoSupport implements IntroductionInfo, Serializable {
 
+	// 发布给定的委托对象所实现的所有接口
 	protected final Set<Class<?>> publishedInterfaces = new LinkedHashSet<>();
 
+	// 缓存处理过的方法
 	private transient Map<Method, Boolean> rememberedMethods = new ConcurrentHashMap<>(32);
 
 
@@ -92,12 +94,15 @@ public class IntroductionInfoSupport implements IntroductionInfo, Serializable {
 	 * @return whether the invoked method is on an introduced interface
 	 */
 	protected final boolean isMethodOnIntroducedInterface(MethodInvocation mi) {
+		// 检查方法mi是否在需要被代理类额外扩展的接口上
+		
+		// 1. 检查缓存
 		Boolean rememberedResult = this.rememberedMethods.get(mi.getMethod());
 		if (rememberedResult != null) {
 			return rememberedResult;
 		}
 		else {
-			// Work it out and cache it.
+			// 2. 第一次检查是否为目标接口下的方法 -- 如果是的话就会交给实例化后的
 			boolean result = implementsInterface(mi.getMethod().getDeclaringClass());
 			this.rememberedMethods.put(mi.getMethod(), result);
 			return result;

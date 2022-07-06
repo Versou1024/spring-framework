@@ -29,6 +29,11 @@ import org.springframework.aop.Advisor;
  * @author Rob Harrop
  */
 public interface AdvisorAdapterRegistry {
+	// 用于注册管理AdvisorAdapter的管理器
+	// Spring有三个Advice的适配器 -- MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter、ThrowsAdviceAdapter
+	// 分别是针对：MethodBeforeAdvice、 AfterReturningAdvice、 ThrowsAdvice 三个增强通知的适配到MethodInterceptor
+	// 原因: Spring内部框架多使用MethodBeforeAdvice、 AfterReturningAdvice、 ThrowsAdvice
+	// 但是Cglib或者Jdk最终可以执行的通知点都是MethodInterceptor,因此需要将Advice适配到MethodInterceptor上去
 
 	/**
 	 * Return an {@link Advisor} wrapping the given advice.
@@ -44,6 +49,7 @@ public interface AdvisorAdapterRegistry {
 	 * can wrap the supposed advice
 	 */
 	Advisor wrap(Object advice) throws UnknownAdviceTypeException;
+	// 返回包装给定advice的Advisor 
 
 	/**
 	 * Return an array of AOP Alliance MethodInterceptors to allow use of the
@@ -56,6 +62,7 @@ public interface AdvisorAdapterRegistry {
 	 * not understood by any registered AdvisorAdapter
 	 */
 	MethodInterceptor[] getInterceptors(Advisor advisor) throws UnknownAdviceTypeException;
+	// 通过Advisor获取其对应的MethodInterceptor[]
 
 	/**
 	 * Register the given {@link AdvisorAdapter}. Note that it is not necessary to register
@@ -64,5 +71,6 @@ public interface AdvisorAdapterRegistry {
 	 * @param adapter an AdvisorAdapter that understands particular Advisor or Advice types
 	 */
 	void registerAdvisorAdapter(AdvisorAdapter adapter);
+	// 注册: AdvisorAdapter
 
 }

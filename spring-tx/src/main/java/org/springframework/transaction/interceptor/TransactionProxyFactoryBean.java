@@ -115,7 +115,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class TransactionProxyFactoryBean extends AbstractSingletonProxyFactoryBean
 		implements BeanFactoryAware {
 
-	/**
+	/*
 	 * 用于简化声明性事务处理的代理工厂 bean。这是标准 AOP org.springframework.aop.framework.ProxyFactoryBean的一个方便的替代方案，具有单独的TransactionInterceptor定义。
 	 * 历史注释：此类最初旨在涵盖声明性事务划分的典型情况：即，使用事务代理包装单例目标对象，代理目标实现的所有接口。
 	 * 但是，在 Spring 2.0 及更高版本中，此处提供的功能被更方便的tx: XML 命名空间所取代。
@@ -203,6 +203,8 @@ public class TransactionProxyFactoryBean extends AbstractSingletonProxyFactoryBe
 	 */
 	@Override
 	protected Object createMainInterceptor() {
+		// ❗️❗️❗️ 当前方法在超类AbstractSingletonProxyFactoryBean的afterPropertiesSet()中调用
+		
 		this.transactionInterceptor.afterPropertiesSet();
 		if (this.pointcut != null) {
 			return new DefaultPointcutAdvisor(this.pointcut, this.transactionInterceptor);
@@ -219,6 +221,7 @@ public class TransactionProxyFactoryBean extends AbstractSingletonProxyFactoryBe
 	 */
 	@Override
 	protected void postProcessProxyFactory(ProxyFactory proxyFactory) {
+		// 在 createMainInterceptor() 后执行
 		proxyFactory.addInterface(TransactionalProxy.class);
 	}
 

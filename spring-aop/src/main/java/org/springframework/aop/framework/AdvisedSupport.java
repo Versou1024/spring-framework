@@ -63,10 +63,11 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	 * AdvisedSupport 从类名就可以看出，主要是实现Advised接口
 	 *
 	 * AdvisedSupport 组合有目标对象TargetSource
-	 *
 	 * AdvisedSupport 用来注册被代理目标对象、通知和需要代理的接口
-	 *
-	 * AdvisedSupport本身不会提供创建代理的任何方法，专注于生成拦截器链。委托给ProxyCreatorSupport去创建代理对象
+	 * AdvisedSupport本身不会提供创建代理的任何方法，专注于通过advisorChainFactory生成拦截器链。
+	 * 以及管理各种的Advisor
+	 * 
+	 * note: 管理的各种的Advisor都是为同一个代理类服务的哦
 	 */
 
 	/** use serialVersionUID from Spring 2.0 for interoperability. */
@@ -81,34 +82,41 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 
 
 	/** Package-protected to allow direct access for efficiency. */
-	TargetSource targetSource = EMPTY_TARGET_SOURCE; // 持有目标对象
+	TargetSource targetSource = EMPTY_TARGET_SOURCE; 
+	// 持有目标对象
 
 	/** Whether the Advisors are already filtered for the specific target class. */
-	private boolean preFiltered = false; // 对于给定的targetClass，是否这些 Advisors 已经被过滤
+	private boolean preFiltered = false; 
+	// 对于给定的targetClass，是否这些 Advisors 已经被过滤
 
 	/** The AdvisorChainFactory to use. */
-	AdvisorChainFactory advisorChainFactory = new DefaultAdvisorChainFactory(); // advisorChainFactory 工厂
+	AdvisorChainFactory advisorChainFactory = new DefaultAdvisorChainFactory(); 
+	// advisorChainFactory 工厂
+	// 默认是 DefaultAdvisorChainFactory.
 
 	/** Cache with Method as key and advisor chain List as value. */
-	private transient Map<MethodCacheKey, List<Object>> methodCache; // 缓存：以 method 为key，以 Advisor 列表为value
+	private transient Map<MethodCacheKey, List<Object>> methodCache; 
+	// 缓存：以 method 为key，以 Advisor 列表为value
 
 	/**
 	 * Interfaces to be implemented by the proxy. Held in List to keep the order
 	 * of registration, to create JDK proxy with specified order of interfaces.
 	 */
-	private List<Class<?>> interfaces = new ArrayList<>(); // 代理类需要实现的所有接口，会被一个List集合保持注册顺序，在创建JDK代理时是有用的
+	private List<Class<?>> interfaces = new ArrayList<>(); 
+	// 代理类需要实现的所有接口，会被一个List集合保持注册顺序，在创建JDK代理时是有用的
 
 	/**
 	 * List of Advisors. If an Advice is added, it will be wrapped
 	 * in an Advisor before being added to this List.
 	 */
-	private List<Advisor> advisors = new ArrayList<>(); // Advisor列表，如果一个Advice被添加，就会被一个Advisor给包装在Advice被添加到List之前
+	private List<Advisor> advisors = new ArrayList<>(); 
+	// Advisor列表，如果一个Advice被添加，就会被一个Advisor给包装在Advice被添加到List之前
 
 	/**
 	 * Array updated on changes to the advisors list, which is easier
 	 * to manipulate internally.
 	 */
-	private Advisor[] advisorArray = new Advisor[0]; //
+	private Advisor[] advisorArray = new Advisor[0];
 
 
 	/**
@@ -244,7 +252,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 
 	@Override
 	public boolean isInterfaceProxied(Class<?> intf) {
-		// 是否有这个暴露的接口
+		// 是否有这个代理的接口
 		for (Class<?> proxyIntf : this.interfaces) {
 			if (intf.isAssignableFrom(proxyIntf)) {
 				return true;
@@ -379,7 +387,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 		}
 		// 添加到 advisors
 		this.advisors.add(pos, advisor);
-		// 由于添加了新的Advisor，需要将methodCache清空
+		// 由于添加了新的Advisor，需要将advisors数组重新赋值
 		updateAdvisorArray();
 		// 由于添加了新的Advisor，需要将methodCache清空
 		adviceChanged();
@@ -497,13 +505,15 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	 * @return a List of MethodInterceptors (may also include InterceptorAndDynamicMethodMatchers)
 	 */
 	public List<Object> getInterceptorsAndDynamicInterceptionAdvice(Method method, @Nullable Class<?> targetClass) {
-		// 以这个Method生成一个key，准备缓存
+		// ❗️❗️❗️ -> 很重要的 -> 代理对象的方法的执行,都需要调用这个类,来确保可以在当前方法上生效的MethodInterceptor
+		// 只有MethodInterceptor或Advice的MethodMatcher匹配当前方法,那么这个增强通知或者拦截器就会生效哦
+		// 1. 以这个Method生成一个key，准备缓存
 		// 此处小技巧：当你的key比较复杂事，可以用类来处理。然后重写它的equals、hashCode、toString、compare等方法
 		MethodCacheKey cacheKey = new MethodCacheKey(method);
-		// 从缓存中获取过滤器链
+		// 2. 从缓存中获取过滤器链 -- 使用Object的原因在于拦截器可以是 MethodInterceptor也可以是InterceptorAndDynamicMethodMatcher的
 		List<Object> cached = this.methodCache.get(cacheKey);
 		if (cached == null) {
-			// 缓存未命中，就需要为其生成过滤器链，然后存入缓存
+			// 2.1 缓存未命中，就需要为其生成过滤器链，然后存入缓存
 			// 这个方法最终在这 DefaultAdvisorChainFactory#getInterceptorsAndDynamicInterceptionAdvice
 			// DefaultAdvisorChainFactory：生成通知器链的工厂，实现了interceptor链的获取过程
 			cached = this.advisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice(this, method, targetClass);

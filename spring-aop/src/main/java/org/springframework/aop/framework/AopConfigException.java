@@ -26,6 +26,7 @@ import org.springframework.core.NestedRuntimeException;
  */
 @SuppressWarnings("serial")
 public class AopConfigException extends NestedRuntimeException {
+	// 在AopConfig中配置时出现的非法参数异常
 
 	/**
 	 * Constructor for AopConfigException.

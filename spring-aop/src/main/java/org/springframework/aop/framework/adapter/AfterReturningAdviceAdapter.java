@@ -33,6 +33,7 @@ import org.springframework.aop.AfterReturningAdvice;
  */
 @SuppressWarnings("serial")
 class AfterReturningAdviceAdapter implements AdvisorAdapter, Serializable {
+	// 将AfterReturningAdvice适配为可执行的MethodInterceptor
 
 	@Override
 	public boolean supportsAdvice(Advice advice) {

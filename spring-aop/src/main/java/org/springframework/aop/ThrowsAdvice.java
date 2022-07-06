@@ -49,5 +49,13 @@ package org.springframework.aop;
  * @see MethodBeforeAdvice
  */
 public interface ThrowsAdvice extends AfterAdvice {
-
+	// 用于抛出建议的标签界面。
+	// 此接口上没有任何方法，因为方法是通过反射调用的。实现类必须实现以下形式的方法：
+	// void afterThrowing([Method, args, target], ThrowableSubclass);
+	// 一些有效方法的例子是：
+	// public void afterThrowing(Exception ex)
+	// public void afterThrowing(RemoteException)
+	// public void afterThrowing(Method method, Object[] args, Object target, Exception ex)
+	// public void afterThrowing(Method method, Object[] args, Object target, ServletException ex)
+	// 前三个参数是可选的，只有在我们想要关于连接点的更多信息时才有用，如 AspectJ后抛建议
 }

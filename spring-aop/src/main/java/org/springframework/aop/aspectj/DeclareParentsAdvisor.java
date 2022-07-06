@@ -49,6 +49,9 @@ public class DeclareParentsAdvisor implements IntroductionAdvisor {
 	 * @param defaultImpl the default implementation class
 	 */
 	public DeclareParentsAdvisor(Class<?> interfaceType, String typePattern, Class<?> defaultImpl) {
+		
+		// 形参如下: 
+		// 标记有@DeclareParents注解的字段的类型Type\@DeclareParents的value属性\@DeclareParents的defaultImpl属性
 		this(interfaceType, typePattern,
 				new DelegatePerTargetObjectIntroductionInterceptor(defaultImpl, interfaceType));
 	}
@@ -72,11 +75,15 @@ public class DeclareParentsAdvisor implements IntroductionAdvisor {
 	 */
 	private DeclareParentsAdvisor(Class<?> interfaceType, String typePattern, IntroductionInterceptor interceptor) {
 		this.advice = interceptor;
+		// 标记有@DeclareParents注解的字段的类型Type -- 也就是代理类需要额外实现的接口
+		// @DeclareParents注解的defaultImpl属性 -- 代理实现的接口被触发时,应该交给defaultImpl属性指定的class去执行
+		// 也就是说defaultImpl属性指定的对象也需要去实现最上面说的接口哦
 		this.introducedInterface = interfaceType;
 
-		// Excludes methods implemented.
+		// typePattern 是 @DeclareParents注解的value属性 -- 标记为哪些类生成代理对象,需要额外实现的上面的接口
 		ClassFilter typePatternFilter = new TypePatternClassFilter(typePattern);
-		ClassFilter exclusion = (clazz -> !this.introducedInterface.isAssignableFrom(clazz));
+		ClassFilter exclusion = (clazz -> !this.introducedInterface.isAssignableFrom(clazz)); // 如果扫描到的类本身已经实现clazz,就不需要切面类来帮助代理委托实现了啊 -> 因此是一个排除
+		// ClassFilters.intersection(typePatternFilter, exclusion) 就要求两个ClassFilter的and操作,即必须两个都满足才可以
 		this.typePatternClassFilter = ClassFilters.intersection(typePatternFilter, exclusion);
 	}
 

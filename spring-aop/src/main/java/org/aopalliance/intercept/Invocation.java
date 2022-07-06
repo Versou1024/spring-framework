@@ -26,7 +26,7 @@ package org.aopalliance.intercept;
  */
 public interface Invocation extends Joinpoint {
 	/**
-	 * aop联盟，Invocation继承 Joinpoint，扩展 getArguments
+	 * aop联盟，Invocation继承 JoinPoint，扩展 getArguments()
 	 * 首先需要注意的是，一般我们会接触到两个Joinpoint
 	 *
 	 * org.aspectj.lang.JoinPoint：该对象封装了SpringAop中切面方法的信息,在切面方法中添加JoinPoint参数，可以很方便的获得更多信息。（一般用于@Aspect标注的切面的方法入参里），它的API很多，常用的有下面几个：

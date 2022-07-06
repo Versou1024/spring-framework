@@ -33,7 +33,8 @@ import org.springframework.util.Assert;
  * @since 2.0
  */
 public class ChainedPersistenceExceptionTranslator implements PersistenceExceptionTranslator {
-
+	// 组合模式
+ 
 	/** List of PersistenceExceptionTranslators. */
 	private final List<PersistenceExceptionTranslator> delegates = new ArrayList<>(4);
 
@@ -57,6 +58,7 @@ public class ChainedPersistenceExceptionTranslator implements PersistenceExcepti
 	@Override
 	@Nullable
 	public DataAccessException translateExceptionIfPossible(RuntimeException ex) {
+		// 遍历 -- 直到其中某一个翻译器PersistenceExceptionTranslator能够将ORM持久层框架抛出的持久化异常翻译为spring对应的DataAccessException
 		for (PersistenceExceptionTranslator pet : this.delegates) {
 			DataAccessException translatedDex = pet.translateExceptionIfPossible(ex);
 			if (translatedDex != null) {

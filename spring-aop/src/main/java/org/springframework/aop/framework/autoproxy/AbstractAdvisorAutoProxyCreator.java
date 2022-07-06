@@ -58,13 +58,15 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * 		未使用@Order注释或未实现Ordered接口的Advisor将被视为无序；它们将以未定义的顺序出现在advisor链的末尾。
 	 */
 
+	// ❗️❗️❗️
+	// 见名知其重要性 -- 持有BeanFactory,以从其中检索出切面列中的Advisor集合,并进行汇总
 	@Nullable
 	private BeanFactoryAdvisorRetrievalHelper advisorRetrievalHelper;
 
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
-		// 重写了setBeanFactory方法，事需要保证bean工厂必须是ConfigurableListableBeanFactory
+		// ❗️❗️❗️重写了setBeanFactory方法，事需要保证bean工厂必须是ConfigurableListableBeanFactory
 		super.setBeanFactory(beanFactory);
 		if (!(beanFactory instanceof ConfigurableListableBeanFactory)) {
 			throw new IllegalArgumentException(
@@ -84,9 +86,9 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	@Override
 	@Nullable
 	protected Object[] getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
-		// eligible：合格的  合适的
+		// 1. ️调用findEligibleAdvisors()
 		List<Advisor> advisors = findEligibleAdvisors(beanClass, beanName);
-		// advisors为空，无须代理
+		// 2. advisors为空，无须额外代理,使用普通代理即interceptorNames对应的拦截器即可吧
 		if (advisors.isEmpty()) {
 			return DO_NOT_PROXY;
 		}
@@ -105,22 +107,35 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
 		// 找出合适的Advisor们~~~  主要分了下面几步
+		// 简答描述:
+		// 子类AbstractAdvisorAutoProxyCreator重写getAdvicesAndAdvisorsForBean()方法
+		// 1. 调用findCandidateAdvisors()查看可用的Advisor
+		// 		1.1 AbstractAdvisorAutoProxyCreator.findCandidateAdvisors()仅仅是去ioc容器中查找Advisor类型的bean，作为候选的Advisor，也就是用户可以向ioc容器直接注入Advisor
+		// 		1.2 其子类 AnnotationAwareAspectJAutoProxyCreator.findCandidateAdvisors() 在1.1基础又去ioc容器中查找所有@Aspect的切面类，将切面类中使用@After、@Before等AspectJ注解标注的通知方法转换为Advisor后返回出来
+		// 2. 调用findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName)确定candidateAdvisors可以给beanClass的bean使用的那一批Advisor【期间会使用ClassFilter|MethodMatcher进行判断】
+		// 3. 调用extendAdvisors()去扩展Advisor集合，主要是如果匹配上的Advisor中有切面类中通知方法形成的Advisor，就必须在advisors的第一个位置加入`ExposeInvocationInterceptor.ADVISOR`用来暴露MethodInvocation
+		// 4. 调用sortAdvisors(eligibleAdvisors)对合格的Advisor进行排序
+		// 		4.1 其子类AspectJAwareAdvisorAutoProxyCreator重写了sortAdvisors(eligibleAdvisors)方法，主要以以下依据排序
+		// 			当给出两条advice比如A和B ：
+		// 			如果A和B被定义在不同的切面上，那么具有更低order值的切面的中的通知方法具有最高优先级。
+		// 			如果A和B定义在同一个切面上，如果A或B中的一个是after advice的形式，则在同一个切面中中after advice的通知增强方法会具有最高优先级。
+		// 			如果A和B定义在同一个切面上,但A和B都不是 after advice的一种形式[@After @AfterThrowing @AfterReturning]，则在方面中首先声明的通知具有最高优先级。
 
-		// 首先找出所有的候选的Advisors，（根据名字判断）实现见下面~~~~
+		// 1. 首先找出所有的候选的Advisors，（根据名字判断）实现见下面~~~~
 		// 包括BeanFactory中已经注册的Advisor的实现类；也包括BeanFactory中的@Aspect注解的bean中带有@Before、@After的方法转换为Advisor值
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
-		// 对上面找到的候选的Advisors们，进行过滤操作~~~  看看Advisor能否被用在Bean上（根据Advisor的PointCut判断）
+		// 2. 对上面找到的候选的Advisors们，进行过滤操作~~~  看看Advisor能否被用在Bean上（根据Advisor的PointCut判断）
 		// 主要依赖于AopUtils.findAdvisorsThatCanApply()方法  在工具类讲解中有详细分析的
 		// 逻辑简单概述为：看目标类是不是符合代理对象的条件，如果符合就把Advisor加到集合中，最后返回集合
 		// 简单的说：它就是会根据ClassFilter和MethodMatcher等等各种匹配。（但凡只有有一个方法被匹配上了，就会给他创建代理类了）
 		// 方法用的ReflectionUtils.getAllDeclaredMethods，**因此哪怕是私有方法，匹配上都会给创建的代理对象，这点务必要特别特别的注意**
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
-		// 提供一个钩子。子类可以复写此方法  然后对eligibleAdvisors进行处理（增加/删除/修改等等）
+		// 3. 提供一个钩子。子类可以复写此方法  然后对eligibleAdvisors进行处理（增加/删除/修改等等）
 		// AspectJAwareAdvisorAutoProxyCreator提供了实现
 		extendAdvisors(eligibleAdvisors);
-		// 如果最终还有，那就排序吧
+		// 4. 排序
 		if (!eligibleAdvisors.isEmpty()) {
-			// 默认排序方式：AnnotationAwareOrderComparator.sort()排序  这个排序和Order接口有关~~~
+			// 5. 默认排序方式：AnnotationAwareOrderComparator.sort()排序  这个排序和PriorityOrder接口\Order接口\@Order有关~~~
 			// 但是子类：AspectJAwareAdvisorAutoProxyCreator有复写此排序方法，需要特别注意~~~
 			eligibleAdvisors = sortAdvisors(eligibleAdvisors);
 		}
@@ -132,7 +147,7 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @return the List of candidate Advisors
 	 */
 	protected List<Advisor> findCandidateAdvisors() {
-		// AbstractAdvisorAutoProxyCreator#findCandidateAdvisors -> 主要是利用 BeanFactoryAdvisorRetrievalHelper#findAdvisorBeans 查找所有BeanFactory中的注册的Advisor切面
+		// 利用 BeanFactoryAdvisorRetrievalHelper#findAdvisorBeans 查找所有BeanFactory中的注册的Advisor切面
 		Assert.state(this.advisorRetrievalHelper != null, "No BeanFactoryAdvisorRetrievalHelper available");
 		return this.advisorRetrievalHelper.findAdvisorBeans();
 	}
@@ -147,7 +162,7 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see ProxyCreationContext#getCurrentProxiedBeanName()
 	 */
 	protected List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
-		// 在Proxy创建的上下文中
+		// ❗️❗️❗️ 在Proxy创建的上下文中
 		ProxyCreationContext.setCurrentProxiedBeanName(beanName);
 		try {
 			// 遍历候选的candidateAdvisors，查看beanClass是否需要被增强
@@ -210,6 +225,7 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * surrounding AbstractAdvisorAutoProxyCreator facilities.
 	 */
 	private class BeanFactoryAdvisorRetrievalHelperAdapter extends BeanFactoryAdvisorRetrievalHelper {
+		// 继承的是: BeanFactoryAdvisorRetrievalHelper
 
 		public BeanFactoryAdvisorRetrievalHelperAdapter(ConfigurableListableBeanFactory beanFactory) {
 			super(beanFactory);
@@ -217,6 +233,7 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 
 		@Override
 		protected boolean isEligibleBean(String beanName) {
+			// 用从ioc容器取出Advisor后,根据Advisor的beanName检查是否合格,不合格就无法加入到返回的Advisors集合中
 			return AbstractAdvisorAutoProxyCreator.this.isEligibleAdvisorBean(beanName);
 		}
 	}

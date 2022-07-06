@@ -33,11 +33,26 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSupport implements BeanPostProcessor {
+	// ProxyProcessorSupport有两个子类
+	// 一个是: AbstractAutoProxy -> 
+	// 		其整个体系主要是检查到切面类,将所有的切面类中的所有通知方法转换为Advisor集合
+	// 		然后在每个Bean实例化之后,初始化之前,检查是否被项目中部分Advisor拦截器匹配到,如果匹配到,就需要自动为其创建代理对象并在初始化的前置操作中返回
+	// 
+	// 一个是: AbstractAdvisingBeanPostProcessor ->
+	// 		其整个体系主要是为了关照特殊的案例,可以去接受一个Spring AOP的Advisor对象 
+	
+	// AbstractAdvisingBeanPostProcessor = Abstract Advising BeanPostProcessor
+	// 首先这是一个BeanPostProcessor,然后是抽象的,主要能够在BeanPostProcessor的后置处理中完成对处理Advising,
+	
+	
 	// 在 ProxyProcessorSupport 基础上，接受一个Spring aop
 
+	// 留给子类去设置，然后加载到bean中做代理
 	@Nullable
-	protected Advisor advisor;  // 留给子类去设置，然后加载到bean中做代理
+	protected Advisor advisor;
 
+	// 当遇到一个pre-object的时候，是否把该processor所持有得advisor放在现有的增强器们之前执行
+	// 默认是false，会放在最后一个位置上的
 	protected boolean beforeExistingAdvisors = false;
 
 	// 缓存合格的Bean们
@@ -70,53 +85,53 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	// 核心模板 -- 关注：advisor的来源、advisor的存放位置、bean是否满足advisor
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
-		// 忽略AopInfrastructureBean的Bean，并且如果没有advisor也会忽略不处理~~~~~
-		// 需要知道：advisor是当前类留给子类实现的，因此该类的子类应该提供advisor，然后再后续的proxyFactory.addAdvisor添加进去，然后生成一个代理对象Proxy
+		// 1. 忽略AopInfrastructureBean的Bean，并且如果没有advisor也会忽略不处理~~~~~
 		if (this.advisor == null || bean instanceof AopInfrastructureBean) {
-			// Ignore AOP infrastructure such as scoped proxies.
 			return bean;
 		}
 
-		// 如果这个Bean已经被代理过了（比如已经被AOP切中了），那本处就无需再重复创建代理了嘛
-		// 直接向里面添加advisor就成了
-		// 虽然项目中使用@Aspect的类没有直接继承Advised，但是为其生成代理类的时候，会为其实现两个标记性接口：Advised、SpringProxy
+		// 2. note: 创建代理对象时会去实现两个接口：Advised、SpringProxy
+		// 因此如果bean已经被代理过，那本处就无需再重复创建代理了嘛,直接向里面添加advisor就成了
 		if (bean instanceof Advised) {
+			// 2.1 强转
 			Advised advised = (Advised) bean;
-			// 注意此advised不能是已经被冻结了的。且源对象必须是Eligible合格的 --- 合格的标准：满足子类的advisor的切面中的pointcut的要求，同时不是一个原始类
-			// 因为冻结了配置就无须重新更新advisors
+			// 注意此advised不能是已经被冻结了的。且源对象必须是Eligible合格的 
+			// 合格的标准：
+			// 		a：如果没有设置advisor,永远返回false表示不合格
+			// 		b：检查targetClass是否被可以被设置的advisor的ClassFilter/MethodMatcher接受
 			if (!advised.isFrozen() && isEligible(AopUtils.getTargetClass(bean))) {
-				// Add our local Advisor to the existing proxy's Advisor chain...
-				// 把自己持有的局部advisor放在首位（如果beforeExistingAdvisors=true）
+				// 2.2 把自己持有的局部advisor放在首位（如果beforeExistingAdvisors=true）
 				if (this.beforeExistingAdvisors) {
 					// 例如：@Async导入的异步interceptor就需要放在第一个位置，提前做异步处理
 					advised.addAdvisor(0, this.advisor);
 				}
-				// 否则就是尾部位置
+				// 2.3 否则就是尾部位置
 				else {
 					advised.addAdvisor(this.advisor);
 				}
-				// 最终直接返回即可，因为已经没有必要再创建一次代理对象了
+				// 2.4 最终直接返回即可，因为已经没有必要再创建一次代理对象了
 				return bean;
 			}
 		}
-		// 如果这个Bean事合格的（此方法下面有解释）   这个时候是没有被代理过的
+		
+		// 3. 如果bean不是Advised被代理过的,或者其配置已经冻结或者不满足设置的Advisor的类过滤和方法匹配,就执行到这里
+		// 和上面的isEligible()方法一样,主要要求: 检查targetClass是否被可以被设置的advisor的ClassFilter/MethodMatcher接受
 		if (isEligible(bean, beanName)) {
-			// 以当前的配置，创建一个ProxyFactory
-			ProxyFactory proxyFactory = prepareProxyFactory(bean, beanName);
-			// 如果不是使用CGLIB常见代理，那就去分析出它所实现的接口们  然后放进ProxyFactory 里去
+			// 3.1 以当前的配置，创建一个ProxyFactory --> ProxyFactory用来手动创建Aop代理对象
+			ProxyFactory proxyFactory = prepareProxyFactory(bean, beanName); // 子类可复写该方法
+			// 3.2 如果不是使用CGLIB常见代理，那就去分析出它所实现的接口们,然后放进ProxyFactory 里去
 			if (!proxyFactory.isProxyTargetClass()) {
 				evaluateProxyInterfaces(bean.getClass(), proxyFactory);
 			}
-			// 切面就是当前持有得advisor
+			// 3.3 将advisor设置进去吧
 			proxyFactory.addAdvisor(this.advisor);
-			// 留给子类，自己还可以对proxyFactory进行自定义~~~~~
-
+			// 3.4 留给子类，自己还可以对proxyFactory进行自定义~~~~~
 			customizeProxyFactory(proxyFactory);
-			// 最终返回这个代理对象~~~~~
+			// 3.5 最终返回这个代理对象~~~~~
 			return proxyFactory.getProxy(getProxyClassLoader());
 		}
 
-		// No proxy needed.
+		// 4. 无须代理
 		return bean;
 	}
 
@@ -148,21 +163,22 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 */
 	protected boolean isEligible(Class<?> targetClass) {
 		// 是否合格：主要依据就是判断targetClass是否满足advisor切面类的定义
+		// 主要两点:
+		// a：如果没有设置advisor,永远返回false
+		// b：检查targetClass是否被可以被设置的advisor的ClassFilter/MethodMatcher接受
 
+		// 1. 缓存命中
 		Boolean eligible = this.eligibleBeans.get(targetClass);
-		// 缓存命中
 		if (eligible != null) {
-			// eligible 为true，就表示合格的bean
-			// eligible 为false，就表示不合格的bean -- 既不符合切面的定义
 			return eligible;
 		}
-		// 如果没有切面（就相当于没有给配置增强器，那铁定是不合格的）
+		// 2. 缓存未命中[如果没有设置advisor,那么也是将是无效的]
 		if (this.advisor == null) {
 			return false;
 		}
-		// 检查targetClass是否被advisor接受
+		// 3. 检查targetClass是否被advisor的ClassFilter/MethodMatcher接受
 		eligible = AopUtils.canApply(this.advisor, targetClass);
-		// 存入缓存
+		// 4. 存入缓存结果
 		this.eligibleBeans.put(targetClass, eligible);
 		return eligible;
 	}
@@ -182,7 +198,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * @see #customizeProxyFactory
 	 */
 	protected ProxyFactory prepareProxyFactory(Object bean, String beanName) {
-		// 子类可以复写。比如`AbstractBeanFactoryAwareAdvisingPostProcessor`就复写了这个方法~~~
+		// note: 子类可以复写。比如`AbstractBeanFactoryAwareAdvisingPostProcessor`就复写了这个方法~~~
 		ProxyFactory proxyFactory = new ProxyFactory();
 		proxyFactory.copyFrom(this);
 		proxyFactory.setTarget(bean);

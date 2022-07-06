@@ -33,6 +33,7 @@ import org.springframework.aop.ThrowsAdvice;
  */
 @SuppressWarnings("serial")
 class ThrowsAdviceAdapter implements AdvisorAdapter, Serializable {
+	// 将ThrowsAdvice配为可执行的MethodInterceptor
 
 	@Override
 	public boolean supportsAdvice(Advice advice) {

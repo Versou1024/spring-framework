@@ -41,6 +41,9 @@ import org.springframework.lang.Nullable;
  * @see #createObject()
  */
 public abstract class AbstractLazyCreationTargetSource implements TargetSource {
+	// TargetSource实现将延迟创建用户管理的对象。
+	// 用户通过实现createObject()方法来控制惰性目标对象的创建。此TargetSource将在第一次访问代理时调用此方法。
+	// 当您需要将某个依赖项的引用传递给一个对象但您实际上不希望在第一次使用它之前创建依赖项时很有用。一个典型的场景是连接到远程资源
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -54,6 +57,7 @@ public abstract class AbstractLazyCreationTargetSource implements TargetSource {
 	 * has already been fetched.
 	 */
 	public synchronized boolean isInitialized() {
+		// 判断target是否已经初始化
 		return (this.lazyTarget != null);
 	}
 
@@ -73,6 +77,7 @@ public abstract class AbstractLazyCreationTargetSource implements TargetSource {
 
 	@Override
 	public boolean isStatic() {
+		// 动态的TargetSource
 		return false;
 	}
 
@@ -103,5 +108,6 @@ public abstract class AbstractLazyCreationTargetSource implements TargetSource {
 	 * @throws Exception if creation failed
 	 */
 	protected abstract Object createObject() throws Exception;
+	// 子类必须实现createObject()方法来生成懒加载的对象
 
 }

@@ -35,8 +35,13 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public class ProxyFactory extends ProxyCreatorSupport {
 	/**
-	 * ProxyFactory 代理工厂：
-	 * 主要提供不同的 getProxy() 方法
+	 * ProxyCreatorSupport有三个子类：一点点发展起来的
+	 * ProxyFactory 是只能通过代码硬编码进行编写 一般都是给spring自己使用。
+	 * ProxyFactoryBean 是将我们的AOP和IOC融合起来，
+	 * AspectJProxyFactory 是目前大家最常用的 起到集成AspectJ和Spring
+	 * 
+	 * ProxyFactory 与 ProxyFactoryBean 仍然在 org.springframework.aop.framework package 下
+	 * 而 AspectJProxyFactory 确是在org.springframework.aop.aspectj.annotation
 	 */
 
 	/**
@@ -52,6 +57,7 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 */
 	public ProxyFactory(Object target) {
 		// 通过传入target，设置targetSource
+		// targetSource类型为: new SingletonTargetSource(target)
 		setTarget(target);
 		// ClassUtils.getAllInterfaces(target) 获取target实现的接口
 		setInterfaces(ClassUtils.getAllInterfaces(target));
@@ -75,6 +81,7 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 * @param interceptor the interceptor that the proxy should invoke
 	 */
 	public ProxyFactory(Class<?> proxyInterface, Interceptor interceptor) {
+		// 为给定的接口和拦截器创建一个新的 ProxyFactory。
 		addInterface(proxyInterface);
 		addAdvice(interceptor);
 	}
@@ -100,6 +107,10 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 * @return the proxy object
 	 */
 	public Object getProxy() {
+		// ❗️❗️❗️
+		// 核心在超类ProxyCreatorSupport()上面
+		// createAopProxy() 根据 DefaultAopProxyFactory 创建一个AopProxy对象
+		// 然后调用 AopProxy#getProxy() 获取JDK代理对象或者Cglib代理对象
 		return createAopProxy().getProxy();
 	}
 
@@ -113,8 +124,15 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 * @return the proxy object
 	 */
 	public Object getProxy(@Nullable ClassLoader classLoader) {
+		// 使用指定的ClassLoader加载代理对象
 		return createAopProxy().getProxy(classLoader);
 	}
+	
+	// 下面几个 getProxy() 都是静态方法
+	// 可以直接传入需要
+	// a:代理的接口proxyInterface + 使用的拦截器Interceptor
+	// b:代理的接口proxyInterface + 代理的目标targetSource
+	// c:代理的目标targetSource
 
 
 	/**

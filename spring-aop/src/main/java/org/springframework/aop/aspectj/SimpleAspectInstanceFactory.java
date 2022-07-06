@@ -32,7 +32,7 @@ import org.springframework.util.ReflectionUtils;
  * @since 2.0.4
  */
 public class SimpleAspectInstanceFactory implements AspectInstanceFactory {
-	/**
+	/*
 	 * AspectInstanceFactory的简单实现，通过AspectClass转为AspectInstance
 	 */
 

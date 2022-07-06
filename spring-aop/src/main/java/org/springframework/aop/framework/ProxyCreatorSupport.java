@@ -31,9 +31,9 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class ProxyCreatorSupport extends AdvisedSupport {
-	/**
+	/*
 	 * AopProxy工厂的封装, 用于方便访问AopProxy。主要是封装AopProxyFactory，用来创建AopProxy
-	 * 帮助其子类创建JDK和Cglib代理
+	 * -- 帮助其子类创建JDK和Cglib代理
 	 *
 	 * ProxyCreatorSupport 注册和触发监听器，借助DefaultAopProxyFactory获取代理
 	 *
@@ -116,13 +116,15 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	 * create an AOP proxy with {@code this} as an argument.
 	 */
 	protected final synchronized AopProxy createAopProxy() {
-		// 创建AopProxy
+		// 同步方法 -- 创建AopProxy
 
 		// active 初始化默认是false
 		if (!this.active) {
 			// 调用active()进行激活，触发监听器的回调
+			// 因此只要开始创建aop代理对象,都会将active设置为true,并激活
 			activate();
 		}
+		// ❗️❗️❗️ -> 这tm就是核心啊 -- xdm
 		return getAopProxyFactory().createAopProxy(this);
 	}
 
@@ -144,8 +146,11 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	 */
 	@Override
 	protected void adviceChanged() {
+		// 在超类AdvisedSupport的adviceChanged()基础扩展
 		super.adviceChanged();
 		synchronized (this) {
+			// 当已经创建过aop代理对象后,再向AdvisedSupport中添加或移除Advisor
+			// 就会触发 AdvisedSupportListener的change事件哦
 			if (this.active) {
 				for (AdvisedSupportListener listener : this.listeners) {
 					listener.adviceChanged(this);
@@ -158,6 +163,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	 * Subclasses can call this to check whether any AOP proxies have been created yet.
 	 */
 	protected final synchronized boolean isActive() {
+		// 子类可以调用它来检查是否已经创建了任何 AOP 代理
 		return this.active;
 	}
 

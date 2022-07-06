@@ -32,6 +32,7 @@ import org.springframework.lang.Nullable;
  */
 @FunctionalInterface
 public interface TargetSourceCreator {
+	// 根据当前处理的beanClass以及beanName去创建一个TargetSource
 
 	/**
 	 * Create a special TargetSource for the given bean, if any.

@@ -36,6 +36,8 @@ import org.springframework.util.Assert;
  * @author Juergen Hoeller
  */
 public class HotSwappableTargetSource implements TargetSource, Serializable {
+	// TargetSource实现缓存本地目标对象，但允许在应用程序运行时交换目标。
+	// 如果在 Spring IoC 容器中配置此类的对象，请使用构造函数注入。
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 7497929212653839187L;
@@ -87,6 +89,8 @@ public class HotSwappableTargetSource implements TargetSource, Serializable {
 	 * @throws IllegalArgumentException if the new target is invalid
 	 */
 	public synchronized Object swap(Object newTarget) throws IllegalArgumentException {
+		// 允许交换目标,返回旧的target对象
+		// 因此targetSource不是静态的哦
 		Assert.notNull(newTarget, "Target object must not be null");
 		Object old = this.target;
 		this.target = newTarget;

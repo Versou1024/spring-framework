@@ -48,8 +48,11 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 	 * Create a new DefaultAdvisorAdapterRegistry, registering well-known adapters.
 	 */
 	public DefaultAdvisorAdapterRegistry() {
-		// 初始化，自动注册三个Advisor的适配器 -- MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter、ThrowsAdviceAdapter
-		// 分别是针对：MethodBeforeAdvice、 AfterReturningAdvice、 ThrowsAdvice 三个的适配
+		// ❗️❗️❗️
+		// 初始化，自动注册三个Advice的适配器 -- MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter、ThrowsAdviceAdapter
+		// 分别是针对：MethodBeforeAdvice、 AfterReturningAdvice、 ThrowsAdvice 三个增强通知的适配到MethodInterceptor
+		// 原因: Spring内部框架多使用MethodBeforeAdvice、 AfterReturningAdvice、 ThrowsAdvice
+		// 但是Cglib或者Jdk最终可以执行的通知点都是MethodInterceptor,因此需要将Advice适配到MethodInterceptor上去
 		registerAdvisorAdapter(new MethodBeforeAdviceAdapter());
 		registerAdvisorAdapter(new AfterReturningAdviceAdapter());
 		registerAdvisorAdapter(new ThrowsAdviceAdapter());
@@ -77,6 +80,7 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 			// Check that it is supported.
 			if (adapter.supportsAdvice(advice)) {
 				// 如果是支持的，也是被包装成了一个通用类型的DefaultPointcutAdvisor
+				// DefaultPointcutAdvisor的PointCut是 PointCut.TRUE
 				return new DefaultPointcutAdvisor(advice);
 			}
 		}
@@ -92,23 +96,23 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 		 */
 
 		List<MethodInterceptor> interceptors = new ArrayList<>(3);
-		// 获取Advice
+		// 1. 获取Advice
 		Advice advice = advisor.getAdvice();
-		// 如果还是advice本身就是MethodInterceptor，就可以添加到interceptors上
+		// 2. 如果还是advice本身就是MethodInterceptor，就可以添加到interceptors上
 		if (advice instanceof MethodInterceptor) {
 			interceptors.add((MethodInterceptor) advice);
 		}
+		// 3. 其余情况的advice需要查看可以被适配为MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter、ThrowsAdviceAdapter其中的哪一个哦
 		for (AdvisorAdapter adapter : this.adapters) {
 			// 检查默认的三个AdvisorAdapter有哪些是支持的，支持的话，就加入进去
 			if (adapter.supportsAdvice(advice)) {
 				interceptors.add(adapter.getInterceptor(advisor));
 			}
 		}
-		// interceptors 如果为空，就直接报错
+		// 4.interceptors 如果为空，就直接报错
 		if (interceptors.isEmpty()) {
 			throw new UnknownAdviceTypeException(advisor.getAdvice());
 		}
-		// 转换过去即可
 		return interceptors.toArray(new MethodInterceptor[0]);
 	}
 

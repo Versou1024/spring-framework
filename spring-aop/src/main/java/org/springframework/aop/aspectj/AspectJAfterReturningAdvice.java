@@ -37,6 +37,14 @@ import org.springframework.util.TypeUtils;
 @SuppressWarnings("serial")
 public class AspectJAfterReturningAdvice extends AbstractAspectJAdvice
 		implements AfterReturningAdvice, AfterAdvice, Serializable {
+	// 	将@Aspec注解标注的切面类中@AfterReturning标注的通知方法 -> 转换为SpringAop框架的AfterReturningAdvice
+	//	AfterReturningAdvice 会被 DefaultAdvisorAdapterRegistry.getInterceptors()或者wrap() 从advice转换为合适的MethodInterceptor
+	
+	
+	// AfterReturningAdvice -> AfterAdvice -> Advice 标志性接口
+	// AfterReturningAdvice 提供 AfterReturning() 的方法
+	// AbstractAspectJAdvice -> Advice + AspectJPrecedenceInformation
+	// 
 
 	public AspectJAfterReturningAdvice(
 			Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
@@ -60,9 +68,15 @@ public class AspectJAfterReturningAdvice extends AbstractAspectJAdvice
 		setReturningNameNoCheck(name);
 	}
 
+	// note: AspectJAfterReturningAdvice 只有Advice没有具体的MethodInterceptor
+	// 但是 AfterReturningAdvice 会在 DefaultAdvisorAdapterRegistry.getInterceptors()或者wrap() 将AfterReturningAdvice 转换为合适的MethodInterceptor
+	// AfterReturningAdvice 对应就是  AfterReturningAdviceInterceptor -> 而恰好在AfterReturningAdviceInterceptor.interceptor()中执行了 mi.proceed()
+	// 然后再触发这里的afterReturning()方法 -> 去执行@After标注的通知增强方法哦
 	@Override
 	public void afterReturning(@Nullable Object returnValue, Method method, Object[] args, @Nullable Object target) throws Throwable {
+		// 1. 检查返回值的类型是否和接受返回值的通知方法中的形参类型是否兼容
 		if (shouldInvokeOnReturnValueOf(method, returnValue)) {
+			// 2. 如果兼容的话,就可以开始执行@AfterReturning标注的增强通知方法
 			invokeAdviceMethod(getJoinPointMatch(), returnValue, null);
 		}
 	}
@@ -77,9 +91,12 @@ public class AspectJAfterReturningAdvice extends AbstractAspectJAdvice
 	 * @return whether to invoke the advice method for the given return value
 	 */
 	private boolean shouldInvokeOnReturnValueOf(Method method, @Nullable Object returnValue) {
+		// 1. 主要就是检查方法的返回值是否符合形参中返回值的类型哦
+		// @AfterReturning(value = "target(com.yyq.aspectJAdvanced.SmartSeller)", returning = "retVal")
+		// 比如上面指定返回值作为形参时的名字为retVal,而返回值为String类型,用户使用 Integer retVal 去接受就会报错
 		Class<?> type = getDiscoveredReturningType();
 		Type genericType = getDiscoveredReturningGenericType();
-		// If we aren't dealing with a raw type, check if generic parameters are assignable.
+		// 1. 如果我们不处理原始类型，请检查泛型参数是否可分配。
 		return (matchesReturnValue(type, method, returnValue) &&
 				(genericType == null || genericType == type ||
 						TypeUtils.isAssignable(genericType, method.getGenericReturnType())));

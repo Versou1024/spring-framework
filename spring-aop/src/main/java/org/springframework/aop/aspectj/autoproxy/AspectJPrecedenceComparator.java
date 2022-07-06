@@ -49,6 +49,17 @@ import org.springframework.util.Assert;
  * @since 2.0
  */
 class AspectJPrecedenceComparator implements Comparator<Advisor> {
+	// 位于  org.springframework.aop.aspectj.autoproxy 包下
+	
+	// 按优先级排序 AspectJ advice/advisor（不是调用顺序）。
+	// 当给出两条advice比如A和B ：
+	// 		如果A和B被定义在不同的切面上，那么具有更低order值的切面的中的通知方法具有最高优先级。
+	// 		如果A和B定义在同一个切面上，如果A或B中的一个是after advice的形式，则在同一个切面中中after advice的通知增强方法会具有最高优先级。
+	// 		如果A和B定义在同一个切面上,但A和B都不是 after advice的一种形式[@After @AfterThrowing @AfterReturning]，则在方面中首先声明的通知具有最高优先级。
+	
+	// 
+	// 重要提示：此比较器与AspectJ的PartialOrder排序实用程序一起使用。
+	// 因此，与普通的Comparator不同，此比较器的返回值0意味着我们不关心排序，而不是两个元素必须以相同的方式排序。
 
 	private static final int HIGHER_PRECEDENCE = -1;
 
@@ -80,14 +91,22 @@ class AspectJPrecedenceComparator implements Comparator<Advisor> {
 
 	@Override
 	public int compare(Advisor o1, Advisor o2) {
+		// 比较方法
+		
+		// 1. 比较两个Advisor的order顺序,也就是继承的切面的order值
 		int advisorPrecedence = this.advisorComparator.compare(o1, o2);
+		// 2. 如果连个Advisor也就是继承的切面的order值一样大,就需要检查是否为在同一个切面类中
+		// 如果是在同一个切面类,就需要根据是否有后置通知after advice为其提供优先级哦
 		if (advisorPrecedence == SAME_PRECEDENCE && declaredInSameAspect(o1, o2)) {
 			advisorPrecedence = comparePrecedenceWithinAspect(o1, o2);
 		}
+		// 3. 否则顺序不变哦
 		return advisorPrecedence;
 	}
 
 	private int comparePrecedenceWithinAspect(Advisor advisor1, Advisor advisor2) {
+		// 用来当Advisor A和B定义在同一个切面上，如果A或B中的一个是after advice的形式，则在同一个切面中中after advice的通知增强方法会具有最高优先级。
+		
 		boolean oneOrOtherIsAfterAdvice =
 				(AspectJAopUtils.isAfterAdvice(advisor1) || AspectJAopUtils.isAfterAdvice(advisor2));
 		int adviceDeclarationOrderDelta = getAspectDeclarationOrder(advisor1) - getAspectDeclarationOrder(advisor2);
@@ -123,16 +142,18 @@ class AspectJPrecedenceComparator implements Comparator<Advisor> {
 	}
 
 	private boolean declaredInSameAspect(Advisor advisor1, Advisor advisor2) {
+		// 如果有AspectJPrecedenceInformation -- 一般都有
+		// 那就去获取其中的aspectName,也就是@Aspect注解的类的类名是否一样,如果一样,就说明两个Advisor应该是在同一个切面类中不同通知方法
 		return (hasAspectName(advisor1) && hasAspectName(advisor2) &&
 				getAspectName(advisor1).equals(getAspectName(advisor2)));
 	}
 
 	private boolean hasAspectName(Advisor advisor) {
+		// 很常见的AspectJAfterAdvice\AspectJAroundAdvice\AspectJAfterReturningAdvice等等都是继承的AspectJPrecedenceInformation
 		return (advisor instanceof AspectJPrecedenceInformation ||
 				advisor.getAdvice() instanceof AspectJPrecedenceInformation);
 	}
 
-	// pre-condition is that hasAspectName returned true
 	private String getAspectName(Advisor advisor) {
 		AspectJPrecedenceInformation precedenceInfo = AspectJAopUtils.getAspectJPrecedenceInformationFor(advisor);
 		Assert.state(precedenceInfo != null, () -> "Unresolvable AspectJPrecedenceInformation for " + advisor);

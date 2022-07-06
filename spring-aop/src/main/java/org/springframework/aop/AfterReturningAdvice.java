@@ -29,6 +29,8 @@ import org.springframework.lang.Nullable;
  * @see ThrowsAdvice
  */
 public interface AfterReturningAdvice extends AfterAdvice {
+	// 返回通知
+	// 仅在正常方法返回时调用，而不是在抛出异常时调用
 
 	/**
 	 * Callback after a given method successfully returned.
@@ -42,5 +44,6 @@ public interface AfterReturningAdvice extends AfterAdvice {
 	 * will be wrapped as a runtime exception.
 	 */
 	void afterReturning(@Nullable Object returnValue, Method method, Object[] args, @Nullable Object target) throws Throwable;
+	// 返回值\执行的方法\传递的形参\目标对象
 
 }

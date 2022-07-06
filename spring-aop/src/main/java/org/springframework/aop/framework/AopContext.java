@@ -40,6 +40,7 @@ import org.springframework.lang.Nullable;
  * @since 13.03.2003
  */
 public final class AopContext {
+	/// 必须搭配ProxyConfig的exposeProxy属性一起使用哦
 
 	/**
 	 * ThreadLocal holder for AOP proxy associated with this thread.

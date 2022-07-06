@@ -25,8 +25,8 @@ package org.springframework.aop.framework.adapter;
  * @see DefaultAdvisorAdapterRegistry
  */
 public final class GlobalAdvisorAdapterRegistry {
-	/**
-	 * GlobalAdvisorAdapterRegistry是Singleton模式
+	/*
+	 * GlobalAdvisorAdapterRegistry是AdvisorAdapterRegistry的Singleton模式
 	 */
 
 	private GlobalAdvisorAdapterRegistry() {

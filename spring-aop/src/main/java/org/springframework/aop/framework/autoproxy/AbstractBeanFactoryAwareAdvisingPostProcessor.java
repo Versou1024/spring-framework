@@ -38,8 +38,8 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends AbstractAdvisingBeanPostProcessor implements BeanFactoryAware {
-	// 从名字可以看出，它相较于父类，就和BeanFactory有关了，也就是和Bean容器相关了~~~
-	// 因此封装一个BeanFactory
+	// AbstractBeanFactoryAwareAdvisingPostProcessor = Abstract BeanFactoryAware Advising PostProcessor
+	// 从名字可以看出，它相较于父类，就和BeanFactory有关
 
 	@Nullable
 	private ConfigurableListableBeanFactory beanFactory;
@@ -53,14 +53,18 @@ public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends Abst
 
 	@Override
 	protected ProxyFactory prepareProxyFactory(Object bean, String beanName) {
+		// prepareProxyFactory(Object bean, String beanName) 方法在超类的 postProcessAfterInitialization() 初始化的后置处理中构建代理对象时有使用到
 		// 重写 prepareProxyFactory()
 
+		
+		// 1. 使用AutoProxyUtils.exposeTargetClass()将targetClass作为属性ORIGINAL_TARGET_CLASS_ATTRIBUTE中的值存入到AOP代理对象
+		// 用来: 指示自动代理 bean 的原始目标类的 bean 定义属性，例如用于在基于接口的代理后面的目标类上的注解的自省。
 		if (this.beanFactory != null) {
-			// 暴露 bean
 			AutoProxyUtils.exposeTargetClass(this.beanFactory, beanName, bean.getClass());
 		}
-		// 父类的super.prepareProxyFactory(bean, beanName)重调用
+		// 2. 父类的super.prepareProxyFactory(bean, beanName)重调用
 		ProxyFactory proxyFactory = super.prepareProxyFactory(bean, beanName);
+		// 3. 检查是否需要做Cglib代理
 		if (!proxyFactory.isProxyTargetClass() && this.beanFactory != null &&
 				AutoProxyUtils.shouldProxyTargetClass(this.beanFactory, beanName)) {
 			proxyFactory.setProxyTargetClass(true);

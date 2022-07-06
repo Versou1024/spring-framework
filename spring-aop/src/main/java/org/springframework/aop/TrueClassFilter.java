@@ -25,6 +25,8 @@ import java.io.Serializable;
  */
 @SuppressWarnings("serial")
 final class TrueClassFilter implements ClassFilter, Serializable {
+	// TrueClassFilter = True ClassFilter
+	// 其matches永远返回true
 
 	public static final TrueClassFilter INSTANCE = new TrueClassFilter();
 

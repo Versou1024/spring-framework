@@ -63,6 +63,7 @@ import org.springframework.util.function.SingletonSupplier;
  */
 @SuppressWarnings("serial")
 public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAdvisingPostProcessor {
+	// 和@Async有关哦
 	// 循环依赖问题: 注意点 ---
 	// @Async的代理创建使用的是AsyncAnnotationBeanPostProcessor单独的后置处理器实现的，
 	// 它只在一处postProcessAfterInitialization()实现了对代理对象的创建，因此若出现它被循环依赖了，就会报错如上~~

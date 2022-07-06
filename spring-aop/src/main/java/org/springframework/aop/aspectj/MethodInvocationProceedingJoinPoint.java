@@ -50,6 +50,8 @@ import org.springframework.util.Assert;
  * @since 2.0
  */
 public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint, JoinPoint.StaticPart {
+	// @Around的通知增强方法可以传递的第一个形参是ProceedingJoinPoint
+	// 该类就是对ProceedingJoinPoint的实现哦
 
 	private static final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
@@ -73,6 +75,7 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	 * @param methodInvocation the Spring ProxyMethodInvocation object
 	 */
 	public MethodInvocationProceedingJoinPoint(ProxyMethodInvocation methodInvocation) {
+		// 唯一构造器哦 --> 传递MethodInvocation进来
 		Assert.notNull(methodInvocation, "MethodInvocation must not be null");
 		this.methodInvocation = methodInvocation;
 	}
@@ -85,6 +88,8 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 
 	@Override
 	public Object proceed() throws Throwable {
+		//❗️❗️❗️
+		// @Around的ProceedJoinPoint具备继续运行的特定哦
 		return this.methodInvocation.invocableClone().proceed();
 	}
 
@@ -105,6 +110,7 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	 */
 	@Override
 	public Object getThis() {
+		// 代理对象
 		return this.methodInvocation.getProxy();
 	}
 
@@ -114,11 +120,13 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	@Override
 	@Nullable
 	public Object getTarget() {
+		// 目标对象
 		return this.methodInvocation.getThis();
 	}
 
 	@Override
 	public Object[] getArgs() {
+		// 形参 -- 可以从arguments中拷贝出来
 		if (this.args == null) {
 			this.args = this.methodInvocation.getArguments().clone();
 		}
@@ -127,6 +135,7 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 
 	@Override
 	public Signature getSignature() {
+		// 被拦截的方法的方法签名
 		if (this.signature == null) {
 			this.signature = new MethodSignatureImpl();
 		}
@@ -180,6 +189,8 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 
 		@Nullable
 		private volatile String[] parameterNames;
+		
+		// 包括: 方法名\方法修饰符\方法声明类\方法的声明类的名字\方法返回值\方法Method\形参class数组\形参名数组
 
 		@Override
 		public String getName() {

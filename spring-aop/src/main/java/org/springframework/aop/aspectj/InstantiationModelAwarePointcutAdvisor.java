@@ -28,15 +28,22 @@ import org.springframework.aop.PointcutAdvisor;
  * @since 2.0
  */
 public interface InstantiationModelAwarePointcutAdvisor extends PointcutAdvisor {
+	// PointcutAdvisor 本身就是SpringAOP提出的概念
+	// 而Spring为了使用@AspectJ各种切入点的概念,以及AspectJ的表达式语法
+	
+	// 就必须通过一种方法:将AspectJ的表达式语法,翻译为增强的ClassFilter和MethodMatcher
+	// 而将Aspect系列注解标注的方法作为增强通知advice来使用
 
 	/**
 	 * Return whether this advisor is lazily initializing its underlying advice.
 	 */
-	boolean isLazy();
+	boolean isLazy(); 
+	// 返回当前Advisor是否为延迟初始化器底层的advice哦
 
 	/**
 	 * Return whether this advisor has already instantiated its advice.
 	 */
 	boolean isAdviceInstantiated();
+	// 检查这个advisor是否已经实例化了它的advice
 
 }

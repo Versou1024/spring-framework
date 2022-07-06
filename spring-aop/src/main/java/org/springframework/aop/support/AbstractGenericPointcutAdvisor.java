@@ -29,7 +29,7 @@ import org.aopalliance.aop.Advice;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractGenericPointcutAdvisor extends AbstractPointcutAdvisor {
-	/**
+	/*
 	 * 主要是间接实现 Advisor#getAdvice
 	 */
 

@@ -91,6 +91,7 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// ❗️❗️❗️
 		// 由于这个 ExposeInvocationInterceptor 通常是放在通知chain的第一个位置，因此他就会将methodInvocation提前保存起来
 		MethodInvocation oldInvocation = invocation.get();
 		invocation.set(mi);

@@ -29,6 +29,11 @@ import org.springframework.core.annotation.OrderUtils;
  * @since 2.0.4
  */
 public class SimpleMetadataAwareAspectInstanceFactory extends SimpleAspectInstanceFactory implements MetadataAwareAspectInstanceFactory {
+	// MetadataAwareAspectInstanceFactory extends AspectInstanceFactory -> 扩展了一个获取AspectMetadata的方法
+	// SimpleAspectInstanceFactory implements AspectInstanceFactory -> 简单的实现如何获取一个AspectJ的Obj实例对象 
+	// SimpleMetadataAwareAspectInstanceFactory extends SimpleAspectInstanceFactory implements MetadataAwareAspectInstanceFactory 
+	// 说明其了创建Aspect实例的任务是交给超类SimpleAspectInstanceFactory完成的
+	// 所以SimpleMetadataAwareAspectInstanceFactory主要完成MetadataAwareAspectInstanceFactory扩展的获取AspectMetadata的方法
 
 	private final AspectMetadata metadata; // 直接保存切面元数据，在getAspectMetadata中直接返回
 

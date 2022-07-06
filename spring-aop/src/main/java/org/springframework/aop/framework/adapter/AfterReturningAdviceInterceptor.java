@@ -36,6 +36,7 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class AfterReturningAdviceInterceptor implements MethodInterceptor, AfterAdvice, Serializable {
+	// 适配器 -- 实现了AfterAdvice和MethodInterceptor两个方法
 
 	private final AfterReturningAdvice advice;
 
@@ -50,6 +51,7 @@ public class AfterReturningAdviceInterceptor implements MethodInterceptor, After
 	}
 
 
+	// 可以看见 -- 将返回结果的后置通知即advice的afterReturning方法放在mi.proceed()执行完之后执行
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		Object retVal = mi.proceed();

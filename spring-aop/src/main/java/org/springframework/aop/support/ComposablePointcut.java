@@ -42,8 +42,11 @@ import org.springframework.util.Assert;
  * @see Pointcuts
  */
 public class ComposablePointcut implements Pointcut, Serializable {
-	// 复合切点：ComposablePointcut 实现类是为创建多个切点而提供的方便操作类。
+	// 位于 org.springframework.aop.support package
+	
+	// 复合切点：ComposablePointcut 实现是为创建多个切点而提供的方便操作类。
 	// 它所有的方法都返回ComposablePointcut类。
+	// 实际就是借助ClassFilters和MethodMatchers,本质就是一组数组 -> 了解即可
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = -2743223737633663832L;
@@ -52,7 +55,8 @@ public class ComposablePointcut implements Pointcut, Serializable {
 
 	private MethodMatcher methodMatcher;
 
-
+	// 五个构造器
+	
 	/**
 	 * Create a default ComposablePointcut, with {@code ClassFilter.TRUE}
 	 * and {@code MethodMatcher.TRUE}.
@@ -106,6 +110,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 		this.methodMatcher = methodMatcher;
 	}
 
+	// 联合Union操作
 
 	/**
 	 * Apply a union with the given ClassFilter.
@@ -113,7 +118,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 	 * @return this composable pointcut (for call chaining)
 	 */
 	public ComposablePointcut union(ClassFilter other) {
-		// PointCut 联合
+		// ClassFilter 联合 -- or操作
 		this.classFilter = ClassFilters.union(this.classFilter, other);
 		return this;
 	}
@@ -124,7 +129,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 	 * @return this composable pointcut (for call chaining)
 	 */
 	public ComposablePointcut intersection(ClassFilter other) {
-		// PointCut 交叉
+		// ClassFilter 交叉 -- and操作
 		this.classFilter = ClassFilters.intersection(this.classFilter, other);
 		return this;
 	}
@@ -135,6 +140,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 	 * @return this composable pointcut (for call chaining)
 	 */
 	public ComposablePointcut union(MethodMatcher other) {
+		// MethodMatcher 联合 -- and操作
 		this.methodMatcher = MethodMatchers.union(this.methodMatcher, other);
 		return this;
 	}
@@ -145,6 +151,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 	 * @return this composable pointcut (for call chaining)
 	 */
 	public ComposablePointcut intersection(MethodMatcher other) {
+		// MethodMatcher 交叉 -- and操作
 		this.methodMatcher = MethodMatchers.intersection(this.methodMatcher, other);
 		return this;
 	}

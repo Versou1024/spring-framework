@@ -27,7 +27,7 @@ package org.springframework.aop.framework;
  * @see org.springframework.aop.scope.ScopedProxyFactoryBean
  */
 public interface AopInfrastructureBean {
-	// 标记其实现类是一个Aop框架中的Bean，
-	// 表名不需要被AOP代理的标记接口
+	// 标记接口 -- 
+	// 标记AopInfrastructureBean的实现类是一个Aop框架中的Bean,不应该被AOP代理即使被切入点匹配到
 
 }

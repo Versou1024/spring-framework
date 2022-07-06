@@ -30,6 +30,9 @@ package org.springframework.aop;
  * @see IntroductionInterceptor
  */
 public interface IntroductionAdvisor extends Advisor, IntroductionInfo {
+	// IntroductionAdvisor 用来执行一个或多个AOP的advice的supper interface
+	// 该接口无法被直接实现,必须有子接口提供对应advice类型
+	// introduction
 
 	/**
 	 * Return the filter determining which target classes this introduction
@@ -39,6 +42,8 @@ public interface IntroductionAdvisor extends Advisor, IntroductionInfo {
 	 * @return the class filter
 	 */
 	ClassFilter getClassFilter();
+	// 返回ClassFilter,决定哪一个目标类可以被当前introduction应用
+	// 这个仅仅是象征着pointCut的ClassFilter哦,注意: 方法匹配器对于introduction是没有意义的
 
 	/**
 	 * Can the advised interfaces be implemented by the introduction advice?
@@ -47,5 +52,6 @@ public interface IntroductionAdvisor extends Advisor, IntroductionInfo {
 	 * implemented by the introduction advice
 	 */
 	void validateInterfaces() throws IllegalArgumentException;
+	// 被增强的interface是否可以被当前的 introduction advice实现哦
 
 }
