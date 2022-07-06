@@ -40,24 +40,30 @@ import org.springframework.util.Assert;
 @Configuration // 它是一个配置类，角色为ROLE_INFRASTRUCTURE  框架自用的Bean类型
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class ProxyAsyncConfiguration extends AbstractAsyncConfiguration {
+	
+	// AbstractAsyncConfiguration 抽象的异步处理配置中心 -> 
+	// 抽象的异步配置 -- 包括两个部分的配置感知
+	// a: 感知获取到使用的@EnableAsync的注解属性 -> AnnotationAttributes
+	// b: 感知用户设置到ioc容器的AsyncConfigurer -> 从中获取出executor执行器和异常处理器exceptionHandler
+	
+	// ProxyAsyncConfiguration = Proxy Async Configuration
+	// 是在抽象异步配置的基础上,提供一个AsyncAnnotationBeanPostProcessor自动来处理需要异步的方法哦
 
 	// 它的作用就是注册了一个AsyncAnnotationBeanPostProcessor，它是个BeanPostProcessor
 	@Bean(name = TaskManagementConfigUtils.ASYNC_ANNOTATION_PROCESSOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public AsyncAnnotationBeanPostProcessor asyncAdvisor() {
 		Assert.notNull(this.enableAsync, "@EnableAsync annotation metadata was not injected");
-		// 关注@Async的BeanPostProcessor处理器 --- 核心之一
+		// 1. 关注@Async的BeanPostProcessor处理器 --- 核心之一
 		AsyncAnnotationBeanPostProcessor bpp = new AsyncAnnotationBeanPostProcessor();
 		bpp.configure(this.executor, this.exceptionHandler);
-		// customAsyncAnnotation：自定义的注解类型
+		// 2. customAsyncAnnotation：自定义的注解类型
 		Class<? extends Annotation> customAsyncAnnotation = this.enableAsync.getClass("annotation");
-		// AnnotationUtils.getDefaultValue(EnableAsync.class, "annotation") 为拿到该注解该字段的默认值
 		// 用户没有自定义annotation属性，就无须设置
 		if (customAsyncAnnotation != AnnotationUtils.getDefaultValue(EnableAsync.class, "annotation")) {
 			bpp.setAsyncAnnotationType(customAsyncAnnotation);
 		}
-		// 这两个参数，就不多说了。
-		// 可以看到，order属性值，最终决定的是BeanProcessor的执行顺序的
+		// 3. order属性值，最终决定的是BeanProcessor的执行顺序的
 		bpp.setProxyTargetClass(this.enableAsync.getBoolean("proxyTargetClass"));
 		bpp.setOrder(this.enableAsync.<Integer>getNumber("order"));
 		return bpp;

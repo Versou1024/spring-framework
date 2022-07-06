@@ -33,12 +33,18 @@ import java.util.concurrent.Future;
  * @param <T> the result type returned by this Future's {@code get} method
  */
 public interface ListenableFuture<T> extends Future<T> {
+	// 位于: org.springframework.util.concurrent
+	
+	// ListenableFuture 是继承的Future
+	// ListenableFuture = Listenable Future
+	// 表示有注册回调并触发回调的嗯嗯呢
 
 	/**
 	 * Register the given {@code ListenableFutureCallback}.
 	 * @param callback the callback to register
 	 */
 	void addCallback(ListenableFutureCallback<? super T> callback);
+	// 注册给定的ListenableFutureCallback 。
 
 	/**
 	 * Java 8 lambda-friendly alternative with success and failure callbacks.
@@ -47,6 +53,9 @@ public interface ListenableFuture<T> extends Future<T> {
 	 * @since 4.1
 	 */
 	void addCallback(SuccessCallback<? super T> successCallback, FailureCallback failureCallback);
+	// Java 8 lambda 友好的替代方案，带有成功和失败回调。
+	// SuccessCallback 成功回调
+	// FailureCallback 失败回调
 
 
 	/**
@@ -54,6 +63,9 @@ public interface ListenableFuture<T> extends Future<T> {
 	 * @since 5.0
 	 */
 	default CompletableFuture<T> completable() {
+		// 将此ListenableFuture公开为 JDK CompletableFuture 。 
+		// 起到一个适配作者用
+		
 		CompletableFuture<T> completable = new DelegatingCompletableFuture<>(this);
 		addCallback(completable::complete, completable::completeExceptionally);
 		return completable;

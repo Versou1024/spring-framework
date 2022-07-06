@@ -29,7 +29,11 @@ import org.springframework.util.concurrent.ListenableFuture;
  * @see ListenableFuture
  */
 public interface AsyncListenableTaskExecutor extends AsyncTaskExecutor {
-	// 在 AsyncTaskExecutor 基础上扩展：返回ListenableFuture的能力
+	// 在 AsyncTaskExecutor 基础上扩展
+	// AsyncListenableTaskExecutor = Async Listenable TaskExecutor
+	// 可以返回 ListenableFuture 
+	
+	// ListenableFuture 是具有回调功能的Future,用户可向其中注册SuccessCallback\FailCallback,分别在Future异步执行成功/失败时回调触发
 
 	/**
 	 * Submit a {@code Runnable} task for execution, receiving a {@code ListenableFuture}

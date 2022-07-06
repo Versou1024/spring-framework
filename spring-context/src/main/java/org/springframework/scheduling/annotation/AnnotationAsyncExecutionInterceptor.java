@@ -38,6 +38,8 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.scheduling.annotation.AsyncAnnotationAdvisor
  */
 public class AnnotationAsyncExecutionInterceptor extends AsyncExecutionInterceptor {
+	// AnnotationAsyncExecutionInterceptor = Annotation AsyncExecution Interceptor
+	// 扩展 -> 通过默认的@Async的Executor属性查看是否有指定使用的执行器
 
 	/**
 	 * Create a new {@code AnnotationAsyncExecutionInterceptor} with the given executor
@@ -78,10 +80,9 @@ public class AnnotationAsyncExecutionInterceptor extends AsyncExecutionIntercept
 	@Override
 	@Nullable
 	protected String getExecutorQualifier(Method method) {
-		// Maintainer's note: changes made here should also be made in
-		// AnnotationAsyncExecutionAspect#getExecutorQualifier
 		// 由此可以见它就是去拿到@Async的value值。以方法的为准，其次是类上面的
 		// 备注：发现这里是不支持EJB的@Asynchronous注解的，它是不能指定执行器的
+		
 		Async async = AnnotatedElementUtils.findMergedAnnotation(method, Async.class);
 		if (async == null) {
 			async = AnnotatedElementUtils.findMergedAnnotation(method.getDeclaringClass(), Async.class);

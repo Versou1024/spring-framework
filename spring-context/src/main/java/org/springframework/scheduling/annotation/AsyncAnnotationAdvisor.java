@@ -54,7 +54,7 @@ import org.springframework.util.function.SingletonSupplier;
  */
 @SuppressWarnings("serial")
 public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements BeanFactoryAware {
-	// 是一个
+	// 典型的 AbstractPointcutAdvisor
 
 	private Advice advice;
 
@@ -95,7 +95,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	@SuppressWarnings("unchecked")
 	public AsyncAnnotationAdvisor(@Nullable Supplier<Executor> executor, @Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
 		// 提供异步执行器和异步异常处理器
-		// 这里List长度选择2，应为绝大部分情况下只会支持这两种@Async和@Asynchronous
+		// 1. 这里List长度选择2，应为绝大部分情况下只会支持这两种@Async和@Asynchronous
 		Set<Class<? extends Annotation>> asyncAnnotationTypes = new LinkedHashSet<>(2);
 		asyncAnnotationTypes.add(Async.class);
 		try {
@@ -104,7 +104,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 		catch (ClassNotFoundException ex) {
 			// If EJB 3.1 API not present, simply ignore.
 		}
-		// 构建advice增强方法、构建pointcut连接点
+		// 2. 构建advice增强方法、构建pointcut连接点
 		// 两个核心方法
 		this.advice = buildAdvice(executor, exceptionHandler);
 		this.pointcut = buildPointcut(asyncAnnotationTypes);
@@ -156,7 +156,8 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 
 
 	protected Advice buildAdvice(@Nullable Supplier<Executor> executor, @Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
-		// 核心：增强方法 -- AnnotationAsyncExecutionInterceptor -- 这里面就完成了异步的操作
+		// ❗️❗
+		// 核心：构建增强通知方法advice -- AnnotationAsyncExecutionInterceptor -- 这里面就完成了异步的操作
 		AnnotationAsyncExecutionInterceptor interceptor = new AnnotationAsyncExecutionInterceptor(null);
 		// 可以向其中设置默认的executor
 		interceptor.configure(executor, exceptionHandler);
@@ -169,6 +170,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	 * @return the applicable Pointcut object, or {@code null} if none
 	 */
 	protected Pointcut buildPointcut(Set<Class<? extends Annotation>> asyncAnnotationTypes) {
+		// ❗️❗️
 		// 核心：连接点 -- 完成匹配
 		// 采用一个组合切面：ComposablePointcut （因为可能需要支持多个注解嘛）
 		ComposablePointcut result = null;
@@ -176,20 +178,22 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 			// 这里为何new出来两个AnnotationMatchingPointcut？？？？？？
 			// 第一个：类匹配（只需要类上面有这个注解，所有的方法都匹配）this.methodMatcher = MethodMatcher.TRUE;
 			// 第二个：方法匹配。所有的类都可议。但是只有方法上有这个注解才会匹配上
-			// cpc 是 MethodMatcher.TRUE, ClassFilter根据是否存在asyncAnnotationType注解而返回true/false
+			
+			// 1. cpc 是 MethodMatcher.TRUE, ClassFilter根据是否存在asyncAnnotationType注解而返回true/false
 			Pointcut cpc = new AnnotationMatchingPointcut(asyncAnnotationType, true);
-			// mpc 是 MethodMatcher匹配方法上是否有asyncAnnotationType注解返回true/false, ClassFilter根据是否存在asyncAnnotationType注解而返回true/false
+			// 2. mpc 是 MethodMatcher匹配方法上是否有asyncAnnotationType注解返回true/false, ClassFilter根据是否存在asyncAnnotationType注解而返回true/false
 			Pointcut mpc = new AnnotationMatchingPointcut(null, asyncAnnotationType, true);
 			if (result == null) {
 				result = new ComposablePointcut(cpc);
 			}
 			else {
+				// 3.1 将cpc和mpc进行union,也就是说只要上面 cpc 或者 mpc 有一个满足,那么当前的Advice就可以使用在对应得类上
 				result.union(cpc);
 			}
-			// 最终的结果都是取值为并集的~~~~~~~
+			// 3.2 将cpc和mpc进行union,也就是说只要上面 cpc 或者 mpc 有一个满足,那么当前的Advice就可以使用在对应得类上
 			result = result.union(mpc);
 		}
-		//  最后一个处理厉害了：也就是说你啥类型都木有的情况下，是匹配所有类的所有方法~~~
+		// 4. 到这: result一般不会为null
 		return (result != null ? result : Pointcut.TRUE);
 	}
 

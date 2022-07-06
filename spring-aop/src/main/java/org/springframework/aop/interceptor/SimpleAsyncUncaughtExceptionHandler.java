@@ -35,6 +35,7 @@ public class SimpleAsyncUncaughtExceptionHandler implements AsyncUncaughtExcepti
 
 	@Override
 	public void handleUncaughtException(Throwable ex, Method method, Object... params) {
+		// 使用logger.error()记录一个异常信息即可
 		if (logger.isErrorEnabled()) {
 			logger.error("Unexpected exception occurred invoking async method: " + method, ex);
 		}

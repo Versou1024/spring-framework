@@ -39,7 +39,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	// 		然后在每个Bean实例化之后,初始化之前,检查是否被项目中部分Advisor拦截器匹配到,如果匹配到,就需要自动为其创建代理对象并在初始化的前置操作中返回
 	// 
 	// 一个是: AbstractAdvisingBeanPostProcessor ->
-	// 		其整个体系主要是为了关照特殊的案例,可以去接受一个Spring AOP的Advisor对象 
+	// 		其整个体系主要是为了关照特殊的案例,例如@EnableAsync,可以去接受一个Spring AOP的Advisor对象,将其设置在所有的Advisor前面
 	
 	// AbstractAdvisingBeanPostProcessor = Abstract Advising BeanPostProcessor
 	// 首先这是一个BeanPostProcessor,然后是抽象的,主要能够在BeanPostProcessor的后置处理中完成对处理Advising,

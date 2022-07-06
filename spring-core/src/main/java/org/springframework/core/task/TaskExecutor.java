@@ -37,6 +37,12 @@ import java.util.concurrent.Executor;
  */
 @FunctionalInterface
 public interface TaskExecutor extends Executor {
+	// 位于: org.springframework.core.task 
+	// 简单的task executor用来执行抽象Runnable的
+	// TaskExecutor的实现可以使用各种不同的执行策略，例如：同步、异步、使用线程池等等。
+	
+	// 实质上: 就是Spring框架认为Executor是java的,Spring框架内部应该整个执行器体系的顶层应该是Spring框架内部的,因此使用了一个 TaskExecutor 来代替 Executor 吧
+	// 其次整个TaskExecutor还是一个函数式接口
 
 	/**
 	 * Execute the given {@code task}.

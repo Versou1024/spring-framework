@@ -43,6 +43,7 @@ import org.springframework.lang.Nullable;
  * @see AsyncConfigurerSupport
  */
 public interface AsyncConfigurer {
+	// 提供给用户用来配置 线程池和异步过程中发生异常时如何处理的Handler
 
 	/**
 	 * The {@link Executor} instance to be used when processing async

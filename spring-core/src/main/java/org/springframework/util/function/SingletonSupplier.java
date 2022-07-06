@@ -89,7 +89,7 @@ public class SingletonSupplier<T> implements Supplier<T> {
 	@Override
 	@Nullable
 	public T get() {
-		// 1. 如果有单例实例,若非null就直接返回
+		// 1. 如果有指定单例实例,若非null就直接返回
 		T instance = this.singletonInstance;
 		if (instance == null) {
 			synchronized (this) {

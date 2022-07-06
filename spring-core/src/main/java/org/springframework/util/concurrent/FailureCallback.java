@@ -24,6 +24,8 @@ package org.springframework.util.concurrent;
  */
 @FunctionalInterface
 public interface FailureCallback {
+	// 位于: org.springframework.util.concurrent
+	// 用于 ListenableFuture 执行失败时的回调动作
 
 	/**
 	 * Called when the {@link ListenableFuture} completes with failure.
@@ -31,5 +33,5 @@ public interface FailureCallback {
 	 * @param ex the failure
 	 */
 	void onFailure(Throwable ex);
-
+	// 当ListenableFuture执行失败,抛出异常时,触发该回调的onFailure()方法
 }

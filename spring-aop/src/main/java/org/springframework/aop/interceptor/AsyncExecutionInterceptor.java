@@ -68,7 +68,7 @@ import org.springframework.util.ClassUtils;
  */
 public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport implements MethodInterceptor, Ordered {
 	// 在AsyncExecutionAspectSupport的基础上，扩展增强通知即MethodInterceptor
-	// 因为AsyncExecutionAspectSupport主要是完成异步、线程池的处理
+	// AsyncExecutionInterceptor = AsyncExecution Interceptor
 
 	/**
 	 * Create a new instance with a default {@link AsyncUncaughtExceptionHandler}.
@@ -102,23 +102,29 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 	@Override
 	@Nullable
 	public Object invoke(final MethodInvocation invocation) throws Throwable {
-		// 切面增强的方法执行
+		// ❗️❗️❗️切面增强的方法执行
 		// 最重要的当然是这个invoke方法
 
 		Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
-		// 注意：此处是getMostSpecificMethod  拿到最终要执行的那个方法
 		Method specificMethod = ClassUtils.getMostSpecificMethod(invocation.getMethod(), targetClass);
-		// 桥接方法~~~~~~~~~~~~~~
 		final Method userDeclaredMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);
 
-		// determine一个用于执行此方法的异步执行器
+		// 1. 决定使用哪一个用于执行此方法的异步执行器
+		// 简述逻辑 -- 
+		// 1. 查看当前方法上是否有@Async注解的value属性值，是否指定使用的Executor的beanName [方法上没有@Async，就会去类上查看@Async注解]
+		// 2. 没有指定@Async的value时,若用户有直接通过实现AsyncConfigurer，定制化一个Executor,直接返回
+		// 3. 用户也没有指定Executor时，将调用getDefaultExecutor()方法获取执行器
+		//  	3.1 直接从ioc容器中查找TaskExecutor类型的bean出来
+		//			3.1.1 如果有多个TaskExecutor类型的bean，找出beanName等于taskExecutor，beanType为Executor的执行器bean出来
+		//			3.1.2 如果没有找到任何一个TaskExecutor类型的bean，兜底去ioc容器找属于Executor就可以啦
+		// 4. 还找不到,AsyncExecutionInterceptor.getDefaultExecutor()进行了兜底操作,使用SimpleAsyncTaskExecutor
 		AsyncTaskExecutor executor = determineAsyncExecutor(userDeclaredMethod);
 		if (executor == null) {
 			throw new IllegalStateException(
 					"No executor specified and no default executor set on AsyncExecutionInterceptor either");
 		}
 
-		// 构造一个任务，Callable(此处不采用Runable，因为需要返回值)
+		// 2. 构造一个任务，Callable(此处不采用Runable，因为需要返回值)
 		Callable<Object> task = () -> {
 			try {
 				// result就是返回值
@@ -138,7 +144,7 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 			return null;
 		};
 
-		// 提交任务~~~~invocation.getMethod().getReturnType()为返回值类型
+		// 3. 提交任务
 		return doSubmit(task, executor, invocation.getMethod().getReturnType());
 	}
 
@@ -169,14 +175,24 @@ public class AsyncExecutionInterceptor extends AsyncExecutionAspectSupport imple
 	protected Executor getDefaultExecutor(@Nullable BeanFactory beanFactory) {
 		// 重写：getDefaultExecutor
 		// 如果super.getDefaultExecutor从BeanFactory尝试获取TaskExecutor失败
-		// 就提供SimpleAsyncTaskExecutor给用户使用吧
+		// 就提供SimpleAsyncTaskExecutor给用户使用吧 
 		Executor defaultExecutor = super.getDefaultExecutor(beanFactory);
+		// ❗️❗️❗️ 兜底
+		//  SimpleAsyncTaskExecutor#doExecute(Runnable) 如下
+		// 	protected void doExecute(Runnable task) {
+		//		// SimpleAsyncTaskExecutor 没有使用线程,是直接new一个Thread,调用其start()方法 -> 这点需要注意哦
+		//		Thread thread = (this.threadFactory != null ? this.threadFactory.newThread(task) : createThread(task));
+		//		thread.start();
+		//	}
+		// 最好还是指定线程池吧
 		return (defaultExecutor != null ? defaultExecutor : new SimpleAsyncTaskExecutor());
 	}
 
 	@Override
 	public int getOrder() {
-		return Ordered.HIGHEST_PRECEDENCE; // 这个advisor的执行优先级最高
+		// 这个advisor的执行优先级最高
+		// 必须确保异步操作是率先执行的哦
+		return Ordered.HIGHEST_PRECEDENCE; 
 	}
 
 }

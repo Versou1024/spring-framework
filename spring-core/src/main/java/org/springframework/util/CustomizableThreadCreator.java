@@ -34,6 +34,14 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class CustomizableThreadCreator implements Serializable {
+	// 所在package: org.springframework.util 
+	
+	// 用于创建新Thread实例的简单可定制帮助程序类
+	// 提供各种bean属性：线程名前缀、线程优先级等
+	// 作为org.springframework.scheduling.concurrent.CustomizableThreadFactory等线程工厂的基类。
+
+	// CustomizableThreadCreator = Customizable Thread Creator 可定制线程的创建器
+	// 允许定制:线程名牵走\线程优先级\线程组等
 
 	private String threadNamePrefix;
 
@@ -150,7 +158,10 @@ public class CustomizableThreadCreator implements Serializable {
 	 * @see #nextThreadName()
 	 */
 	public Thread createThread(Runnable runnable) {
+		// 创建一个线程
+		// 1. 执行线程组/运行的任务runnable/线程名
 		Thread thread = new Thread(getThreadGroup(), runnable, nextThreadName());
+		// 2. 设置线程优先级和守护级别
 		thread.setPriority(getThreadPriority());
 		thread.setDaemon(isDaemon());
 		return thread;
@@ -163,6 +174,7 @@ public class CustomizableThreadCreator implements Serializable {
 	 * @see #getThreadNamePrefix()
 	 */
 	protected String nextThreadName() {
+		// 线程池中下一个线程的名字
 		return getThreadNamePrefix() + this.threadCount.incrementAndGet();
 	}
 
@@ -171,6 +183,7 @@ public class CustomizableThreadCreator implements Serializable {
 	 * @return the default thread name prefix (never {@code null})
 	 */
 	protected String getDefaultThreadNamePrefix() {
+		// 默认线程名的前缀为 类名 + "-"
 		return ClassUtils.getShortName(getClass()) + "-";
 	}
 

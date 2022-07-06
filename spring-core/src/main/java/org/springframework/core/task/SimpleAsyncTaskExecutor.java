@@ -48,9 +48,13 @@ import org.springframework.util.concurrent.ListenableFutureTask;
  * @see org.springframework.scheduling.commonj.WorkManagerTaskExecutor
  */
 @SuppressWarnings("serial")
-public class SimpleAsyncTaskExecutor extends CustomizableThreadCreator
-		implements AsyncListenableTaskExecutor, Serializable {
-
+public class SimpleAsyncTaskExecutor extends CustomizableThreadCreator implements AsyncListenableTaskExecutor, Serializable {
+	// CustomizableThreadCreator = Customizable Thread Creator 可定制线程的创建器
+	// 允许定制:线程名牵走\线程优先级\线程组等
+	
+	// AsyncListenableTaskExecutor = Async Listenable Task Executor 
+	// spring提供的执行器接口,要求能够直接执行异步的callable\Runnable或者超时执行或者返回Future\ListenableFuture对象
+	
 	/**
 	 * Permit any number of concurrent invocations: that is, don't throttle concurrency.
 	 * @see ConcurrencyThrottleSupport#UNBOUNDED_CONCURRENCY
@@ -67,9 +71,11 @@ public class SimpleAsyncTaskExecutor extends CustomizableThreadCreator
 	/** Internal concurrency throttle used by this executor. */
 	private final ConcurrencyThrottleAdapter concurrencyThrottle = new ConcurrencyThrottleAdapter();
 
+	// 线程工厂
 	@Nullable
 	private ThreadFactory threadFactory;
 
+	// 任务修饰器
 	@Nullable
 	private TaskDecorator taskDecorator;
 
@@ -86,6 +92,7 @@ public class SimpleAsyncTaskExecutor extends CustomizableThreadCreator
 	 * @param threadNamePrefix the prefix to use for the names of newly created threads
 	 */
 	public SimpleAsyncTaskExecutor(String threadNamePrefix) {
+		// 可以指定线程前缀
 		super(threadNamePrefix);
 	}
 
@@ -238,6 +245,8 @@ public class SimpleAsyncTaskExecutor extends CustomizableThreadCreator
 	 * @see java.lang.Thread#start()
 	 */
 	protected void doExecute(Runnable task) {
+		// ❗️❗️❗️
+		// SimpleAsyncTaskExecutor 没有使用线程,是直接new一个Thread,调用其start()方法 -> 这点需要注意哦
 		Thread thread = (this.threadFactory != null ? this.threadFactory.newThread(task) : createThread(task));
 		thread.start();
 	}

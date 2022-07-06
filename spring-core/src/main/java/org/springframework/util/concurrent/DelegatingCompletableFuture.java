@@ -30,7 +30,9 @@ import org.springframework.util.Assert;
  * @param <T> the result type returned by this Future's {@code get} method
  */
 class DelegatingCompletableFuture<T> extends CompletableFuture<T> {
+	// 适配器模式 -> 目标模式为 JDK的CompletableFuture
 
+	// 被适配的对象是 Future的子接口 ListenableFuture[拥有在Future执行完成(成功或失败后的)回调能力]
 	private final Future<T> delegate;
 
 
@@ -42,6 +44,8 @@ class DelegatingCompletableFuture<T> extends CompletableFuture<T> {
 
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
+		// mayInterruptIfRunning: 运行时是否可以中断
+		
 		boolean result = this.delegate.cancel(mayInterruptIfRunning);
 		super.cancel(mayInterruptIfRunning);
 		return result;

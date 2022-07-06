@@ -63,7 +63,10 @@ import org.springframework.util.function.SingletonSupplier;
  */
 @SuppressWarnings("serial")
 public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAdvisingPostProcessor {
-	// 和@Async有关哦
+	// 加载到ioc容器的时机:
+	// @EnableAsync的元注解 -> @Import(AsyncConfigurationSelector.class) -> AsyncConfigurationSelector -> 导入的配置类ProxyAsyncConfiguration -> 
+	// 配置类下的@Bean方法导入AsyncAnnotationBeanPostProcessor
+	
 	// 循环依赖问题: 注意点 ---
 	// @Async的代理创建使用的是AsyncAnnotationBeanPostProcessor单独的后置处理器实现的，
 	// 它只在一处postProcessAfterInitialization()实现了对代理对象的创建，因此若出现它被循环依赖了，就会报错如上~~
@@ -81,21 +84,29 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	// 异步的执行器 -> 用户可以通过向ioc容器注入AsyncConfigurer实现类完成
+	// 默认是每有一个@Async就起一个线程,没有使用线程池,那么如果很多个异步线程,就会启动多个线程导致出现问题哦
 	@Nullable
-	private Supplier<Executor> executor; // 异步的执行器
+	private Supplier<Executor> executor;
 
+	// 异常处理器  -> 用户可以通过向ioc容器注入AsyncConfigurer实现类完成
+	// 默认: 
 	@Nullable
-	private Supplier<AsyncUncaughtExceptionHandler> exceptionHandler; // 异步异常处理器
+	private Supplier<AsyncUncaughtExceptionHandler> exceptionHandler;
 
+	// 用户自定义需要扫描的异步注解类型  -> 用户可以通过@EnableAsync的annotation来指定
+	// 默认是 @Async 
 	@Nullable
-	private Class<? extends Annotation> asyncAnnotationType; // 注解类型
+	private Class<? extends Annotation> asyncAnnotationType; 
 
 
 
-	// 此处特别注意：这里设置为true，也就是说@Async的Advisor会放在首位
+	// ❗️❗️❗️
+	// 此处特别注意：这里设置为true，也就是说@Async的Advisor会放在首位已有的Advisor最前面
 	public AsyncAnnotationBeanPostProcessor() {
-		// 重写父类的方法 -- 将advisor放在第一个位置
 		// 扩展原因 -- @Async是用来启动异步操作的，因此@Async的Advisor需要放在第一个位置，以便启动异步操作
+		// 当然前提是被当前AsyncAnnotationBeanPostProcessor处理器处理时,bean已经是一个代理对象,本身就有几个匹配的Advisor,属于Advised才生效
+		// 如果bean被当前处理器执行时,都还没代理,纯纯的小白一个,那么这个参数值也就无效,因为就这个一个异步的Advisor值
 		setBeforeExistingAdvisors(true);
 	}
 
@@ -152,16 +163,17 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 	public void setBeanFactory(BeanFactory beanFactory) {
 		super.setBeanFactory(beanFactory);
 
-		// 核心：在setBeanFactory的同时，完成对advisor的设置
+		// 核心：在setBeanFactory的同时，完成对advisor的设置 -> 这个Advisor就是拦截方法的执行,交给异步处理器来执行
 
-		// 传入executor、exceptionHandler的advisor
+		// 1. 传入executor、exceptionHandler的advisor
 		AsyncAnnotationAdvisor advisor = new AsyncAnnotationAdvisor(this.executor, this.exceptionHandler);
+		// 2. 传入asyncAnnotationType
 		if (this.asyncAnnotationType != null) {
-			// 传入异步情况处理器
 			advisor.setAsyncAnnotationType(this.asyncAnnotationType);
 		}
-		// 传入BeanFactory
+		// 3. 传入BeanFactory
 		advisor.setBeanFactory(beanFactory);
+		// 4. 设置advisor
 		this.advisor = advisor;
 	}
 

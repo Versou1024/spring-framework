@@ -29,6 +29,7 @@ import java.util.concurrent.RejectedExecutionException;
  */
 @SuppressWarnings("serial")
 public class TaskRejectedException extends RejectedExecutionException {
+	// 任务被拒绝的异常
 
 	/**
 	 * Create a new {@code TaskRejectedException}

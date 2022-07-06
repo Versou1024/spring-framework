@@ -34,7 +34,11 @@ import org.springframework.util.Assert;
  * @param <A> annotation containing {@linkplain #getAdviceModeAttributeName() AdviceMode attribute}
  */
 public abstract class AdviceModeImportSelector<A extends Annotation> implements ImportSelector {
+	// 所在package: org.springframework.context.annotation
+	
 	// Import选择器 -- 扩展从@Enable*注解中的mode的属性类型为AdviceMode值
+	// AdviceModeImportSelector = AdviceMode ImportSelector
+	// 该ImportSelector作为一个基础类,提供了从其子类指定的泛型注解中去获取mode的能力
 
 	/**
 	 * The default advice mode attribute name.
@@ -66,13 +70,15 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 	 */
 	@Override
 	public final String[] selectImports(AnnotationMetadata importingClassMetadata) {
-		// 泛型解析器：解析泛型
+		
+		// 1. 泛型解析器：解析泛型
 		// 例如：
 		// public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableAsync> 就实现了当前类，其泛型就是EnableAsync
 		// public class CachingConfigurationSelector extends AdviceModeImportSelector<EnableCaching> 就实现了当前类，其泛型就是EnableCaching
 		Class<?> annType = GenericTypeResolver.resolveTypeArgument(getClass(), AdviceModeImportSelector.class);
 		Assert.state(annType != null, "Unresolvable type argument for AdviceModeImportSelector");
-		// importingClassMetadata 是配置类ConfigClass上的配置元数据
+		// 2.
+		// AdviceModeImportSelector 就是类上有元注解为@Import(Xxx)的注解元数据,其中xxx就是继承了AdviceModeImportSelector
 		// annType 注解类型比如是：@EnableAsync、@EnableTransactionManagement
 		AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(importingClassMetadata, annType);
 		if (attributes == null) {
@@ -80,10 +86,10 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 					"@%s is not present on importing class '%s' as expected",
 					annType.getSimpleName(), importingClassMetadata.getClassName()));
 		}
-		// 拿到AdviceMode，最终交给子类，让她自己去实现  决定导入哪个Bean吧
-		// 默认是 AdviceMode.PROXY 动态代理
+		// 3. 拿到@EnableXxx中的AdviceMode属性,默认是 AdviceMode.PROXY 动态代理
 		AdviceMode adviceMode = attributes.getEnum(getAdviceModeAttributeName());
-		String[] imports = selectImports(adviceMode); // 交给子类实现
+		// 4. 交给子类实现 -> 子类将根据AdviceMode决定导入的类全限定名
+		String[] imports = selectImports(adviceMode);
 		if (imports == null) {
 			throw new IllegalArgumentException("Unknown AdviceMode: " + adviceMode);
 		}

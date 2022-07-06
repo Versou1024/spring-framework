@@ -27,6 +27,7 @@ package org.springframework.core.task;
  */
 @SuppressWarnings("serial")
 public class TaskTimeoutException extends TaskRejectedException {
+	// 任务超时异常
 
 	/**
 	 * Create a new {@code TaskTimeoutException}

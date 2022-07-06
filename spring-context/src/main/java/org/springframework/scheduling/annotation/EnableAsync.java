@@ -161,6 +161,7 @@ import org.springframework.core.Ordered;
 @Documented
 @Import(AsyncConfigurationSelector.class)
 public @interface EnableAsync {
+	// 所在package: org.springframework.scheduling.annotation;
 
 	/**
 	 * Indicate the 'async' annotation type to be detected at either class
@@ -213,6 +214,7 @@ public @interface EnableAsync {
 	 * existing proxies rather than double-proxy.
 	 */
 	int order() default Ordered.LOWEST_PRECEDENCE;
-	// 直接定义：它的执行顺序（因为可能有多个@EnableXXX）
+	// 直接定义： AsyncAnnotationBeanPostProcessor 
+	// 的执行顺序（因为可能有多个@EnableXXX）
 
 }

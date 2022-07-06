@@ -27,6 +27,7 @@ import org.springframework.lang.Nullable;
  */
 @FunctionalInterface
 public interface SuccessCallback<T> {
+	// ListenableFuture的成功时触发的回调
 
 	/**
 	 * Called when the {@link ListenableFuture} completes with success.
@@ -34,5 +35,6 @@ public interface SuccessCallback<T> {
 	 * @param result the result
 	 */
 	void onSuccess(@Nullable T result);
+	// result形参是ListenableFuture异步成功完成后返回的结果
 
 }
