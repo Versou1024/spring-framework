@@ -34,7 +34,7 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class CompositeCacheOperationSource implements CacheOperationSource, Serializable {
-	// 组合模式 ~~ 不多讲
+	// 组合模式 ~~ 不多讲~~
 
 	private final CacheOperationSource[] cacheOperationSources;
 

@@ -49,7 +49,8 @@ import org.springframework.util.StringUtils;
 @SuppressWarnings("serial")
 public class SpringCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 	// ❗️❗️❗️❗️❗️❗️
-	// 核心从method或class上解析处缓存操作
+	// 核心: method或class上解析对应的@CachePut\@Cacheable\@CacheEvict\@Caching四大缓存注解
+	// 并转为对应的CacheOperation操作出来
 
 	private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS = new LinkedHashSet<>(8);
 
@@ -122,7 +123,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 		// 3. 对注解过滤 @Cacheable\@CacheEvict\@CachePut\@Caching 四个注解值 -> 转换为对应的CacheOperation
 		// 这里为和写个1？？？因为绝大多数情况下，我们都只会标注一个注解~~
 		// 这里的方法parseCacheableAnnotation/parsePutAnnotation等 说白了  就是把注解属性，转换封装成为`CacheOperation`对象~~
-		// 注意parseCachingAnnotation方法，相当于~把注解属性转换成了CacheOperation对象  下面以它为例介绍
+		// 注意parseCachingAnnotation()方法，相当于~把注解属性转换成了CacheOperation对象  下面以它为例介绍
 		final Collection<CacheOperation> ops = new ArrayList<>(1);
 		anns.stream().filter(ann -> ann instanceof Cacheable).forEach(
 				ann -> ops.add(parseCacheableAnnotation(ae, cachingConfig, (Cacheable) ann)));
@@ -139,9 +140,9 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 			AnnotatedElement ae, DefaultCacheConfig defaultConfig, Cacheable cacheable) {
 
 		// 1. 方法上的@Cacheable或类上的@Cacheable注解
-		// 将注解中的各种属性转换为Builder中的配置
-		// 然后对于 @Cacheable 中没有设置的配置项,可以通过类上的 @CacheConfig 即默认配置去完成加载
-		// 即 defaultConfig.applyDefault(builder)
+		// 将注解中的各种属性转换为CacheOperation中的配置
+		// 然后对于 @Cacheable 中没有设置的配置项,可以通过类上的 @CacheConfig 即默认配置去完成加载即 defaultConfig.applyDefault(builder)
+		
 		CacheableOperation.Builder builder = new CacheableOperation.Builder();
 
 		builder.setName(ae.toString());
@@ -158,7 +159,9 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 		defaultConfig.applyDefault(builder);
 		// 3. build()
 		CacheableOperation op = builder.build();
-		// 4.
+		// 4. 验证CacheOperation的属性
+		// 		a: key 和 keyGenerator 只能有一个
+		//      b: cacheManager 和 cacheResolver 只能有一个
 		validateCacheOperation(ae, op);
 
 		return op;
@@ -166,6 +169,9 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 
 	private CacheEvictOperation parseEvictAnnotation(
 			AnnotatedElement ae, DefaultCacheConfig defaultConfig, CacheEvict cacheEvict) {
+		// 1. 方法上的@CacheEvict
+		// 将注解中的各种属性转换为CacheOperation中的配置
+		// 然后对于@CacheEvict中没有设置的配置项,可以通过类上的@CacheConfig即默认配置去完成加载即defaultConfig.applyDefault(builder)
 
 		CacheEvictOperation.Builder builder = new CacheEvictOperation.Builder();
 
@@ -234,7 +240,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 	 * @param operation the {@link CacheOperation} to validate
 	 */
 	private void validateCacheOperation(AnnotatedElement ae, CacheOperation operation) {
-		// 验证指定的CacheOperation 。
+		// ❗️❗️❗️验证指定的CacheOperation 。
 		// 如果操作的状态无效，则引发IllegalStateException 。由于默认值可能有多个来源，因此可以确保操作在返回之前处于正确状态。
 
 		// 1. key 和 keyGenerator 只能有一个
@@ -269,7 +275,8 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 	 * Provides default settings for a given set of cache operations.
 	 */
 	private static class DefaultCacheConfig {
-		// 默认缓存的config -- 对应每个注解的缓存配置
+		// 默认缓存的config -- 对应的就是类上的@CacheConfig
+		// 主要是用来在处理类上的 @CachePut\@Cacheable\@CacheEvict\@Caching 的CacheOperation时,可以补充相关配置信息
 
 		private final Class<?> target;
 
@@ -296,8 +303,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 		 * @param builder the operation builder to update
 		 */
 		public void applyDefault(CacheOperation.Builder builder) {
-			// 1. initialized 初始化为 false -- 仅仅第一次使用有效
-			// 如果还没初始化过，就进行初始化（毕竟一个类上有多个方法，这种默认通用设置只需要来一次即可）
+			// 1. initialized 初始化为 false -- 初始化就是去解析target对象哦 -- 只需要解析一次
 			if (!this.initialized) {
 				// 2. 查找类上是否有 @CacheConfig 注解
 				// 找到类上、接口上的@CacheConfig注解  它可以指定本类使用的cacheNames和keyGenerator和cacheManager和cacheResolver
@@ -311,20 +317,22 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 				this.initialized = true;
 			}
 
-			// 3. 没有@CacheConfig,但@CacheConfig上有设置cacheNames
+			// 3. 方法上的缓存注解没有指定CacheNames,但类上的@CacheConfig上有设置cacheNames
 			// 下面方法一句话总结：方法上没有指定的话，就用类上面的CacheConfig配置
 			if (builder.getCacheNames().isEmpty() && this.cacheNames != null) {
-				// 3.1 @CacheConfig上有设置cacheNames,就将其作为cacheNames
+				// 3.1 @CacheConfig上有设置cacheNames,就将其作为缓存操作的额cacheNames
 				builder.setCacheNames(this.cacheNames);
 			}
-			// 4. builder 中没有 key,且builder中乜有 KeyGenerator,但@CacheConfig有配置keyGenerator
+			// 4. 方法上的缓存注解中没有key,且没有KeyGenerator,但类上的@CacheConfig有配置keyGenerator
 			if (!StringUtils.hasText(builder.getKey()) && !StringUtils.hasText(builder.getKeyGenerator()) &&
 					StringUtils.hasText(this.keyGenerator)) {
-				// 4.1 使用 @CacheConfig的配置keyGenerator
+				// 4.1 使用类上的@CacheConfig的配置keyGenerator设置到方法上的缓存注解对应的CacheOperation中去
 				builder.setKeyGenerator(this.keyGenerator);
 			}
+			
+			// CacheResolver > CacheManger 优先级上 -- 二者取出一个即可
 
-			// 5. builder中没有cacheManager或者cacheResolver
+			// 5. 方法上的缓存注解中有cacheManager或cacheResolver就直接调过吧
 			if (StringUtils.hasText(builder.getCacheManager()) || StringUtils.hasText(builder.getCacheResolver())) {
 				// One of these is set so we should not inherit anything
 			}

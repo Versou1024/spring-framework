@@ -41,7 +41,7 @@ import org.springframework.lang.Nullable;
  */
 public interface CachingConfigurer {
 	// 提供给用户的配置接口
-	// 会被 AbstractCachingConfiguration#setConfigurers()检查到
+	// 会被 AbstractCachingConfiguration#setConfigurers() 检查到
 	// AbstractCachingConfiguration 的实现类 ProxyCachingConfiguration是被 @EnableCaching 的 CachingConfigurationSelector 所导入的
 
 	/**

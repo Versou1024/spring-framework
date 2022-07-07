@@ -33,7 +33,7 @@ import org.springframework.util.Assert;
  * @see NoOpCacheManager
  */
 public class NoOpCache implements Cache {
-	// NoOpCache -- 适合禁用缓存的无操作Cache实现。
+	// NoOpCache = NoOp Cache 适合禁用缓存的无操作Cache实现。
 	// 只会将任何项目接受到缓存中，而不是实际存储它们
 
 	private final String name;

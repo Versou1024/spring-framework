@@ -43,26 +43,33 @@ import org.springframework.util.CollectionUtils;
  */
 @Configuration
 public abstract class AbstractCachingConfiguration implements ImportAware {
+	// 位于: org.springframework.cache.annotation
+	// 主要就是处理: @EnableCaching的注解信息管理配置
 
+	// 使用@EnableCaching的元注解信息
 	@Nullable
-	protected AnnotationAttributes enableCaching; // @EnableCaching的注解属性
+	protected AnnotationAttributes enableCaching; 
 
+	// CacheManager
 	@Nullable
 	protected Supplier<CacheManager> cacheManager;
 
+	// CacheResolver
 	@Nullable
 	protected Supplier<CacheResolver> cacheResolver;
 
+	// KeyGenerator
 	@Nullable
 	protected Supplier<KeyGenerator> keyGenerator;
 
+	// CacheErrorHandler
 	@Nullable
 	protected Supplier<CacheErrorHandler> errorHandler;
 
 
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
-		// 感知被谁所导入IOC容器的
+		// AnnotationMetadata 就是使用@EnableCaching的类的注解元信息
 
 		// 继承此抽象类前提条件：必须标注@EnableCaching注解~
 		this.enableCaching = AnnotationAttributes.fromMap(

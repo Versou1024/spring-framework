@@ -27,7 +27,7 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public class CacheableOperation extends CacheOperation {
-	// @Cacheable注解额外有unless和sync属性
+	// @Cacheable注解额外扩展unless和sync属性
 
 	@Nullable
 	private final String unless;

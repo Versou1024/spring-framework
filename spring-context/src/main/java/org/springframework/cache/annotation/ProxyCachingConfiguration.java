@@ -40,12 +40,23 @@ import org.springframework.context.annotation.Role;
 public class ProxyCachingConfiguration extends AbstractCachingConfiguration {
 	// 超类 AbstractCachingConfiguration
 	// 1. 将获取@EnableCaching注解的相关信息
-	// 2. 并注入用户实现的CachingConfigurer中的各项配置
+	// 2. 注入用户实现的CachingConfigurer中的各项配置 ~~ 老套路
 
-	// 用于注册启用基于代理的注释驱动的缓存管理所需的 Spring 基础设施 bean
-	// ProxyCachingConfiguration 在超类 AbstractCachingConfiguration 的 基础上
-	// 完成 Caching 需要的拦截器\目标源\切面等配置 -- 和 aop 相关的
-	// 职责分离
+	
+	// BeanFactoryCacheOperationSourceAdvisor 生效的原因
+	// 分析:
+	//		1. 在CachingConfigurationSelect首先注入了AutoProxyRegistrar
+	//  	而AutoProxyRegistrar会将将自动代理创建器AutoProxyCreator加载到BeanDefinitionRegistry中去
+	// 		一般而言可以注册的自动代理创建器都是 AnnotationAwareAspectJAutoProxyCreator 这一个
+	// 		简单说一下: 它可以做到两点
+	// 			a: 扫描ioc容器中的Advisor类型
+	// 			b: 将@Aspect注解标注的切面类中的所有@Before\@Pointcut\@After\@Around\@AfterThrowing\@AfterReturning标注的通知增强方法转换为对应的Advisor
+	// 		然后对所有的bean初始化之后进行拦截
+	// 			将a和b中Advisor汇总 [当然期间是可以通过一些方法判断Advisor是否合格,比如Advisor的beanName是否满足正则表达式等等,忽略~~]
+	// 			对拦截到的bean判断[第一步bean是否为AOP内部框架或者BeanDefinition自己标注过自己不需要代理,第二步是否有Advisor的ClassFilter或者MethodMatcher匹配到]
+	// 			如果允许代理,且有对应的Advisor,就是用ProxyFactory开始为其创建代理对象吧 [Advisor可以进行排序哦]
+	// 		2. 注入类当前配置类即 ProxyCachingConfiguration ,然后这里@Bean 中会创建一个 BeanFactoryCacheOperationSourceAdvisor
+	// 		   BeanFactoryCacheOperationSourceAdvisor是否生效就需要依靠上面的 AnnotationAwareAspectJAutoProxyCreator 的第a步 -> 去扫描ioc容器中的advisor
 
 	@Bean(name = CacheManagementConfigUtils.CACHE_ADVISOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
@@ -55,7 +66,8 @@ public class ProxyCachingConfiguration extends AbstractCachingConfiguration {
 		BeanFactoryCacheOperationSourceAdvisor advisor = new BeanFactoryCacheOperationSourceAdvisor();
 		// 设置缓存的操作属性源头
 		advisor.setCacheOperationSource(cacheOperationSource());
-		// 设置增强方法 -- CacheInterceptor
+		// 设置增强方法 -- CacheInterceptor 
+		// note: 这里是Full配置类,因此cacheInterceptor()返回的就是在ioc容器中注册那个bean哦,而不是新创建一个哦
 		advisor.setAdvice(cacheInterceptor());
 		if (this.enableCaching != null) {
 			// 设置当前Advisor的优先级
@@ -76,7 +88,7 @@ public class ProxyCachingConfiguration extends AbstractCachingConfiguration {
 	public CacheInterceptor cacheInterceptor() {
 		// 缓存拦截器 -- 即在方法前后增强的处理
 		CacheInterceptor interceptor = new CacheInterceptor();
-		// 父类 -- 检查到用户定义的配置 -- 注入到CacheInterceptor中
+		// 父类 -- 检查到用户定义的配置 -- 注入到CacheInterceptor中  -> 下面四个配置是来自用户的CacheConfigurer实现类注入的哦
 		interceptor.configure(this.errorHandler, this.keyGenerator, this.cacheResolver, this.cacheManager);
 		// 设置操作源
 		interceptor.setCacheOperationSource(cacheOperationSource());

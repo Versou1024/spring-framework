@@ -27,7 +27,10 @@ import org.springframework.lang.Nullable;
  * @since 4.1
  */
 public class SimpleCacheErrorHandler implements CacheErrorHandler {
-	// 抛出异常
+	// Cache操作抛出异常后如何处理
+	// 包括: CacheGet\CachePut\CacheEvict\CacheClear
+	
+	// SimpleCacheErrorHandler 是 Cache Error Handler 的唯一Spring内置实现,也是默认使用的CacheErrorHandler
 
 	@Override
 	public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {

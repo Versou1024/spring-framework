@@ -34,19 +34,29 @@ import org.springframework.lang.Nullable;
  */
 public interface Cache {
 	// 定义通用缓存操作的接口。注意：由于缓存的一般用途，建议实现允许存储空值（例如缓存返回null的方法）
+	// 其实现类:
+	//  	NoOpCache
+	//		EhCacheCache
+	//		TransactionalAwareCacheDecorator
+	// 		AbstractValueAdaptingCache
+	//			ConcurrentMapCache
+	//			JCacheCache
+	//			CaffeineCache
 
 	/**
 	 * Return the cache name.
 	 */
 	String getName();
-	// 缓存名
+	// 缓存名 -> note:注意这个是Cache的name,而不是缓冲中映射的key篇
 
 	/**
 	 * Return the underlying native cache provider.
 	 */
 	Object getNativeCache();
 	// 没被包装的Cache
-	// 返回本地存储的那个。比如ConcurrentMapCache本地就是用的一个ConcurrentMap
+	// 返回本地存储的那个。/比如
+	// ConcurrentMapCache就是用ConcurrentHashMap来缓存
+	// EhCacheCache就是用Ehcache来缓存数据
 
 	/**
 	 * Return the value to which this cache maps the specified key.
@@ -63,6 +73,7 @@ public interface Cache {
 	 */
 	@Nullable
 	ValueWrapper get(Object key);
+	// 根据key获取指定缓存的值
 
 	/**
 	 * Return the value to which this cache maps the specified key,
@@ -84,7 +95,7 @@ public interface Cache {
 	 */
 	@Nullable
 	<T> T get(Object key, @Nullable Class<T> type);
-	// 当前cache中key的值,并转为type返回
+	// 根据key获取指定缓存的值并转换为目标的type类型
 
 	/**
 	 * Return the value to which this cache maps the specified key, obtaining
@@ -104,6 +115,8 @@ public interface Cache {
 	 */
 	@Nullable
 	<T> T get(Object key, Callable<T> valueLoader);
+	// 根据key获取指定缓存的值,如果没有缓存则从valueLoader中获取该值
+	// note: 说实话不应该使用Callable来表示这个valueLoader
 
 	/**
 	 * Associate the specified value with the specified key in this cache.
@@ -118,7 +131,7 @@ public interface Cache {
 	 * @see #putIfAbsent(Object, Object)
 	 */
 	void put(Object key, @Nullable Object value);
-	// 存入当前 cache 中
+	// 将指定的键值对存入当前Cache中
 
 	/**
 	 * Atomically associate the specified value with the specified key in this cache
@@ -168,7 +181,9 @@ public interface Cache {
 	 * @see #evictIfPresent(Object)
 	 */
 	void evict(Object key);
-	// 移除这个Key
+	// 如果此缓存存在，则从此缓存中逐出此键的映射。
+	// 实际驱逐可能以异步或延迟方式执行，随后的查找可能仍会看到该条目。
+	// 例如，事务缓存装饰器可能就是这种情况。使用evictIfPresent保证立即删除。
 
 	/**
 	 * Evict the mapping for this key from this cache if it is present,
@@ -187,10 +202,16 @@ public interface Cache {
 	 * @see #evict(Object)
 	 */
 	default boolean evictIfPresent(Object key) {
-		// 如果存在才移除
+		// 如果存在此缓存，则从此缓存中逐出此键的映射，期望该键对于后续查找立即不可见。
 		evict(key);
 		return false;
 	}
+	
+	// 方法的具体实现我们可以不理解:
+	// 但是 要认识到 clear()是有可能异步或延迟删除,而invalidate()需要做到立即使得缓存无效
+	// 所以Cache的子类应该能够做到上述的描述 
+	// 所以在部分cache实现类中,可能clear()=invalidate()都是立即删除
+	// 而对于部分cache实现类中,可能clear()是异步或延迟删除的,invalidate()才是立即删除的
 
 	/**
 	 * Clear the cache through removing all mappings.
@@ -201,9 +222,9 @@ public interface Cache {
 	 * @see #invalidate()
 	 */
 	void clear();
-	// 清空
 	// 通过删除所有映射来清除缓存。
-	//实际清除可能以异步或延迟方式执行，后续查找可能仍会看到条目。例如，事务缓存装饰器可能就是这种情况。使用invalidate()保证立即删除条目。
+	// 实际清除可能以异步或延迟方式执行，后续查找可能仍会看到条目。
+	// 例如，事务缓存装饰器可能就是这种情况。使用invalidate()保证立即删除条目
 
 	/**
 	 * Invalidate the cache through removing all mappings, expecting all
@@ -218,9 +239,7 @@ public interface Cache {
 		clear();
 		return false;
 	}
-	// 通过删除所有映射使缓存无效，期望所有条目对于后续查找立即不可见。
-	// 回报：
-	// true缓存之前已知有映射，则为 true；如果没有，则为false （或者如果无法确定先前是否存在条目）
+	// 意义: 通过删除所有映射使缓存无效，期望所有条目对于后续查找立即不可见
 
 
 	/**
@@ -245,6 +264,7 @@ public interface Cache {
 	 */
 	@SuppressWarnings("serial")
 	class ValueRetrievalException extends RuntimeException {
+		// 值检索失败的异常
 
 		@Nullable
 		private final Object key;

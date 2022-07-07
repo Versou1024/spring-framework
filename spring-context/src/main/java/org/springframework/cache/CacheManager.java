@@ -30,8 +30,10 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public interface CacheManager {
-	// 根据cacheName返回对应的Cache
-	// 管理的所有的Cache的names~
+	// 管理Cache
+	// 定义: 
+	// 1. 根据cacheName返回对应的Cache
+	// 2. 返回管理的所有的Cache的names~
 
 	/**
 	 * Get the cache associated with the given name.

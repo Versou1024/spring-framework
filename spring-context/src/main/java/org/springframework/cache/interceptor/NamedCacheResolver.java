@@ -31,6 +31,11 @@ import org.springframework.lang.Nullable;
  * @since 4.1
  */
 public class NamedCacheResolver extends AbstractCacheResolver {
+	// NamedCacheResolver = Named CacheResolver
+	
+	// Named含义:
+	// getCacheNames(CacheOperationInvocationContext<?> context) 
+	// 是直接返回设置好的cacheNames ~~ 几乎不会使用到
 
 	@Nullable
 	private Collection<String> cacheNames;

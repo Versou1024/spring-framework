@@ -27,6 +27,7 @@ import org.springframework.cache.interceptor.KeyGenerator;
  * @author Stephane Nicoll
  */
 public class SomeCustomKeyGenerator implements KeyGenerator {
+	// SomeCustomKeyGenerator -> 利用方法名和params做一个联合的缓存映射的key
 
 	@Override
 	public Object generate(Object target, Method method, Object... params) {

@@ -33,6 +33,11 @@ import org.springframework.lang.Nullable;
  * @see BasicOperation#getCacheNames()
  */
 public class SimpleCacheResolver extends AbstractCacheResolver {
+	// SimpleCacheResolver 默认被使用的CacheResolver对象
+	// SimpleCacheResolver 中CacheManager必须存在,否则调用resolveCache()会抛出异常哦
+	
+	// getCacheNames(CacheOperationInvocationContext<?> context)
+	// 是从 直接去拿CacheOperation中的cacheNames 属性 
 
 	/**
 	 * Construct a new {@code SimpleCacheResolver}.
@@ -52,7 +57,8 @@ public class SimpleCacheResolver extends AbstractCacheResolver {
 
 	@Override
 	protected Collection<String> getCacheNames(CacheOperationInvocationContext<?> context) {
-		// 1. 从context的operation后去cacheNames
+		// 1. 直接去拿CacheOperation中的cacheNames
+		// 对应的就是 @CachePut/@CacheEvict/@Cacheable 中的 cacheNames 属性哦
 		return context.getOperation().getCacheNames();
 	}
 

@@ -31,7 +31,7 @@ import org.springframework.cache.Cache;
 @FunctionalInterface
 public interface CacheResolver {
 
-	// 从CacheOperationInvocationContext解析出需要执行的Cache
+	// 从CacheOperationInvocationContext解析出需要将数据存入到哪里的Cache对象中
 
 	/**
 	 * Return the cache(s) to use for the specified invocation.

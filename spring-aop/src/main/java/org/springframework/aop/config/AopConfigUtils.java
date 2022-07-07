@@ -65,10 +65,10 @@ public abstract class AopConfigUtils {
 	}
 
 
-	// 这两个：注册的是`InfrastructureAdvisorAutoProxyCreator`
-	// 调用处为：AutoProxyRegistrar#registerBeanDefinitions（它是一个ImportBeanDefinitionRegistrar实现类）
-	// 而AutoProxyRegistrar使用处为CachingConfigurationSelector，和`@EnableCaching`注解有关
-	// 其次就是AopNamespaceUtils有点用，这个下面再分析
+	// 当前方法最终注册的是 InfrastructureAdvisorAutoProxyCreator
+	// 只会在 AutoProxyRegistrar.registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) 中调用到哦
+	// 而AutoProxyRegistrar会和@EnableCaching、@EnableTransactionManagement有关
+	// 因此我们认为 @EnableCaching、@EnableTransactionManagement 想要注入的自动代理创建器是 InfrastructureAdvisorAutoProxyCreator
 	@Nullable
 	public static BeanDefinition registerAutoProxyCreatorIfNecessary(BeanDefinitionRegistry registry) {
 		return registerAutoProxyCreatorIfNecessary(registry, null);
@@ -79,13 +79,13 @@ public abstract class AopConfigUtils {
 		return registerOrEscalateApcAsRequired(InfrastructureAdvisorAutoProxyCreator.class, registry, source);
 	}
 
+	// Spring内部暂无直接使用 -- 和Spring的xml有关 -- 但一般不在使用
+	// 所以几乎没有任何类会注册 AspectJAwareAdvisorAutoProxyCreator
 	@Nullable
 	public static BeanDefinition registerAspectJAutoProxyCreatorIfNecessary(BeanDefinitionRegistry registry) {
 		return registerAspectJAutoProxyCreatorIfNecessary(registry, null);
 	}
 
-	// 下面这两个是注入：AspectJAwareAdvisorAutoProxyCreator
-	// 目前没有地方默认调用~~~~和Aop的xml配置方案有关的
 	@Nullable
 	public static BeanDefinition registerAspectJAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
@@ -93,8 +93,9 @@ public abstract class AopConfigUtils {
 		return registerOrEscalateApcAsRequired(AspectJAwareAdvisorAutoProxyCreator.class, registry, source);
 	}
 
-	// 这个就是最常用的，注入的是：AnnotationAwareAspectJAutoProxyCreator  注解驱动的自动代理创建器
-	// `@EnableAspectJAutoProxy`注入进来的就是它了
+	// 下面这个是最常用的
+	// 注入的是：AnnotationAwareAspectJAutoProxyCreator  注解驱动的自动代理创建器
+	// 通过 @EnableAspectJAutoProxy 注入进来的就是
 	@Nullable
 	public static BeanDefinition registerAspectJAnnotationAutoProxyCreatorIfNecessary(BeanDefinitionRegistry registry) {
 		return registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry, null);
@@ -106,7 +107,17 @@ public abstract class AopConfigUtils {
 
 		return registerOrEscalateApcAsRequired(AnnotationAwareAspectJAutoProxyCreator.class, registry, source);
 	}
-
+	
+	// 通过上面的分析可知:
+	// 如果同时开启 @EnableCaching 和 @EnableAspectJAutoProxy 时 -> 更高优先级的AnnotationAwareAspectJAutoProxyCreator的自动代理创建器就会被使用到哦
+	
+	
+	
+	// ❗️❗️❗️ -> 
+	// 这里也说明一件事情 @EnableCaching @EnableTransactionalManage @EnableAspectJAutoProxy 同时使用时
+	// 只要有一个注解使用  proxyTargetClass 或 exposeProxy 属性,就会使得是自动代理器的生效 = 等价三个注解的值是一样的哦
+	
+	
 	// 这两个方法，很显然，就是处理注解的两个属性值
 	// proxyTargetClass：true表示强制使用CGLIB的动态代理
 	// exposeProxy：true暴露当前代理对象到线程上绑定

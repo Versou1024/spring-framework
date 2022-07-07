@@ -138,6 +138,8 @@ public @interface CacheEvict {
 	// 是否删除缓存内的所有条目。
 	// 默认情况下，仅删除关联键下的值。
 	// 建议不要随便设置为true,否则将导致该cacheNames下所有的entry,即键值对会被清除d
+	
+	// note: 当allEntries()设置为true,那么key和KeyGenerator有没有都将无效 -> Cache会被直接清空的
 
 	/**
 	 * Whether the eviction should occur before the method is invoked.

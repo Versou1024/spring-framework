@@ -24,10 +24,12 @@ package org.springframework.cache.interceptor;
  * @since 3.1
  */
 public class CacheEvictOperation extends CacheOperation {
-	// @CacheEvict额外有 cacheWide 和 beforeInvocation 注解属性
+	// @CacheEvict额外扩展cacheWide 和 beforeInvocation 注解属性
 
+	// CacheWide - 对应的就是 @CacheEvict 的 allEntries 属性
 	private final boolean cacheWide;
-
+	
+	// beforeInvocation - 对应的就是  @CacheEvict 的 beforeInvocation 属性
 	private final boolean beforeInvocation;
 
 

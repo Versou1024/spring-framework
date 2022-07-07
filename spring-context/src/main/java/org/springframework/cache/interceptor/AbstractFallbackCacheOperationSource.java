@@ -51,16 +51,11 @@ import org.springframework.util.ClassUtils;
  * @since 3.1
  */
 public abstract class AbstractFallbackCacheOperationSource implements CacheOperationSource {
-	// CacheOperation的抽象实现，它为方法缓存属性并实现回退策略：
-	// 	1. 特定目标方法；
-	// 	2. 目标类；
-	// 	3. 声明方法；
-	// 	4. 声明类/接口
+	
+	// AbstractFallbackCacheOperationSource = Abstract Fallback CacheOperation Source
+	// 关键是: Fallback
 
-	/**
-	 * Canonical value held in cache to indicate no caching attribute was
-	 * found for this method and we don't need to look again.
-	 */
+	// 标识 -- 表示从类上或方法上找到任何CacheOperation
 	private static final Collection<CacheOperation> NULL_CACHING_ATTRIBUTE = Collections.emptyList();
 
 
@@ -78,7 +73,7 @@ public abstract class AbstractFallbackCacheOperationSource implements CacheOpera
 	 */
 	private final Map<Object, Collection<CacheOperation>> attributeCache = new ConcurrentHashMap<>(1024);
 	// CacheOperations 的缓存，由特定目标类上的方法作为键设入。
-	// 由于这个基类没有标记为 Serializable，缓存将在序列化后重新创建——前提是具体的子类是 Serializable
+	// 由于 ConcurrentHashMap 不可以出入null值,因此会使用上面的NULL_CACHING_ATTRIBUTE代替null
 
 
 	/**
@@ -96,7 +91,7 @@ public abstract class AbstractFallbackCacheOperationSource implements CacheOpera
 		// AbstractFallbackCacheOperationSource 没有做根据method和targetClass实际构建 CacheOperation
 		// 主要是子类通过 computeCacheOperations(method, targetClass) 完成
 
-		// 1. Object下的方法不需要缓存
+		// 1. Object下的方法的执行结果不需要缓存
 		if (method.getDeclaringClass() == Object.class) {
 			return null;
 		}
@@ -110,7 +105,7 @@ public abstract class AbstractFallbackCacheOperationSource implements CacheOpera
 			return (cached != NULL_CACHING_ATTRIBUTE ? cached : null);
 		}
 		else {
-			// 4. 模板 -- 子类完成对method和targetClass计算CacheOperation
+			// 4. 模板方法 -- 子类完成对method和targetClass计算处CacheOperation集合
 			Collection<CacheOperation> cacheOps = computeCacheOperations(method, targetClass);
 			if (cacheOps != null) {
 				if (logger.isTraceEnabled()) {
@@ -140,41 +135,36 @@ public abstract class AbstractFallbackCacheOperationSource implements CacheOpera
 
 	@Nullable
 	private Collection<CacheOperation> computeCacheOperations(Method method, @Nullable Class<?> targetClass) {
-		// Don't allow no-public methods as required.
+		
 		// 1. allowPublicMethodsOnly() 是否默认仅仅让public方法有缓存语义,如果是的话,method非public方法就发那会null
 		if (allowPublicMethodsOnly() && !Modifier.isPublic(method.getModifiers())) {
 			return null;
 		}
 
-		// The method may be on an interface, but we need attributes from the target class.
-		// If the target class is null, the method will be unchanged.
 		// 2. 该方法可能在接口上，但我们需要来自目标类的属性。如果目标类为空，则方法将保持不变。
 		Method specificMethod = AopUtils.getMostSpecificMethod(method, targetClass);
 
-		// First try is the method in the target class.
-		// 3. 首先尝试的是目标方法。
+		// 3. 首先尝试的在目标方法上寻找CacheOperation
 		Collection<CacheOperation> opDef = findCacheOperations(specificMethod);
 		if (opDef != null) {
 			return opDef;
 		}
 
-		// Second try is the caching operation on the target class.
-		// 4. 第二次尝试是对目标类上是否缓存操作。
+		// 4. 第二次尝试是对目标类上寻找是否有缓存操作。
 		opDef = findCacheOperations(specificMethod.getDeclaringClass());
 		if (opDef != null && ClassUtils.isUserLevelMethod(method)) {
 			return opDef;
 		}
 
-		// 5. 最佳的specificMethod,和实际的method不是一样的
+		// 5.  类上或方法上都没有找到缓存操作
+		
 		if (specificMethod != method) {
-			// Fallback is to look at the original method.
-			// 6. 回滚到查找接口上声明的接口method上的缓存操作
+			// 6.1 回滚到查找接口上声明的接口method上的缓存操作
 			opDef = findCacheOperations(method);
 			if (opDef != null) {
 				return opDef;
 			}
-			// Last fallback is the class of the original method.
-			// 7. 最后一次回滚到 method 的声明的接口上查看缓存操作
+			// 6.2 最后一次回滚到 method 的声明的接口上查看缓存操作
 			opDef = findCacheOperations(method.getDeclaringClass());
 			if (opDef != null && ClassUtils.isUserLevelMethod(method)) {
 				return opDef;

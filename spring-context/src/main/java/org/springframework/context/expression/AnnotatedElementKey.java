@@ -32,6 +32,7 @@ import org.springframework.util.ObjectUtils;
  * @see CachedExpressionEvaluator
  */
 public final class AnnotatedElementKey implements Comparable<AnnotatedElementKey> {
+	// 表示特定Class上的AnnotatedElement，适合作为键。
 
 	private final AnnotatedElement element;
 

@@ -39,7 +39,7 @@ import org.springframework.util.PatternMatchUtils;
 @SuppressWarnings("serial")
 public class NameMatchCacheOperationSource implements CacheOperationSource, Serializable {
 	// 简单CacheOperationSource实现，允许通过注册名称匹配属性
-	// 用的比较少
+	// 几乎不使用~~
 
 	/**
 	 * Logger available to subclasses.
@@ -48,7 +48,11 @@ public class NameMatchCacheOperationSource implements CacheOperationSource, Seri
 	protected static final Log logger = LogFactory.getLog(NameMatchCacheOperationSource.class);
 
 
-	/** Keys are method names; values are TransactionAttributes. */
+	// 核心就是这个玩意儿: 
+	// key为需哟啊精准匹配的方法名或者ant风格匹配的模糊的方法名
+	// value为匹配到对应的key时,可以对该方法返回的CacheOperation缓存操作集合
+	// 比如: key为getUserInfo,value为CacheableOperation
+	// 就表明希望精准匹配的getUserInfo方法有一个CacheableOperation,能够将get到的结果缓存起来
 	private Map<String, Collection<CacheOperation>> nameMap = new LinkedHashMap<>();
 
 
@@ -81,14 +85,12 @@ public class NameMatchCacheOperationSource implements CacheOperationSource, Seri
 	@Override
 	@Nullable
 	public Collection<CacheOperation> getCacheOperations(Method method, @Nullable Class<?> targetClass) {
-		// look for direct name match
-		// 1. 根据methodName精准去nameMap查询结果
+		// 1. 根据methodName去nameMap精准查询
 		String methodName = method.getName();
 		Collection<CacheOperation> ops = this.nameMap.get(methodName);
 
 		if (ops == null) {
-			// Look for most specific name match.
-			// 2. 精准查询失败,使用模糊匹配进行匹配
+			// 2. 精准查询失败,使用模糊匹配进行匹配 -- 直到查找到追加的
 			String bestNameMatch = null;
 			for (String mappedName : this.nameMap.keySet()) {
 				if (isMatch(methodName, mappedName)

@@ -40,7 +40,9 @@ import org.springframework.lang.Nullable;
  * @see NoOpCache
  */
 public class NoOpCacheManager implements CacheManager {
+	// 管理 NoOpCache 的Manager
 
+	// key为cacheName,value为对应的NoOpCache
 	private final ConcurrentMap<String, Cache> caches = new ConcurrentHashMap<>(16);
 
 	private final Set<String> cacheNames = new LinkedHashSet<>(16);

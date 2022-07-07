@@ -28,6 +28,7 @@ import org.springframework.lang.Nullable;
  * @see SingletonSupplier
  */
 public abstract class SupplierUtils {
+	// 简单判空操作
 
 	/**
 	 * Resolve the given {@code Supplier}, getting its result or immediately

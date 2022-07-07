@@ -41,7 +41,7 @@ public class SimpleKey implements Serializable {
 	 * An empty key.
 	 */
 	public static final SimpleKey EMPTY = new SimpleKey();
-	// 空key
+	// 空key -> 对应方法的形参数量为0时使用
 
 
 	private final Object[] params;

@@ -38,6 +38,8 @@ import org.springframework.util.Assert;
  * @see CaffeineCacheManager
  */
 public class CaffeineCache extends AbstractValueAdaptingCache {
+	
+	// 使用  com.github.benmanes.caffeine.cache.Cache 缓存数据
 
 	private final String name;
 

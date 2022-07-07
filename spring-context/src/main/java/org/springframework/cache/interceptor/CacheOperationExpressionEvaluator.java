@@ -49,33 +49,27 @@ class CacheOperationExpressionEvaluator extends CachedExpressionEvaluator {
 
 	// 注意这两个属性是public的  在CacheAspectSupport里都有使用~~~
 
-	/**
-	 * Indicate that there is no result variable.
-	 */
-	public static final Object NO_RESULT = new Object();
 	// 表示没有结果变量。
+	public static final Object NO_RESULT = new Object();
 
-	/**
-	 * Indicate that the result variable cannot be used at all.
-	 */
-	public static final Object RESULT_UNAVAILABLE = new Object();
 	// 表示结果变量根本不能使用
-
-	/**
-	 * The name of the variable holding the result object.
-	 */
-	public static final String RESULT_VARIABLE = "result";
+	public static final Object RESULT_UNAVAILABLE = new Object();
+	
 	// 保存结果对象的变量的名称
+	public static final String RESULT_VARIABLE = "result";
 
-	// 比如 @Cacheable 中就有以下三个属性值
+	// 比如 @Cacheable 中就有以下三个属性值 -> key condition unless 属性
+	// 为了避免重复通过spel解析处expression,可以使用在 keyCache/conditionCache/unlessCache 缓存好
+	// 这样每次只需要通过createEvaluationContext()传入一个新的EvaluationContext就可以复用Expression
+	// why: 为什么每次都要createEvaluationContext()原因在于每次执行方法时其result\args是不同的,所以不可以复用哦
 
-	// spel 的 key
+	// 缓存spel解析出来的key的expression
 	private final Map<ExpressionKey, Expression> keyCache = new ConcurrentHashMap<>(64);
 
-	// spel 的 condition
+	// 缓存spel解析出来的condition的expression
 	private final Map<ExpressionKey, Expression> conditionCache = new ConcurrentHashMap<>(64);
 
-	// spel 的 unless
+	// 缓存spel解析出来的unless的expression
 	private final Map<ExpressionKey, Expression> unlessCache = new ConcurrentHashMap<>(64);
 
 
@@ -98,20 +92,18 @@ class CacheOperationExpressionEvaluator extends CachedExpressionEvaluator {
 
 		// 创建 EvaluationContext -- 这里就是为什么#target\#result生效的原因哦
 
-		// 1. 创建一个rootObject
-		// root对象，此对象的属性决定了你的#root能够取值的范围，具体下面有贴出此类~
-		CacheExpressionRootObject rootObject = new CacheExpressionRootObject(
-				caches, method, args, target, targetClass);
+		// 1. 创建一个rootObject对象设置到EvaluationContext中
+		// root对象 -- root对象的属性决定#root能够取值的范围，具体下面有贴出此类~
+		CacheExpressionRootObject rootObject = new CacheExpressionRootObject(caches, method, args, target, targetClass);
 		// 2. 创建SpringCache的EvaluationContext
-		CacheEvaluationContext evaluationContext = new CacheEvaluationContext(
-				rootObject, targetMethod, args, getParameterNameDiscoverer());
+		CacheEvaluationContext evaluationContext = new CacheEvaluationContext(rootObject, targetMethod, args, getParameterNameDiscoverer());
 		// 3. result 是 RESULT_UNAVAILABLE,加入到不可以使用的变量集合中
 		if (result == RESULT_UNAVAILABLE) {
 			evaluationContext.addUnavailableVariable(RESULT_VARIABLE);
 		}
 		// 4. 无结果,设置为变量name等于result
 		else if (result != NO_RESULT) {
-			// 这一句话就是为何我们可以使用#result的核心原因~
+			// 4.1 这一句话就是为何我们可以使用#result的核心原因 -> 因为设置了一个变量为result哦
 			evaluationContext.setVariable(RESULT_VARIABLE, result);
 		}
 		// 5. 允许设置BeanFactory
@@ -126,24 +118,22 @@ class CacheOperationExpressionEvaluator extends CachedExpressionEvaluator {
 	// 抽象父类@since 4.2才出来，就是给解析过程提供了缓存的效果~~~~（注意此缓存非彼缓存）
 
 
-	// 解析key的SpEL表达式
+	// 解析key属性的SpEL表达式
 	@Nullable
 	public Object key(String keyExpression, AnnotatedElementKey methodKey, EvaluationContext evalContext) {
-		// 最终借用 Spel 的能力解析 key 的值
-		// 是超类getExpression所提供的哦
 		return getExpression(this.keyCache, methodKey, keyExpression).getValue(evalContext);
 	}
 
 	// condition和unless的解析结果若不是bool类型，统一按照false处理~~~~
 
+	// 解析condition属性的Spel表达式
 	public boolean condition(String conditionExpression, AnnotatedElementKey methodKey, EvaluationContext evalContext) {
-		// 最终借用 Spel 的能力解析 condition 的值
 		return (Boolean.TRUE.equals(getExpression(this.conditionCache, methodKey, conditionExpression).getValue(
 				evalContext, Boolean.class)));
 	}
 
+	// 解析unless属性的Spel表达式
 	public boolean unless(String unlessExpression, AnnotatedElementKey methodKey, EvaluationContext evalContext) {
-		// 最终借用 Spel 的能力解析 unless 的值
 		return (Boolean.TRUE.equals(getExpression(this.unlessCache, methodKey, unlessExpression).getValue(
 				evalContext, Boolean.class)));
 	}

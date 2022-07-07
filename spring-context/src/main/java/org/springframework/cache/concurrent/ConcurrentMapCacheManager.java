@@ -47,16 +47,16 @@ import org.springframework.lang.Nullable;
  * @see ConcurrentMapCache
  */
 public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderAware {
-	// ConcurrentMap 对应的 CacheManger
+	// 管理 ConcurrentMapCache 的Manager
 	// 它的缓存存储是基于内存的，所以它的生命周期是与应用关联的，对于生产级别的大型企业级应用程序，这可能并不是理想的选择，但它用于本地自己测试是个很好的选择。
 
-	// 每个CacheName对应的Cache操作
+	// 每个CacheName对应的ConcurrentMapCache
 	private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(16);
 
-	private boolean dynamic = true;
 	// 静态还是动态的ConcurrentMapCacheManager
 	// 静态的 -- ConcurrentMapCacheManager 管理的 cacheNames 是固定的
 	// 动态的 -- ConcurrentMapCacheManager 管理的 cacheNames 是动态增加的
+	private boolean dynamic = true;
 
 	// 是否允许value为null
 	// 是的话,虽然ConcurrentHashMap不允许有NULL值,但是可以通过 NULL_OBJ = new Object(); // 表示空的对象
@@ -189,7 +189,7 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	@Nullable
 	public Cache getCache(String name) {
 		// 根据 cacheName 查找 cache
-		// 找不到,就惰性创建即可
+		// 如果是dynamic动态的,就会去创建一个新的ConcurrentMapCache
 
 		Cache cache = this.cacheMap.get(name);
 		if (cache == null && this.dynamic) {

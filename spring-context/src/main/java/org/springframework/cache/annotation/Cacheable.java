@@ -57,7 +57,18 @@ import org.springframework.core.annotation.AliasFor;
 @Inherited
 @Documented
 public @interface Cacheable {
-	// 开启 缓存功能
+	// @Cacheable pk @CachePut
+	// @Cacheable在缓存命中时,就不会再去触发目标方法的执行
+	// @CachePut不管缓存命中与否,都要去重新执行方法,将其返回值放入到缓存空间
+	// @Cacheable和@CachePut混用,就需要注意上面的逻辑
+
+	// 其次@Cacheable能够从Cache中去get,get不到,再去触发put
+	// 而@CachePut只能够往Cache中put
+
+	// 二者混用时:
+	// a. @Cacheable缓存未命中 -- 执行方法拿到返回值 ✅
+	// b. @Cacheable就算缓存命中,如果有@Cacheput -- 还是会执行方法,并且缓存值使用返回值,此时缓存命中的cacheHit是无效的 ✅
+	// 因此: 结论是@Cacheable和@Cacheput混用时,最终拿到的值都是执行方法获取返回值 returnValue
 
 	/**
 	 * Alias for {@link #cacheNames}.
@@ -210,5 +221,15 @@ public @interface Cacheable {
 	//		只能指定一个缓存
 	//		没有其他缓存相关的操作可以组合
 	// 这实际上是一个提示，您使用的实际缓存提供程序可能不以同步方式支持它。检查您的提供者文档以获取有关实际语义的更多详细信息。
+
+
+	// @Cacheable(sync=true) 是无法与多个缓存操作联合 -- 比如 @CacheEvict\@CachePut等等
+	// 人话解释：sync=true时候，不能还有其它的缓存操作 也就是说@Cacheable(sync=true)的时候只能单独使用这一个注解哦
+
+	// 开启缓存方法同步后时, @Cacheable(sync=true) 也只能有一个,不能和其他 @Cacheable(sync=false|true) 联合
+	// 人话解释：@Cacheable(sync=true)时，多个@Cacheable也是不允许的
+	
+	// @Cacheable(sync=true) 不支持同时使用 Unless 属性哦
+	// 人话解释：sync=true时，unless属性是不支持的~~~并且是不能写的
 
 }

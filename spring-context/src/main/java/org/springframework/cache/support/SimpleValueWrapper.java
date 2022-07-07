@@ -27,6 +27,10 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public class SimpleValueWrapper implements ValueWrapper {
+	// ValueWrapper 的唯一实现类
+	
+	// 调用 SimpleValueWrapper.get()即可获取原始缓存的对象
+	
 
 	@Nullable
 	private final Object value;

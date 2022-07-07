@@ -42,7 +42,7 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class CacheInterceptor extends CacheAspectSupport implements MethodInterceptor, Serializable {
-	// 缓存的拦截器
+	// 缓存 - 拦截器
 
 	@Override
 	@Nullable
@@ -60,7 +60,7 @@ public class CacheInterceptor extends CacheAspectSupport implements MethodInterc
 		// 采用函数的形式，最终把此函数传交给父类的execute()去执行
 		// 但是很显然，最终**执行目标方法**的是invocation.proceed();它
 
-		//这里就是对执行方法调用的一次封装，主要是为了处理对异常的包装。
+		// 这里就是对执行方法调用的一次封装，主要是为了处理对异常的包装。
 		CacheOperationInvoker aopAllianceInvoker = () -> {
 			try {
 				return invocation.proceed();

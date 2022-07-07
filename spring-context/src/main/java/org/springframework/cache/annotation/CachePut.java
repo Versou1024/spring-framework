@@ -51,7 +51,18 @@ import org.springframework.core.annotation.AliasFor;
 @Inherited
 @Documented
 public @interface CachePut {
-	// 与@Cacheable注解相比，此注解不会导致建议的方法被跳过。
+	// @Cacheable pk @CachePut
+	// @Cacheable在缓存命中时,就不会再去触发目标方法的执行
+	// @CachePut不管缓存命中与否,都要去重新执行方法,将其返回值放入到缓存空间
+	// @Cacheable和@CachePut混用,就需要注意上面的逻辑
+	
+	// 其次@Cacheable能够从Cache中去get,get不到,再去触发put
+	// 而@CachePut只能够往Cache中put
+	
+	// 二者混用时:
+	// a. @Cacheable缓存未命中 -- 执行方法拿到返回值 ✅
+	// b. @Cacheable就算缓存命中,如果有@Cacheput -- 还是会执行方法,并且缓存值使用返回值,此时缓存命中的cacheHit是无效的 ✅
+	// 因此: 结论是@Cacheable和@Cacheput混用时,最终拿到的值都是执行方法获取返回值 returnValue
 
 	/**
 	 * Alias for {@link #cacheNames}.

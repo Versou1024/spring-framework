@@ -32,7 +32,10 @@ import org.springframework.lang.Nullable;
  * @since 4.2.2
  */
 public abstract class AbstractValueAdaptingCache implements Cache {
+	// Cache实现的通用base class,需要在将null值(以及其他特殊值)差魂帝到底层存储之前进行调整
+	// 如果配置为支持null值（如isAllowNullValues()所示），则用内部NullValue.INSTANCE透明地替换给定的null用户值
 
+	// 是否允许存储null值
 	private final boolean allowNullValues;
 
 
@@ -69,6 +72,11 @@ public abstract class AbstractValueAdaptingCache implements Cache {
 		}
 		return (T) value;
 	}
+	
+	// 子类需要实现lookup()方法
+	// 以及子类需要自己负责put()\clear()\invalidate()等方法的实现
+	// AbstractValueAdaptingCache = Abstract Value Adapting To Null Cache
+	// 主要是适配null值
 
 	/**
 	 * Perform an actual lookup in the underlying store.
@@ -87,6 +95,8 @@ public abstract class AbstractValueAdaptingCache implements Cache {
 	 */
 	@Nullable
 	protected Object fromStoreValue(@Nullable Object storeValue) {
+		// 判断storeValue缓存的值是否实际缓存的是null值
+		
 		if (this.allowNullValues && storeValue == NullValue.INSTANCE) {
 			return null;
 		}
@@ -100,6 +110,8 @@ public abstract class AbstractValueAdaptingCache implements Cache {
 	 * @return the value to store
 	 */
 	protected Object toStoreValue(@Nullable Object userValue) {
+		// tpStoreValue() 主要是当开启allowNullValues时,需要注意userValue为null时,存储的值替换为NullValue.INSTANCE
+		
 		if (userValue == null) {
 			if (this.allowNullValues) {
 				return NullValue.INSTANCE;
@@ -119,6 +131,9 @@ public abstract class AbstractValueAdaptingCache implements Cache {
 	 */
 	@Nullable
 	protected Cache.ValueWrapper toValueWrapper(@Nullable Object storeValue) {
+		// 将给定值包装为SimpleValueWrapper
+		// 当storeValue为null,返回的也是null
+		// 其余值都统一包装为SimpleValueWrapper类型,方便管理
 		return (storeValue != null ? new SimpleValueWrapper(fromStoreValue(storeValue)) : null);
 	}
 

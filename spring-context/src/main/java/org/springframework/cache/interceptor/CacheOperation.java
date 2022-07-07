@@ -34,10 +34,11 @@ import org.springframework.util.Assert;
 public abstract class CacheOperation implements BasicOperation {
 	// Cache操作的配置封装
 
-	// 操作名\cacheNames\key或keyGenerator\cacheManager\cacheResolver\condition
-	// 基本上都是 @CachePut @Cacheable 等的属性值
+	// name\cacheNames\key或keyGenerator\cacheManager\cacheResolver\condition
+	// 持有 @CachePut @Cacheable @CacheEvict 的共同属性哦
 
-	// 三大实现类 CacheableOperation\CacheEvictOperation\CachePutOperation
+	// 其三大实现类 CacheableOperation\CacheEvictOperation\CachePutOperation
+	// 又各自添加了  @CachePut @Cacheable @CacheEvict 的不同的属性
 
 	private final String name;
 

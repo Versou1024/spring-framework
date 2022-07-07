@@ -59,7 +59,11 @@ public @interface CacheConfig {
 	 */
 	String keyGenerator() default "";
 	// 用于类的默认org.springframework.cache.interceptor.KeyGenerator的 bean 名称。
-	// 如果在方法级别设置例如@Cacheable没有设置keyGenerator，则使用此类级别上的@CacheConfig的设置而不是默认的设置。
+	// 如果在方法级别缓存注解例如@Cacheable没有设置key和keyGenerator，则使用此类级别上的@CacheConfig的设置而不是默认的设置。
+	
+	
+	// 方法级别缓存注解例如@Cacheable没有设置cacheManager和cacheResolver
+	// 而@CacheConfig同时配置了CacheManger和CacheResolver,最终的hauntCacheResolver会生效哦
 
 	/**
 	 * The bean name of the custom {@link org.springframework.cache.CacheManager} to use to

@@ -62,8 +62,7 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	 * @param name the name of the cache
 	 */
 	public ConcurrentMapCache(String name) {
-		// 每一个缓存name对应一个缓存空间
-		// 一个缓存空间对应一个ConcurrentHashMap结构
+		// note: 需要自动缓存cache的名字name,并且默认是支持存储null值的
 		this(name, new ConcurrentHashMap<>(256), true);
 	}
 
@@ -175,6 +174,9 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 		return toValueWrapper(existing);
 	}
 
+	// ConcurrentMapCache的evict()和evictIfPresent()都是立即清除指定映射
+	// evict()不存在延迟或异步清除的情况
+
 	@Override
 	public void evict(Object key) {
 		this.store.remove(key);
@@ -185,6 +187,9 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 		return (this.store.remove(key) != null);
 	}
 
+	// ConcurrentMapCache的clear()和invalidate()都是立即清空缓存
+	// clear()不存在延迟或异步清除的情况
+	
 	@Override
 	public void clear() {
 		// 清空缓存空间
@@ -202,7 +207,10 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	protected Object toStoreValue(@Nullable Object userValue) {
 		// 在有序列化器时, 将 userValue 直接序列化为byteArray再存储起来
 		// 没有序列化器, 就直接存储 userValue
+		
+	    // 1. super.toStoreValue() 主要是当开启allowNullValues时,需要注意userValue为null时,存储的值替换为NullValue.INSTANCE
 		Object storeValue = super.toStoreValue(userValue);
+		// 2.1 序列化器存在,序列化为字节数组存储起来
 		if (this.serialization != null) {
 			try {
 				return this.serialization.serializeToByteArray(storeValue);
@@ -212,6 +220,7 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 						"'. Does it implement Serializable?", ex);
 			}
 		}
+		// 2. 2 没有序列化器,直接存储即可
 		else {
 			return storeValue;
 		}

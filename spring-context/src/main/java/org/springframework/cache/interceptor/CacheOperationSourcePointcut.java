@@ -36,6 +36,8 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("serial")
 abstract class CacheOperationSourcePointcut extends StaticMethodMatcherPointcut implements Serializable {
+	
+	// @EnableCaching开启将向ioc容器注入一个Advisor,其连接器pointcut就是这里的 CacheOperationSourcePointcut
 
 	protected CacheOperationSourcePointcut() {
 		// 构造器 -- 默认设置 CacheOperationSourceClassFilter 类过滤器
@@ -45,10 +47,11 @@ abstract class CacheOperationSourcePointcut extends StaticMethodMatcherPointcut 
 
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
-		// 实现 -- 方法过滤器
-		// cas.getCacheOperations(method, targetClass) 只要能从方法上返回CacheOperation的集合,就返回true
-		// 即通过方法过滤器
+		// 实现 -- 静态的方法过滤器
+		
+		// 99%的情况都是 AnnotationCacheOperationSource 
 		CacheOperationSource cas = getCacheOperationSource();
+		// 只要使用 AnnotationCacheOperationSource 能够从targetClass的method上找到CacheOperation,就认为是需要拦截的哦
 		return (cas != null && !CollectionUtils.isEmpty(cas.getCacheOperations(method, targetClass)));
 	}
 
@@ -101,7 +104,7 @@ abstract class CacheOperationSourcePointcut extends StaticMethodMatcherPointcut 
 			// 获取到当前的缓存属性源~~~getCacheOperationSource()是个抽象方法
 			CacheOperationSource cas = getCacheOperationSource();
 			// 下面一句话解释为：如果方法/类上标注有缓存相关的注解，就切入进取~~
-			// 具体逻辑请参见方法：cas.getCacheOperations();
+			// 具体逻辑请参见方法：AnnotationCacheOperationSource.isCandidateClass()
 			return (cas == null || cas.isCandidateClass(clazz));
 		}
 	}

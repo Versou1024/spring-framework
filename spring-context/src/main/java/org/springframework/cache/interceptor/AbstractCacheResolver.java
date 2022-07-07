@@ -38,8 +38,10 @@ import org.springframework.util.Assert;
 public abstract class AbstractCacheResolver implements CacheResolver, InitializingBean {
 
 	// CacheManger 用来存放Cache
+	// 注意 -- 可以为空哦 
+	// 当CacheManager不为空的时候,解析CacheOperation的cacheName时就可以直接去CacheManager中查找
 	@Nullable
-	private CacheManager cacheManager; // 注意 -- 可以为空哦
+	private CacheManager cacheManager; 
 
 
 	/**
@@ -73,7 +75,7 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 		return this.cacheManager;
 	}
 
-	// 做了一步校验而已~~~CacheManager 必须存在
+	// 做了一步校验而已 ~~~ CacheManager 必须存在
 	// 这是一个使用技巧哦   自己的在设计框架的框架的时候可以使用~
 	@Override
 	public void afterPropertiesSet()  {
@@ -85,7 +87,11 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 	@Override
 	public Collection<? extends Cache> resolveCaches(CacheOperationInvocationContext<?> context) {
 		// 1. 抽象方法 getCacheNames() -> 返回 List<String> cacheNames
-		// cacheNames - 缓存名
+		// 去 CacheOperationInvocationContext 找到所有的 CacheNames
+		// CacheOperationInvocationContext 是用户标注有缓存注解的方法执行时,就会为每一个对应的CacheOperation
+		// 创建一个CacheOperationInvocationContext,而context中就有对应的CacheOperation
+		// 这里就是应该从CacheOperation获取对应的CacheName -> 比如 @CachePut的cacheNames的数组属性
+		// 具体如何解析: 需要子类实现 getCacheNames(context);
 		Collection<String> cacheNames = getCacheNames(context);
 		if (cacheNames == null) {
 			return Collections.emptyList();

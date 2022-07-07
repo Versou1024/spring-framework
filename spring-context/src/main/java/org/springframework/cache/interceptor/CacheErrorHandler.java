@@ -33,6 +33,8 @@ import org.springframework.lang.Nullable;
  * @since 4.1
  */
 public interface CacheErrorHandler {
+	// 定义Cache操作抛出异常后如何处理
+	// 包括: CacheGet\CachePut\CacheEvict\CacheClear 四大操作
 
 	/**
 	 * Handle the given runtime exception thrown by the cache provider when

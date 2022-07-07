@@ -39,8 +39,8 @@ import org.springframework.util.StringUtils;
  * @see ProxyCachingConfiguration
  */
 public class CachingConfigurationSelector extends AdviceModeImportSelector<EnableCaching> {
-	// 根据导入@Configuration类的EnableCaching.mode值选择应该使用哪个AbstractCachingConfiguration实现。
-
+	// 继承了熟悉的AdviceModeImportSelector<EnableCaching>
+	
 	private static final String PROXY_JCACHE_CONFIGURATION_CLASS =
 			"org.springframework.cache.jcache.config.ProxyJCacheConfiguration";
 
@@ -88,8 +88,27 @@ public class CachingConfigurationSelector extends AdviceModeImportSelector<Enabl
 		// 将 AutoProxyRegistrar\ProxyCachingConfiguration 加入到ioc容器中
 
 		List<String> result = new ArrayList<>(3);
-		result.add(AutoProxyRegistrar.class.getName()); // 自动代理创建器
-		result.add(ProxyCachingConfiguration.class.getName()); // 代理缓存的配置
+		// 将自动代理创建器AnnotationAwareAspectJAutoProxyCreator注册到BeanDefinition --> 
+		// ❗️❗️❗️ 目的是: 防止后面在ProxyCachingConfiguration创建的Advisor无效
+		// 分析:
+		//  	AutoProxyRegistrar会将将自动代理创建器AutoProxyCreator加载到BeanDefinitionRegistry中去
+		// 		一般而言可以注册的自动代理创建器都是 AnnotationAwareAspectJAutoProxyCreator 这一个
+		// 		简单说一下: 它可以做到两点
+		// 			a: 扫描ioc容器中的Advisor类型
+		// 			b: 将@Aspect注解标注的切面类中的所有@Before\@Pointcut\@After\@Around\@AfterThrowing\@AfterReturning标注的通知增强方法转换为对应的Advisor
+		// 		然后对所有的bean初始化之后进行拦截
+		// 			将a和b中Advisor汇总 [当然期间是可以通过一些方法判断Advisor是否合格,比如Advisor的beanName是否满足正则表达式等等,忽略~~]
+		// 			对拦截到的bean判断[第一步bean是否为AOP内部框架或者BeanDefinition自己标注过自己不需要代理,第二步是否有Advisor的ClassFilter或者MethodMatcher匹配到]
+		// 			如果允许代理,且有对应的Advisor,就是用ProxyFactory开始为其创建代理对象吧 [Advisor可以进行排序哦]
+		
+		// 下面的 ProxyCachingConfiguration 中会创建一个 BeanFactoryCacheOperationSourceAdvisor
+		// 这个Advisor是否生效就需要依靠上面的  AnnotationAwareAspectJAutoProxyCreator 的第a步 -> 去扫描ioc容器中的advisor
+		
+		
+		result.add(AutoProxyRegistrar.class.getName());
+		// 缓存配置类
+		// 主要是向ioc容器注册一个 BeanFactoryCacheOperationSourceAdvisor 的 Advisor 来拦截增强
+		result.add(ProxyCachingConfiguration.class.getName()); 
 		if (jsr107Present && jcacheImplPresent) {
 			result.add(PROXY_JCACHE_CONFIGURATION_CLASS);
 		}

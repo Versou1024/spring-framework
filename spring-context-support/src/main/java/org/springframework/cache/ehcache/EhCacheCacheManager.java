@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  * @see EhCacheCache
  */
 public class EhCacheCacheManager extends AbstractTransactionSupportingCacheManager {
+	// 管理 EhCache 的 Manager
 
 	@Nullable
 	private net.sf.ehcache.CacheManager cacheManager;

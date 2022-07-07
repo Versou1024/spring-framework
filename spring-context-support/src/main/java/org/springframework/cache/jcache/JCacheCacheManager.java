@@ -39,6 +39,7 @@ import org.springframework.util.Assert;
  * @see JCacheCache
  */
 public class JCacheCacheManager extends AbstractTransactionSupportingCacheManager {
+	// 管理 JCache 的 Manager
 
 	@Nullable
 	private CacheManager cacheManager;

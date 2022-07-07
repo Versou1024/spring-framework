@@ -55,6 +55,8 @@ import org.springframework.util.ObjectUtils;
  * @see CaffeineCache
  */
 public class CaffeineCacheManager implements CacheManager {
+	// 管理 CaffeineCache 的Manager
+
 
 	private Caffeine<Object, Object> cacheBuilder = Caffeine.newBuilder();
 

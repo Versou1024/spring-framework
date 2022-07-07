@@ -31,8 +31,16 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  */
 public interface CacheOperationSource {
-	// CacheInterceptor使用的接口。
-	// 实现知道如何获取缓存操作属性，无论是从配置、源级别的元数据属性还是其他地方。
+	// CacheOperation 指的指定缓存操作的属性
+	// 缓存操作包括: 缓存set\缓存get\清除缓存
+	// 对应的注解的缓存操作就是: @CachePut\@Cacheable\@CacheEvict
+	
+	// CacheOperationSource 用来从targetClass或者method上获取指定的缓存操作CacheOperation
+	
+	// CacheOperationSource 有三个实现类:
+	//		NameMatchCacheOperationSource -- 根据指定beanName判断是否可以作为缓存操作CacheOperation
+	//		AnnotationCacheOperationSource -- ❗️99%的使用❗️根据类上或方法上的注解@CachePut\@Cacheable\@CacheEvict\@Caching确定缓存操作CacheOperation
+	//		CompositeCacheOperationSource -- 组合模式
 
 	/**
 	 * Determine whether the given class is a candidate for cache operations
@@ -51,7 +59,8 @@ public interface CacheOperationSource {
 	default boolean isCandidateClass(Class<?> targetClass) {
 		return true;
 	}
-	// 确定给定类是否是此CacheOperationSource元数据格式的缓存操作的候选对象。
+	// 确定给定类是否是此CacheOperationSource元数据格式的缓存操作的候选对象
+	// 一般而言: 就是看是否有 @CachePut\@Cacheable\@CacheEvict\@Caching 注解
 
 	/**
 	 * Return the collection of cache operations for this method,
@@ -64,5 +73,7 @@ public interface CacheOperationSource {
 	@Nullable
 	Collection<CacheOperation> getCacheOperations(Method method, @Nullable Class<?> targetClass);
 	// 返回此方法的缓存操作集合，如果该方法不包含可缓存的注释，则返回null
+	// 就是将方法上的 @CachePut\@Cacheable\@CacheEvict\@Caching 注解转换为对应的 CacheOperation
+	// 所以可以把  CacheOperationSource 当做一个解析器吧
 
 }

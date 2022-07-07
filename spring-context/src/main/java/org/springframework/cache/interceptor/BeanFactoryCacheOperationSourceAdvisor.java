@@ -32,7 +32,7 @@ import org.springframework.lang.Nullable;
 public class BeanFactoryCacheOperationSourceAdvisor extends AbstractBeanFactoryPointcutAdvisor {
 	// BeanFactoryCacheOperationSourceAdvisor = BeanFactory + CacheOperationSource + Advisor
 
-	// 缓存操作属性源
+	// 缓存操作属性源 -- 99%的情况都是
 	@Nullable
 	private CacheOperationSource cacheOperationSource;
 
@@ -41,6 +41,7 @@ public class BeanFactoryCacheOperationSourceAdvisor extends AbstractBeanFactoryP
 		@Override
 		@Nullable
 		protected CacheOperationSource getCacheOperationSource() {
+			// cacheOperationSource 99%都是 
 			return cacheOperationSource;
 		}
 	};

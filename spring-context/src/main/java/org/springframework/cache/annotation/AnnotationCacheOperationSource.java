@@ -46,16 +46,20 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperationSource implements Serializable {
-	// 主要实现超类的AbstractFallbackCacheOperationSource两个接口
-	// 		Collection<CacheOperation> findCacheOperations(Class<?> clazz)
-	//		Collection<CacheOperation> findCacheOperations(Method method)
-	// 以及 CacheOperationSource#isCandidateClass(Class<?> targetClass)方法
+	
+	// AnnotationCacheOperationSource = Annotation CacheOperation Source
+	// 表示CacheOperation需要从缓存注解入手,即@CachePut\@Cacheable\@CacheEvict\@Caching中解析出来
+	 
+	// AbstractFallbackCacheOperationSource 中会先检查方法上是否有缓存操作，然后检查类上是否缓存操作，都没有就返回null
+	// 		Collection<CacheOperation> findCacheOperations(Class<?> clazz) -> 类上检查
+	//		Collection<CacheOperation> findCacheOperations(Method method) -> 方法上检查
 
-	// 委托模式 -- 实际解析工作交给了
-	// SpringCacheAnnotationParser 对四大缓存注解进行解析
 
+	// 默认就是只允许公有方法使用缓存cache注解哦
 	private final boolean publicMethodsOnly;
 
+	// 委托模式 -- 实际@CachePut\@Cacheable\@CacheEvict\@Caching四大缓存注解解析工作交给了
+	// SpringCacheAnnotationParser 对四大缓存注解进行解析
 	private final Set<CacheAnnotationParser> annotationParsers;
 
 
@@ -156,7 +160,7 @@ public class AnnotationCacheOperationSource extends AbstractFallbackCacheOperati
 		// 实际 -- annotationParsers默认只有一个SpringCacheAnnotationParser
 
 		Collection<CacheOperation> ops = null;
-		for (CacheAnnotationParser parser : this.annotationParsers) {
+		for (CacheAnnotationParser parser : this.annotationParsers) { // 一般只考虑有一个annotationParser那就是SpringCacheOperationParser
 			// ❗️ ❗️ ❗️ -- 触发parser.parseCacheAnnotations(method|class)
 			Collection<CacheOperation> annOps = provider.getCacheOperations(parser);
 			if (annOps != null) {

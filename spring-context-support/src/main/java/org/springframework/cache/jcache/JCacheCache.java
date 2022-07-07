@@ -39,6 +39,8 @@ import org.springframework.util.Assert;
  * @see JCacheCacheManager
  */
 public class JCacheCache extends AbstractValueAdaptingCache {
+	
+	// 使用 javax.cache.Cache 来缓存最终的数据
 
 	private final Cache<Object, Object> cache;
 

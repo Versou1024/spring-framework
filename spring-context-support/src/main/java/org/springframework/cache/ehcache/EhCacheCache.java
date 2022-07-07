@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  * @see EhCacheCacheManager
  */
 public class EhCacheCache implements Cache {
+	// 使用EnCache缓存作为缓存
 
 	private final Ehcache cache;
 

@@ -29,17 +29,27 @@ import org.springframework.cache.Cache;
  * @since 3.1
  */
 class CacheExpressionRootObject {
-	// @Cache系列注解中使用的spel表达式的ExpressionContext中设置的rootObject
+	// @Cache系列注解中使用的spel表达式中传入到ExpressionContext中设置的rootObject
+	// 这个类决定了 #root的取值范围哦
 	// 持有caches\method\args\target\targetClass
+	// #root.method 
+	// #root.args[0]
+	// #root.target
+	// #root.targetClass
 
+	// 当前执行CacheOperation对应的Cache -> 因为@Cacheable注解的cacheNames是数组属性
 	private final Collection<? extends Cache> caches;
 
+	// 方法
 	private final Method method;
 
+	// 参数
 	private final Object[] args;
 
+	// 执行方法的目标对象
 	private final Object target;
 
+	// 目标对象的class
 	private final Class<?> targetClass;
 
 

@@ -46,7 +46,9 @@ public class SimpleKeyGenerator implements KeyGenerator {
 	 * Generate a key based on the specified parameters.
 	 */
 	public static Object generateKey(Object... params) {
-		// 1. 形参为0,返回SimpleKey.EMPTY
+		// 1. 形参为0,返回SimpleKey.EMPTY -> 
+		// ❗️❗️❗️ 如果在同一个Cache中,缓存注解都不使用key和KeyGenerator,导致默认的SimpleKeyGenerator生效
+		// 对于不同的但都是无参的方法而言,就会导致一个问题,那就缓存覆盖问题哦
 		if (params.length == 0) {
 			return SimpleKey.EMPTY;
 		}

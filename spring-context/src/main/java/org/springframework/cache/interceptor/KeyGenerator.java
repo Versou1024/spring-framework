@@ -29,8 +29,11 @@ import java.lang.reflect.Method;
  */
 @FunctionalInterface
 public interface KeyGenerator {
-	// 生成缓存key
-	// target\method\params
+	// 生成缓存映射的key
+	// 	KeyGeneratorAdapter -- 
+	//	SimpleKeyGenerator -- 当@CachePut\@Cacheable\@CacheEvict缓存注解没有指定key或者KeyGenerator时,就会使用默认的SimpleKeyGenerator [❗️❗️❗️]
+	//	SomeCustomKeyGenerator -- 利用方法名和params做一个联合的缓存映射的key
+	//	SomeKeyGenerator -- 位于:org.springframework.context.testfixture.cache 忽略 
 
 	/**
 	 * Generate a key for the given method and its parameters.

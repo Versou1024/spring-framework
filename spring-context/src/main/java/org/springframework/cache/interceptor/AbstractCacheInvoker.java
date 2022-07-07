@@ -30,8 +30,8 @@ import org.springframework.util.function.SingletonSupplier;
  * @see org.springframework.cache.interceptor.CacheErrorHandler
  */
 public abstract class AbstractCacheInvoker {
-
-	// 用于调用Cache操作并在发生异常时使用可配置的CacheErrorHandler的基本组件。
+	// AbstractCacheInvoker = Abstract Cache Invoker 抽象cache的调用者
+	// 作用: 调用Cache操作完成doGet\doPut\doCLear\doEvict并在发生异常时使用可配置的CacheErrorHandler的基本组件。
 
 	protected SingletonSupplier<CacheErrorHandler> errorHandler;
 
@@ -104,7 +104,8 @@ public abstract class AbstractCacheInvoker {
 	 * specified {@link Cache} and invoke the error handler if an exception occurs.
 	 */
 	protected void doEvict(Cache cache, Object key, boolean immediate) {
-		// immediate 就是 beforeInvocation 的值
+		// immediate 表示是否立即清空
+		// 对于有的Cache其evict(key)可能是延迟或异步清空,但对于任何Cache而言evictIfPresent(key)必须保证语义是立即清空的
 		try {
 			if (immediate) {
 				cache.evictIfPresent(key);
@@ -123,6 +124,8 @@ public abstract class AbstractCacheInvoker {
 	 * invoke the error handler if an exception occurs.
 	 */
 	protected void doClear(Cache cache, boolean immediate) {
+		// immediate 表示是否立即清空
+		// 对于有的Cache其clear()可能是延迟或异步清空,但对于任何Cache而言invalidate()必须保证语义是立即清空的
 		try {
 			if (immediate) {
 				cache.invalidate();

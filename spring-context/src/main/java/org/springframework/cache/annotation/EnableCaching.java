@@ -188,7 +188,7 @@ public @interface EnableCaching {
 	 */
 	boolean proxyTargetClass() default false;
 	// 是否代理目标Class
-	// false - jdk
+	// false - jdk或者cglib
 	// true - cglib
 
 	/**

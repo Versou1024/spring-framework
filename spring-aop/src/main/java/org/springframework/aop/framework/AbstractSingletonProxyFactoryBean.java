@@ -41,7 +41,7 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public abstract class AbstractSingletonProxyFactoryBean extends ProxyConfig
 		implements FactoryBean<Object>, BeanClassLoaderAware, InitializingBean {
-	// 用于生成单例代理对象的FactoryBean类型的便捷超类
+	// 用于生成单例的代理对象的FactoryBean类型的便捷超类
 	// 能够管理前置拦截器和后置拦截器（引用，而不是拦截器名称，如ProxyFactoryBean ）并提供一致的接口管理。
 
 	// 目标可以是任何对象，在这种情况下将创建一个 SingletonTargetSource。
@@ -55,17 +55,18 @@ public abstract class AbstractSingletonProxyFactoryBean extends ProxyConfig
 	@Nullable
 	private Class<?>[] proxyInterfaces;
 
-	// 在隐式事务拦截器之前设置要应用的附加拦截器（或顾问），例如 PerformanceMonitorInterceptor。
+	// 在隐式的main主要拦截器之前设置要应用的附加拦截器（或advisor），例如 PerformanceMonitorInterceptor。
 	// 您可以指定任何 AOP Alliance MethodInterceptor 或其他 Spring AOP Advices，以及 Spring AOP Advisors。
 	@Nullable
 	private Object[] preInterceptors;
 
-	// 在隐式事务拦截器之后设置要应用的其他拦截器（或顾问）。
-	//您可以指定任何 AOP Alliance MethodInterceptor 或其他 Spring AOP Advices，以及 Spring AOP Advisors。
+	// 在隐式的main主要拦截器之后设置要应用的其他拦截器（或advisor）。
+	// 您可以指定任何 AOP Alliance MethodInterceptor 或其他 Spring AOP Advices，以及 Spring AOP Advisors。
 	@Nullable
 	private Object[] postInterceptors;
 
-	// 指定要使用的 AdvisorAdapterRegistry。默认为GlobalAdvisorAdapterRegistry
+	// 指定要使用的 AdvisorAdapterRegistry
+	// 默认为GlobalAdvisorAdapterRegistry
 	private AdvisorAdapterRegistry advisorAdapterRegistry = GlobalAdvisorAdapterRegistry.getInstance();
 
 	@Nullable
@@ -249,6 +250,9 @@ public abstract class AbstractSingletonProxyFactoryBean extends ProxyConfig
 	@Override
 	@Nullable
 	public Class<?> getObjectType() {
+		// 当前FactoryBean的类型是什么
+		// proxy.getClass() > proxyInterfaces[0] > targetSource.getTargetClass() > target.getClass()
+		
 		if (this.proxy != null) {
 			return this.proxy.getClass();
 		}

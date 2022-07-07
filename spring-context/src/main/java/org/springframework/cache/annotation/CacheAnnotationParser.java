@@ -36,11 +36,10 @@ import org.springframework.lang.Nullable;
  * @see SpringCacheAnnotationParser
  */
 public interface CacheAnnotationParser {
-	// 用于解析已知缓存注解类型的策略接口。
-	// AnnotationCacheOperationSource 委托给此类解析器以支持特定的注释类型
-	// 例如 Spring 自己的Cacheable 、 CachePut和CacheEvict
-	// 委托模式 --
-
+	// 用于解析方法上或类上已知缓存注解类型的策略接口 -> 返回缓存注解对应的缓存操作
+	// 		唯一实现类 SpringCacheAnnotationParser
+	//	 	AnnotationCacheOperationSource 的查找注解类型的CacheOperation都是委托给此解析器查找CacheOperation的
+	
 	/**
 	 * Determine whether the given class is a candidate for cache operations
 	 * in the annotation format of this {@code CacheAnnotationParser}.
