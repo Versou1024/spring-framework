@@ -45,31 +45,32 @@ import org.springframework.util.PatternMatchUtils;
  */
 public class MethodMapTransactionAttributeSource implements TransactionAttributeSource, BeanClassLoaderAware, InitializingBean {
 
-	/*
-	 * MethodMapTransactionAttributeSource
-	 * 它的使用方式和NameMatchTransactionAttributeSource基本相同，但是有一个不同在于：
-	 *
-	 * 如果使用NameMatchTransactionAttributeSource配置属性源，比如get*配置为执行事务，那么所有的bean的get方法都会被加上事务，这可能不是我们想要的，因此对于自动代理，我们更好的选择是MethodMapTransactionAttributeSource，它需要指定需要事务化的完整类名和方法名
-	 */
+	// 命名:
+	// MethodMapTransactionAttributeSource = Method Map TransactionAttributeSource
+	// 类似NamedTransactionAttributeSource,也有一个Map<String, TransactionAttribute> 的 map
+	// 不过它还有一个: Map<Method, TransactionAttribute> 的 transactionAttributeMap
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** Map from method name to attribute value. */
+	// 从 方法名 称映射到 事务属性TransactionAttribute
+	// 这里的方法名必须是 全限定名package名 + "." + 类名  的全限定名
 	@Nullable
-	private Map<String, TransactionAttribute> methodMap; // 从方法名称映射到属性值。
+	private Map<String, TransactionAttribute> methodMap;
 
 	@Nullable
 	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
+	// 是否需要急切的进行初始化
 	private boolean eagerlyInitialized = false;
 
+	// 是否已经完成初始化
 	private boolean initialized = false;
 
-	/** Map from Method to TransactionAttribute. */
+	// 映射 Method 到 TransactionAttribute
 	private final Map<Method, TransactionAttribute> transactionAttributeMap = new HashMap<>();
 
-	/** Map from Method to name pattern used for registration. */
+	// 映射 Method 到 用于注册的名称 
 	private final Map<Method, String> methodNameMap = new HashMap<>();
 
 
@@ -102,7 +103,10 @@ public class MethodMapTransactionAttributeSource implements TransactionAttribute
 	 */
 	@Override
 	public void afterPropertiesSet() {
+		// 1. 需要提前设置好methodMap
+		// 这里会对methodMap进行初始化处理 -> 根据methoMmap,去填充对应的transactionAttributeMap/methodNameMap
 		initMethodMap(this.methodMap);
+		// 2. 标记为设置为ture
 		this.eagerlyInitialized = true;
 		this.initialized = true;
 	}
@@ -132,9 +136,12 @@ public class MethodMapTransactionAttributeSource implements TransactionAttribute
 		if (lastDotIndex == -1) {
 			throw new IllegalArgumentException("'" + name + "' is not a valid method name: format is FQN.methodName");
 		}
+		// 1. 从methodMap的key中分离出className和methodName
 		String className = name.substring(0, lastDotIndex);
 		String methodName = name.substring(lastDotIndex + 1);
+		// 2. 创建clazz
 		Class<?> clazz = ClassUtils.resolveClassName(className, this.beanClassLoader);
+		// 3. 继续处理 -> 处理methodName
 		addTransactionalMethod(clazz, methodName, attr);
 	}
 
@@ -149,7 +156,8 @@ public class MethodMapTransactionAttributeSource implements TransactionAttribute
 		Assert.notNull(clazz, "Class must not be null");
 		Assert.notNull(mappedName, "Mapped name must not be null");
 		String name = clazz.getName() + '.'  + mappedName;
-
+		
+		// 1. 找到匹配的mappedName的方法,并加入到matchingMethods结果集中
 		Method[] methods = clazz.getDeclaredMethods();
 		List<Method> matchingMethods = new ArrayList<>();
 		for (Method method : methods) {
@@ -162,19 +170,22 @@ public class MethodMapTransactionAttributeSource implements TransactionAttribute
 					"Could not find method '" + mappedName + "' on class [" + clazz.getName() + "]");
 		}
 
-		// Register all matching methods
+		// 2. 注册所有匹配的方法
 		for (Method method : matchingMethods) {
+			// 2.1 检查methodNameMap中没有匹配的方法
 			String regMethodName = this.methodNameMap.get(method);
 			if (regMethodName == null || (!regMethodName.equals(name) && regMethodName.length() <= name.length())) {
-				// No already registered method name, or more specific
-				// method name specification now -> (re-)register method.
+				// 2.1.1 methodNameMap中不包含指定method对应的名称模式name
 				if (logger.isDebugEnabled() && regMethodName != null) {
 					logger.debug("Replacing attribute for transactional method [" + method + "]: current name '" +
 							name + "' is more specific than '" + regMethodName + "'");
 				}
+				// 2.1.2 将上面创建的name作为对应method的名称模式
 				this.methodNameMap.put(method, name);
+				// 2.1.3 并将method和对应的attr加入到transactionAttributeMap中
 				addTransactionalMethod(method, attr);
 			}
+			// 2.2 methodNameMap中有匹配的方法,直接返回即可
 			else {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Keeping attribute for transactional method [" + method + "]: current name '" +
@@ -215,6 +226,7 @@ public class MethodMapTransactionAttributeSource implements TransactionAttribute
 	@Override
 	@Nullable
 	public TransactionAttribute getTransactionAttribute(Method method, @Nullable Class<?> targetClass) {
+		// 简单明了
 		if (this.eagerlyInitialized) {
 			return this.transactionAttributeMap.get(method);
 		}

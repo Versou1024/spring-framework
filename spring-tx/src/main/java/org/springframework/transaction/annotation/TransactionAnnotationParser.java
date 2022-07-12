@@ -36,8 +36,17 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
  * @see JtaTransactionAnnotationParser
  */
 public interface TransactionAnnotationParser {
-	// 用于解析已知事务注解类型的策略接口。 AnnotationTransactionAttributeSource 委托给此类解析器以支持特定的注解类型，
-	// 例如 Spring 自己的@Transactional注解解析器
+	// 命名:
+	// TransactionAnnotationParser = TransactionAnnotation Parser
+	
+	// 含义:
+	// 事务注解的分析器,根据类上或方法上是否存在事务注解[比如@Transactional],产生相对应的TransactionAttribute
+	
+	// 实现类:
+	//		JtaTransactionAnnotationParser		-- 解析 javax.transaction.Transactional 忽略
+	//		Ejb3TransactionAnnotationParser		-- 解析 javax.ejb.TransactionAttribute 忽略
+	//		SpringTransactionAnnotationParser 	-- 解析spring的@Transactional 99%的情况用这个解析器
+
 
 	/**
 	 * Determine whether the given class is a candidate for transaction attributes

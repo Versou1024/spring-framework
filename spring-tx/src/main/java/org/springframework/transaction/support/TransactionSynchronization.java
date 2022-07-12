@@ -36,7 +36,8 @@ import java.io.Flushable;
  * @see org.springframework.jdbc.datasource.DataSourceUtils#CONNECTION_SYNCHRONIZATION_ORDER
  */
 public interface TransactionSynchronization extends Flushable {
-	// 事务同步器:TransactionSynchronization类非常的重要，它是我们程序员对事务同步的扩展点：用于事务同步回调的接口，AbstractPlatformTransactionManager支持它。
+	// 事务同步器: TransactionSynchronization类非常的重要，它是我们程序员对事务同步的扩展点：
+	// 用于事务同步回调的接口，AbstractPlatformTransactionManager支持它。
 	// 支持在 事务挂起\事务恢复\刷新之前\提交前\提交后\完成前\完成后 进行回调
 
 	// 自定义一个同步器TransactionSynchronization使用得最多的是afterCommit和afterCompletion这两个方法，但是上面的note一定一定要注意，下面我用“人的语言”尝试翻译如下：

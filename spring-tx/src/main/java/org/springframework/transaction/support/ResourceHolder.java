@@ -27,10 +27,19 @@ package org.springframework.transaction.support;
  * @see ResourceHolderSynchronization
  */
 public interface ResourceHolder {
-	// 资源持有者
-	// reset() - 重置holder的事务状态
+	// 位于: org.springframework.transaction.support -> 工具包
+	
+	// 定义:
+	// reset() - 重置资源持有者的状态
 	// unbound() - 解除和事务的绑定关系
 	// isVoid() - 事务是否视为无效
+	
+	
+	// 实现类:
+	//	ResourceHolderSupport
+	//		ConnectionHolder -- 位于 org.springframework.jdbc.datasource -> 在spring-jdbc项目下
+	//		JmsResourceHolder -- 位于 org.springframework.jms.connection -> 在spring-jms项目下
+	//		EntityManagerHolder	-- 位于 org.springframework.orm.jpa 
 
 	/**
 	 * Reset the transactional state of this holder.

@@ -32,5 +32,8 @@ package org.springframework.transaction;
  * @see ReactiveTransactionManager#getReactiveTransaction
  */
 public interface ReactiveTransaction extends TransactionExecution {
+	// 命名:
+	// 象征正在进行的reactive事务
+	// 目前这是一个扩展TransactionExecution的标记接口，但可能会在未来的版本中获得更多方法。
 
 }

@@ -33,6 +33,12 @@ package org.springframework.transaction.support;
  * @see TransactionCallback#doInTransaction
  */
 public class SimpleTransactionStatus extends AbstractTransactionStatus {
+	// Simple Transaction Status = 简单的事务状态实现
+	
+	// 扩展:
+	// 添加一个 newTransaction 的标志位
+	
+	// 可忽略~~
 
 	private final boolean newTransaction;
 

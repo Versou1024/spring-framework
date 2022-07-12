@@ -46,8 +46,8 @@ abstract class TransactionAttributeSourcePointcut extends StaticMethodMatcherPoi
 
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
+		// 方法匹配 -> 检查方法上是否有@Transaction注解
 		TransactionAttributeSource tas = getTransactionAttributeSource();
-		// 查看是否有指定的注解
 		return (tas == null || tas.getTransactionAttribute(method, targetClass) != null);
 	}
 
@@ -80,7 +80,7 @@ abstract class TransactionAttributeSourcePointcut extends StaticMethodMatcherPoi
 	 */
 	@Nullable
 	protected abstract TransactionAttributeSource getTransactionAttributeSource();
-	// 由子类提供给我，告诉事务属性源~~~~ 我才好知道哪些方法我需要切嘛~~~
+	// 由子类提供给我，告诉事务属性源 ~~~~ 借助 TransactionAttributeSource.isCandidateClass(clazz) 检查类是否为需要拦截的带有事务方法的类
 
 
 	/**
@@ -88,11 +88,11 @@ abstract class TransactionAttributeSourcePointcut extends StaticMethodMatcherPoi
 	 * for filtering classes whose methods are not worth searching to begin with.
 	 */
 	private class TransactionAttributeSourceClassFilter implements ClassFilter {
-		// 方法的匹配  静态匹配即可（因为事务无需要动态匹配这么细粒度~~~）
+		// 方法的匹配 -- 静态匹配即可（因为事务无需要动态匹配这么细粒度~~~）
 
 		@Override
 		public boolean matches(Class<?> clazz) {
-			// 实现了如下三个接口的子类，就不需要被代理了  直接放行
+			// 1. 实现了如下三个接口的子类，就不需要被代理了,直接放行
 			// TransactionalProxy它是SpringProxy的子类。  如果是被TransactionProxyFactoryBean生产出来的Bean，就会自动实现此接口，那么就不会被这里再次代理了
 			// PlatformTransactionManager：spring抽象的事务管理器~~~
 			// PersistenceExceptionTranslator对RuntimeException转换成DataAccessException的转换接口
@@ -101,13 +101,13 @@ abstract class TransactionAttributeSourcePointcut extends StaticMethodMatcherPoi
 					PersistenceExceptionTranslator.class.isAssignableFrom(clazz)) {
 				return false;
 			}
-			// 重要：拿到事务属性源~~~~~~
-			// 如果tas == null表示没有配置事务属性源，那是全部匹配的  也就是说所有的方法都匹配~~~~（这个处理还是比较让我诧异的~~~）
-			// 或者 标注了@Transaction这样的注解的方法才会给与匹配~~~
+			
+			// 2. 重要：拿到事务属性源~~~~~~调用其tas.isCandidateClass(clazz)帮助检查是否为有效的事务方法
 			TransactionAttributeSource tas = getTransactionAttributeSource();
-			// 经过 TransactionAttributeSource#isCandidateClass 验证的就是合格的可以做事务的代理类
-			// 实际上 TransactionAttributeSource 的Source就是三个解析器，其中最重要的就是 SpringTransactionAnnotationParser 解析Spring的@Transactional注解
-			// tas.isCandidateClass(clazz) 就是调用解析的isCandidateClass来做判断的
+			
+			// 3. 最终就是交给 SpringTransactionAttributeSource.isCandidateClass() 执行的哦
+			// 源码就一句话: AnnotationUtils.isCandidateClass(targetClass, Transactional.class)
+			// 也就是 确定给定的类targetClass是否是携带指定注解@Transactional的候选者（在类型、方法或字段级别）
 			return (tas == null || tas.isCandidateClass(clazz));
 		}
 	}

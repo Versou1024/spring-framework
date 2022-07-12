@@ -42,6 +42,12 @@ import org.springframework.util.PatternMatchUtils;
  */
 @SuppressWarnings("serial")
 public class NameMatchTransactionAttributeSource implements TransactionAttributeSource, Serializable {
+	// 命名:
+	// NameMatchTransactionAttributeSource = NameMatch TransactionAttributeSource
+	
+	// 使用:
+	// 通过提前注入Map<String, TransactionAttribute>,以方法名为key,以对应TransactionAttribute为value
+	// 然后就可以通过方法名去nameMap中尝试匹配对应的TransactionAttribute
 
 	/**
 	 * Logger available to subclasses.
@@ -49,7 +55,7 @@ public class NameMatchTransactionAttributeSource implements TransactionAttribute
 	 */
 	protected static final Log logger = LogFactory.getLog(NameMatchTransactionAttributeSource.class);
 
-	/** Keys are method names; values are TransactionAttributes. */
+	// 以方法名为key,以对应TransactionAttribute为value
 	private Map<String, TransactionAttribute> nameMap = new HashMap<>();
 
 
@@ -105,14 +111,13 @@ public class NameMatchTransactionAttributeSource implements TransactionAttribute
 			return null;
 		}
 
-		// Look for direct name match.
-		// 根据方法名直接精准匹配查找
+		// 1. 根据方法名直接精准匹配查找
 		String methodName = method.getName();
 		TransactionAttribute attr = this.nameMap.get(methodName);
 
 		if (attr == null) {
-			// Look for most specific name match.
-			// 精准匹配查找失败，就需要按照模式pattern进行匹配
+			// 2. 精准匹配查找失败，就需要按照ant风格的pattern模式进行匹配
+			// 期间会寻找匹配且最长的作为最佳的
 			String bestNameMatch = null;
 			for (String mappedName : this.nameMap.keySet()) {
 				//

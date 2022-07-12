@@ -33,6 +33,21 @@ import org.springframework.transaction.support.DelegatingTransactionDefinition;
 @SuppressWarnings("serial")
 public abstract class DelegatingTransactionAttribute extends DelegatingTransactionDefinition
 		implements TransactionAttribute, Serializable {
+	// 命名: 
+	// Delegating TransactionAttribute = 用来做委托的TransactionAttribute
+	
+	// 含义:
+	// ❗️❗️❗️ 设计模式为委托模式
+	// 当已经有一个TransactionAttribute目标对象时,是如果即想要保留其中的属性,有想要对某个方法进行重写,就会陷入无可奈何的地步
+	// 但是通过抽象类DelegatingTransactionAttribute就可以很好的解决这个问题哦
+	// 那就是DelegatingTransactionAttribute将TransactionAttribute和TransactionDefinition的所有方法都默认交给传递的targetAttribute实现
+	// 用户比如说希望对getName()方法进行重写,那么只需要
+	//  TransactionAttribute ta = new DelegatingTransactionAttribute(txAttr) {
+	//				@Override
+	//				public String getName() {
+	//					return "xx";
+	//				}
+	//			};
 
 	private final TransactionAttribute targetAttribute;
 

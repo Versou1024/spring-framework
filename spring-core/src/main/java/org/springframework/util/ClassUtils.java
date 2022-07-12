@@ -1333,6 +1333,9 @@ public abstract class ClassUtils {
 	 * @return {@code true} if the method can be considered as user-declared; {@code false} otherwise
 	 */
 	public static boolean isUserLevelMethod(Method method) {
+		// 确定给定方法是由用户声明还是至少指向用户声明的方法。
+		// 至少认为: 桥接方法 或 非合成方法且非Groovy语言 的都是UserLevel的方法
+		
 		Assert.notNull(method, "Method must not be null");
 		return (method.isBridge() || (!method.isSynthetic() && !isGroovyObjectMethod(method)));
 	}

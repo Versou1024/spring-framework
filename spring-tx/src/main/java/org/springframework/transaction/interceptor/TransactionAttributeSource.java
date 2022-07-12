@@ -34,10 +34,26 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.transaction.annotation.AnnotationTransactionAttributeSource
  */
 public interface TransactionAttributeSource {
-	// TransactionInterceptor用于元数据检索的策略接口。
-
-	// getTransactionAttribute()知道如何从method上获取事务属性，无论是从配置、源级别的元数据属性（例如 Java 5 注释）还是其他任何地方
-	// 同时能够帮助检查类是否需要被代理，及调用 isCandidateClass()
+	// 位于: org.springframework.transaction.interceptor
+	
+	// 命名:
+	// TransactionAttributeSource = TransactionAttribute Source
+	// XxxSource一般都是表示用来查找Xxx
+	// TransactionAttributeSource就是用来查找TransactionAttribute
+	
+	// 定义:
+	// getTransactionAttribute()  -- 从method上获取事务属性TransactionAttribute
+	// isCandidateClass() -- 判断targetClass是否为合格TransactionAttribute的来源
+	
+	// 实现类:
+	//		NamedTransactionAttributeSource			-- 通过提前注入注入Map<String, TransactionAttribute>,以方法名为key,以对应TransactionAttribute为value
+	//		AnnotationTransactionAttributeSource	-- 100%的情况都是使用这个,切记切记哦
+	//		MethodMapTransactionAttributeSource		-- 存入了Method->TransactionAttribute,Method->name的各种关系
+	//		CompositeTransactionAttributeSource		-- 组合模式,不bb
+	//		MatchAlwaysTransactionAttributeSource	-- 永远都能匹配到同一个TransactionAttribute
+	
+	// 参考:
+	// 这tm和CacheOperationSource几乎一摸一样
 
 	/**
 	 * Determine whether the given class is a candidate for transaction attributes

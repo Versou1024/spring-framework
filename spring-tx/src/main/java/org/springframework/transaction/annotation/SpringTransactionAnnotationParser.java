@@ -42,7 +42,7 @@ public class SpringTransactionAnnotationParser implements TransactionAnnotationP
 
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {
-		// 当前解析器是否启用，就必须满足有@Transactional注解，不巧的是，我们就是用的这个注解，因此不需要分析别的处理器
+		// 当前解析器是否启用，就必须满足有@Transactional注解
 		return AnnotationUtils.isCandidateClass(targetClass, Transactional.class);
 	}
 
@@ -69,6 +69,7 @@ public class SpringTransactionAnnotationParser implements TransactionAnnotationP
 
 
 	// 这个简单的说：就是把注解的属性们 专门为事务属性们~~~~
+	// 专门使用的: RuleBasedTransactionAttribute
 	protected TransactionAttribute parseTransactionAnnotation(AnnotationAttributes attributes) {
 
 		RuleBasedTransactionAttribute rbta = new RuleBasedTransactionAttribute();

@@ -44,8 +44,17 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.transaction.ReactiveTransactionManager
  */
 public interface PlatformTransactionManager extends TransactionManager {
-	// 传统平台式的事务管理器
-	// 还有一种响应式的事务管理器
+	// 命名: 
+	// Platform TransactionManager = 传统平台式的事务管理器
+	
+	// 定义:
+	// 根据TransactionDefinition获取TransactionStatus
+	// 传入TransactionStatus提交和回滚事务 
+	
+	// 实现类:
+	//		CallbackPreferringPlatformTransactionManager	-- 额外扩展回调功能
+	//		AbstractPlatformTransactionManager				-- 抽象的
+	//		ResourcePlatformTransactionManager				-- 资源
 
 	/**
 	 * Return a currently active transaction or create a new one, according to

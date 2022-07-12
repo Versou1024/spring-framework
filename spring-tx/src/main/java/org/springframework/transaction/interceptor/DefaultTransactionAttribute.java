@@ -30,6 +30,10 @@ import org.springframework.util.StringUtils;
  */
 @SuppressWarnings("serial")
 public class DefaultTransactionAttribute extends DefaultTransactionDefinition implements TransactionAttribute {
+	// 继承体系:
+	// TransactionAttribute extends TransactionDefinition
+	// DefaultTransactionDefinition implements TransactionDefinition
+	// DefaultTransactionAttribute extends DefaultTransactionDefinition implements TransactionAttribute
 
 	@Nullable
 	private String qualifier;
@@ -132,7 +136,9 @@ public class DefaultTransactionAttribute extends DefaultTransactionDefinition im
 	 */
 	@Override
 	public boolean rollbackOn(Throwable ex) {
-		// 是否回滚，默认情况就是看是否属于RuntimeException或者Error
+		// DefaultTransactionAttribute 是 RuleBasedTransactionAttribute 的父类
+		// 当RuleBasedTransactionAttribute没有指定回滚规则时,将调用这里父类的回滚方式
+		// 即默认情况就是看是否属于RuntimeException或者Error
 		return (ex instanceof RuntimeException || ex instanceof Error);
 	}
 

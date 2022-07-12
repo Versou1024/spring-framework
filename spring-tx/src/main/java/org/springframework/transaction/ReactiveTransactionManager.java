@@ -34,6 +34,9 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.transaction.PlatformTransactionManager
  */
 public interface ReactiveTransactionManager extends TransactionManager {
+	// 命名: 
+	// Reactive TransactionManager = 响应式的事务管理器 -> 忽略
+
 
 	/**
 	 * Emit a currently active reactive transaction or create a new one, according to

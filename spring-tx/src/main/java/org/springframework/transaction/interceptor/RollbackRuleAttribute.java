@@ -34,20 +34,18 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class RollbackRuleAttribute implements Serializable{
+	// 命名: = 
+	// RollbackRuleAttribute = Rollback Rule Attribute
+	// 简单不做多余描述
 
 	/**
 	 * The {@link RollbackRuleAttribute rollback rule} for
 	 * {@link RuntimeException RuntimeExceptions}.
 	 */
-	public static final RollbackRuleAttribute ROLLBACK_ON_RUNTIME_EXCEPTIONS =
-			new RollbackRuleAttribute(RuntimeException.class);
+	public static final RollbackRuleAttribute ROLLBACK_ON_RUNTIME_EXCEPTIONS = new RollbackRuleAttribute(RuntimeException.class);
 
 
-	/**
-	 * Could hold exception, resolving class name but would always require FQN.
-	 * This way does multiple string comparisons, but how often do we decide
-	 * whether to roll back a transaction following an exception?
-	 */
+	// 持有的,需要在异常栈中去找到的异常exceptionName,一旦找到就表示需要回滚
 	private final String exceptionName;
 
 
@@ -107,19 +105,23 @@ public class RollbackRuleAttribute implements Serializable{
 	 * lowest depth winning.
 	 */
 	public int getDepth(Throwable ex) {
+		// ❗️❗️❗️ 其核心方法就是当前方法getDepth()
+		// 只要该方法返回非-1,即大于0小于Integer.MAX_VALUE的值,就表示在异常栈中找到对应异常
+		
 		return getDepth(ex.getClass(), 0);
 	}
 
 
 	private int getDepth(Class<?> exceptionClass, int depth) {
+		// 1. 如果抛出的异常就是exceptionName,直接返回depth=0,表示完全匹配
 		if (exceptionClass.getName().contains(this.exceptionName)) {
-			// Found it!
 			return depth;
 		}
-		// If we've gone as far as we can go and haven't found it...
+		// 2. 如果抛出的异常时Throwable,非常大的范围,就返回-1,表示无法匹配
 		if (exceptionClass == Throwable.class) {
 			return -1;
 		}
+		// 3. 否则,去exceptionClass.superClass()中继续查找,并将depth+1
 		return getDepth(exceptionClass.getSuperclass(), depth + 1);
 	}
 

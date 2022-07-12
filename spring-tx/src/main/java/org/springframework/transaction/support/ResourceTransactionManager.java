@@ -34,6 +34,16 @@ import org.springframework.transaction.PlatformTransactionManager;
  * @see TransactionSynchronizationManager
  */
 public interface ResourceTransactionManager extends PlatformTransactionManager {
+	// 作用:
+	// PlatformTransactionManager接口的扩展，表示本地资源事务管理器，对单个目标资源进行操作。
+	// 不使用 XA 分布式事务登记来获取开放数量的资源，而是专注于利用单个目标资源的本机功能和简单性。
+	
+	// 实现类: 忽略~~
+	//	CciLocalTransactionManager
+	//	JmsTransactionManager
+	// 	JpaTransactionManager
+	// 	DtaSourceTransactionManager
+	//	HibernateTransactionManager
 
 	/**
 	 * Return the resource factory that this transaction manager operates on,

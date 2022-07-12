@@ -46,6 +46,7 @@ public abstract class AbstractTransactionManagementConfiguration implements Impo
 	// 抽象事务管理配置
 	// 抽象基类@Configuration为启用 Spring 的注解驱动事务管理功能提供通用结构
 
+	// 持有: @EnableTransactionManagement注解的属性信息哦
 	@Nullable
 	protected AnnotationAttributes enableTx;
 
@@ -59,21 +60,18 @@ public abstract class AbstractTransactionManagementConfiguration implements Impo
 	// 用于在处理时感知@Import的注解元数据
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
-		// AbstractTransactionManagementConfiguration 被 ProxyTransactionManagementConfiguration 实现
-		// ProxyTransactionManagementConfiguration 是被 TransactionManagementConfigurationSelector#selectImports() 导入的
-		// TransactionManagementConfigurationSelector 是被 @EnableTransactionManagement 的 元注解 @Import(TransactionManagementConfigurationSelector.class)
-		// 用户配置类上使用 @EnableTransactionManagement 启动声明式事务注解
+		// importMetadata 是用户配置类上的元注解信息, [当前前提有使用 @EnableTransactionManagement]
 
-		// 此处：只拿到@EnableTransactionManagement这个注解的就成~~~~~
+		// 1. 此处：只拿到@EnableTransactionManagement这个注解的就成~~~~~
 		// 作为AnnotationAttributes保存起来
 		this.enableTx = AnnotationAttributes.fromMap(importMetadata.getAnnotationAttributes(EnableTransactionManagement.class.getName(), false));
-		// 这个注解是必须的~~~~~~~~~~~~~~~~
+		// 2. 这个注解是必须的~~~~~~~~~~~~~~~~
 		if (this.enableTx == null) {
 			throw new IllegalArgumentException("@EnableTransactionManagement is not present on importing class " + importMetadata.getClassName());
 		}
 	}
 
-	// 这里和@Async的处理一样，配置文件可以实现这个接口。然后给注解驱动的给一个默认的事务管理器~~~~
+	// 这里和@EnableCaching的处理一样，用户通过实现TransactionManagementConfigurer来定制化自己的TransactionManager
 	// 设计模式都是想通的~~~
 	@Autowired(required = false)
 	void setConfigurers(Collection<TransactionManagementConfigurer> configurers) {
@@ -95,5 +93,6 @@ public abstract class AbstractTransactionManagementConfiguration implements Impo
 	public static TransactionalEventListenerFactory transactionalEventListenerFactory() {
 		return new TransactionalEventListenerFactory();
 	}
+	//  注册到ioc后,会被EventListenerMethodProcessor处理的哦
 
 }

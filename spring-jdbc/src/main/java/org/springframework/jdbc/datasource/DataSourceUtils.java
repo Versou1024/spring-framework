@@ -211,7 +211,7 @@ public abstract class DataSourceUtils {
 				logger.debug("Changing isolation level of JDBC Connection [" + con + "] to " +
 						definition.getIsolationLevel());
 			}
-			// 2.2 连接的隔离级别如果不是定制的值,就重新设置
+			// 2.2 连接的隔离级别如果不是@Transactional注解定制的隔离界别,就重新设置
 			int currentIsolation = con.getTransactionIsolation();
 			if (currentIsolation != definition.getIsolationLevel()) {
 				previousIsolationLevel = currentIsolation;
@@ -359,6 +359,7 @@ public abstract class DataSourceUtils {
 	 * @see #getConnection
 	 */
 	public static void releaseConnection(@Nullable Connection con, @Nullable DataSource dataSource) {
+		// 释放连接
 		try {
 			doReleaseConnection(con, dataSource);
 		}
@@ -382,13 +383,16 @@ public abstract class DataSourceUtils {
 	 * @see #doGetConnection
 	 */
 	public static void doReleaseConnection(@Nullable Connection con, @Nullable DataSource dataSource) throws SQLException {
+		// 释放连接
+		
 		if (con == null) {
 			return;
 		}
 		if (dataSource != null) {
+			// 1. 以dataSource为key,获取关联的ConnectionHolder -> ❗暴扣释放TransactionSynchronizationManager.getResource(dataSource)️❗️
 			ConnectionHolder conHolder = (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
 			if (conHolder != null && connectionEquals(conHolder, con)) {
-				// It's the transactional Connection: Don't close it.
+				// 2. 执行 conHolder.released(
 				conHolder.released();
 				return;
 			}

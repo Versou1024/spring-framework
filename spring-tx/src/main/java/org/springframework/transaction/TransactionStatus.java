@@ -37,10 +37,10 @@ import java.io.Flushable;
  * @see org.springframework.transaction.interceptor.TransactionInterceptor#currentTransactionStatus()
  */
 public interface TransactionStatus extends TransactionExecution, SavepointManager, Flushable {
-	/**
+	/*
 	 * TransactionStatus 集大成者
-	 * 		SavepointManager保存点管理器
-	 * 		TransactionExecution事务状态通用表示，事务是否已经完成、是否为新的事务、设置只能回滚
+	 * 		SavepointManager 保存点管理器
+	 * 		TransactionExecution 事务状态通用表示，事务是否已经完成、是否为新的事务、设置只能回滚
 	 * 		Flushable提供flush()方法
 	 *
 	 * 扩展：hasSavepoint()\flush()
@@ -69,5 +69,6 @@ public interface TransactionStatus extends TransactionExecution, SavepointManage
 	 */
 	@Override
 	void flush();
+	// 将底层session刷新到data store区（如果适用）
 
 }

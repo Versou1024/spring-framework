@@ -40,6 +40,11 @@ import org.springframework.util.Assert;
  * @see DataSourceUtils
  */
 public class ConnectionHolder extends ResourceHolderSupport {
+	// 命名: 
+	// ConnectionHolder = 包装 JDBC Connection的资源持有者
+	
+	// 作用:
+	// DataSourceTransactionManager将此类的实例绑定到线程，用于特定的javax.sql.DataSource 。
 
 	/**
 	 * Prefix for savepoint names.
@@ -53,7 +58,8 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	@Nullable
 	private Connection currentConnection; // 持有一个Connection
 
-	private boolean transactionActive = false; // 事务活跃标记位
+	// 事务活跃标记位 -> 若为true,表示当前事务正在使用中
+	private boolean transactionActive = false; 
 
 	@Nullable
 	private Boolean savepointsSupported; // 保存点支持与否

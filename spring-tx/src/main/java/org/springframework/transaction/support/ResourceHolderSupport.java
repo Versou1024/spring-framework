@@ -34,18 +34,27 @@ import org.springframework.transaction.TransactionTimedOutException;
  * @see org.springframework.jdbc.datasource.DataSourceUtils#applyTransactionTimeout
  */
 public abstract class ResourceHolderSupport implements ResourceHolder {
+	// 命名:
 	// ResourceHolderSupport:资源持有者方便的基类。
 	// 对参与的事务具有仅回滚支持。可以在一定的秒数或毫秒后过期，以确定事务超时。
 
+	// 将资源标记为与事务同步
+	// 默认是不同步的状态,当从一个事务对象txObject持有的一个新的connection时,一般都是标记为新的连接对象,且已同步
 	private boolean synchronizedWithTransaction = false;
 
+	// 将资源事务标记为仅回滚。
 	private boolean rollbackOnly = false;
 
+	// 设置此对象的超时时间（以毫秒为单位）。
 	@Nullable
 	private Date deadline;
 
+	// 引用计数
+	// 持有者已被请求（即有人请求了它持有的资源） -> referenceCount++
+	// 持有者将其释放时 -> referenceCount--
 	private int referenceCount = 0;
 
+	// 标记: ResourceHolder是否应该被忽略
 	private boolean isVoid = false;
 
 
@@ -185,8 +194,12 @@ public abstract class ResourceHolderSupport implements ResourceHolder {
 	 * Clear the transactional state of this resource holder.
 	 */
 	public void clear() {
+		// 清空:
+		// 将资源与事务同步标记设为false即关闭,即不同步
 		this.synchronizedWithTransaction = false;
+		// 将事务设置为不回滚状态
 		this.rollbackOnly = false;
+		// 将事务超时的死亡时间改为null
 		this.deadline = null;
 	}
 

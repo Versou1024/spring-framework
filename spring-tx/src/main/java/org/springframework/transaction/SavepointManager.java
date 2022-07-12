@@ -35,14 +35,17 @@ package org.springframework.transaction;
  * @see java.sql.Savepoint
  */
 public interface SavepointManager {
-	/**
-	 * 以通用方式以编程方式管理事务保存点的接口。由 TransactionStatus 扩展以公开特定事务的保存点管理功能。
-	 * 请注意，保存点只能在活动事务中工作。只需将此程序化保存点处理用于高级需求；否则，最好使用带有 PROPAGATION_NESTED 的子事务
+	/*
+	 * 以通用方式以编程方式管理事务保存点的接口。由 TransactionStatus 扩展以公开指定事务的保存点管理功能。
+	 * 请注意，保存点只能在活动事务中工作。只需将此程序化保存点处理用于高级需求；
+	 * 否则，最好使用带有 PROPAGATION_NESTED 的子事务
 	 *
-	 * 创建、回滚到、释放 - 回滚点
-	 * 回滚点管理器
-	 *
-	 * JDBC定义了SavePoint接口，提供在一个更细粒度的事务控制机制。当设置了一个保存点后，可以rollback到该保存点处的状态，而不是rollback整个事务。Connection接口的setSavepoint和releaseSavepoint方法可以设置和释放保存点。
+	 * 扩展:
+	 * 创建savePoint、回滚savePoint、释放savePoint
+	 * 
+	 * 实现类:
+	 * 		TransactionStatus: 接口 -- 核心
+	 * 		JdbcTransactionObjectSupport: -- 
 	 */
 
 	/**

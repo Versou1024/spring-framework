@@ -50,15 +50,14 @@ import org.springframework.util.ClassUtils;
  * @since 1.1
  */
 public abstract class AbstractFallbackTransactionAttributeSource implements TransactionAttributeSource {
+	// 命名:
+	// AbstractFallbackTransactionAttributeSource = Abstract Fallback TransactionAttribute Source
+	
+	// 含义:
+	// 抽象的回调的TransactionAttribute的源头 -> 
+	
 
-	/**
-	 * Canonical value held in cache to indicate no transaction attribute was
-	 * found for this method, and we don't need to look again.
-	 */
-	@SuppressWarnings("serial")
-	// 针对没有事务注解属性的方法进行事务注解属性缓存时使用的特殊值，用于标记该方法没有事务注解属性
-	// 从而不用在首次缓存在信息后，不用再次重复执行真正的分析  来提高查找的效率
-	// 标注了@Transaction注解的表示有事务属性的，才会最终加入事务。但是，但是此处需要注意的是，只要被事务的Advisor切中的，都会缓存起来  放置过度的查找~~~~ 因此才有这个常量的出现
+	// 用于标记方法没有事务注解属性 -> 主要是用在缓存中,避免null值,而是使用一个标记对象NULL_TRANSACTION_ATTRIBUTE
 	// 比如一个类A属于事务代理类，拥有3个方法，其中有个方法1被@Transactional修饰，其余两个方法就属于这里没有事务注解属性的说法
 	private static final TransactionAttribute NULL_TRANSACTION_ATTRIBUTE = new DefaultTransactionAttribute() {
 		@Override
@@ -75,15 +74,12 @@ public abstract class AbstractFallbackTransactionAttributeSource implements Tran
 	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/**
-	 * Cache of TransactionAttributes, keyed by method on a specific target class.
-	 * <p>As this base class is not marked Serializable, the cache will be recreated
-	 * after serialization - provided that the concrete subclass is Serializable.
-	 */
-	private final Map<Object, TransactionAttribute> attributeCache = new ConcurrentHashMap<>(1024);
+
 	// 方法上的事务注解属性缓存，key使用目标类上的方法，使用类型MethodClassKey来表示
-	// 这个Map会比较大，会被事务相关的Advisor拦截下来的方法，最终都会缓存下来。关于事务相关的Advisor，后续也是会着重讲解的~~~
+	// 这个Map会比较大，因为与事务相关的方法都会被Advisor匹配拦截下来，处理过一次后缓存下来
 	// 因为会有很多，所以我们才需要一个NULL_TRANSACTION_ATTRIBUTE常量来提高查找的效率~~~
+	private final Map<Object, TransactionAttribute> attributeCache = new ConcurrentHashMap<>(1024);
+
 
 
 	/**
@@ -99,41 +95,38 @@ public abstract class AbstractFallbackTransactionAttributeSource implements Tran
 	public TransactionAttribute getTransactionAttribute(Method method, @Nullable Class<?> targetClass) {
 		// 获取指定方法上的注解事务属性   如果方法上没有注解事务属性，则使用目标方法所属类上的注解事务属性
 
-		// 如果目标方法是内置类Object上的方法，总是返回null，这些方法上不应用事务
+		// 1. Object下的方法不应该使用事务
 		if (method.getDeclaringClass() == Object.class) {
 			return null;
 		}
 
-		// First, see if we have a cached value.
+		// 2. cache key
 		Object cacheKey = getCacheKey(method, targetClass);
 		TransactionAttribute cached = this.attributeCache.get(cacheKey);
+		// 2.1 缓存命中
 		if (cached != null) {
-			// Value will either be canonical value indicating there is no transaction attribute,
-			// or an actual transaction attribute.
-			// 目标方法上上并没有事务注解属性，但是已经被尝试分析过并且已经被缓存，
-			// 使用的值是 NULL_TRANSACTION_ATTRIBUTE,所以这里再次尝试获取其注解事务属性时，直接返回 null
+			// 2.1.1 执行的目标方法已经被解析过且发现没有事务注解属性,将存入NULL_TRANSACTION_ATTRIBUTE
 			if (cached == NULL_TRANSACTION_ATTRIBUTE) {
 				return null;
 			}
+			// 2.1.2 执行的目标方法有事务注解属性
 			else {
 				return cached;
 			}
 		}
+		// 2.2 缓存未命中
 		else {
-			// We need to work it out.
-			// 第一次进来一般都是缓存未命中
-
-			// 通过方法、目标Class 分析出此方法上的事务属性~~~~~
+			// 2.2.1 通过method\targetClass计算TransactionAttribute
 			TransactionAttribute txAttr = computeTransactionAttribute(method, targetClass); // 核心处理 --- 计算事务属性
-			// Put it in the cache.
-			// 如果目标方法上并没有使用注解事务属性，也缓存该信息，只不过使用的值是一个特殊值:
+			// 2.2.2 如果目标方法上并没有使用注解事务属性，也缓存该信息，只不过使用的值是一个特殊值NULL_TRANSACTION_ATTRIBUTE
 			if (txAttr == null) {
 				this.attributeCache.put(cacheKey, NULL_TRANSACTION_ATTRIBUTE);
 			}
+			// 2.2.3 获取method的id值 -> 一般就是当前method的全限定类名
 			else {
-				// getQualifiedMethodName: 返回给定方法的限定名，由完全限定的接口/类名+“.”组成+ 方法名称
 				String methodIdentification = ClassUtils.getQualifiedMethodName(method, targetClass);
 				if (txAttr instanceof DefaultTransactionAttribute) {
+					// 
 					((DefaultTransactionAttribute) txAttr).setDescriptor(methodIdentification);
 				}
 				if (logger.isTraceEnabled()) {
@@ -166,24 +159,20 @@ public abstract class AbstractFallbackTransactionAttributeSource implements Tran
 	 */
 	@Nullable
 	protected TransactionAttribute computeTransactionAttribute(Method method, @Nullable Class<?> targetClass) {
-		// 计算事务属性
+		// 从method\targetClass上计算TransactionAttribute
 
-		// Don't allow no-public methods as required.
-		// 默认情况：不允许非公有方法被事务增强
+		// 1. 默认情况：不允许非公有方法被事务增强
 		// 如果事务注解属性分析仅仅针对public方法，而当前方法不是public，则直接返回null
 		// 如果是private，AOP是能切入，代理对象也会生成的  但就是事务不回生效的~~~~
 		if (allowPublicMethodsOnly() && !Modifier.isPublic(method.getModifiers())) {
 			return null;
 		}
 
-		// The method may be on an interface, but we need attributes from the target class.
-		// If the target class is null, the method will be unchanged.
 		// 该方法可能在接口上，但我们需要来自目标类的属性。如果目标类为空，则方法将保持不变。
 		// 上面说了，因为Method并不一样属于目标类。所以这个方法就是获取targetClass上的那个和method对应的方法  也就是最终要执行的方法
 		Method specificMethod = AopUtils.getMostSpecificMethod(method, targetClass);
 
-		// First try is the method in the target class.
-		// 首先尝试的是目标类中的方法。
+		// 2.1 首先尝试的是目标类中的方法。
 		// 第一步：去找直接标记在方法上的事务属性~~~ 如果方法上有就直接返回（不用再看类上的了）
 		// findTransactionAttribute这个方法其实就是子类去实现的
 		TransactionAttribute txAttr = findTransactionAttribute(specificMethod);
@@ -191,8 +180,7 @@ public abstract class AbstractFallbackTransactionAttributeSource implements Tran
 			return txAttr;
 		}
 
-		// Second try is the transaction attribute on the target class.
-		// 然后尝试检查事务注解属性是否标记在目标方法 specificMethod（注意此处用不是Method） 所属类上
+		// 2.2 尝试检查事务注解属性是否标记在目标方法 specificMethod（注意此处用不是Method） 所属类上
 		txAttr = findTransactionAttribute(specificMethod.getDeclaringClass());
 		if (txAttr != null && ClassUtils.isUserLevelMethod(method)) {
 			return txAttr;
@@ -219,6 +207,7 @@ public abstract class AbstractFallbackTransactionAttributeSource implements Tran
 		return null;
 	}
 
+	// 子类 AnnotationTransactionAttributeSource 需要实现这两个注解 -> 分别是从类上\方法上获取TransactionAttribute
 
 	/**
 	 * Subclasses need to implement this to return the transaction attribute for the

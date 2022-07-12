@@ -28,6 +28,7 @@ import org.springframework.transaction.TransactionDefinition;
  * @since 1.2
  */
 public enum Isolation {
+	// 隔离级别
 
 	/**
 	 * Use the default isolation level of the underlying datastore.

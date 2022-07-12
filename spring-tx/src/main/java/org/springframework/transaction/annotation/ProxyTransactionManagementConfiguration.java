@@ -38,6 +38,13 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
 @Configuration(proxyBeanMethods = false)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class ProxyTransactionManagementConfiguration extends AbstractTransactionManagementConfiguration {
+	// ❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️❗️
+	// 经典的导入结构 -> 可以去看看@EnableCaching的那段导入的注释,已经说的非常的相似 [我可以相似度达到了99%]
+	
+	// ~~ 经典的结构
+	// 导入过程: @EnableTransactionManagement -> 元注解@Import(TransactionManagementConfigurationSelector.class) -> ProxyTransactionManagementConfiguration导入
+	// 继承体系:
+	// ProxyTransactionManagementConfiguration 本身就是一个配置类,最终要的是向容器注册一个Advisor即BeanFactoryTransactionAttributeSourceAdvisor方便
 
 	@Bean(name = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
@@ -48,18 +55,19 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 		advisor.setTransactionAttributeSource(transactionAttributeSource);
 		advisor.setAdvice(transactionInterceptor); // 设置 通知方法/拦截器/回调方法
 		if (this.enableTx != null) {
+			// @EnableTransaction的order属性可以指定Advisor在整个List<Advisor>的执行优先级哦
 			advisor.setOrder(this.enableTx.<Integer>getNumber("order"));
 		}
 		return advisor;
 	}
 
 
-	// TransactionAttributeSource 这种类特别像 `TargetSource`这种类的设计模式
-	// 这里直接使用的是AnnotationTransactionAttributeSource  基于注解的事务属性源~~~
+	// TransactionAttributeSource 这种类特别像 `CacheOperationSource`这种类的设计模式
+	// 这里直接使用的是 AnnotationTransactionAttributeSource  基于注解的事务属性源~~~
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public TransactionAttributeSource transactionAttributeSource() {
-		// 事务属性源
+		// TransactionAttributeSource 事务属性源 -> 就是用来查找事务属性的即能够查找 TransactionAttribute
 		return new AnnotationTransactionAttributeSource();
 	}
 

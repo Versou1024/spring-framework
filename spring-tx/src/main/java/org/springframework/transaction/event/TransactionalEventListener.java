@@ -65,6 +65,9 @@ import org.springframework.core.annotation.AliasFor;
 public @interface TransactionalEventListener {
 	// @since 4.2  显然，注解的方式提供得还是挺晚的，而API的方式第一个版本就已经提供了
 	// 另外最重要的是，它头上有一个注解：`@EventListener`  so
+	
+	// 从源码里可以看出，其实@TransactionalEventListener的底层实现原理还是事务同步器：TransactionSynchronization和TransactionSynchronizationManager。
+	// 以上，建立在小伙伴已经知晓了Spring事件/监听机制的基础上，回头看Spring事务的监听机制其实就非常非常的简单了(没有多少新东西)。
 
 	/**
 	 * Phase to bind the handling of an event to.
@@ -82,7 +85,8 @@ public @interface TransactionalEventListener {
 	 * Whether the event should be handled if no transaction is running.
 	 */
 	boolean fallbackExecution() default false;
-	// 若没有事务的时候，对应的event是否已经执行  默认值为false表示  没事务就不执行了
+	// 若没有事务的时候，对应的event是否已经执行  
+	// 默认值为false表示  没事务就不执行了
 
 	/**
 	 * Alias for {@link #classes}.

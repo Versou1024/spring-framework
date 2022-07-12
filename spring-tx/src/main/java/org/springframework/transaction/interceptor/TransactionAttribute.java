@@ -31,6 +31,8 @@ import org.springframework.transaction.TransactionDefinition;
  * @see RuleBasedTransactionAttribute
  */
 public interface TransactionAttribute extends TransactionDefinition {
+	// 位于: org.springframework.transaction.interceptor
+	
 	/*
 	 * 该接口向TransactionDefinition添加了一个rollbackOn规范方法。
 	 * 由于自定义rollbackOn仅适用于 AOP，因此它驻留在与 AOP 相关的事务子包中。

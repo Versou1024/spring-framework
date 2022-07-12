@@ -41,6 +41,11 @@ import org.springframework.transaction.TransactionException;
  * @see org.springframework.transaction.interceptor.TransactionInterceptor
  */
 public interface CallbackPreferringPlatformTransactionManager extends PlatformTransactionManager {
+	// 命名:
+	// Callback Preferring PlatformTransactionManager = 偏向回调的
+	
+	// 作用:
+	// 在PlatformTransactionManager扩展一个回调方法,在
 
 	/**
 	 * Execute the action specified by the given callback object within a transaction.

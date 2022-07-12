@@ -105,6 +105,8 @@ public @interface EventListener {
 	 */
 	@AliasFor("value")
 	Class<?>[] classes() default {};
+	// 此侦听器listener处理的事件event的class
+	// 如果使用单个值指定此属性，则带注释的方法可以选择接受单个参数。但是，如果此属性指定了多个值，则注释方法不得声明任何参数。
 
 	/**
 	 * Spring Expression Language (SpEL) expression used for making the event
@@ -128,5 +130,10 @@ public @interface EventListener {
 	 * </ul>
 	 */
 	String condition() default "";
+	// Spring 表达式语言 (SpEL) 表达式用于使得事件处理即event被监听后处理是有条件
+	// #root.event或event用于引用ApplicationEvent
+	// #root.args或args用于对方法参数数组的引用
+	// 方法参数可以通过索引访问。例如，第一个参数可以通过#root.args[0] 、 args[0] 、 #a0或#p0访问。
+	// 如果参数名称在编译的字节码中可用，则可以通过名称（带有前面的哈希标记）访问方法参数。
 
 }

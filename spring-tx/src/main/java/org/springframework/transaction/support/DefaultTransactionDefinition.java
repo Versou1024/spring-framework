@@ -53,6 +53,8 @@ public class DefaultTransactionDefinition implements TransactionDefinition, Seri
 
 	/** Constants instance for TransactionDefinition. */
 	static final Constants constants = new Constants(TransactionDefinition.class);
+	
+	// 名字\超时\隔离级别\传播特性
 
 	private int propagationBehavior = PROPAGATION_REQUIRED;
 

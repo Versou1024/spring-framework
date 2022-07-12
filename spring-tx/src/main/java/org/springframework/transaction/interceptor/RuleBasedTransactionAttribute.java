@@ -41,6 +41,13 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute implements Serializable {
+	// 命名:
+	// RuleBasedTransactionAttribute = Rule Based Transaction Attribute
+	// 基于回滚规则的事务属性
+	
+	// 目的:
+	// 在DefaultTransactionAttribute的基础上加入一个List<RollbackRuleAttribute>类型的rollbackRules
+	// 以支持rollbackOn(Throwable)的回滚规则
 
 	/** Prefix for rollback-on-exception rules in description strings. */
 	public static final String PREFIX_ROLLBACK_RULE = "-";
@@ -138,11 +145,12 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 			logger.trace("Applying rules to determine whether transaction should rollback on " + ex);
 		}
 
+		// 1. winner 回滚rule成功者
 		RollbackRuleAttribute winner = null;
 		int deepest = Integer.MAX_VALUE;
 
-		// 这里getDepth()就是去看看异常栈里面  该类型的异常处于啥位置。
-		// 这里用了Integer的最大值，基本相当于不管异常有多深，遇上此异常都应该回滚喽，也就是找到这个winnner了~~~~~
+		// 2. 这里getDepth()就是去看看异常栈里面  该类型的异常处于啥位置。
+		// 这里用了Integer的最大值，基本相当于不管异常有多深，遇上此异常都应该回滚喽，也就是找到这个winner了~~~~~
 		if (this.rollbackRules != null) {
 			for (RollbackRuleAttribute rule : this.rollbackRules) {
 				int depth = rule.getDepth(ex);
@@ -157,14 +165,13 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 			logger.trace("Winning rollback rule is: " + winner);
 		}
 
-		// User superclass behavior (rollback on unchecked) if no rule matches.
-		// 这句相当于：如果你没有指定回滚规则，那就交给父类吧（只回滚RuntimeException和Error类型）
+		// 3. 这句相当于：如果你没有指定回滚规则，那就交给父类吧（只回滚RuntimeException和Error类型）
 		if (winner == null) {
 			logger.trace("No relevant rollback rule found: applying default rules");
 			return super.rollbackOn(ex);
 		}
 
-		// 最终只要找到了，但是不是NoRollbackRuleAttribute类型就成`~~~~
+		// 4. 最终只要找到winner - 但是不是NoRollbackRuleAttribute类型就成`~~~~
 		return !(winner instanceof NoRollbackRuleAttribute);
 	}
 

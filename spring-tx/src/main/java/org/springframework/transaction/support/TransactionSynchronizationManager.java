@@ -75,10 +75,12 @@ import org.springframework.util.Assert;
  * @see org.springframework.jdbc.datasource.DataSourceUtils#getConnection
  */
 public abstract class TransactionSynchronizationManager {
-	// 抽象类,类中的方法都是static的
+	// 命名:
+	// Transaction Synchronization Manager = 事务同步管理器
+	// 作为一个抽象类 -- 类中的方法都是static的 -- 即工具方法哦
 
-	/**
-	 * TransactionSynchronizationManager管理每个线程的资源和事务同步。由资源管理代码使用，而不是由典型的应用程序代码使用。
+	/*
+	 * TransactionSynchronizationManager 需要管理每个线程的资源和事务同步。由资源管理代码使用，而不是由典型的应用程序代码使用。
 	 * 支持每个 key 对应一个资源而不覆盖，即需要先删除对应资源，然后才能为同一个 key 设置一个新资源。
 	 * 如果事务同步处于活动状态，则支持事务同步列表。
 	 *
@@ -96,19 +98,38 @@ public abstract class TransactionSynchronizationManager {
 	private static final ThreadLocal<Map<Object, Object>> resources = new NamedThreadLocal<>("Transactional resources"); // 使用NamedTheadLocal
 	// 简述ThreadLocal原理,假设进入两个线程A和B,调用ThreadLocal.set()
 	// 会首先获取线程各自的ThreadLocalMap,然后向map中存入这个ThreadLocal作为key,set的值就作为value
+	
+	// 应用场景:
+	// 应用场景是当订单成功之后，发送一条消息到 MQ 当中去。由于事务是和数据库连接相绑定的，如果把发送消息和数据库操作放在一个事务里面。
+	// 当发送消息时间过长时会占用数据库连接，所以就要把数据库操作与发送消息到 MQ 解耦开来。
+	// 可以利用 TransactionSynchronization#afterCommit 的这个方法，当数据成功保存到数据库并且事务提交了就把消息发送到 MQ 里面。
+	// @Transactional
+	// public void finishOrder(Order order){
+	// 	// 修改订单成功
+	// 	updateOrderSuccess(order);
+	// 
+	// 	// 发送消息到 MQ
+	//     TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter(){
+	//        @Override
+	//        public void afterCommit() {
+	//            mqService.send(order);
+	//        }
+	//     });
+	// }
 
+	// 持有的事务同步器TransactionSynchronization 
 	private static final ThreadLocal<Set<TransactionSynchronization>> synchronizations = new NamedThreadLocal<>("Transaction synchronizations");
 
-	// 事务名称
+	// 当前事务名称 -> 取决TransactionAttribute的name属性
 	private static final ThreadLocal<String> currentTransactionName = new NamedThreadLocal<>("Current transaction name");
 
-	// 事务是否只读
+	// 当前事务是否只读 -> 取决TransactionAttribute的readOnly属性
 	private static final ThreadLocal<Boolean> currentTransactionReadOnly = new NamedThreadLocal<>("Current transaction read-only status");
 
-	// 事务的隔离级别
+	// 当前事务的隔离级别 -> 取决TransactionAttribute的TransactionIsolationLevel属性
 	private static final ThreadLocal<Integer> currentTransactionIsolationLevel = new NamedThreadLocal<>("Current transaction isolation level");
 
-	// 事务是否开启
+	// 当前线程运行中是否有实际的事务存在
 	private static final ThreadLocal<Boolean> actualTransactionActive = new NamedThreadLocal<>("Actual transaction active");
 
 
@@ -151,7 +172,8 @@ public abstract class TransactionSynchronizationManager {
 	 */
 	@Nullable
 	public static Object getResource(Object key) {
-		// 获取资源 -- 例如创建事务时需要的Connection
+		// 获取资源 --
+		// 例如创建事务时需要的Connection,那么key就是对应的DataSource
 
 		Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);
 		Object value = doGetResource(actualKey);
@@ -167,14 +189,16 @@ public abstract class TransactionSynchronizationManager {
 	 */
 	@Nullable
 	private static Object doGetResource(Object actualKey) {
-		// 作用:获取实际资源
+		// 作用:获取actualKey对应的实际资源
+		
+		// 1. resources是否存有资源Map<Object,Object>
 		Map<Object, Object> map = resources.get();
 		if (map == null) {
 			return null;
 		}
+		// 2. 获取actualKey对应的资源value
 		Object value = map.get(actualKey);
-		// Transparently remove ResourceHolder that was marked as void...
-		// 事务已经无效即isVoid()返回true,就需要清除这个资源
+		// 3. value属于ResourceHoldee,且已经无效即isVoid()返回true,就需要清除这个资源 ❗️❗️❗️ -> ResourceHolder.idVoid()的作用
 		if (value instanceof ResourceHolder && ((ResourceHolder) value).isVoid()) {
 			map.remove(actualKey);
 			// Remove entire ThreadLocal if empty...
@@ -194,18 +218,21 @@ public abstract class TransactionSynchronizationManager {
 	 * @see ResourceTransactionManager#getResourceFactory()
 	 */
 	public static void bindResource(Object key, Object value) throws IllegalStateException {
-		// 逻辑很简单，就是和当前线程绑定一个Map，并且处理 ResourceHolder 如果isVoid就抛错
+		// 在 DataSourceTransactionManager.doBegin()方法中以DataSource作为key,ConnectHolder作为value,保存到resources这个ThreadLocal中
+		
 
 		Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);
 		Assert.notNull(value, "Value must not be null");
 		Map<Object, Object> map = resources.get();
-		// set ThreadLocal Map if none found
+		// 1. 初始化ThreadLocal的map结构
 		if (map == null) {
 			map = new HashMap<>();
 			resources.set(map);
 		}
+		// 2. 设置到map中
 		Object oldValue = map.put(actualKey, value);
-		// Transparently suppress a ResourceHolder that was marked as void...
+		
+		// 2.1 将其标记为无效的: 透明地抑制标记为无效的 ResourceHolder...
 		if (oldValue instanceof ResourceHolder && ((ResourceHolder) oldValue).isVoid()) {
 			oldValue = null;
 		}
@@ -293,7 +320,7 @@ public abstract class TransactionSynchronizationManager {
 	 * @throws IllegalStateException if synchronization is already active
 	 */
 	public static void initSynchronization() throws IllegalStateException {
-		// 初始换事务同步器
+		// 初始化事务同步器
 
 		// 1. 已经激活就不允许再次初始化
 		if (isSynchronizationActive()) {

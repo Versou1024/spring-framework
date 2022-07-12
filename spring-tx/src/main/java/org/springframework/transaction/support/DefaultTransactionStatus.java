@@ -49,17 +49,24 @@ import org.springframework.util.Assert;
  * @see SimpleTransactionStatus
  */
 public class DefaultTransactionStatus extends AbstractTransactionStatus {
-	// 它有很多的标志位，成员变量
-	// 它实现了TransactionStatus接口。这个是整个事务框架最重要的状态对象，它贯穿于事务拦截器，spring抽象框架和底层具体事务实现框架之间。
-	// 它的重要任务是在新建,挂起,提交,回滚事务的过程中保存对应事务的属性。在AbstractPlatformTransactionManager中，每个事物流程都会new创建这个对象
+	// 命名:
+	// Default TransactionStatus = 默认的事务状态实现,Spring内部常用的
+	
+	// 作用:
+	// 它实现了TransactionStatus接口,是整个事务框架最重要的状态对象，它贯穿于事务拦截器TransactionInterceptor
+	// 位于spring抽象框架和底层具体事务实现框架之间。
+	// 它的重要任务是在新建,挂起,提交,回滚事务的过程中保存对应事务的属性。
+	// 在AbstractPlatformTransactionManager中，每个transaction流程都会new创建这个对象
 
+	// 事务对象 -- 可以认为每new Object()传进来就是一个新的事务
 	@Nullable
-	private final Object transaction; // 事务对象 -- 可以认为每new Object()传进来就是一个新的事务
+	private final Object transaction; 
 
 	// 是否是新事务
 	private final boolean newTransaction;
 
-	// 如果为给定事务打开了新的事务同步  该值为true
+	// 如果为给定事务打开了新的事务同步 
+	// 该值为true
 	private final boolean newSynchronization;
 
 	// 该事务是否标记为了只读
@@ -67,6 +74,7 @@ public class DefaultTransactionStatus extends AbstractTransactionStatus {
 
 	private final boolean debug;
 
+	// 已经挂起的资源
 	@Nullable
 	private final Object suspendedResources;
 
@@ -91,11 +99,11 @@ public class DefaultTransactionStatus extends AbstractTransactionStatus {
 			boolean readOnly, boolean debug, @Nullable Object suspendedResources) {
 
 		this.transaction = transaction;
-		this.newTransaction = newTransaction;
-		this.newSynchronization = newSynchronization;
-		this.readOnly = readOnly;
-		this.debug = debug;
-		this.suspendedResources = suspendedResources;
+		this.newTransaction = newTransaction; // 事务是新的，否则参与现有事务
+		this.newSynchronization = newSynchronization; // 如果为给定事务打开了新事务同步
+		this.readOnly = readOnly; // 事务是否被标记为只读
+		this.debug = debug; // 是否应该启用调试日志来处理此事务
+		this.suspendedResources = suspendedResources; // 已为此事务暂停的资源的持有者
 	}
 
 

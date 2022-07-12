@@ -36,6 +36,7 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
  */
 @SuppressWarnings("serial")
 public class Ejb3TransactionAnnotationParser implements TransactionAnnotationParser, Serializable {
+	// 	//		Ejb3TransactionAnnotationParser		-- 解析 javax.ejb.TransactionAttribute 忽略
 
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {

@@ -28,6 +28,19 @@ import org.springframework.transaction.TransactionDefinition;
  * @since 1.2
  */
 public enum Propagation {
+	// Propagation是一个枚举,表示事务的传播特性
+	// 其对应的value是来自TransactionDefinition的静态常量int值
+	
+	// ❗️❗
+	// 事务传播行为就是多个事务方法相互调用时，事务如何在这些方法间传播。spring支持7种事务传播行为：
+	//
+	// propagation_required：如果当前没有事务，就新建一个事务，如果已存在一个事务中，加入到这个事务中，这是最常见的选择。
+	// propagation_supports：支持当前事务，如果没有当前事务，就以非事务方法执行。
+	// propagation_mandatory：使用当前事务，如果没有当前事务，就抛出异常。
+	// propagation_required_new：新建事务，如果当前存在事务，把当前事务挂起。
+	// propagation_not_supported：以非事务方式执行操作，如果当前存在事务，就把当前事务挂起。
+	// propagation_never：必须以非事务方式执行操作，如果当前事务存在则抛出异常。
+	// propagation_nested：如果当前存在事务，则在嵌套事务内执行。如果当前没有事务，则执行与propagation_required类似的操作
 
 	/**
 	 * Support a current transaction, create a new one if none exists.

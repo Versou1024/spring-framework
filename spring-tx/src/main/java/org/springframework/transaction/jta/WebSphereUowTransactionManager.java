@@ -87,8 +87,8 @@ import org.springframework.util.ReflectionUtils;
  * @see com.ibm.wsspi.uow.UOWManager
  */
 @SuppressWarnings("serial")
-public class WebSphereUowTransactionManager extends JtaTransactionManager
-		implements CallbackPreferringPlatformTransactionManager {
+public class WebSphereUowTransactionManager extends JtaTransactionManager implements CallbackPreferringPlatformTransactionManager {
+	// 位于: org.springframework.transaction.jta
 
 	/**
 	 * Default JNDI location for the WebSphere UOWManager.

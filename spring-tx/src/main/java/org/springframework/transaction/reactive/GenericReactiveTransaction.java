@@ -39,6 +39,10 @@ import org.springframework.util.Assert;
  * @see #getTransaction
  */
 public class GenericReactiveTransaction implements ReactiveTransaction {
+	// 位于: org.springframework.transaction.reactive 
+	
+	// 命名:
+	// 通用的响应式reactive的transaction
 
 	@Nullable
 	private final Object transaction;

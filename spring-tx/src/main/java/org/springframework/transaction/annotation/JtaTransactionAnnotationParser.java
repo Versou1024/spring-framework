@@ -38,6 +38,8 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
  */
 @SuppressWarnings("serial")
 public class JtaTransactionAnnotationParser implements TransactionAnnotationParser, Serializable {
+	//		JtaTransactionAnnotationParser		-- 解析 javax.transaction.Transactional 忽略
+
 
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {

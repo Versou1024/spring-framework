@@ -37,6 +37,7 @@ import org.springframework.util.ClassUtils;
  */
 public class TransactionManagementConfigurationSelector extends AdviceModeImportSelector<EnableTransactionManagement> {
 	// 导入Bean -> ProxyTransactionManagementConfiguration 事务管理器代理配置
+	// 经典~~
 
 	/**
 	 * Returns {@link ProxyTransactionManagementConfiguration} or

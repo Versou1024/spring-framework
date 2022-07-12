@@ -46,6 +46,7 @@ import org.springframework.transaction.TransactionManager;
  * @see org.springframework.transaction.ReactiveTransactionManager
  */
 public interface TransactionManagementConfigurer {
+	// 提供给用户实现的接口 -> 用户可以定制一个TransactionManager
 
 	/**
 	 * Return the default transaction manager bean to use for annotation-driven database

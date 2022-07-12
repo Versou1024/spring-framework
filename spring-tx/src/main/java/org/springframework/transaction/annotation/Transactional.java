@@ -73,13 +73,19 @@ import org.springframework.transaction.TransactionDefinition;
 @Inherited
 @Documented
 public @interface Transactional {
+	// 事务注解
+	
+	// note:
+	// 1. @Transactional 默认情况下放在非公有的方法上不会生效哦
+	// 2. 类上和方法上同时存在该注解,方法的注解优先级更高
 
 	/**
 	 * Alias for {@link #transactionManager}.
 	 * @see #transactionManager
 	 */
 	@AliasFor("transactionManager")
-	String value() default ""; //  指定事务管理器的beanName
+	String value() default ""; 
+	// 相当于beanName,决定从ioc容器中使用的TransactionManager的beanName
 
 	/**
 	 * A <em>qualifier</em> value for the specified transaction.
@@ -100,7 +106,9 @@ public @interface Transactional {
 	 * <p>Defaults to {@link Propagation#REQUIRED}.
 	 * @see org.springframework.transaction.interceptor.TransactionAttribute#getPropagationBehavior()
 	 */
-	Propagation propagation() default Propagation.REQUIRED; // 传播特性
+	Propagation propagation() default Propagation.REQUIRED;
+	// 传播特性
+	// 关于传播特性的更多 -- 请看: Propagation列
 
 	/**
 	 * The transaction isolation level.

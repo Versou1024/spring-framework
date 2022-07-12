@@ -47,13 +47,13 @@ public class TransactionalEventListenerFactory implements EventListenerFactory, 
 
 	@Override
 	public boolean supportsMethod(Method method) {
-		// 主动支持 @TransactionalEventListener 这个监听器注解,专门为事务而创建的哦
+		// 1. 支持方法上有 @TransactionalEventListener 注解,专门为事务而创建的监听器
 		return AnnotatedElementUtils.hasAnnotation(method, TransactionalEventListener.class);
 	}
 
 	@Override
 	public ApplicationListener<?> createApplicationListener(String beanName, Class<?> type, Method method) {
-		// 将 @TransactionalEventListener 标注的method,转换为 ApplicationListenerMethodTransactionalAdapter 适配器
+		// 2. 将 @TransactionalEventListener 标注的method,转换为 ApplicationListenerMethodTransactionalAdapter 适配器
 		return new ApplicationListenerMethodTransactionalAdapter(beanName, type, method);
 	}
 
