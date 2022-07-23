@@ -42,6 +42,8 @@ public abstract class NestedExceptionUtils {
 	 */
 	@Nullable
 	public static String buildMessage(@Nullable String message, @Nullable Throwable cause) {
+		// 为给定的基本message和根本cause构建消息。
+		
 		if (cause == null) {
 			return message;
 		}
@@ -49,6 +51,7 @@ public abstract class NestedExceptionUtils {
 		if (message != null) {
 			sb.append(message).append("; ");
 		}
+		// note: 经常可以看见这个: nested exception is 
 		sb.append("nested exception is ").append(cause);
 		return sb.toString();
 	}
@@ -61,6 +64,8 @@ public abstract class NestedExceptionUtils {
 	 */
 	@Nullable
 	public static Throwable getRootCause(@Nullable Throwable original) {
+		// 遍历获取异常的cause,直到获取到original的根部cause
+		
 		if (original == null) {
 			return null;
 		}
@@ -83,6 +88,7 @@ public abstract class NestedExceptionUtils {
 	 * @since 4.3.9
 	 */
 	public static Throwable getMostSpecificCause(Throwable original) {
+		// 检索给定异常的最具体原因，即最内部原因（rootCause）或异常本身。
 		Throwable rootCause = getRootCause(original);
 		return (rootCause != null ? rootCause : original);
 	}

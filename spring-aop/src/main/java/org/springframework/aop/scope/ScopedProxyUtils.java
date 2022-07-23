@@ -54,6 +54,7 @@ public abstract class ScopedProxyUtils {
 	 * @see #getOriginalBeanName(String)
 	 */
 	public static BeanDefinitionHolder createScopedProxy(BeanDefinitionHolder definition, BeanDefinitionRegistry registry, boolean proxyTargetClass) {
+		// ❗️❗️❗️
 		// 为提供的目标 bean 生成一个作用域代理，使用内部名称注册目标 bean 并在作用域代理上设置“targetBeanName”。
 
 		// 1. 获取未代理时的beanName\代理的目标BeanDefinition
@@ -72,7 +73,7 @@ public abstract class ScopedProxyUtils {
 		proxyDefinition.setSource(definition.getSource());
 		proxyDefinition.setRole(targetDefinition.getRole());
 
-		// 4. 添加需要设置的属性值 --> 是被添加到ScopedProxyFactoryBean中哦
+		// 4. 添加需要设置的属性值 --> 被添加到 ScopedProxyFactoryBean -> 注意: ScopedProxyFactoryBean 继承的 ProxyConfig 哦
 		proxyDefinition.getPropertyValues().add("targetBeanName", targetBeanName);
 		if (proxyTargetClass) {
 			// 4.1 CGLIB代理 -- 设置属性

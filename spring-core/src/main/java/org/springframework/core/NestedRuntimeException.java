@@ -37,6 +37,18 @@ import org.springframework.lang.Nullable;
  * @see NestedCheckedException
  */
 public abstract class NestedRuntimeException extends RuntimeException {
+	// 命名:
+	// Nested RuntimeException = 嵌套运行时异常
+	
+	// 作用:
+	// 包装运行时异常 -> 提供获取根本的原因getRootCause()的方法
+	
+	// 继承体系:
+	// 属于Spring整个项目中的超类异常 -> 所有其他模块的超类异常都从此而来
+	// 比如:
+	// spring-tx模块下的 DataAccessException 
+	// spring-scheduling模块下的 SchedulingException
+	// spring-transaction模块下的TransactionException ... 
 
 	/** Use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 5439915454935047936L;

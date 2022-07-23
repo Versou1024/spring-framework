@@ -266,15 +266,19 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @return number of beans registered
 	 */
 	public int scan(String... basePackages) {
+		// 在指定的基本包中执行扫描
+		
 		int beanCountAtScanStart = this.registry.getBeanDefinitionCount();
-
+		
 		doScan(basePackages);
 
-		// Register annotation config processors, if necessary.
+		// 1. 如有必要，注册注释配置处理器
+		// ❗️❗️❗️ 重要: 这一步加入了: AnnotationAwareOrderComparator/AutowiredAnnotationBeanPostProcessor/EventListenerMethodProcessor/DefaultEventListenerFactory等等重要的处理器
 		if (this.includeAnnotationConfig) {
 			AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
 		}
 
+		// 2. 返回本轮基于类路径basePackage的扫描后 -> 加入了多少个有效BeanDefinition
 		return (this.registry.getBeanDefinitionCount() - beanCountAtScanStart);
 	}
 
@@ -302,12 +306,12 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 				candidate.setScope(scopeMetadata.getScopeName());
 				// 2.2 生成Bean的名称，有注解比如@Component的value值,就先用注解,不行就采用默认为首字母小写
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
-				// 2.3 此处扫描的Bean为ScannedGenericBeanDefinition，所以肯定为true, 因此进来if代码块，
+				// 2.3 此处扫描的Bean为ScannedGenericBeanDefinition，所以肯定为true, 因此进来if代码块 100%
 				if (candidate instanceof AbstractBeanDefinition) {
 					// 对BeanDefinition处理，添加默认信息，从beanDefinitionDefaults复制一些默认信息到解析出的BEanDefinition中
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
-				// 2.4 显然，此处也是true，也是完善Bean上的一些注解信息：
+				// 2.4 显然，此处也是true，也是完善Bean上的一些注解信息： 100%
 				if (candidate instanceof AnnotatedBeanDefinition) {
 					// 处理常见的注解: @Lazy @Primary @DependsOn @Role @Description
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
@@ -318,6 +322,21 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
 					// 为啥需要执行: applyScopedProxyMode()
 					// ❗️❗️❗️ 因为下面就要注册到BeanDefinitionRegistry中啦,如果Scope的ProxyMode不是NO,就需要创建代理的BeanDefinition哦
+					// 流程:
+					// 使用到ScopedProxyFactoryBean该类的流程之一:
+					// ClassPathBeanDefinitionScanner#doScan()方法中触发:AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry) ->
+					//	1. 检查类上是否有@Scope注解,有的话,去获取其@Scope的value属性作为Scope的name,@Scope的proxyMode属性作为代理模式[只要非ScopedProxyMode.DEFAULT]
+					//  2. 将上面的ScopeMetadata设置到扫描出来的BeanDefinition的scope属性上面去
+					//  3. ...
+					//  4. 如果第一步生成的ScopeMetaData中的ScopeProxyMode非ScopedProxyMode.NO -- 就表示需要代理 [ScopedProxyMode.TARGE_CLASS表示Cglib代理,否则就是JDK代理]
+					//	5. 将扫描到的BeanDefinition用 RootBeanDefinition(ScopedProxyFactoryBean.class) 来代替
+					//  6. 而代替或者代理的 RootBeanDefinition(ScopedProxyFactoryBean.class) 中持有原来的BeanDefinition的相关信息
+					//		6.1 代理的BeanDefinition的beanName为 "scopedTarget." + 目标BeanDefinition的BeanName
+					//		6.2 source为目标BeanDefinition的source\role为目标BeanDefinition的role\originatingBeanDefinition就是目标BeanDefinition..
+					//		6.3 复制目标BeanFactory的primary属性
+					// 	7. 设置代理 RootBeanDefinition(ScopedProxyFactoryBean.class) 中的 targetBeanName 以及 proxyTargetClass 属性值
+					// 	8. 将目标BeanDefinition的autowireCandidate设置为false,表示目标BeanDefinition不能作为候选bean被注入,在依赖注入时应该使用代理的BeanDefinition
+					//	9. 目标BeanDefinition和代理的BeanDefinition都加入到BeanDefinitionRegistry中去
 					definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
 					// ❗️❗️❗️注意 注意 注意：

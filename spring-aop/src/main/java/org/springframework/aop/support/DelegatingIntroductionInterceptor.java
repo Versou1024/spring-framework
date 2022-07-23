@@ -50,15 +50,33 @@ import org.springframework.util.Assert;
  * @see DelegatePerTargetObjectIntroductionInterceptor
  */
 @SuppressWarnings("serial")
-public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
-		implements IntroductionInterceptor {
+public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport implements IntroductionInterceptor {
+	// 命名: 
+	// Delegating IntroductionInterceptor = 委托类型的IntroductionInterceptor
+	// IntroductionInterceptor接口的便捷实现
+	
+	// 继承关系上:
+	// MethodInterceptor extends Interceptor  ->  Object invoke(MethodInvocation invocation)
+	// DynamicIntroductionAdvice extends Advice -> boolean implementsInterface(Class<?> interface)
+	// IntroductionInfoSupport implements IntroductionInfo -> 
+	// IntroductionInterceptor extends MethodInterceptor, DynamicIntroductionAdvice
+	
 
 	/**
 	 * Object that actually implements the interfaces.
 	 * May be "this" if a subclass implements the introduced interfaces.
 	 */
 	@Nullable
-	private Object delegate;
+	private Object delegate; 
+	// 实际实现publishedInterfaces接口的对象
+	
+	// 主要作用:
+	// 三个对象
+	// target: 目标对象
+	// proxy: 创建的代理对象
+	// delegate: 委托对象
+	// publishedInterfaces: 拦截接口
+	// 描述: 为target目标对象创建proxy代理对象,执行方法时如果是publishedInterfaces拦截接口下的方法交给delegate委托对象执行,否则还是原来的目标对象target去执行哦
 
 
 	/**
@@ -104,14 +122,12 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 1. 检查mi是否在publishedInterfaces的接口声明下的,如果是的话,进入下面的代码
 		if (isMethodOnIntroducedInterface(mi)) {
-			// Using the following method rather than direct reflection, we
-			// get correct handling of InvocationTargetException
-			// if the introduced method throws an exception.
+			// 1.1 将执行的方法交给: 实际实现publishedInterfaces接口的对象delegate执行
 			Object retVal = AopUtils.invokeJoinpointUsingReflection(this.delegate, mi.getMethod(), mi.getArguments());
 
-			// Massage return value if possible: if the delegate returned itself,
-			// we really want to return the proxy.
+			// 1.2 处理返回值: 如果返回对象是delegate -> 就将代理对象返回出去吧
 			if (retVal == this.delegate && mi instanceof ProxyMethodInvocation) {
 				Object proxy = ((ProxyMethodInvocation) mi).getProxy();
 				if (mi.getMethod().getReturnType().isInstance(proxy)) {
@@ -121,6 +137,7 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 			return retVal;
 		}
 
+		// 2. 当执行的方法不是在publishedInterfaces的接口声明的,直接按照目标方法执行吧
 		return doProceed(mi);
 	}
 
@@ -132,7 +149,6 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 	 * {@link MethodInvocation MethodInvocations} on the introduced interfaces.
 	 */
 	protected Object doProceed(MethodInvocation mi) throws Throwable {
-		// If we get here, just pass the invocation on.
 		return mi.proceed();
 	}
 

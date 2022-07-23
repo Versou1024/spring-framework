@@ -497,9 +497,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		RootBeanDefinition mbdToUse = mbd;
 
-		// Make sure bean class is actually resolved at this point, and
-		// clone the bean definition in case of a dynamically resolved Class
-		// which cannot be stored in the shared merged bean definition.
+		// 确保此时实际解析了 bean 类，并克隆 bean 定义以防动态解析的 Class 无法存储在共享的合并 bean 定义中。
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			mbdToUse = new RootBeanDefinition(mbd);
@@ -509,7 +507,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Prepare method overrides.
 		// 解析一些@lookup注解之类的  忽略
 		// @Lookup使用场景：比如单例的A，希望每次使用成员B（@Autowrite注入的B）的时候都是一个新的对象，就可以见@Lookup放在成员B上
-		// 确保对应BeanClass完成解析(已经加载进来了Class对象)具体表现是进行了ClassLoder.loadClass或Class.forName完成了类加载
+		// 确保对应BeanClass完成解析(已经加载进来了Class对象)具体表现是进行了ClassLoader.loadClass或Class.forName完成了类加载
 
 		// 或者说，主要是根据传入的typesToMatch生成特定的ClassLoader，之后还要调用RootBeanDefinition#resolveBeanClass，根据特定的加载器或者默认加载器加载出class属性对应的Class对象
 		// 我们这里解析出来，显然就是class com.fsx.service.HelloServiceImpl这个Class了
@@ -628,7 +626,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// 5、当前bean为单例Bean，且允许循环依赖[不允许就会直接报错，允许就通过三级缓存尝试解决]，且当前bean正在创建中
 		// 如果当前bean是单例，且支持循环依赖，且当前bean正在创建，
 		// 通过往singletonFactories添加一个objectFactory，这样后期如果有其他bean依赖该bean 可以从singletonFactories获取到bean
-		// getEarlyBeanReference可以对返回的bean进行修改，这边目前除了可能会返回动态代理对象 其他的都是直接返回bean
+		// getEarlyBeanReference() 可以对返回的bean进行修改，这边目前除了可能会返回动态代理对象 其他的都是直接返回bean
 		// earlySingletonExposure 用于表示是否”提前暴露“原始对象的引用，用于解决循环依赖。
 		// 对于单例Bean，该变量一般为true,但你也可以通过属性allowCircularReferences = false来关闭循环引用
 		// isSingletonCurrentlyInCreation(beanName) 表示当前bean必须在创建中才行
@@ -669,7 +667,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 执行InstantiationAwareBeanPostProcessor#postProcessPropertyValues等等
 
 			// 循环依赖说明一点:
-			// 此处注意：如果此处自己被循环依赖了  那它会走上面的getEarlyBeanReference，从而创建一个代理对象从三级缓存转移到二级缓存里
+			// 此处注意：如果此处自己被循环依赖了  那它会走上面的getEarlyBeanReference()，从而创建一个代理对象从三级缓存转移到二级缓存里
 			// 注意此时候对象还在二级缓存里，并没有在一级缓存。并且此时可以知道exposedObject仍旧是原始对象~~~
 			populateBean(beanName, mbd, instanceWrapper);
 			// 8、初始化Bean
@@ -690,14 +688,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 可以看出@Async的代理它默认并不支持你去循环引用，因为它并没有把代理对象的早期引用提供出来~~~（注意这点和自动代理创建器aop的区别~）
 			// 因此对与:
 			// @Service
-			//public class A implements AInterface {
-			//    @Autowired
-			//    private BInterface b;
-			//    @Async
-			//    @Override
-			//    public void funA() {
-			//    }
-			//}
+			// public class A implements AInterface {
+			//     @Autowired
+			//     private BInterface b;
+			//     @Async
+			//     @Override
+			//     public void funA() {
+			//     }
+			// }
 
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
@@ -1114,7 +1112,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// 处理早期暴露的Bean -- getEarlyBeanReference
 
 		// 普通的bean就直接返回bean本身
-		// 代理的话，这里会对bean进行代理，并返回一个代理beanexposedObject
+		// 代理的话，这里会对bean进行代理，并返回一个代理beanexPosedObject
 		// 代理对象的创建实际哦
 
 		Object exposedObject = bean;
@@ -1279,7 +1277,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// Make sure bean class is actually resolved at this point.
 			// 这里hasInstantiationAwareBeanPostProcessors()方法就是看属性hasInstantiationAwareBeanPostProcessors的值。
 			// 就是标记容器里是否有InstantiationAwareBeanPostProcessor的实现
-			// 显然，在执行addBeanPostProcessor,发现这个Bean是这个子类型的时候，就会设为true了。
+			// 显然，在执行addBeanPostProcessor(),发现这个Bean是这个子类型的时候，就会设为true了。
 			// 同理的还有hasDestructionAwareBeanPostProcessors这个属性，表示销毁的处理器
 			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 
@@ -1621,8 +1619,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
-					//postProcessAfterInstantiation 这个方法返回true，后面的处理器才会继续执行，单反返回false，后面的就不会再执行了
-					//并且continueWithPropertyPopulation 打上标记表示false，也就是说后面的属性复制就不会再执行了
+					// postProcessAfterInstantiation 这个方法返回true，后面的处理器才会继续执行，单反返回false，后面的就不会再执行了
+					// 并且continueWithPropertyPopulation 打上标记表示false，也就是说后面的属性复制就不会再执行了
 					if (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
 						return;
 					}
@@ -2111,7 +2109,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (mbd == null || !mbd.isSynthetic()) {
 			// 2. postProcessBeforeInitialization：执行初始化的前置处理。基本上也是执行一些Aware的注入。
 			// —>1. InitDestroyAnnotationBeanPostProcessor在这里会执行@PostConstruct标记的方法
-			// —>2. ApplicationContextAwareProcessor/ServletContextAwareProcessor会实现感知接口的注入 -> 比如EnvironmentAware等等
+			// —>2. ApplicationContextAwareProcessor/ServletContextAwareProcessor 实现感知接口的注入 -> 比如EnvironmentAware/EmbeddedValueResolverAware/ResourceLoaderAware/ApplicationEventPublisherAware/MessageSourceAware/ApplicationContextAware
+			// ->3. ServletContextAwareProcessor 实现感知接口的注入 -> ServletContextAware、ServletConfigAware
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 

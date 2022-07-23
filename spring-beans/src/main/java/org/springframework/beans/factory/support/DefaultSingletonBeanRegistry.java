@@ -260,10 +260,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 
 		Assert.notNull(beanName, "Bean name must not be null");
 		synchronized (this.singletonObjects) {
-			// 从缓存中获取（上面获取过一次的，这里是双从判定）
+			// 从一级缓存中获取（上面获取过一次的，这里是双从判定）
 			Object singletonObject = this.singletonObjects.get(beanName);
 			if (singletonObject == null) {
-				// 如果这个Bean正在被销毁，就抛异常了
+				// 如果这个Bean在一级缓存,但正在被销毁，就抛异常了
 				if (this.singletonsCurrentlyInDestruction) {
 					throw new BeanCreationNotAllowedException(beanName,
 							"Singleton bean creation not allowed while singletons of this factory are in destruction " +

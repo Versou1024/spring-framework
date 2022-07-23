@@ -57,11 +57,13 @@ public class DefaultScopedObject implements ScopedObject, Serializable {
 
 	@Override
 	public Object getTargetObject() {
+		// 从ioc容器中获取目标对象
 		return this.beanFactory.getBean(this.targetBeanName);
 	}
 
 	@Override
 	public void removeFromScope() {
+		// 销毁指定beanName的ScopeName
 		this.beanFactory.destroyScopedBean(this.targetBeanName);
 	}
 

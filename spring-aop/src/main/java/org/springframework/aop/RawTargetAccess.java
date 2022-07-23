@@ -33,5 +33,5 @@ package org.springframework.aop;
  * @see org.springframework.aop.scope.ScopedObject
  */
 public interface RawTargetAccess {
-
+	// 标志性接口 -> AOP 代理接口 
 }

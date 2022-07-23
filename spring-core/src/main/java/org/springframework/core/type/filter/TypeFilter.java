@@ -39,6 +39,9 @@ public interface TypeFilter {
 	// FilterType.ASPECTJ 对应 AspectJTypeFilter
 	// FilterType.REGEX 对应 RegexPatternTypeFilter
 	
+	// 实际在Mybaits-Spring的项目中 -> 也有使用的这个TypeFilter玩意儿
+	// 用来指定basePackage下的@Mapper接口哦
+	
 
 	/**
 	 * Determine whether this filter matches for the class described by

@@ -42,6 +42,8 @@ import org.springframework.util.ClassUtils;
  */
 @SuppressWarnings("serial")
 public class IntroductionInfoSupport implements IntroductionInfo, Serializable {
+	// 命名:
+	// IntroductionInfoSupport = IntroductionInfo的支持工具类
 
 	// 发布给定的委托对象所实现的所有接口
 	protected final Set<Class<?>> publishedInterfaces = new LinkedHashSet<>();
@@ -61,6 +63,7 @@ public class IntroductionInfoSupport implements IntroductionInfo, Serializable {
 		this.publishedInterfaces.remove(ifc);
 	}
 
+	// 实现 IntroductionInfo#getInterfaces() -> 返回此 Advisor 或 Advice 引入的附加接口。
 	@Override
 	public Class<?>[] getInterfaces() {
 		return ClassUtils.toClassArray(this.publishedInterfaces);
@@ -72,6 +75,7 @@ public class IntroductionInfoSupport implements IntroductionInfo, Serializable {
 	 * @return whether the interface is part of this introduction
 	 */
 	public boolean implementsInterface(Class<?> ifc) {
+		// 检查指定接口是否为publishedInterfaces接口。
 		for (Class<?> pubIfc : this.publishedInterfaces) {
 			if (ifc.isInterface() && ifc.isAssignableFrom(pubIfc)) {
 				return true;
@@ -94,7 +98,7 @@ public class IntroductionInfoSupport implements IntroductionInfo, Serializable {
 	 * @return whether the invoked method is on an introduced interface
 	 */
 	protected final boolean isMethodOnIntroducedInterface(MethodInvocation mi) {
-		// 检查方法mi是否在需要被代理类额外扩展的接口上
+		// 检查执行的方法是否在publishedInterfaces的接口下
 		
 		// 1. 检查缓存
 		Boolean rememberedResult = this.rememberedMethods.get(mi.getMethod());

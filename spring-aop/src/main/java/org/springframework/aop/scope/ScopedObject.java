@@ -31,6 +31,7 @@ import org.springframework.aop.RawTargetAccess;
  * @see ScopedProxyFactoryBean
  */
 public interface ScopedObject extends RawTargetAccess {
+	// 
 
 	/**
 	 * Return the current target object behind this scoped object proxy,

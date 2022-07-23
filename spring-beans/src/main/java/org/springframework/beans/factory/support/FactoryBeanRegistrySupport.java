@@ -47,7 +47,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 * 主要用于存储管理FactoryBean的getObject的成员
 	 */
 
-	/** Cache of singleton objects created by FactoryBeans: FactoryBean name to object. */
+	// FactoryBean的BeanName 为 key, FactoryBean.getObject() 为value[仅限单例]
 	private final Map<String, Object> factoryBeanObjectCache = new ConcurrentHashMap<>(16);
 
 
@@ -111,8 +111,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 				if (object == null) {
 					// 调用 doGetObjectFromFactoryBean 获取 factoryBean 中的 bean 对象
 					object = doGetObjectFromFactoryBean(factory, beanName);
-					// Only post-process and store if not put there already during getObject() call above
-					// (e.g. because of circular reference processing triggered by custom getBean calls)
+					// 如果在上面的 getObject() 调用期间尚未放置，则仅进行后处理和存储（例如，由于自定义 getBean 调用触发的循环引用处理）
 					Object alreadyThere = this.factoryBeanObjectCache.get(beanName);
 					if (alreadyThere != null) {
 						object = alreadyThere;
@@ -175,7 +174,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 * @see org.springframework.beans.factory.FactoryBean#getObject()
 	 */
 	private Object doGetObjectFromFactoryBean(FactoryBean<?> factory, String beanName) throws BeanCreationException {
-		// 就是调用getObject()
+		// 就是调用 FactoryBean#getObject()
 
 		Object object;
 		try {

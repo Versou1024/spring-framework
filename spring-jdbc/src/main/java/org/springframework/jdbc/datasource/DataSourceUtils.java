@@ -75,6 +75,9 @@ public abstract class DataSourceUtils {
 	 * @see #releaseConnection
 	 */
 	public static Connection getConnection(DataSource dataSource) throws CannotGetJdbcConnectionException {
+		// 从给定的数据源dataSource获取连接connection。
+		// 将 SQLExceptions 转换为未经检查的DataAccessException的Spring层次结构，简化调用代码并使任何抛出的异常更有意义。
+		// 并且绑定到当前线程的相应连接，例如在使用DataSourceTransactionManager时。如果事务同步处于活动状态（例如在JTA事务中运行时），则将连接绑定到线程
 		try {
 			return doGetConnection(dataSource);
 		}
@@ -101,6 +104,7 @@ public abstract class DataSourceUtils {
 	public static Connection doGetConnection(DataSource dataSource) throws SQLException {
 		Assert.notNull(dataSource, "No DataSource specified");
 
+		// 1. 尝试从事务同步器中: 根据DataSource去获取对应的Connection
 		ConnectionHolder conHolder = (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
 		if (conHolder != null && (conHolder.hasConnection() || conHolder.isSynchronizedWithTransaction())) {
 			conHolder.requested();
@@ -110,15 +114,14 @@ public abstract class DataSourceUtils {
 			}
 			return conHolder.getConnection();
 		}
-		// Else we either got no holder or an empty thread-bound holder here.
 
+		// 2. 从DataSource获取对应的connection
 		logger.debug("Fetching JDBC Connection from DataSource");
 		Connection con = fetchConnection(dataSource);
 
+		// 3. 将DataSource和封装好的ConnectionHolder作为键值对存入到事务同步器里resource资源中管理
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 			try {
-				// Use same Connection for further JDBC actions within the transaction.
-				// Thread-bound object will get removed by synchronization at transaction completion.
 				ConnectionHolder holderToUse = conHolder;
 				if (holderToUse == null) {
 					holderToUse = new ConnectionHolder(con);
@@ -127,8 +130,7 @@ public abstract class DataSourceUtils {
 					holderToUse.setConnection(con);
 				}
 				holderToUse.requested();
-				TransactionSynchronizationManager.registerSynchronization(
-						new ConnectionSynchronization(holderToUse, dataSource));
+				TransactionSynchronizationManager.registerSynchronization(new ConnectionSynchronization(holderToUse, dataSource));
 				holderToUse.setSynchronizedWithTransaction(true);
 				if (holderToUse != conHolder) {
 					TransactionSynchronizationManager.bindResource(dataSource, holderToUse);
@@ -389,10 +391,10 @@ public abstract class DataSourceUtils {
 			return;
 		}
 		if (dataSource != null) {
-			// 1. 以dataSource为key,获取关联的ConnectionHolder -> ❗暴扣释放TransactionSynchronizationManager.getResource(dataSource)️❗️
+			// 1. 以dataSource为key,获取关联的ConnectionHolder -> ❗释放TransactionSynchronizationManager.getResource(dataSource)️❗️
 			ConnectionHolder conHolder = (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
 			if (conHolder != null && connectionEquals(conHolder, con)) {
-				// 2. 执行 conHolder.released(
+				// 2. 执行 conHolder.released()
 				conHolder.released();
 				return;
 			}
