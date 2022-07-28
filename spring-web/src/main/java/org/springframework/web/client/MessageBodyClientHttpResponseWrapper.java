@@ -35,6 +35,14 @@ import org.springframework.lang.Nullable;
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-3.3.3">RFC 7230 Section 3.3.3</a>
  */
 class MessageBodyClientHttpResponseWrapper implements ClientHttpResponse {
+	// 位于: org.springframework.web.client
+	
+	// 设计:
+	// 属于包装器,持有一个ClientHttpResponse目标对象
+	// Message Body ClientHttpResponse Wrapper = 不仅可以通过实际读取输入流来检查响应是否有消息体，还可以检查其长度是否为0（即空）。
+	
+	// 重点:
+	// ❗️提供 hasMessageBody() 检查是否有消息体 \ hasEmptyMessageBody() 检查消息体是否为空 两个重要的方法
 
 	private final ClientHttpResponse response;
 
@@ -58,9 +66,14 @@ class MessageBodyClientHttpResponseWrapper implements ClientHttpResponse {
 	 * @throws IOException in case of I/O errors
 	 */
 	public boolean hasMessageBody() throws IOException {
+		// ❗️❗️❗️指示响应是否具有消息正文。
+		//	实现返回false ：
+		//		1. 响应状态为1XX 、 204或304
+		//		2. Content-Length为0的标头
+		// return： 如果响应有消息正文，则为true ，否则为false
+		
 		HttpStatus status = HttpStatus.resolve(getRawStatusCode());
-		if (status != null && (status.is1xxInformational() || status == HttpStatus.NO_CONTENT ||
-				status == HttpStatus.NOT_MODIFIED)) {
+		if (status != null && (status.is1xxInformational() || status == HttpStatus.NO_CONTENT || status == HttpStatus.NOT_MODIFIED)) {
 			return false;
 		}
 		if (getHeaders().getContentLength() == 0) {
@@ -81,22 +94,33 @@ class MessageBodyClientHttpResponseWrapper implements ClientHttpResponse {
 	 */
 	@SuppressWarnings("ConstantConditions")
 	public boolean hasEmptyMessageBody() throws IOException {
+		// 指示响应是否具有空消息正文。
+		// 实现尝试读取响应流的第一个字节：
+		//		1. 如果没有可用字节，则消息正文为空
+		//		2. 否则它不为空并且流被重置到它的开始以供进一步阅读
+		
+		// 1. body为null返回true
 		InputStream body = this.response.getBody();
-		// Per contract body shouldn't be null, but check anyway..
 		if (body == null) {
 			return true;
 		}
+		// 2. 检查此输入流是支持mark和reset方法
 		if (body.markSupported()) {
+			// 2.1 标记此输入流中的当前位置为1,复原
 			body.mark(1);
+			// 2.2.1 如果无法从输入流中读取数据的下一个字节,返回true
 			if (body.read() == -1) {
 				return true;
 			}
+			// 2.2.2 否则返回false
 			else {
 				body.reset();
 				return false;
 			}
 		}
+		// 3. 检查此输入流是不支持mark和reset方法
 		else {
+			// 3.1 使用推回输入流PushbackInputStream封装响应体的输入流InputStream
 			this.pushbackInputStream = new PushbackInputStream(body);
 			int b = this.pushbackInputStream.read();
 			if (b == -1) {

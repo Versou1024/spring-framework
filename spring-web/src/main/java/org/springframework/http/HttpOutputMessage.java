@@ -30,8 +30,12 @@ import java.io.OutputStream;
  * @since 3.0
  */
 public interface HttpOutputMessage extends HttpMessage {
-	// 在HttpMessage获取HttpHeaders的能力上获取响应体的能力
-
+	// 位于: org.springframework.http
+	
+	// 作用:
+	// 表示表示 HTTP 输出消息，由请求headers和请求body组成 -> body是一个输入流 [即将请求体输出到请求上]
+	// 在HttpInputMessage#getBody()拿到的是一个输入流哦 [即将响应体输入到程序中]
+	
 	/**
 	 * Return the body of the message as an output stream.
 	 * @return the output stream body (never {@code null})

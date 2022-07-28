@@ -30,6 +30,10 @@ import org.springframework.http.HttpMethod;
  */
 @FunctionalInterface
 public interface ClientHttpRequestFactory {
+	// 位于: org.springframework.http.client 即在spring-web模块下的http.client模块下
+	
+	// 命名:
+	// ClientHttpRequest Factory = 生成ClientHttpRequest对象的工厂
 
 	/**
 	 * Create a new {@link ClientHttpRequest} for the specified URI and HTTP method.

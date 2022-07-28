@@ -59,6 +59,7 @@ public interface HttpMessageConverter<T> {
 	boolean canRead(Class<?> clazz, @Nullable MediaType mediaType);
 	// 指示此转换器是否可以读取给定的类。
 	// mediaType – 要读取的媒体类型（如果未指定，可以为null ）；通常是Content-Type标头的值。
+	// read -> 针对的是响应体的读取
 
 	/**
 	 * Indicates whether the given class can be written by this converter.
@@ -70,6 +71,7 @@ public interface HttpMessageConverter<T> {
 	boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType);
 	// 指示此转换器是否可以编写给定的类。
 	// mediaType – 要写入的媒体类型（如果未指定，可以为null ）；通常是Accept标头的值
+	// write - 针对的请求体的输出
 
 	/**
 	 * Return the list of {@link MediaType} objects supported by this converter.
@@ -90,7 +92,8 @@ public interface HttpMessageConverter<T> {
 	 */
 	T read(Class<? extends T> clazz, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException;
-	// 从给定的输入消息inputMessage中读取给定类型clazz的对象，并返回它
+	// 从给定的输入消息 HttpInputMessage#getBody(..) 拿到InputStream输入流
+	// 从中中读取给定类型clazz的对象，并返回它
 
 	/**
 	 * Write an given object to the given output message.
@@ -106,8 +109,6 @@ public interface HttpMessageConverter<T> {
 	 */
 	void write(T t, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException;
-	// 将给定对象写入给定的输出消息outputMessage。
-	// t - 要写入输出消息的对象。此对象的类型必须先前已传递给此接口的canWrite方法，该方法必须返回true 。
-	//
+	// 将给定对象写入给定的输出消息 HttpOutputMessage#getBody(..) 请求体的输出流哦
 
 }

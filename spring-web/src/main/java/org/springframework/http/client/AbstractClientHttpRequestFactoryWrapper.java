@@ -30,6 +30,14 @@ import org.springframework.util.Assert;
  * @since 3.1
  */
 public abstract class AbstractClientHttpRequestFactoryWrapper implements ClientHttpRequestFactory {
+	// 位于: org.springframework.http.client
+	
+	// 命名:
+	// Abstract ClientHttpRequest Factory Wrapper = 用来装饰Wrapper包装另一个ClientHttpRequestFactory的抽象基类
+	
+	// 特征:
+	// 持有被包装的目标对象:ClientHttpRequestFactory requestFactory
+	// 留给子类扩展的抽象方法为 -> createRequest(URI uri, HttpMethod httpMethod, ClientHttpRequestFactory requestFactory) 
 
 	private final ClientHttpRequestFactory requestFactory;
 

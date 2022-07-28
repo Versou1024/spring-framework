@@ -43,7 +43,12 @@ import org.springframework.util.CollectionUtils;
  * @see org.springframework.web.client.RestTemplate
  */
 public abstract class InterceptingHttpAccessor extends HttpAccessor {
+	// 位于: org.springframework.http.client.support
+	
+	// 命名:
+	// Intercepting HttpAccessor = 拦截 Http 访问器
 
+	// 特征: 持有一组拦截器->ClientHttpRequestInterceptor
 	private final List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
 
 	@Nullable
@@ -58,8 +63,10 @@ public abstract class InterceptingHttpAccessor extends HttpAccessor {
 	 * @see AnnotationAwareOrderComparator
 	 */
 	public void setInterceptors(List<ClientHttpRequestInterceptor> interceptors) {
+		// 设置此访问器应使用的请求拦截器
+		// 拦截器将根据它们的顺序立即排序 -> 所以支持Ordered接口\@Order\PriorityOrder接口等形式来排序
+		
 		Assert.noNullElements(interceptors, "'interceptors' must not contain null elements");
-		// Take getInterceptors() List as-is when passed in here
 		if (this.interceptors != interceptors) {
 			this.interceptors.clear();
 			this.interceptors.addAll(interceptors);
@@ -94,15 +101,20 @@ public abstract class InterceptingHttpAccessor extends HttpAccessor {
 	 */
 	@Override
 	public ClientHttpRequestFactory getRequestFactory() {
+		// ❗️❗️❗️
+		// 1. 拿到所有的定制的拦截器
 		List<ClientHttpRequestInterceptor> interceptors = getInterceptors();
+		// 2.1 拦截器非空, 使用包装对象 InterceptingClientHttpRequestFactory  将拦截器 interceptors 和 HttpClientHttpRequest工厂 封装起来
 		if (!CollectionUtils.isEmpty(interceptors)) {
 			ClientHttpRequestFactory factory = this.interceptingRequestFactory;
 			if (factory == null) {
+				// ❗️❗️❗️ 关注点: InterceptingClientHttpRequestFactory
 				factory = new InterceptingClientHttpRequestFactory(super.getRequestFactory(), interceptors);
 				this.interceptingRequestFactory = factory;
 			}
 			return factory;
 		}
+		// 2.2 拦截器为空,直接 super.getRequestFactory()
 		else {
 			return super.getRequestFactory();
 		}

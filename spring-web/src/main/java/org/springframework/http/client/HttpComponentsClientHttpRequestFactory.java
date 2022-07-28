@@ -59,9 +59,15 @@ import org.springframework.util.Assert;
  * @since 3.1
  */
 public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequestFactory, DisposableBean {
+	// 位于: org.springframework.http.client
+	
+	// 命名:
+	// HttpComponents ClientHttpRequestFactory = 基于Apache的HttpComponents来创建ClientHttpRequest
 
+	// Apache的HttpClient
 	private HttpClient httpClient;
 
+	// Apache的RequestConfig
 	@Nullable
 	private RequestConfig requestConfig;
 
@@ -175,21 +181,27 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 		this.httpContextFactory = httpContextFactory;
 	}
 
+	// ❗️❗️❗️
 	@Override
 	public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {
+		// 1. 拿到Apache的HttpClient
 		HttpClient client = getHttpClient();
 
+		// 2. 创建 HttpUriRequest
 		HttpUriRequest httpRequest = createHttpUriRequest(httpMethod, uri);
+		// 3. 钩子方法 -> 允许前置处理httpRequest
 		postProcessHttpRequest(httpRequest);
+		// 4. 创建Http请求执行的上下文HttpContext
 		HttpContext context = createHttpContext(httpMethod, uri);
 		if (context == null) {
 			context = HttpClientContext.create();
 		}
 
-		// Request configuration not set in the context
+		// 5. 未在上下文中设置请求配置
 		if (context.getAttribute(HttpClientContext.REQUEST_CONFIG) == null) {
 			// Use request configuration given by the user, when available
 			RequestConfig config = null;
+			// 5.1 httpRequest自带RequestConfig
 			if (httpRequest instanceof Configurable) {
 				config = ((Configurable) httpRequest).getConfig();
 			}
@@ -201,6 +213,7 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 			}
 		}
 
+		// 6. 同样支持 buffer 缓冲输出内容
 		if (this.bufferRequestBody) {
 			return new HttpComponentsClientHttpRequest(client, httpRequest, context);
 		}
@@ -273,6 +286,7 @@ public class HttpComponentsClientHttpRequestFactory implements ClientHttpRequest
 	 * @return the Commons HttpMethodBase object
 	 */
 	protected HttpUriRequest createHttpUriRequest(HttpMethod httpMethod, URI uri) {
+		// 基于httpMethod创建不同HttpXxx对象出来使用
 		switch (httpMethod) {
 			case GET:
 				return new HttpGet(uri);

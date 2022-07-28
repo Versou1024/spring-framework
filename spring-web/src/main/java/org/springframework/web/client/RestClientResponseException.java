@@ -30,21 +30,41 @@ import org.springframework.lang.Nullable;
  * @since 4.3
  */
 public class RestClientResponseException extends RestClientException {
+	// ❗️❗️❗️
+	// 位于:  org.springframework.web.client
+	
+	// 作用: 
+	// 包含实际 HTTP 响应数据的异常的通用基类。
+	// 使用在RestTemplate中
+	// 当RestTemplate发出的请求通过DefaultResponseErrorHandler检查后发现,属于4xx和5xx系列的错误代码时就会抛出其异常
+	
+	// 实现类:
+	//	HttpStatusCodeException
+	//		HttpClientErrorException: response的int型的rawStatusCode对应的HttpStatus为4xx系列
+	//			....
+	//		HttpServerErrorException: response的int型的rawStatusCode对应的HttpStatus为5xx系列
+	//			... 
+	//	UnknowHttpStatusCodeException: response中错误码无法解析为Spring已知的HttpStatus时,就用该异常 
 
 	private static final long serialVersionUID = -8803556342728481792L;
 
 	private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
 
+	// 错误码
 	private final int rawStatusCode;
 
+	// 错误文本
 	private final String statusText;
 
+	// 响应体消息
 	private final byte[] responseBody;
 
+	// 响应头
 	@Nullable
 	private final HttpHeaders responseHeaders;
 
+	// 响应体的字符集
 	@Nullable
 	private final String responseCharset;
 
@@ -103,6 +123,7 @@ public class RestClientResponseException extends RestClientException {
 	 * of the response "Content-Type" or otherwise {@code "UTF-8"}.
 	 */
 	public String getResponseBodyAsString() {
+		// ❗️❗️❗️ -> 当RestTemplate抛出UnKnownHttpStatusCodeException时可以使用该方法getResponseBodyAsString(..)获取消息体格式
 		return getResponseBodyAsString(DEFAULT_CHARSET);
 	}
 

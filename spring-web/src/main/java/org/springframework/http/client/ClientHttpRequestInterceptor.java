@@ -35,6 +35,19 @@ import org.springframework.http.HttpRequest;
  */
 @FunctionalInterface
 public interface ClientHttpRequestInterceptor {
+	// 作用:
+	// 拦截客户端 HTTP 请求。可以使用RestTemplate 注册此接口的实现，以修改传入的ClientHttpRequest或传出的ClientHttpResponse 。
+	
+	// 拦截给定的请求，并返回响应。给定的ClientHttpRequestExecution允许拦截器将请求和响应传递给链中的下一个实体。
+	// 此方法的典型实现将遵循以下模式：
+	//		1. 检查请求和正文
+	//		2. 可以选择包装请求以过滤 HTTP 属性。
+	//		3.（可选）修改请求的正文。
+	//		4. 任何一个
+	//			使用ClientHttpRequestExecution.execute(HttpRequest, byte[])执行请求，
+	//			或者
+	//			不要执行请求以完全阻止执行。
+	// 		5.可以选择包装响应以过滤 HTTP 属性。
 
 	/**
 	 * Intercept the given request, and return a response. The given
@@ -61,7 +74,6 @@ public interface ClientHttpRequestInterceptor {
 	 * @return the response
 	 * @throws IOException in case of I/O errors
 	 */
-	ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
-			throws IOException;
+	ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException;
 
 }

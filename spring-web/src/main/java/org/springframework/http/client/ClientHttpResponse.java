@@ -34,6 +34,14 @@ import org.springframework.http.HttpStatus;
  * @since 3.0
  */
 public interface ClientHttpResponse extends HttpInputMessage, Closeable {
+	// 位于:org.springframework.http.client
+	
+	// 作用:
+	// Client Http Response = 表示客户端 HTTP 响应。
+	// 通过调用ClientHttpRequest.execute()获得。
+	
+	// 定义:
+	// getStatusCode(..) getRawStatusCode(..) getStatusText(..) close(..)
 
 	/**
 	 * Get the HTTP status code as an {@link HttpStatus} enum value.
@@ -46,6 +54,7 @@ public interface ClientHttpResponse extends HttpInputMessage, Closeable {
 	 * @see HttpStatus#valueOf(int)
 	 */
 	HttpStatus getStatusCode() throws IOException;
+	// ❗️❗️❗️获取 HTTP 状态代码作为HttpStatus枚举值
 
 	/**
 	 * Get the HTTP status code (potentially non-standard and not
@@ -57,6 +66,7 @@ public interface ClientHttpResponse extends HttpInputMessage, Closeable {
 	 * @see HttpStatus#resolve(int)
 	 */
 	int getRawStatusCode() throws IOException;
+	// ❗️❗️❗️ 对于 HttpStatus 不支持的状态代码，请改用HttpStatusgetRawStatusCode() 
 
 	/**
 	 * Get the HTTP status text of the response.
@@ -64,6 +74,7 @@ public interface ClientHttpResponse extends HttpInputMessage, Closeable {
 	 * @throws IOException in case of I/O errors
 	 */
 	String getStatusText() throws IOException;
+	// 获取响应的 HTTP 状态文本。
 
 	/**
 	 * Close this response, freeing any resources created.

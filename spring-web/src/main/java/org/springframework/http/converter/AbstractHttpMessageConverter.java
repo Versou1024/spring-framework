@@ -49,21 +49,18 @@ import org.springframework.util.Assert;
  * @param <T> the converted object type
  */
 public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConverter<T> {
+	// 位于: org.springframework.http.converter = Spring-web项目下的http.converter转换器包下
+	
 	/*
 	 * 大多数HttpMessageConverter实现的抽象基类。
-	 * 这个基类通过supportedMediaTypes bean 属性添加了对设置支持的MediaTypes的支持。在写入输出消息时，它还增加了对Content-Type和Content-Length的支持。
-	 * AbstractHttpMessageConverter
-	 * 一个基础抽象实现，它也还是个泛型类。对于泛型的控制，有如下特点：
-	 * 最广的可以选择Object，不过Object并不都是可以序列化的，但是子类可以在覆盖的supports方法中进一步控制，因此选择Object是可以的
-	 * 最符合的是Serializable，既完美满足泛型定义，本身也是个Java序列化/反序列化的充要条件
-	 * 自定义的基类Bean，有些技术规范要求自己代码中的所有bean都继承自同一个自定义的基类BaseBean，这样可以在Serializable的基础上再进一步控制，满足自己的业务要求
-	 * 若我们自己需要自定义一个消息转换器，大多数情况下也是继承抽象类再具体实现
+	 * 它的作用在于:为所有的具体HttpMessageConverter抽象出来的 ->
+	 * 持有共同的supportedMediaTypes和defaultCharset属性 -> 并对 canRead(..) 和 canWrite(..) 进行重写啦
 	 */
 
 	/** Logger available to subclasses. */
 	protected final Log logger = HttpLogging.forLogName(getClass());
 
-	// 它主要内部维护了这两个属性，可议构造器赋值，也可以set方法赋值~~
+	// 内部主要维护了这两个属性，可在构造器赋值，也可以set方法赋值~~
 	private List<MediaType> supportedMediaTypes = Collections.emptyList();
 
 	@Nullable
@@ -144,7 +141,7 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	@Override
 	public boolean canRead(Class<?> clazz, @Nullable MediaType mediaType) {
-		// 将canRead分为两部分，
+		// 将canRead分为两部分 -> canRead(..)表示当前HttpMessageConverter是否支持响应体的读取 -> 即使用read(..)将HttpOutMessage#getBody()中的输入流转换为对应的clazz对象
 		// 一部分检查是是否支持Clazz
 		// 一部分检查是否支持mediaType
 		return supports(clazz) && canRead(mediaType);
@@ -162,16 +159,17 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	protected boolean canRead(@Nullable MediaType mediaType) {
 		// 默认的canRead:
 
-		// 1.如果请求体的mediaType为空,表示支持
+		// 1. ❗️如果响应体的mediaType为空,表示支持
 		if (mediaType == null) {
 			return true;
 		}
-		// 2. 否则检查supportedMediaType是否包含这个请求体的mediaType
+		// 2. ❗️否则检查supportedMediaType是否包含这个请求体的mediaType
 		for (MediaType supportedMediaType : getSupportedMediaTypes()) {
 			if (supportedMediaType.includes(mediaType)) {
 				return true;
 			}
 		}
+		// 3. 否则返回false
 		return false;
 	}
 
@@ -183,7 +181,7 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	@Override
 	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
-		// 将canWrite分为两部分，
+		// 将canWrite分为两部分 -> canWrite(..)表示当前HttpMessageConverter是否支持请求体的输出 -> 即使用write(..)将clazz类型的对象写入到HttpOutMessage#getBody()中的输出流中去
 		// 一部分检查是是否支持Clazz
 		// 一部分检查是否支持mediaType
 		return supports(clazz) && canWrite(mediaType);
@@ -200,7 +198,7 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	protected boolean canWrite(@Nullable MediaType mediaType) {
 		// 默认的canWrite()
 
-		// 1. mediaType为空，或者请求体的accept的content-type为*/* ,都表示支持读
+		// 1. ❗️mediaType为空，或者请求体的accept的content-type为*/* ,都表示支持写入请求体的输入流
 		if (mediaType == null || MediaType.ALL.equalsTypeAndSubtype(mediaType)) {
 			return true;
 		}
@@ -232,15 +230,15 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	@Override
 	public final void write(final T t, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
-		//
+		// 不同于read()读取响应体,write()写入请求体是有模板方法的 -> 如下
 
 		// 模板:
-		// 1.获取请求头,向其中加入contentType\contentLength
+		// 1.获取请求头 -> 向其中组织加入content-Type\content-Length 两个请求头
 		final HttpHeaders headers = outputMessage.getHeaders();
 		addDefaultHeaders(headers, t, contentType);
 
 		// 2. 调用writeInternal()由子类完成实际写入操作
-		// 由于已经设置了content-type,因此writeInternal()中没有传mediaType啦
+		// 形参contentType已经被addDefaultHeaders()处理啦,因此writeInternal()中没有传mediaType啦
 		if (outputMessage instanceof StreamingHttpOutputMessage) {
 			// 2.1 对于 StreamingHttpOutputMessage 需要包装统一一下
 			StreamingHttpOutputMessage streamingOutputMessage = (StreamingHttpOutputMessage) outputMessage;
@@ -272,16 +270,21 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	protected void addDefaultHeaders(HttpHeaders headers, T t, @Nullable MediaType contentType) throws IOException {
 		// 向headers中组装content-type和content-length
+		// note: ❗️ 子类可以重写该方法的哦 
 
+		// 1. 请求头中没有指定content-type
 		if (headers.getContentType() == null) {
 			MediaType contentTypeToUse = contentType;
+			// 1.1 传入的content-type为空,或者非具体的 -> 直接使用HttpMessageConverter支持的MediaType的第一个值
 			if (contentType == null || !contentType.isConcrete()) {
 				contentTypeToUse = getDefaultContentType(t);
 			}
+			// 1.2 传入的content-type是具体的MediaType值,但是为application/octet-stream -> 直接使用HttpMessageConverter支持的MediaType的第一个值
 			else if (MediaType.APPLICATION_OCTET_STREAM.equals(contentType)) {
 				MediaType mediaType = getDefaultContentType(t);
 				contentTypeToUse = (mediaType != null ? mediaType : contentTypeToUse);
 			}
+			// 1.3 构建 -> MediaType
 			if (contentTypeToUse != null) {
 				if (contentTypeToUse.getCharset() == null) {
 					Charset defaultCharset = getDefaultCharset();
@@ -292,6 +295,7 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 				headers.setContentType(contentTypeToUse);
 			}
 		}
+		// 2. 请求头中没有指定content-length
 		if (headers.getContentLength() < 0 && !headers.containsKey(HttpHeaders.TRANSFER_ENCODING)) {
 			Long contentLength = getContentLength(t, headers.getContentType());
 			if (contentLength != null) {
@@ -327,8 +331,7 @@ public abstract class AbstractHttpMessageConverter<T> implements HttpMessageConv
 	 */
 	@Nullable
 	protected Long getContentLength(T t, @Nullable MediaType contentType) throws IOException {
-		// 扩展content-length
-		// 子类可重写
+		// 子类可重写 -> 指定contentLength为多少
 
 		return null;
 	}

@@ -34,6 +34,26 @@ import org.springframework.http.HttpRequest;
  * @see ClientHttpRequestFactory#createRequest(java.net.URI, HttpMethod)
  */
 public interface ClientHttpRequest extends HttpRequest, HttpOutputMessage {
+	// 位于:  org.springframework.http.client
+	
+	// 命名:
+	// Client HttpRequest = 表示客户端的Http请求
+	
+	// 继承上:
+	// 继承HttpOutputMessage -> 定义获取Http输出消息即响应体\响应头的方法
+	// 继承HttpRequest -> 定义获取Http请求消息即请求方式\请求的URL\请求头等
+	
+	// 实现类:
+	//		MockClientHttpRequest: 用来做模拟的,可以忽略
+	//		AbstractClientHttpRequest:
+	//			SimpleStreamingClientHttpRequest: 流式的
+	//			HttpComponentsStreamingClientHttpRequest: 基于Apache的request的流式的
+	//			AbstractBufferingClientHttpRequest: 带有缓存输出能力的请求
+	//				BufferingClientHttpRequestWrapper: 缓存
+	//				HttpComponentsClientHttpRequest:
+	//				SimpleBufferingClientHttpRequest:
+	//				OkHttp3ClientHttpRequest:
+	//				InterceptingClientHttpRequest:
 
 	/**
 	 * Execute this request, resulting in a {@link ClientHttpResponse} that can be read.

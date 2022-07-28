@@ -36,9 +36,15 @@ import org.springframework.util.StreamUtils;
  * @since 3.1
  */
 class InterceptingClientHttpRequest extends AbstractBufferingClientHttpRequest {
+	
+	// 使用:
+	// 支持ClientHttpRequestInterceptors的ClientHttpRequest的包装器 -> 包装器对象
+	
 
+	// 包装的目标: ClientHttpRequestFactory
 	private final ClientHttpRequestFactory requestFactory;
 
+	// 包装的目标: 拦截器 ->
 	private final List<ClientHttpRequestInterceptor> interceptors;
 
 	private HttpMethod method;
@@ -48,7 +54,7 @@ class InterceptingClientHttpRequest extends AbstractBufferingClientHttpRequest {
 
 	protected InterceptingClientHttpRequest(ClientHttpRequestFactory requestFactory,
 			List<ClientHttpRequestInterceptor> interceptors, URI uri, HttpMethod method) {
-
+		// 唯一构造器
 		this.requestFactory = requestFactory;
 		this.interceptors = interceptors;
 		this.method = method;
@@ -73,12 +79,20 @@ class InterceptingClientHttpRequest extends AbstractBufferingClientHttpRequest {
 
 	@Override
 	protected final ClientHttpResponse executeInternal(HttpHeaders headers, byte[] bufferedOutput) throws IOException {
+		// ❗️❗️❗️ -> 创建的请求的拦截器链 -> InterceptingRequestExecution
+		
+		// 1. 创建拦截器 
 		InterceptingRequestExecution requestExecution = new InterceptingRequestExecution();
+		// 2. 使用 InterceptingRequestExecution#excute(..) 执行拦截方法
 		return requestExecution.execute(this, bufferedOutput);
 	}
 
 
 	private class InterceptingRequestExecution implements ClientHttpRequestExecution {
+		// 位于: 内部类 
+		
+		// 定义:
+		// 拦截器链,持有ClientHttpRequestInterceptor集合的迭代器
 
 		private final Iterator<ClientHttpRequestInterceptor> iterator;
 
@@ -88,21 +102,31 @@ class InterceptingClientHttpRequest extends AbstractBufferingClientHttpRequest {
 
 		@Override
 		public ClientHttpResponse execute(HttpRequest request, byte[] body) throws IOException {
+			// 1. 还有下一个拦截器需要执行
 			if (this.iterator.hasNext()) {
 				ClientHttpRequestInterceptor nextInterceptor = this.iterator.next();
+				// 1.1 执行遍历到的拦截器
 				return nextInterceptor.intercept(request, body, this);
 			}
+			// 2. 没有拦截器 -> 也就说拦截器执行完毕 [❗️❗️❗️ -> 开始准备执行正式的方法]
 			else {
 				HttpMethod method = request.getMethod();
 				Assert.state(method != null, "No standard HTTP method");
+				// 2.1 拿到委托的请求对象
 				ClientHttpRequest delegate = requestFactory.createRequest(request.getURI(), method);
+				// 2.2 将ClientHttpRequest的headers添加到委托的对象中
 				request.getHeaders().forEach((key, value) -> delegate.getHeaders().addAll(key, value));
+				// 2.3 有执行的请求体时
 				if (body.length > 0) {
+					// 2.3.1 有执行的请求体时,但使用Stream流式的输出消息
 					if (delegate instanceof StreamingHttpOutputMessage) {
+						// 设置为一个流
 						StreamingHttpOutputMessage streamingOutputMessage = (StreamingHttpOutputMessage) delegate;
 						streamingOutputMessage.setBody(outputStream -> StreamUtils.copy(body, outputStream));
 					}
+					// 2.3.2 有执行的请求体时,不能使用Stream流式的输出消息 -> 那就讲body缓存到delegate.getBody()中
 					else {
+						// ❗️❗️❗️❗️❗️❗️-> 当 delegate 是 BufferingClientHttpRequestWrapper 时,就会将请求体缓冲起来哦
 						StreamUtils.copy(body, delegate.getBody());
 					}
 				}

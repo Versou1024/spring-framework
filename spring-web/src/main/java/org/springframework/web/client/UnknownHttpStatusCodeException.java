@@ -29,6 +29,8 @@ import org.springframework.lang.Nullable;
  * @since 3.2
  */
 public class UnknownHttpStatusCodeException extends RestClientResponseException {
+	// 异常:
+	// 暗示 -> 收到未知（或自定义）HTTP 状态代码时引发异常
 
 	private static final long serialVersionUID = 7103980251635005491L;
 

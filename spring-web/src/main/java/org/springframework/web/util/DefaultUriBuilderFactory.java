@@ -55,6 +55,7 @@ public class DefaultUriBuilderFactory implements UriBuilderFactory {
 	 * <p>The target address must be specified on each UriBuilder.
 	 */
 	public DefaultUriBuilderFactory() {
+		// RestTemplate默认的就是当前构造器创建UriTemplateHandler类型
 		this.baseUri = null;
 	}
 
@@ -235,20 +236,25 @@ public class DefaultUriBuilderFactory implements UriBuilderFactory {
 
 		private UriComponentsBuilder initUriComponentsBuilder(String uriTemplate) {
 			UriComponentsBuilder result;
+			// 1. uriTemplate没有长度
 			if (!StringUtils.hasLength(uriTemplate)) {
 				result = (baseUri != null ? baseUri.cloneBuilder() : UriComponentsBuilder.newInstance());
 			}
+			// 2. uriTemplate非空,且baseUri不为空
 			else if (baseUri != null) {
 				UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(uriTemplate);
 				UriComponents uri = builder.build();
 				result = (uri.getHost() == null ? baseUri.cloneBuilder().uriComponents(uri) : builder);
 			}
+			// 3. uriTemplate非空,但baseUri为空
 			else {
+				// 99%的情况指定到这里哦
 				result = UriComponentsBuilder.fromUriString(uriTemplate);
 			}
 			if (encodingMode.equals(EncodingMode.TEMPLATE_AND_VALUES)) {
 				result.encode();
 			}
+			// 4. 解析path路径
 			parsePathIfNecessary(result);
 			return result;
 		}

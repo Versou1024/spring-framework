@@ -40,6 +40,12 @@ import org.springframework.http.client.ClientHttpRequest;
 @FunctionalInterface
 public interface RequestCallback {
 
+	// 作用:
+	// 在ClientHttpRequest上运行的代码的回调接口。允许操作request header，并写入request body。
+	// 由RestTemplate内部使用，但对应用程序代码也很有用。有几种可用的工厂方法：
+	// 		RestTemplate.acceptHeaderRequestCallback(Class)
+	// 		RestTemplate.httpEntityCallback(Object)
+	// 		RestTemplate.httpEntityCallback(Object, Type)
 	/**
 	 * Gets called by {@link RestTemplate#execute} with an opened {@code ClientHttpRequest}.
 	 * Does not need to care about closing the request or about handling errors:
@@ -48,5 +54,7 @@ public interface RequestCallback {
 	 * @throws IOException in case of I/O errors
 	 */
 	void doWithRequest(ClientHttpRequest request) throws IOException;
+	// 通过打开的ClientHttpRequest由RestTemplate.execute调用。
+	// 不需要关心关闭请求或处理错误：这都将由RestTemplate处理。
 
 }

@@ -30,7 +30,11 @@ import org.springframework.http.HttpHeaders;
  * @since 3.0.6
  */
 abstract class AbstractBufferingClientHttpRequest extends AbstractClientHttpRequest {
+	
+	// 作用:
+	// ClientHttpRequest的基本实现，它在通过网络发送之前将输出缓冲在字节数组中。
 
+	// 缓存区 - 使用字节输出流作为缓存
 	private ByteArrayOutputStream bufferedOutput = new ByteArrayOutputStream(1024);
 
 
@@ -41,10 +45,12 @@ abstract class AbstractBufferingClientHttpRequest extends AbstractClientHttpRequ
 
 	@Override
 	protected ClientHttpResponse executeInternal(HttpHeaders headers) throws IOException {
+		// 1. 请求体转为字节输出 -> 设置请求头中的content-type
 		byte[] bytes = this.bufferedOutput.toByteArray();
 		if (headers.getContentLength() < 0) {
 			headers.setContentLength(bytes.length);
 		}
+		// 2. 开始执行 -> 拿到 ClientHttpResponse
 		ClientHttpResponse result = executeInternal(headers, bytes);
 		this.bufferedOutput = new ByteArrayOutputStream(0);
 		return result;
@@ -56,8 +62,8 @@ abstract class AbstractBufferingClientHttpRequest extends AbstractClientHttpRequ
 	 * @param bufferedOutput the body content
 	 * @return the response object for the executed request
 	 */
-	protected abstract ClientHttpResponse executeInternal(HttpHeaders headers, byte[] bufferedOutput)
-			throws IOException;
+	protected abstract ClientHttpResponse executeInternal(HttpHeaders headers, byte[] bufferedOutput) throws IOException;
+	// 传入了执行需要的参数: 请求头 + 请求体的志杰数组
 
 
 }

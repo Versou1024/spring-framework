@@ -31,6 +31,11 @@ import org.springframework.http.client.ClientHttpResponse;
  */
 public interface ResponseErrorHandler {
 
+	// 位于: org.springframework.web.client
+	
+	// 作用:
+	// 在RestTemplate用于确定特定响应response是否有错误的策略接口。
+	
 	/**
 	 * Indicate whether the given response has any errors.
 	 * <p>Implementations will typically inspect the
@@ -40,6 +45,7 @@ public interface ResponseErrorHandler {
 	 * @throws IOException in case of I/O errors
 	 */
 	boolean hasError(ClientHttpResponse response) throws IOException;
+	// 指示给定的响应是否有任何错误。
 
 	/**
 	 * Handle the error in the given response.
@@ -49,6 +55,7 @@ public interface ResponseErrorHandler {
 	 * @throws IOException in case of I/O errors
 	 */
 	void handleError(ClientHttpResponse response) throws IOException;
+	// 处理给定响应中的错误。
 
 	/**
 	 * Alternative to {@link #handleError(ClientHttpResponse)} with extra
@@ -60,6 +67,7 @@ public interface ResponseErrorHandler {
 	 * @since 5.0
 	 */
 	default void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
+		// 替代handleError(ClientHttpResponse)提供对请求 URL 和 HTTP 方法的访问的额外信息。
 		handleError(response);
 	}
 

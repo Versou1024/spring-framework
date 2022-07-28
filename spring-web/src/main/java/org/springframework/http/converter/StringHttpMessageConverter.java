@@ -42,8 +42,9 @@ import org.springframework.util.StreamUtils;
  * @since 3.0
  */
 public class StringHttpMessageConverter extends AbstractHttpMessageConverter<String> {
+	
 	// StringHttpMessageConverter
-	// 这个是使用得非常广泛的一个消息转换器，专门处理入参/出参字符串类型。
+	// 这个是使用得非常广泛的一个消息转换器，专门处理请求体和响应体为字符串类型。
 
 	private static final MediaType APPLICATION_PLUS_JSON = new MediaType("application", "*+json");
 
@@ -51,7 +52,7 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 	 * The default charset used by the converter.
 	 */
 	public static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
-	// 这就是为何你return中文的时候会乱码的原因（若你不设置它的编码的话~）
+	// 这就是为何你控制器直接return中文的时候会乱码的原因（若你不设置它的编码的话~）
 
 
 	@Nullable
@@ -74,7 +75,7 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 	 * type does not specify one.
 	 */
 	public StringHttpMessageConverter(Charset defaultCharset) {
-		// 支持 text/plain */* 类型
+		// 支持 text/plain 与 */* 类型两种类型
 
 		super(defaultCharset, MediaType.TEXT_PLAIN, MediaType.ALL);
 	}
@@ -94,14 +95,18 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 	@Override
 	public boolean supports(Class<?> clazz) {
 		// 只处理String类型~
+		// 即 将String写入到请求体 或者 响应体应该转换为String 都是支持操作的哦
 
 		return String.class == clazz;
 	}
 
 	@Override
 	protected String readInternal(Class<? extends String> clazz, HttpInputMessage inputMessage) throws IOException {
-		// 哪编码的原则为：
-		// 1、contentType自己指定了编码就以指定的为准
+		// 将响应体转换为String -> 即从 HttpInputMessage#getBody() 输入流获取的数据转为 String
+		
+		// 编码的原则为：
+		// ❗️❗️❗️
+		// 1、contentType 响应头中的content-type有指定编码就以指定的为准
 		// 2、没指定，但是类型是`application/json`，统一按照UTF_8处理
 		// 3、否则使用默认编码：getDefaultCharset  ISO_8859_1
 		Charset charset = getContentTypeCharset(inputMessage.getHeaders().getContentType());
@@ -109,9 +114,10 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 		return StreamUtils.copyToString(inputMessage.getBody(), charset);
 	}
 
-	// 显然，ContentLength和编码也是有关的~~~
 	@Override
 	protected Long getContentLength(String str, @Nullable MediaType contentType) {
+		// 显然，ContentLength和编码也是有关的~~~
+		// 用于在 write()方法中 向请求头中确定请求体的content-length
 		Charset charset = getContentTypeCharset(contentType);
 		return (long) str.getBytes(charset).length;
 	}
@@ -119,6 +125,8 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 
 	@Override
 	protected void addDefaultHeaders(HttpHeaders headers, String s, @Nullable MediaType type) throws IOException {
+		// ❗️❗️❗️ -> 重写超类的 addDefaultHeaders(..) 方法哦
+		// 1. 当contentType为空的时候,且type是兼容json格式的,先提前设置一下contentType
 		if (headers.getContentType() == null ) {
 			if (type != null && type.isConcrete() &&
 					(type.isCompatibleWith(MediaType.APPLICATION_JSON) ||
@@ -127,11 +135,15 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 				headers.setContentType(type);
 			}
 		}
+		// 2. 沿用超类的处理方式
 		super.addDefaultHeaders(headers, s, type);
 	}
 
 	@Override
 	protected void writeInternal(String str, HttpOutputMessage outputMessage) throws IOException {
+		// 写操作
+		// 将对象即String填入请求体的输出流中 -> 即 String 填充到 HttpOutputMessage#getBody() 输出流中
+		
 		HttpHeaders headers = outputMessage.getHeaders();
 		if (this.writeAcceptCharset && headers.get(HttpHeaders.ACCEPT_CHARSET) == null) {
 			headers.setAcceptCharset(getAcceptedCharsets());
@@ -160,7 +172,7 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 
 	private Charset getContentTypeCharset(@Nullable MediaType contentType) {
 
-		// 1.1 从请求头的conten-type中获取charset
+		// 1.1 请求头的content-type中获取charset
 		if (contentType != null && contentType.getCharset() != null) {
 			return contentType.getCharset();
 		}
@@ -168,7 +180,6 @@ public class StringHttpMessageConverter extends AbstractHttpMessageConverter<Str
 		else if (contentType != null &&
 				(contentType.isCompatibleWith(MediaType.APPLICATION_JSON) ||
 						contentType.isCompatibleWith(APPLICATION_PLUS_JSON))) {
-			// Matching to AbstractJackson2HttpMessageConverter#DEFAULT_CHARSET
 			return StandardCharsets.UTF_8;
 		}
 		// 1.3 获取默认的charset

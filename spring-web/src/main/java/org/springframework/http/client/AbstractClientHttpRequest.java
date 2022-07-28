@@ -30,9 +30,13 @@ import org.springframework.util.Assert;
  * @since 3.0
  */
 public abstract class AbstractClientHttpRequest implements ClientHttpRequest {
+	// 命名:
+	// Abstract ClientHttpRequest = 抽象的客户端的Http请求
 
+	// 请求头的基本信息
 	private final HttpHeaders headers = new HttpHeaders();
 
+	// 执行标记
 	private boolean executed = false;
 
 
@@ -43,13 +47,17 @@ public abstract class AbstractClientHttpRequest implements ClientHttpRequest {
 
 	@Override
 	public final OutputStream getBody() throws IOException {
+		// 1 检查请求是否执行过
 		assertNotExecuted();
+		// 2. 抽象方法
 		return getBodyInternal(this.headers);
 	}
 
 	@Override
 	public final ClientHttpResponse execute() throws IOException {
+		// 1 检查请求是否执行过
 		assertNotExecuted();
+		// 2. 执行的抽象方法
 		ClientHttpResponse result = executeInternal(this.headers);
 		this.executed = true;
 		return result;
@@ -60,8 +68,13 @@ public abstract class AbstractClientHttpRequest implements ClientHttpRequest {
 	 * @throws IllegalStateException if this request has been executed
 	 */
 	protected void assertNotExecuted() {
+		// 1 检查请求是否执行过
 		Assert.state(!this.executed, "ClientHttpRequest already executed");
 	}
+	
+	// ---------------------
+	// 留给子类的实现的两个方法 -> 如何获取响应体\如何执行
+	// ---------------------
 
 
 	/**

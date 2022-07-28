@@ -97,18 +97,22 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 	public static final Charset DEFAULT_CHARSET = null;
 
 
-	protected ObjectMapper objectMapper; // objectMapper做序列化的工具
+	// objectMapper做序列化的工具
+	protected ObjectMapper objectMapper;
 
+	// 是否开启完整打印 -- 帮助objectMapper做好格式输出
 	@Nullable
-	private Boolean prettyPrint; // 是否开启完整打印 -- 帮助objectMapper做好格式输出
+	private Boolean prettyPrint;
 
+	// 格式化打印器
 	@Nullable
-	private PrettyPrinter ssePrettyPrinter; // 格式化打印器
+	private PrettyPrinter ssePrettyPrinter; 
 
 	// 构造器中设置objectMapper以及supportedMediaType
 
 	protected AbstractJackson2HttpMessageConverter(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
+		// 1. 使用默认的DefaultPrettyPrinter
 		DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
 		prettyPrinter.indentObjectsWith(new DefaultIndenter("  ", "\ndata:"));
 		this.ssePrettyPrinter = prettyPrinter;
@@ -197,7 +201,8 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 
 	@Override
 	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
-		// 是否可以写 -- 序列化出去
+		// 是否可以写 -- 即将clazz类型的对象写入到请求体上去
+		// 直接重写: HttpMessageConverter#canWrite(..)
 
 		// 1. 检查请求头的accept的mediaType是否对当前消息转换器支持的supportMediaType进行支持
 		if (!canWrite(mediaType)) {
@@ -211,7 +216,7 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 			}
 		}
 		AtomicReference<Throwable> causeRef = new AtomicReference<>();
-		// 3. 检查是否可以序列化
+		// 3. 检查是否可以序列化,不可以序列化需要使用causeRef记录错误信息
 		if (this.objectMapper.canSerialize(clazz, causeRef)) {
 			return true;
 		}
@@ -254,29 +259,36 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 	public Object read(Type type, @Nullable Class<?> contextClass, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException {
 
+		// 1. 拿到JavaType
 		JavaType javaType = getJavaType(type, contextClass);
+		// 2. readJavaType(..)
 		return readJavaType(javaType, inputMessage);
 	}
 
 	@Override
 	protected Object readInternal(Class<?> clazz, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException {
-
+		
+		// 1. 拿到JavaType
 		JavaType javaType = getJavaType(clazz, null);
+		// 2. readJavaType(..)
 		return readJavaType(javaType, inputMessage);
 	}
 
 	private Object readJavaType(JavaType javaType, HttpInputMessage inputMessage) throws IOException {
 
-		// 获取请求体
+		// 1. 获取响应体
 		MediaType contentType = inputMessage.getHeaders().getContentType();
-		// 获取字符类型
+		// 2. 获取字符类型
 		Charset charset = getCharset(contentType);
 
+		// 3. 获取JSONEncode格式
 		boolean isUnicode = ENCODINGS.containsKey(charset.name());
 		try {
+			// 3.1 MappingJacksonInputMessage类型的信息
 			if (inputMessage instanceof MappingJacksonInputMessage) {
 				Class<?> deserializationView = ((MappingJacksonInputMessage) inputMessage).getDeserializationView();
+				// 3.1.1 反序列化视图deserializationView非空,就按照view反序列化
 				if (deserializationView != null) {
 					ObjectReader objectReader = this.objectMapper.readerWithView(deserializationView).forType(javaType);
 					if (isUnicode) {
@@ -324,17 +336,18 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 	@Override
 	protected void writeInternal(Object object, @Nullable Type type, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
-		// 利用Jackson完成序列化
-		// 包括 JsonEncoding、JsonGenerator、JsonWriter
-		// 将从object中解析写回Object
+		// 将对象object填入请求体的输出流中 -> 即 object 根据类型 type 转换为 json 后 填充到 HttpOutputMessage#getBody() 输出流中
+		
+		// 1. 拿到contentType
 		MediaType contentType = outputMessage.getHeaders().getContentType();
+		// 2. 确定: JsonEncoding
 		JsonEncoding encoding = getJsonEncoding(contentType);
-
+		// 3. 拿到请求体: outputMessage.getBody() 输出流
 		OutputStream outputStream = StreamUtils.nonClosing(outputMessage.getBody());
-		// 通过 obejctMapper 拿到底层的 JsonGenerator
+		// 4. 通过 objtctMapper 拿到底层的 JsonGenerator
 		JsonGenerator generator = this.objectMapper.getFactory().createGenerator(outputStream, encoding);
 		try {
-			// 利用 generator 写前缀
+			// 4.1 利用 JsonGenerator 写前缀
 			writePrefix(generator, object);
 
 			Object value = object;
@@ -342,38 +355,43 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 			FilterProvider filters = null;
 			JavaType javaType = null;
 
-			// 一般都不是的,直接跳过 ~~
-			// 支持aJsonValue注解：此处给value重新赋值啦（并不是原值
+			// 4.2 一般都不是的,直接跳过 ~~
+			// 支持@JsonValue注解：此处给value重新赋值啦（并不是原值
 			if (object instanceof MappingJacksonValue) {
 				MappingJacksonValue container = (MappingJacksonValue) object;
 				value = container.getValue();
 				serializationView = container.getSerializationView();
 				filters = container.getFilters();
 			}
+			// 4.3 type非空,且value的值就是type类型的哦
 			if (type != null && TypeUtils.isAssignable(type, value.getClass())) {
 				javaType = getJavaType(type, null);
 			}
 
-			// 通过objectMapper获取objectWriter -- 定制视图serializationView
-			// 支持aJsonView
+			// 4.4 通过objectMapper获取objectWriter -- 定制视图serializationView
+			// 支持@JsonView
 			ObjectWriter objectWriter = (serializationView != null ?
 					this.objectMapper.writerWithView(serializationView) : this.objectMapper.writer());
-			// 定制 filters.javaType
-			//支持aJsonFilter
+			// 4.5 定制 filters.javaType
+			//支持@JsonFilter
 			if (filters != null) {
-				objectWriter = objectWriter.with(filters); //
+				objectWriter = objectWriter.with(filters);
 			}
 			if (javaType != null && javaType.isContainerType()) {
-				objectWriter = objectWriter.forType(javaType); // 生成的类型
+				objectWriter = objectWriter.forType(javaType);
 			}
 			SerializationConfig config = objectWriter.getConfig();
+			// 4.6 指定优美的打印器
 			if (contentType != null && contentType.isCompatibleWith(MediaType.TEXT_EVENT_STREAM) &&
 					config.isEnabled(SerializationFeature.INDENT_OUTPUT)) {
-				objectWriter = objectWriter.with(this.ssePrettyPrinter); // 给定优美的打印器
+				objectWriter = objectWriter.with(this.ssePrettyPrinter); 
 			}
-			objectWriter.writeValue(generator, value); // 将值写到value
+			// 4.7 ❗️❗️❗️ 将value转换为json格式后写入到步骤3中的OutputStream中去
+			objectWriter.writeValue(generator, value); 
 
+			// 4.8 写入后缀
 			writeSuffix(generator, object);
+			// 刷新 - 关闭
 			generator.flush();
 			generator.close();
 

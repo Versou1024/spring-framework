@@ -42,8 +42,7 @@ public class InterceptingClientHttpRequestFactory extends AbstractClientHttpRequ
 	 * @param requestFactory the request factory to wrap
 	 * @param interceptors the interceptors that are to be applied (can be {@code null})
 	 */
-	public InterceptingClientHttpRequestFactory(ClientHttpRequestFactory requestFactory,
-			@Nullable List<ClientHttpRequestInterceptor> interceptors) {
+	public InterceptingClientHttpRequestFactory(ClientHttpRequestFactory requestFactory, @Nullable List<ClientHttpRequestInterceptor> interceptors) {
 
 		super(requestFactory);
 		this.interceptors = (interceptors != null ? interceptors : Collections.emptyList());
@@ -52,6 +51,7 @@ public class InterceptingClientHttpRequestFactory extends AbstractClientHttpRequ
 
 	@Override
 	protected ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod, ClientHttpRequestFactory requestFactory) {
+		// 最终创建出来的是: InterceptingClientHttpRequest
 		return new InterceptingClientHttpRequest(requestFactory, this.interceptors, uri, httpMethod);
 	}
 

@@ -31,6 +31,7 @@ import org.springframework.http.HttpMethod;
  */
 @Deprecated
 public interface AsyncClientHttpRequestFactory {
+	// 从 Spring 5.0 开始已经开始启用 -> 不需要关注
 
 	/**
 	 * Create a new asynchronous {@link AsyncClientHttpRequest} for the specified URI

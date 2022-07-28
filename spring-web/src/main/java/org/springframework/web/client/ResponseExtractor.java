@@ -39,6 +39,12 @@ import org.springframework.lang.Nullable;
  */
 @FunctionalInterface
 public interface ResponseExtractor<T> {
+	// 位于: org.springframework.web.client
+	
+	// 定义:
+	// 如何从响应ClientHttpResponse提取到用户期望的实体类型
+	
+	// 不同于: 
 
 	/**
 	 * Extract data from the given {@code ClientHttpResponse} and return it.

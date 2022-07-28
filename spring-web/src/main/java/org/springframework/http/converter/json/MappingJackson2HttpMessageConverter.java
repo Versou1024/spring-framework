@@ -69,7 +69,7 @@ public class MappingJackson2HttpMessageConverter extends AbstractJackson2HttpMes
 	 * provided by {@link Jackson2ObjectMapperBuilder}.
 	 */
 	public MappingJackson2HttpMessageConverter() {
-		// 可以发现 ObjectMapper 是通过 Jackson2ObjectMapperBuilder.json().build() 创建的哦
+		// ❗️❗️❗️ 可以发现 ObjectMapper 是通过 Jackson2ObjectMapperBuilder.json().build() 创建的哦
 		this(Jackson2ObjectMapperBuilder.json().build());
 	}
 

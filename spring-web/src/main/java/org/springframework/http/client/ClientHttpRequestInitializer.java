@@ -35,6 +35,15 @@ import org.springframework.http.client.support.HttpAccessor;
  */
 @FunctionalInterface
 public interface ClientHttpRequestInitializer {
+	// 位于:
+	
+	// 作用:
+	// 用于在使用ClientHttpRequest之前初始化它的回调接口。
+	// 通常与HttpAccessor和RestTemplate等子类一起使用，以将一致的设置或标头应用于每个请求。
+	// 与ClientHttpRequestInterceptor不同，此接口可以应用自定义，而无需将整个请求正文读入内存
+	
+	// 场景:
+	// 比如RestTemplate执行的所有请求必须带上指定请求头 -> 就可以使用ClientHttpRequestInitializer
 
 	/**
 	 * Initialize the given client HTTP request.

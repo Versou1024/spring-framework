@@ -31,6 +31,11 @@ import org.springframework.util.StreamUtils;
  * @since 3.1
  */
 final class BufferingClientHttpRequestWrapper extends AbstractBufferingClientHttpRequest {
+	// 命名:
+	// Buffering ClientHttpRequestWrapper -> 返回带有缓存能力的ClientHttpRequest
+	
+	// 模式:
+	// 包装器模式,目标类ClientHttpRequest存在request字段上,实际的缓存操作是AbstractBufferingClientHttpRequest提供的哦
 
 	private final ClientHttpRequest request;
 
@@ -38,6 +43,10 @@ final class BufferingClientHttpRequestWrapper extends AbstractBufferingClientHtt
 	BufferingClientHttpRequestWrapper(ClientHttpRequest request) {
 		this.request = request;
 	}
+	
+	// ---------------------
+	// 实现超类中没有实现的方法吧: getMethod(..) getMethodValue(..) getURI(..) executeInternal(..)
+	// ---------------------
 
 
 	@Override
@@ -58,9 +67,15 @@ final class BufferingClientHttpRequestWrapper extends AbstractBufferingClientHtt
 
 	@Override
 	protected ClientHttpResponse executeInternal(HttpHeaders headers, byte[] bufferedOutput) throws IOException {
+		// ❗️❗️❗️ -> 执行请求
+		
+		// 1. 设置请求头
 		this.request.getHeaders().putAll(headers);
+		// 2. 将缓存的请求体的数据写入request.body字段中
 		StreamUtils.copy(bufferedOutput, this.request.getBody());
+		// 3. 执行请求
 		ClientHttpResponse response = this.request.execute();
+		// 4. 封装为: BufferingClientHttpResponseWrapper [❗️❗️❗️ 注意:这里是Response的Wrapper]
 		return new BufferingClientHttpResponseWrapper(response);
 	}
 

@@ -109,8 +109,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 		ClassLoader classLoader = RestTemplate.class.getClassLoader();
 		romePresent = ClassUtils.isPresent("com.rometools.rome.feed.WireFeed", classLoader);
 		jaxb2Present = ClassUtils.isPresent("javax.xml.bind.Binder", classLoader);
-		jackson2Present = ClassUtils.isPresent("com.fasterxml.jackson.databind.ObjectMapper", classLoader) &&
-				ClassUtils.isPresent("com.fasterxml.jackson.core.JsonGenerator", classLoader);
+		jackson2Present = ClassUtils.isPresent("com.fasterxml.jackson.databind.ObjectMapper", classLoader) && ClassUtils.isPresent("com.fasterxml.jackson.core.JsonGenerator", classLoader);
 		jackson2XmlPresent = ClassUtils.isPresent("com.fasterxml.jackson.dataformat.xml.XmlMapper", classLoader);
 		jackson2SmilePresent = ClassUtils.isPresent("com.fasterxml.jackson.dataformat.smile.SmileFactory", classLoader);
 		jackson2CborPresent = ClassUtils.isPresent("com.fasterxml.jackson.dataformat.cbor.CBORFactory", classLoader);
@@ -133,10 +132,15 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * Default {@link HttpMessageConverter HttpMessageConverters} are initialized.
 	 */
 	public RestTemplate() {
+		// 无参构造器
+		// 支持: byte[] 以及 application/octet-stream 以及 */*
 		this.messageConverters.add(new ByteArrayHttpMessageConverter());
+		// 支持: String 以及 text/plain 与 */* 类型两种类型
 		this.messageConverters.add(new StringHttpMessageConverter());
+		// 支持: Resource 以及 */* 类型两种类型
 		this.messageConverters.add(new ResourceHttpMessageConverter(false));
 		try {
+			// 支持:  DOMSource\SAXSource\StAXSource\StreamSource\Source 以及 为text/xml application/xml application/*+xml
 			this.messageConverters.add(new SourceHttpMessageConverter<>());
 		}
 		catch (Error err) {
@@ -157,6 +161,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 		}
 
 		if (jackson2Present) {
+			// 支持: 所有的Class 只要求 MediaType为application/json  application/*+json 
 			this.messageConverters.add(new MappingJackson2HttpMessageConverter());
 		}
 		else if (gsonPresent) {
@@ -183,6 +188,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * @see org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 	 */
 	public RestTemplate(ClientHttpRequestFactory requestFactory) {
+		// 有参构造器1: 出入 ClientHttpRequestFactory
 		this();
 		setRequestFactory(requestFactory);
 	}
@@ -194,6 +200,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * @since 3.2.7
 	 */
 	public RestTemplate(List<HttpMessageConverter<?>> messageConverters) {
+		// 有参构造器2: 传入messageConverters
 		validateConverters(messageConverters);
 		this.messageConverters.addAll(messageConverters);
 		this.uriTemplateHandler = initUriTemplateHandler();
@@ -201,6 +208,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 
 
 	private static DefaultUriBuilderFactory initUriTemplateHandler() {
+		// ❗️❗️❗️ 默认使用的 DefaultUriBuilderFactory
 		DefaultUriBuilderFactory uriFactory = new DefaultUriBuilderFactory();
 		uriFactory.setEncodingMode(EncodingMode.URI_COMPONENT);  // for backwards compatibility..
 		return uriFactory;
@@ -307,20 +315,29 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	@Override
 	@Nullable
 	public <T> T getForObject(String url, Class<T> responseType, Object... uriVariables) throws RestClientException {
+		// 1. 制作请求回调-acceptHeaderRequestCallback帮助创建Accept请求头指定接受的数据格式类型
 		RequestCallback requestCallback = acceptHeaderRequestCallback(responseType);
-		HttpMessageConverterExtractor<T> responseExtractor =
-				new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);
+		// 2. 创建 HttpMessageConverterExtractor
+		HttpMessageConverterExtractor<T> responseExtractor = new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);
+		// 3. 进入核心代码 -> 开始执行请求
 		return execute(url, HttpMethod.GET, requestCallback, responseExtractor, uriVariables);
 	}
+	
+	// getForObject(String url, Class<T> responseType, Object... uriVariables) 
+	// VS
+	// getForObject(String url, Class<T> responseType, Map<String, ?> uriVariables)
+	// 前者是按照顺序去插入url变量,后者是按照名字去插入url变量的
 
 	@Override
 	@Nullable
 	public <T> T getForObject(String url, Class<T> responseType, Map<String, ?> uriVariables) throws RestClientException {
 		RequestCallback requestCallback = acceptHeaderRequestCallback(responseType);
-		HttpMessageConverterExtractor<T> responseExtractor =
-				new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);
+		HttpMessageConverterExtractor<T> responseExtractor = new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);
 		return execute(url, HttpMethod.GET, requestCallback, responseExtractor, uriVariables);
 	}
+	
+	// getForObject(URI url, Class<T> responseType) 
+	// 相比于其他两个: getForObject(..) 特点就是没有路径变量需要填充哦
 
 	@Override
 	@Nullable
@@ -330,6 +347,10 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 				new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);
 		return execute(url, HttpMethod.GET, requestCallback, responseExtractor);
 	}
+	
+	// getForObject(..)  VS  getForEntity(..)
+	// 前者返回执行类型的对象 VS 后者返回使用ResponseEntity包装后的对象,其中包括其他信息
+	// 源码不同点: 前者使用HttpMessageConverterExtractor,后者使用ResponseExtractor
 
 	@Override
 	public <T> ResponseEntity<T> getForEntity(String url, Class<T> responseType, Object... uriVariables)
@@ -665,10 +686,11 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 */
 	@Override
 	@Nullable
-	public <T> T execute(String url, HttpMethod method, @Nullable RequestCallback requestCallback,
-			@Nullable ResponseExtractor<T> responseExtractor, Object... uriVariables) throws RestClientException {
-
+	public <T> T execute(String url, HttpMethod method, @Nullable RequestCallback requestCallback, @Nullable ResponseExtractor<T> responseExtractor, Object... uriVariables) throws RestClientException {
+		// 1. 获取最终的url
+		// 拿到UriTemplateHandler处理器 -> 将url中{}中指定的占位符根据uriVariables给处理调
 		URI expanded = getUriTemplateHandler().expand(url, uriVariables);
+		// 2. 开始执行
 		return doExecute(expanded, method, requestCallback, responseExtractor);
 	}
 
@@ -730,12 +752,32 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 		Assert.notNull(method, "HttpMethod is required");
 		ClientHttpResponse response = null;
 		try {
+			// 1. 创建请求 -> 调用超类提供的 HttpAccessor#createRequest(..) ❗️❗️❗️ -> 注意:通话里面含有丰富的装饰哦
 			ClientHttpRequest request = createRequest(url, method);
+			// 2. 是否有RequestCallback -> 有的话,处理一下
+			// 常见1: getForObject(..) / getForEntity(..) 通常使用 AcceptHeaderRequestCallback
 			if (requestCallback != null) {
 				requestCallback.doWithRequest(request);
 			}
+			// 3. 开始执行 execute()
+			// ❗️❗️❗️ -> 如果以: 
+			// 	@Bean
+			//	public RestTemplate restTemplate(RestTemplateBuilder builder) {
+			//		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+			//		BufferingClientHttpRequestFactory bufferingClientHttpRequestFactory = new BufferingClientHttpRequestFactory(factory);
+			//		factory.setReadTimeout(180000);
+			//		factory.setConnectTimeout(180000);
+			//		RestTemplate restTemplate = new RestTemplate(bufferingClientHttpRequestFactory);
+			//		restTemplate.getInterceptors().add(new AuthHttpRequestInterceptor());
+			//		restTemplate.getMessageConverters().set(1, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+			//		return restTemplate;
+			//	} 为例
+			// request 就是 InterceptingClientHttpRequest 包装有 BufferingClientHttpRequestWrapper 包装有 HttpComponentsClientHttpRequest
+			// 因此先去执行所有的 ClientHttpRequestInterceptor ,然后执行
 			response = request.execute();
+			// 4. 处理返回值 -> ❗️❗️❗️ 默认情况下: 当response是4xx或者5xx,会抛出异常,来自ClientHttpResponse异常体系结构哦
 			handleResponse(url, method, response);
+			// 5. 当第四步没有报出哦,使用 ResponseExtractor#extractData(..) 处理返回值的结果哦
 			return (responseExtractor != null ? responseExtractor.extractData(response) : null);
 		}
 		catch (IOException ex) {
@@ -764,7 +806,11 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * @see #setErrorHandler
 	 */
 	protected void handleResponse(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
+		// 处理给定的响应，执行适当的日志记录并在必要时调用ResponseErrorHandler
+		
+		// 1. 获取ResponseErrorHandler -> 默认使用的是: DefaultResponseErrorHandler
 		ResponseErrorHandler errorHandler = getErrorHandler();
+		// 2. 检查response是否有错误
 		boolean hasError = errorHandler.hasError(response);
 		if (logger.isDebugEnabled()) {
 			try {
@@ -776,6 +822,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 				// ignore
 			}
 		}
+		// 3. 有错误的话,就使用 ResponseErrorHandler#handleError(..) 处理错误
 		if (hasError) {
 			errorHandler.handleError(url, method, response);
 		}
@@ -787,6 +834,8 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * configured message converters.
 	 */
 	public <T> RequestCallback acceptHeaderRequestCallback(Class<T> responseType) {
+		// 返回一个RequestCallback
+		// 它根据给定的响应类型设置请求Accept标头，并与配置的消息转换器进行交叉检查。
 		return new AcceptHeaderRequestCallback(responseType);
 	}
 
@@ -814,6 +863,7 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * Return a {@code ResponseExtractor} that prepares a {@link ResponseEntity}.
 	 */
 	public <T> ResponseExtractor<ResponseEntity<T>> responseEntityExtractor(Type responseType) {
+		// 返回: ResponseEntity<T> 将会使用 ResponseEntityResponseExtractor 提取
 		return new ResponseEntityResponseExtractor<>(responseType);
 	}
 
@@ -834,9 +884,14 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * Request callback implementation that prepares the request's accept headers.
 	 */
 	private class AcceptHeaderRequestCallback implements RequestCallback {
+		// RequestCallback 的内部实现类之一
+		
+		// 命名:
+		// AcceptHeader RequestCallback = 用来给request接受accept请求头的回调RequestCallback
+		// ❗️❗️❗️ -> 帮助request指定请求方式.比如application/json等等
 
 		@Nullable
-		private final Type responseType;
+		private final Type responseType; // 用户需要返回的数据类型
 
 		public AcceptHeaderRequestCallback(@Nullable Type responseType) {
 			this.responseType = responseType;
@@ -844,9 +899,15 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 
 		@Override
 		public void doWithRequest(ClientHttpRequest request) throws IOException {
+			// 当用户设置的需要返回的数据类型responseType非空时执行
 			if (this.responseType != null) {
+				// 1. 拿到所有的MessageConverter,检查哪一个支持读取整个responseType
+				// 如果支持就拿到这个MessageConverter支持的MediaType类型,然后去重,然后进行排序 -> 最后收集起来即可
 				List<MediaType> allSupportedMediaTypes = getMessageConverters().stream()
+						// 1. 注意: canReadResponse(..)
 						.filter(converter -> canReadResponse(this.responseType, converter))
+						// 2. 100%的情况就是MappingJackson2HttpMessageConverter可以通过
+						// 而 MappingJackson2HttpMessageConverter#getSupportedMediaTypes(..) 返回的就是 application/json 和 application/+json格式
 						.flatMap(this::getSupportedMediaTypes)
 						.distinct()
 						.sorted(MediaType.SPECIFICITY_COMPARATOR)
@@ -854,11 +915,22 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 				if (logger.isDebugEnabled()) {
 					logger.debug("Accept=" + allSupportedMediaTypes);
 				}
+				// 2. 设置请求头中的accept的类型
 				request.getHeaders().setAccept(allSupportedMediaTypes);
 			}
 		}
 
 		private boolean canReadResponse(Type responseType, HttpMessageConverter<?> converter) {
+			// 检查: HttpMessageConverter 是否支持 read 指定的 responseType 
+			// canRead(..) 表示是否支持到时候读取响应体的中的信息,并转换为responseClass或responseType
+			// note: ❗️❗️❗️ 上面的canRead()传入的mediaType都是null哦
+			// 比如: -> 以这里为例
+			//		ByteArrayHttpMessageConverter 支持byte[]
+			//		StringHttpMessageConverter	支持String
+			//		ResourceHttpMessageConverter 支持Resource
+			//		SourceHttpMessageConverter 支持Source
+			// 		...
+			//      MappingJackson2HttpMessageConverter ❗️支持任何类型的 MappingJackson2HttpMessageConverter -> 支持的是 application/json 和 application/+json格式哦
 			Class<?> responseClass = (responseType instanceof Class ? (Class<?>) responseType : null);
 			if (responseClass != null) {
 				return converter.canRead(responseClass, null);
@@ -977,10 +1049,15 @@ public class RestTemplate extends InterceptingHttpAccessor implements RestOperat
 	 * Response extractor for {@link HttpEntity}.
 	 */
 	private class ResponseEntityResponseExtractor<T> implements ResponseExtractor<ResponseEntity<T>> {
+		// ResponseExtractor<T>的内部实现类
 
+		// 作用:
+		// 实际的响应体转为实体Bean的T的工作交给deletegate
+		// ResponseEntityResponseExtractor只是将上面拿到的结果设置到ResponseEntity中 ~~ 就是如此easy
 		@Nullable
 		private final HttpMessageConverterExtractor<T> delegate;
 
+		
 		public ResponseEntityResponseExtractor(@Nullable Type responseType) {
 			if (responseType != null && Void.class != responseType) {
 				this.delegate = new HttpMessageConverterExtractor<>(responseType, getMessageConverters(), logger);

@@ -32,6 +32,10 @@ import org.springframework.http.HttpMethod;
  * @since 3.1
  */
 public class BufferingClientHttpRequestFactory extends AbstractClientHttpRequestFactoryWrapper {
+	// 位于: org.springframework.http.client
+	
+	// 命名:
+	// Buffering ClientHttpRequest Factory = 显而易见的就是,创建出来的ClientHttpRequest是带有缓存响应体输出的能力哦
 
 	/**
 	 * Create a buffering wrapper for the given {@link ClientHttpRequestFactory}.
@@ -43,10 +47,12 @@ public class BufferingClientHttpRequestFactory extends AbstractClientHttpRequest
 
 
 	@Override
-	protected ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod, ClientHttpRequestFactory requestFactory)
-			throws IOException {
+	protected ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod, ClientHttpRequestFactory requestFactory) throws IOException {
+		// 由于: BufferingClientHttpRequestFactory创建出来的ClientHttpRequest是带有缓存响应体输出的能力哦
+		// 因此需要将目标requestFactory#createRequest(..)创建出来的ClientHttpRequest使用BufferingClientHttpRequestWrapper包装后返回
 
 		ClientHttpRequest request = requestFactory.createRequest(uri, httpMethod);
+		// ❗️❗️❗️当然,是否需要缓存输出内容,交给子类自己去判断
 		if (shouldBuffer(uri, httpMethod)) {
 			return new BufferingClientHttpRequestWrapper(request);
 		}

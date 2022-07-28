@@ -77,6 +77,11 @@ import org.springframework.util.ObjectUtils;
  * @see RequestEntity
  */
 public class ResponseEntity<T> extends HttpEntity<T> {
+	// 位于: org.springframework.http
+	
+	// 作用: 
+	// HttpEntity用来表示请求体或者响应体的实体类
+	// 对于响应体的实体类还需要增加响应代码
 
 	private final Object status;
 

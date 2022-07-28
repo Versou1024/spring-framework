@@ -35,8 +35,11 @@ import org.springframework.lang.Nullable;
  * @param <T> the converted object type
  */
 public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHttpMessageConverter<T> implements GenericHttpMessageConverter<T> {
-	// AbstractGenericHttpMessageConverter 大多数 GenericHttpMessageConverter 实现的抽象基类。
-	// 同时将 GenericHttpMessageConverter 方法的实现都利用其超类AbstractHttpMessageConverter的能力实现
+	// 位于: org.springframework.http.converter
+	
+	// 作用: 
+	// 在 AbstractHttpMessageConverter 的基础下, 兼容 GenericHttpMessageConverter接口的定义
+	// 将 GenericHttpMessageConverter 接口的定义都利用其超类AbstractHttpMessageConverter的能力实现
 
 	/**
 	 * Construct an {@code AbstractGenericHttpMessageConverter} with no supported media types.
@@ -64,18 +67,22 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 
 	@Override
 	protected boolean supports(Class<?> clazz) {
+		// ❗️❗️❗️❗️❗️❗️❗️❗️❗️
 		// 支持任何clazz
-		// 由于是泛型的,因此这里会支持任何类型的clazz,因此返回true
+		// 原因在于是泛型的,因此这里会支持任何类型的clazz,因此返回true
 		return true;
 	}
 
 	@Override
 	public boolean canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType) {
-		// type instanceof Class 的话
-		// canRead((Class<?>) type, mediaType) 就是超类AbstractHttpMessageConverter对clazz和type进行检查
+		// ❗️❗️❗️
+		// GenericHttpMessageConverter#canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType)
+		// 不同于
+		// HttpMessageConverter#canRead(Class<?> clazz, @Nullable MediaType mediaType)
 
-		// type instanceof Class 不是的话
-		// canRead(mediaType) 就是超类AbstractHttpMessageConverter只对mediaType进行检查
+		// type 不属于class就表示带有泛型信息的哦
+		// 1. canRead((Class<?>) type, mediaType) 使用超类 AbstractHttpMessageConverter#canRead(..)的能力
+		// 2. canRead(mediaType) 			      使用超类 AbstractHttpMessageConverter#canRead(..)只对mediaType进行检查
 		return (type instanceof Class ? canRead((Class<?>) type, mediaType) : canRead(mediaType));
 	}
 
@@ -92,10 +99,15 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 	public final void write(final T t, @Nullable final Type type, @Nullable MediaType contentType,
 			HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
 		// 实现 GenericHttpMessageConverter#write(final T t, @Nullable final Type type, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
+		// 作用: 
+		// 将对象t填入请求体的输出流中 -> 即 type类型的t对象 填充到 HttpOutputMessage#getBody() 输出流中
 
+		// 1. 获取请求头
 		final HttpHeaders headers = outputMessage.getHeaders();
+		// 2. 老规矩: 添加默认的请求头: content-type + content-length [调用超类 AbstractHttpMessageConverter#addDefaultHeaders(..)方法即可]
 		addDefaultHeaders(headers, t, contentType);
 
+		// 3.1 StreamingHttpOutputMessage
 		if (outputMessage instanceof StreamingHttpOutputMessage) {
 			StreamingHttpOutputMessage streamingOutputMessage = (StreamingHttpOutputMessage) outputMessage;
 			streamingOutputMessage.setBody(outputStream -> writeInternal(t, type, new HttpOutputMessage() {
@@ -109,6 +121,7 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 				}
 			}));
 		}
+		// 3.2 非StreamingHttpOutputMessage类型的
 		else {
 			writeInternal(t, type, outputMessage);
 			outputMessage.getBody().flush();

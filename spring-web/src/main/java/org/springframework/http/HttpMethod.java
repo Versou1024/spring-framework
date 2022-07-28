@@ -31,6 +31,12 @@ import org.springframework.lang.Nullable;
  * @since 3.0
  */
 public enum HttpMethod {
+	
+	// 位于: org.springframework.http 即Spring-web项目下的http包
+	
+	// 命名:
+	// Http Method = HTTP的请求方法的
+	// 目的: 旨在与RestTemplate一起使用。
 
 	GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS, TRACE;
 

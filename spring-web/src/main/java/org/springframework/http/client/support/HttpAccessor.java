@@ -49,12 +49,21 @@ import org.springframework.util.Assert;
  * @see org.springframework.web.client.RestTemplate
  */
 public abstract class HttpAccessor {
+	// 位于: org.springframework.http.client.support 即 spring-web模块下的http.client.support包下
+	
+	// 命名:
+	// Http Accessor = Http 访问器
+	
+	// 作用:
+	// RestTemplate和其他 HTTP 访问网关助手的基类，定义了要操作的ClientHttpRequestFactory等通用属性。
+	// 有关入口点，请参见org.springframework.web.client.RestTemplate 。
 
-	/** Logger available to subclasses. */
 	protected final Log logger = HttpLogging.forLogName(getClass());
 
+	// 持有: ClientHttpRequestFactory
 	private ClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
 
+	// 且持有: ClientHttpRequestInitializer
 	private final List<ClientHttpRequestInitializer> clientHttpRequestInitializers = new ArrayList<>();
 
 
@@ -121,11 +130,38 @@ public abstract class HttpAccessor {
 	 * @see ClientHttpRequestFactory#createRequest(URI, HttpMethod)
 	 */
 	protected ClientHttpRequest createRequest(URI url, HttpMethod method) throws IOException {
+		// 基于 ClientHttpRequestFactory#createRequest(..) 方法提供给子类:创建ClientHttpRequest的方法
+		// 被: RestTemplate#doExecute(..) 方法调用
+		// 以为例
+		// 	@Bean
+		//	public RestTemplate restTemplate(RestTemplateBuilder builder) {
+		//		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+		//		BufferingClientHttpRequestFactory bufferingClientHttpRequestFactory = new BufferingClientHttpRequestFactory(factory);
+		//		factory.setReadTimeout(180000);
+		//		factory.setConnectTimeout(180000);
+		//		RestTemplate restTemplate = new RestTemplate(bufferingClientHttpRequestFactory);
+		//		restTemplate.getInterceptors().add(new AuthHttpRequestInterceptor());
+		//		restTemplate.getMessageConverters().set(1, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+		//		return restTemplate;
+		//	}
+		
+		// 1. 调用: ClientHttpRequestFactory#createRequest(..)
+		// 以上面为例举例: 
+		// 最终获取到的ClientHttpRequestFactory就是BufferingClientHttpRequestFactory,其中BufferingClientHttpRequestFactory封装有HttpComponentsClientHttpRequestFactory
+		// BufferingClientHttpRequestFactory将HttpComponentsClientHttpRequestFactory创建出来HttpComponentsClientHttpRequest包装到BufferingClientHttpRequestWrapper中
+		// bug ❗️❗️❗️ ❗️❗️❗️ 
+		// 子类 -> InterceptingHttpAccessor重写了 getRequestFactory()方法
+		// 使得上面的 BufferingClientHttpRequestFactory 在有拦截器[比如打印日志]的情况下 加入到 InterceptingClientHttpRequestFactory 中
+		// 因此 getRequestFactory() 拿到的工厂就是 -> InterceptingClientHttpRequestFactory 包装有 BufferingClientHttpRequestFactory 包装有 HttpComponentsClientHttpRequestFactory
+		// getRequestFactory().createRequest(url, method) 拿到的请求时 -> InterceptingClientHttpRequest 包装有 BufferingClientHttpRequestWrapper 包装有 HttpComponentsClientHttpRequest
+		// ❗️❗️❗️❗️❗️❗️
 		ClientHttpRequest request = getRequestFactory().createRequest(url, method);
+		// 2. ❗️❗️❗️ 在 ClientHttpRequest 还未使用之前,就可以使用clientHttpRequestInitializers就行初始化动作
 		initialize(request);
 		if (logger.isDebugEnabled()) {
 			logger.debug("HTTP " + method.name() + " " + url);
 		}
+		// 3. 返回: request对象
 		return request;
 	}
 

@@ -48,6 +48,10 @@ import org.springframework.util.ObjectUtils;
  * @see RestTemplate#setErrorHandler
  */
 public class DefaultResponseErrorHandler implements ResponseErrorHandler {
+	// 位于:  org.springframework.web.client
+	
+	// 作用:
+	// 作为ResponseErrorHandler的默认实现即可
 
 	/**
 	 * Delegates to {@link #hasError(HttpStatus)} (for a standard status enum value) or
@@ -58,8 +62,12 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 	 */
 	@Override
 	public boolean hasError(ClientHttpResponse response) throws IOException {
+		// 1. 获取错误码
 		int rawStatusCode = response.getRawStatusCode();
+		// 2. 解析为HttpStatus
 		HttpStatus statusCode = HttpStatus.resolve(rawStatusCode);
+		// 3. 针对int的rawStatusCode和StatusCode各有两个hasError(..)方法
+		// ❗️❗️❗️认为 4xx 和 5xx 是错误
 		return (statusCode != null ? hasError(statusCode) : hasError(rawStatusCode));
 	}
 
@@ -72,6 +80,7 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 	 * @see HttpStatus#isError()
 	 */
 	protected boolean hasError(HttpStatus statusCode) {
+		// 认为 4xx 和 5xx 是错误
 		return statusCode.isError();
 	}
 
@@ -88,6 +97,7 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 	 * @see org.springframework.http.HttpStatus.Series#SERVER_ERROR
 	 */
 	protected boolean hasError(int unknownStatusCode) {
+		// 认为 4xx 和 5xx 是错误
 		HttpStatus.Series series = HttpStatus.Series.resolve(unknownStatusCode);
 		return (series == HttpStatus.Series.CLIENT_ERROR || series == HttpStatus.Series.SERVER_ERROR);
 	}
@@ -110,15 +120,24 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 	 */
 	@Override
 	public void handleError(ClientHttpResponse response) throws IOException {
+		// 响应为错误时如何处理的方法
+		
+		// 1. 解析为HttpStatus
 		HttpStatus statusCode = HttpStatus.resolve(response.getRawStatusCode());
+		// 2.1 解析失败 - 未知的错误状态码
 		if (statusCode == null) {
+			// 2.1.1 获取到响应体的消息 - 使用字节数组存储
 			byte[] body = getResponseBody(response);
-			String message = getErrorMessage(response.getRawStatusCode(),
-					response.getStatusText(), body, getCharset(response));
-			throw new UnknownHttpStatusCodeException(message,
-					response.getRawStatusCode(), response.getStatusText(),
-					response.getHeaders(), body, getCharset(response));
+			// 2.1.2 
+			String message = getErrorMessage(response.getRawStatusCode(), response.getStatusText(), body, getCharset(response));
+			throw new UnknownHttpStatusCodeException(message, 
+					response.getRawStatusCode(), 
+					response.getStatusText(),
+					response.getHeaders(), 
+					body, 
+					getCharset(response));
 		}
+		// 2.2 解析成功 - 已知的错误状态码
 		handleError(response, statusCode);
 	}
 
@@ -158,6 +177,9 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 	 * @see HttpServerErrorException#create
 	 */
 	protected void handleError(ClientHttpResponse response, HttpStatus statusCode) throws IOException {
+		// int类型的错误码被解析为HttpStatus
+		
+		// 1. 拿到错误码的文本\响应头\响应体\
 		String statusText = response.getStatusText();
 		HttpHeaders headers = response.getHeaders();
 		byte[] body = getResponseBody(response);
@@ -165,10 +187,13 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 		String message = getErrorMessage(statusCode.value(), statusText, body, charset);
 
 		switch (statusCode.series()) {
+			// 400 错误
 			case CLIENT_ERROR:
 				throw HttpClientErrorException.create(message, statusCode, statusText, headers, body, charset);
+			// 500 错误
 			case SERVER_ERROR:
 				throw HttpServerErrorException.create(message, statusCode, statusText, headers, body, charset);
+			// 未知状态码的错误
 			default:
 				throw new UnknownHttpStatusCodeException(message, statusCode.value(), statusText, headers, body, charset);
 		}
@@ -219,6 +244,7 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 	 */
 	@Nullable
 	protected Charset getCharset(ClientHttpResponse response) {
+		// 根据响应头中的ContentType来确定Charset
 		HttpHeaders headers = response.getHeaders();
 		MediaType contentType = headers.getContentType();
 		return (contentType != null ? contentType.getCharset() : null);

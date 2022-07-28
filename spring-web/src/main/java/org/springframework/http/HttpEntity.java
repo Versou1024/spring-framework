@@ -56,6 +56,30 @@ import org.springframework.util.ObjectUtils;
  * @see #getHeaders()
  */
 public class HttpEntity<T> {
+	// 位于: org.springframework.http
+	
+	// 作用:
+	// 用来表示一个Http实体对象 -> 表示一个 HTTP 请求或响应实体，由 headers 和 body 组成
+	
+	// 通常与org.springframework.web.client.RestTemplate结合使用，如下所示：
+	//   HttpHeaders headers = new HttpHeaders();
+	//   headers.setContentType(MediaType.TEXT_PLAIN);
+	//   HttpEntity<String> entity = new HttpEntity<String>(helloWorld, headers);
+	//   URI location = template.postForLocation("https://example.com", entity);
+	//   
+	// 或者
+	//   HttpEntity<String> entity = template.getForEntity("https://example.com", String.class);
+	//   String body = entity.getBody();
+	//   MediaType contentType = entity.getHeaders().getContentType();
+	//   
+	// 也可以在 Spring MVC 中使用，作为 @Controller 方法的返回值：
+	//   @RequestMapping("/handle")
+	//   public HttpEntity<String> handle() {
+	//     HttpHeaders responseHeaders = new HttpHeaders();
+	//     responseHeaders.set("MyResponseHeader", "MyValue");
+	//     return new HttpEntity<String>("Hello World", responseHeaders);
+	//   }
+	//   
 
 	/**
 	 * The empty {@code HttpEntity}, with no body or headers.
